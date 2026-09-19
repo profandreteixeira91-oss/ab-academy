@@ -794,7 +794,9 @@ function Home() {
             <a href="#sobre">Sobre</a>
             <a href="#cursos">Cursos</a>
             <a href="#metodologia">Metodologia</a>
-            <a href="#contato">Contato</a>
+            <a href="#contato">Contato</a><p></p><p></p>
+            <a href="/politica-privacidade">Política de Privacidade</a>
+            <a href="/termos-de-servico">Termos de Serviço</a>
           </div>
         </div>
 

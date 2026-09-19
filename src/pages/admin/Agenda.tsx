@@ -4,7 +4,9 @@ import {
   CheckCircle2,
   Clock3,
   Edit3,
+  ExternalLink,
   Plus,
+  Video,
   UserRound,
   X,
 } from 'lucide-react'
@@ -25,6 +27,8 @@ type Horario = {
   hora_fim: string
   disponivel: boolean
   aluno_id: string | null
+  meet_url: string | null
+  meet_space_name: string | null
 }
 
 type HorarioForm = {
@@ -37,8 +41,9 @@ type HorarioForm = {
 }
 
 /*
- * IMPORTANTE:
- * A tabela horarios utiliza:
+ * =========================================================
+ * DIAS DA SEMANA
+ * =========================================================
  *
  * 0 = Domingo
  * 1 = Segunda
@@ -48,6 +53,7 @@ type HorarioForm = {
  * 5 = Sexta
  * 6 = Sábado
  */
+
 const diasSemana = [
   { value: 1, label: 'Segunda', short: 'SEG' },
   { value: 2, label: 'Terça', short: 'TER' },
@@ -58,14 +64,6 @@ const diasSemana = [
   { value: 0, label: 'Domingo', short: 'DOM' },
 ]
 
-/*
- * A tabela horarios possui CHECK:
- *
- * idioma IN ('ingles', 'alemao')
- *
- * Portanto, os valores enviados ao banco precisam
- * ser exatamente estes.
- */
 const idiomas = [
   {
     value: 'ingles' as const,
@@ -109,6 +107,18 @@ export default function Agenda() {
   const [form, setForm] =
     useState<HorarioForm>(initialForm)
 
+  const [connectingGoogle, setConnectingGoogle] =
+    useState(false)
+
+  const [creatingMeetId, setCreatingMeetId] =
+    useState<string | null>(null)
+
+  /*
+   * =========================================================
+   * CARREGAR AGENDA
+   * =========================================================
+   */
+
   useEffect(() => {
     loadAgenda()
   }, [])
@@ -132,7 +142,9 @@ export default function Agenda() {
               hora_inicio,
               hora_fim,
               disponivel,
-              aluno_id
+              aluno_id,
+              meet_url,
+              meet_space_name
             `,
           )
           .order('dia_semana', {
@@ -177,12 +189,18 @@ export default function Agenda() {
       )
 
       setError(
-        `Não foi possível carregar a agenda. ${getErrorMessage(err)}`,
+        `Não foi possível carregar a agenda.\n${getErrorMessage(err)}`,
       )
     } finally {
       setLoading(false)
     }
   }
+
+  /*
+   * =========================================================
+   * HORÁRIOS DO DIA
+   * =========================================================
+   */
 
   const horariosDoDia = useMemo(() => {
     return horarios
@@ -196,6 +214,12 @@ export default function Agenda() {
         ),
       )
   }, [horarios, selectedDay])
+
+  /*
+   * =========================================================
+   * AUXILIARES
+   * =========================================================
+   */
 
   function getAlunoNome(
     alunoId: string | null,
@@ -225,6 +249,12 @@ export default function Agenda() {
     return value?.slice(0, 5) || '--:--'
   }
 
+  /*
+   * =========================================================
+   * MODAL - CRIAR
+   * =========================================================
+   */
+
   function openCreateModal() {
     setEditingId(null)
 
@@ -235,6 +265,12 @@ export default function Agenda() {
 
     setModalOpen(true)
   }
+
+  /*
+   * =========================================================
+   * MODAL - EDITAR
+   * =========================================================
+   */
 
   function openEditModal(
     horario: Horario,
@@ -277,228 +313,90 @@ export default function Agenda() {
 
     setModalOpen(false)
     setEditingId(null)
+    setForm(initialForm)
   }
 
+  /*
+   * =========================================================
+   * SALVAR HORÁRIO
+   * =========================================================
+   */
+
   async function handleSave() {
-    if (saving) {
-      return
-    }
-
-    if (
-      form.idioma !== 'ingles' &&
-      form.idioma !== 'alemao'
-    ) {
-      alert(
-        'Selecione um idioma válido.',
-      )
-      return
-    }
-
-    if (
-      form.hora_inicio ===
-      form.hora_fim
-    ) {
-      alert(
-        'O horário inicial e final não podem ser iguais.',
-      )
-      return
-    }
-
-    if (
-      !form.hora_inicio ||
-      !form.hora_fim
-    ) {
-      alert(
-        'Informe o horário inicial e o horário final.',
-      )
-      return
-    }
-
-    if (
-      form.hora_fim <=
-      form.hora_inicio
-    ) {
-      alert(
-        'O horário final deve ser posterior ao horário inicial.',
-      )
-      return
-    }
-
     try {
       setSaving(true)
+      setError(null)
 
-      /*
-       * Verifica duplicidade de horário.
-       *
-       * O idioma também participa da validação,
-       * permitindo por exemplo:
-       *
-       * Segunda 08:00 Inglês
-       * Segunda 08:00 Alemão
-       *
-       * como horários diferentes.
-       */
-      let duplicateQuery = supabase
-        .from('horarios')
-        .select('id')
-        .eq(
-          'idioma',
-          form.idioma,
+      if (!form.hora_inicio) {
+        throw new Error(
+          'Informe o horário inicial.',
         )
-        .eq(
-          'dia_semana',
-          form.dia_semana,
-        )
-        .eq(
-          'hora_inicio',
-          form.hora_inicio,
-        )
-        .eq(
-          'hora_fim',
-          form.hora_fim,
-        )
-        .limit(1)
-
-      if (editingId) {
-        duplicateQuery =
-          duplicateQuery.neq(
-            'id',
-            editingId,
-          )
       }
 
-      const {
-        data: duplicate,
-        error: duplicateError,
-      } = await duplicateQuery.maybeSingle()
-
-      if (duplicateError) {
-        throw duplicateError
-      }
-
-      if (duplicate) {
-        alert(
-          'Já existe um horário cadastrado para este idioma, dia e período.',
+      if (!form.hora_fim) {
+        throw new Error(
+          'Informe o horário final.',
         )
-
-        return
       }
 
-      const alunoId =
-        form.aluno_id || null
+      if (
+        form.hora_inicio >=
+        form.hora_fim
+      ) {
+        throw new Error(
+          'O horário final deve ser maior que o horário inicial.',
+        )
+      }
 
-      /*
-       * Quando existe aluno vinculado,
-       * o horário deixa de estar disponível
-       * para nova matrícula.
-       */
       const payload = {
         idioma: form.idioma,
-
-        /*
-         * A tabela utiliza 0–6.
-         */
-        dia_semana:
-          Number(form.dia_semana),
-
-        hora_inicio:
-          form.hora_inicio,
-
-        hora_fim:
-          form.hora_fim,
-
-        disponivel: alunoId
-          ? false
-          : Boolean(
-              form.disponivel,
-            ),
-
-        aluno_id: alunoId,
+        dia_semana: form.dia_semana,
+        hora_inicio: form.hora_inicio,
+        hora_fim: form.hora_fim,
+        aluno_id:
+          form.aluno_id || null,
+        disponivel:
+          form.aluno_id
+            ? false
+            : form.disponivel,
       }
-
-      console.log(
-        'Salvando horário:',
-        payload,
-      )
 
       if (editingId) {
         const {
-          data,
-          error,
+          error: updateError,
         } = await supabase
           .from('horarios')
           .update(payload)
           .eq('id', editingId)
-          .select(
-            `
-              id,
-              idioma,
-              dia_semana,
-              hora_inicio,
-              hora_fim,
-              disponivel,
-              aluno_id
-            `,
-          )
-          .maybeSingle()
 
-        if (error) {
-          throw error
+        if (updateError) {
+          throw updateError
         }
 
-        if (!data) {
-          throw new Error(
-            'O horário não foi encontrado ou não foi possível atualizar o registro.',
-          )
-        }
+        alert(
+          'Horário atualizado com sucesso.',
+        )
       } else {
         const {
-          data,
-          error,
+          error: insertError,
         } = await supabase
           .from('horarios')
           .insert(payload)
-          .select(
-            `
-              id,
-              idioma,
-              dia_semana,
-              hora_inicio,
-              hora_fim,
-              disponivel,
-              aluno_id
-            `,
-          )
-          .single()
 
-        if (error) {
-          throw error
+        if (insertError) {
+          throw insertError
         }
 
-        if (!data) {
-          throw new Error(
-            'O horário não foi criado.',
-          )
-        }
+        alert(
+          'Horário criado com sucesso.',
+        )
       }
-
-      const savedDay =
-        form.dia_semana
 
       setModalOpen(false)
       setEditingId(null)
-
-      setForm({
-        ...initialForm,
-        dia_semana:
-          savedDay,
-      })
+      setForm(initialForm)
 
       await loadAgenda()
-
-      setSelectedDay(
-        savedDay,
-      )
     } catch (err) {
       console.error(
         'Erro ao salvar horário:',
@@ -513,36 +411,36 @@ export default function Agenda() {
     }
   }
 
+  /*
+   * =========================================================
+   * DISPONIBILIDADE
+   * =========================================================
+   */
+
   async function toggleAvailability(
     horario: Horario,
   ) {
     if (horario.aluno_id) {
-      alert(
-        'Este horário possui um aluno vinculado. Desvincule o aluno antes de alterar a disponibilidade.',
-      )
-
       return
     }
 
     try {
-      const newAvailability =
+      setError(null)
+
+      const novoStatus =
         !horario.disponivel
 
       const {
-        error,
+        error: updateError,
       } = await supabase
         .from('horarios')
         .update({
-          disponivel:
-            newAvailability,
+          disponivel: novoStatus,
         })
-        .eq(
-          'id',
-          horario.id,
-        )
+        .eq('id', horario.id)
 
-      if (error) {
-        throw error
+      if (updateError) {
+        throw updateError
       }
 
       await loadAgenda()
@@ -557,6 +455,12 @@ export default function Agenda() {
       )
     }
   }
+
+  /*
+   * =========================================================
+   * DESVINCULAR ALUNO
+   * =========================================================
+   */
 
   async function unlinkStudent(
     horario: Horario,
@@ -575,21 +479,20 @@ export default function Agenda() {
     }
 
     try {
+      setError(null)
+
       const {
-        error,
+        error: updateError,
       } = await supabase
         .from('horarios')
         .update({
           aluno_id: null,
           disponivel: true,
         })
-        .eq(
-          'id',
-          horario.id,
-        )
+        .eq('id', horario.id)
 
-      if (error) {
-        throw error
+      if (updateError) {
+        throw updateError
       }
 
       await loadAgenda()
@@ -604,6 +507,284 @@ export default function Agenda() {
       )
     }
   }
+
+  /*
+   * =========================================================
+   * GOOGLE MEET - CONEXÃO OAUTH
+   * =========================================================
+   */
+
+  async function connectGoogleMeet() {
+    if (connectingGoogle) {
+      return
+    }
+
+    try {
+      setConnectingGoogle(true)
+      setError(null)
+
+      const {
+        data: {
+          session,
+        },
+        error: sessionError,
+      } = await supabase.auth.getSession()
+
+      if (sessionError) {
+        throw sessionError
+      }
+
+      if (!session?.access_token) {
+        throw new Error(
+          'Sua sessão expirou. Faça login novamente.',
+        )
+      }
+
+      const response =
+        await fetch(
+          'https://vwmrxdzskvwojyfddjwd.supabase.co/functions/v1/google-meet-auth',
+          {
+            method: 'GET',
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+              apikey:
+                import.meta.env
+                  .VITE_SUPABASE_ANON_KEY,
+              'Content-Type':
+                'application/json',
+            },
+          },
+        )
+
+      const responseText =
+        await response.text()
+
+      let data: any = null
+
+      try {
+        data = responseText
+          ? JSON.parse(responseText)
+          : null
+      } catch {
+        data = {
+          error:
+            responseText ||
+            'Resposta inválida da Edge Function.',
+        }
+      }
+
+      console.log(
+        'google-meet-auth:',
+        {
+          status: response.status,
+          ok: response.ok,
+          data,
+        },
+      )
+
+      if (!response.ok) {
+        throw new Error(
+          data?.error ||
+            data?.details ||
+            'Não foi possível iniciar a conexão com o Google.',
+        )
+      }
+
+      if (!data?.authorization_url) {
+        throw new Error(
+          'O Google não retornou a URL de autorização.',
+        )
+      }
+
+      window.location.href =
+        data.authorization_url
+    } catch (err) {
+      console.error(
+        'Erro ao conectar Google Meet:',
+        err,
+      )
+
+      alert(
+        `Não foi possível conectar o Google Meet.\n\n${getErrorMessage(err)}`,
+      )
+
+      setConnectingGoogle(false)
+    }
+  }
+
+  /*
+   * =========================================================
+   * GOOGLE MEET - CRIAR SALA
+   * =========================================================
+   */
+
+  async function createMeet(
+    horario: Horario,
+  ) {
+    if (creatingMeetId) {
+      return
+    }
+
+    try {
+      setCreatingMeetId(horario.id)
+      setError(null)
+
+      const {
+        data: {
+          session,
+        },
+        error: sessionError,
+      } =
+        await supabase.auth.getSession()
+
+      if (sessionError) {
+        console.error(
+          'Erro ao obter sessão:',
+          sessionError,
+        )
+
+        throw sessionError
+      }
+
+      if (!session?.access_token) {
+        throw new Error(
+          'Sua sessão expirou. Faça login novamente.',
+        )
+      }
+
+      console.log(
+        'Sessão encontrada. Chamando google-meet-create...',
+      )
+
+      const response =
+        await fetch(
+          'https://vwmrxdzskvwojyfddjwd.supabase.co/functions/v1/google-meet-create',
+          {
+            method: 'POST',
+
+            headers: {
+              Authorization:
+                `Bearer ${session.access_token}`,
+
+              apikey:
+                import.meta.env
+                  .VITE_SUPABASE_ANON_KEY,
+
+              'Content-Type':
+                'application/json',
+            },
+
+            body: JSON.stringify({
+              horario_id:
+                horario.id,
+            }),
+          },
+        )
+
+      const responseText =
+        await response.text()
+
+      let data: any = null
+
+      try {
+        data = responseText
+          ? JSON.parse(responseText)
+          : null
+      } catch {
+        data = {
+          error:
+            responseText ||
+            'Resposta inválida da Edge Function.',
+        }
+      }
+
+      console.log(
+        'google-meet-create:',
+        {
+          status: response.status,
+          ok: response.ok,
+          data,
+        },
+      )
+
+      if (!response.ok) {
+        if (
+          data?.code ===
+          'GOOGLE_NOT_CONNECTED'
+        ) {
+          const shouldConnect =
+            window.confirm(
+              'Nenhuma conta Google Meet está conectada.\n\nDeseja conectar agora?',
+            )
+
+          if (shouldConnect) {
+            await connectGoogleMeet()
+          }
+
+          return
+        }
+
+        throw new Error(
+          data?.error ||
+            data?.google_error ||
+            data?.details ||
+            'Não foi possível criar a sala Google Meet.',
+        )
+      }
+
+      if (!data?.meet_url) {
+        throw new Error(
+          'O Google não retornou o link da sala.',
+        )
+      }
+
+      await loadAgenda()
+
+      alert(
+        data.existing
+          ? 'Este horário já possui uma sala Google Meet.'
+          : 'Sala Google Meet criada com sucesso.',
+      )
+    } catch (err) {
+      console.error(
+        'Erro ao criar Google Meet:',
+        err,
+      )
+
+      alert(
+        `Não foi possível criar a sala Google Meet.\n\n${getErrorMessage(err)}`,
+      )
+    } finally {
+      setCreatingMeetId(null)
+    }
+  }
+
+  /*
+   * =========================================================
+   * ABRIR GOOGLE MEET
+   * =========================================================
+   */
+
+  function openMeet(
+    meetUrl: string | null,
+  ) {
+    if (!meetUrl) {
+      return
+    }
+
+    window.open(
+      meetUrl,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
+
+  /*
+   * =========================================================
+   * TRATAMENTO DE ERROS
+   * =========================================================
+   */
 
   function getErrorMessage(
     err: unknown,
@@ -634,15 +815,26 @@ export default function Agenda() {
       }
     }
 
-    if (err instanceof Error) {
+    if (
+      err instanceof Error
+    ) {
       return err.message
     }
 
     return 'Erro desconhecido.'
   }
 
+  /*
+   * =========================================================
+   * RENDER
+   * =========================================================
+   */
+
   return (
     <section className="agenda-page">
+
+      {/* HEADER */}
+
       <div className="agenda-page-header">
         <div>
           <h1>Agenda</h1>
@@ -653,17 +845,45 @@ export default function Agenda() {
           </p>
         </div>
 
-        <button
-          type="button"
-          className="agenda-primary-button"
-          onClick={
-            openCreateModal
-          }
+        <div
+          style={{
+            display: 'flex',
+            gap: '10px',
+            alignItems: 'center',
+          }}
         >
-          <Plus size={18} />
-          Novo horário
-        </button>
+          <button
+            type="button"
+            className="agenda-secondary-button"
+            onClick={
+              connectGoogleMeet
+            }
+            disabled={
+              connectingGoogle
+            }
+          >
+            <Video size={18} />
+
+            {connectingGoogle
+              ? 'Conectando...'
+              : 'Conectar Google Meet'}
+          </button>
+
+          <button
+            type="button"
+            className="agenda-primary-button"
+            onClick={
+              openCreateModal
+            }
+          >
+            <Plus size={18} />
+
+            Novo horário
+          </button>
+        </div>
       </div>
+
+      {/* ERRO */}
 
       {error && (
         <div className="agenda-error">
@@ -671,53 +891,70 @@ export default function Agenda() {
         </div>
       )}
 
+      {/* DIAS */}
+
       <div className="agenda-day-selector">
-        {diasSemana.map((dia) => {
-          const active =
-            selectedDay ===
-            dia.value
+        {diasSemana.map(
+          (dia) => {
+            const active =
+              selectedDay ===
+              dia.value
 
-          const count =
-            horarios.filter(
-              (horario) =>
-                horario.dia_semana ===
-                dia.value,
-            ).length
-
-          return (
-            <button
-              key={dia.value}
-              type="button"
-              className={`agenda-day-button ${
-                active
-                  ? 'active'
-                  : ''
-              }`}
-              onClick={() =>
-                setSelectedDay(
+            const count =
+              horarios.filter(
+                (horario) =>
+                  horario.dia_semana ===
                   dia.value,
-                )
-              }
-            >
-              <span className="agenda-day-short">
-                {dia.short}
-              </span>
+              ).length
 
-              <span className="agenda-day-name">
-                {dia.label}
-              </span>
+            return (
+              <button
+                key={
+                  dia.value
+                }
+                type="button"
+                className={`agenda-day-button ${
+                  active
+                    ? 'active'
+                    : ''
+                }`}
+                onClick={() =>
+                  setSelectedDay(
+                    dia.value,
+                  )
+                }
+              >
+                <span className="agenda-day-short">
+                  {
+                    dia.short
+                  }
+                </span>
 
-              <span className="agenda-day-count">
-                {count}
-              </span>
-            </button>
-          )
-        })}
+                <span className="agenda-day-name">
+                  {
+                    dia.label
+                  }
+                </span>
+
+                <span className="agenda-day-count">
+                  {
+                    count
+                  }
+                </span>
+              </button>
+            )
+          },
+        )}
       </div>
 
+      {/* RESUMO */}
+
       <div className="agenda-summary">
+
         <div className="agenda-summary-item">
-          <CalendarDays size={18} />
+          <CalendarDays
+            size={18}
+          />
 
           <div>
             <strong>
@@ -731,17 +968,23 @@ export default function Agenda() {
             </strong>
 
             <span>
-              {horariosDoDia.length}{' '}
-              {horariosDoDia.length ===
-              1
-                ? 'horário'
-                : 'horários'}
+              {
+                horariosDoDia.length
+              }{' '}
+              {
+                horariosDoDia.length ===
+                1
+                  ? 'horário'
+                  : 'horários'
+              }
             </span>
           </div>
         </div>
 
         <div className="agenda-summary-item">
-          <CheckCircle2 size={18} />
+          <CheckCircle2
+            size={18}
+          />
 
           <div>
             <strong>
@@ -761,7 +1004,9 @@ export default function Agenda() {
         </div>
 
         <div className="agenda-summary-item">
-          <UserRound size={18} />
+          <UserRound
+            size={18}
+          />
 
           <div>
             <strong>
@@ -778,9 +1023,13 @@ export default function Agenda() {
             </span>
           </div>
         </div>
+
       </div>
 
+      {/* PAINEL */}
+
       <div className="agenda-panel">
+
         <div className="agenda-panel-header">
           <div>
             <h2>
@@ -800,10 +1049,15 @@ export default function Agenda() {
             </p>
           </div>
 
-          <Clock3 size={20} />
+          <Clock3
+            size={20}
+          />
         </div>
 
         <div className="agenda-panel-content">
+
+          {/* LOADING */}
+
           {loading ? (
             <div className="agenda-loading">
               <div className="agenda-loading-spinner" />
@@ -812,9 +1066,14 @@ export default function Agenda() {
                 Carregando horários...
               </p>
             </div>
+
           ) : horariosDoDia.length ===
             0 ? (
+
+            /* VAZIO */
+
             <div className="agenda-empty">
+
               <div className="agenda-empty-icon">
                 <CalendarDays
                   size={28}
@@ -839,12 +1098,21 @@ export default function Agenda() {
                   openCreateModal
                 }
               >
-                <Plus size={17} />
+                <Plus
+                  size={17}
+                />
+
                 Criar horário
               </button>
+
             </div>
+
           ) : (
+
+            /* LISTA */
+
             <div className="agenda-list">
+
               {horariosDoDia.map(
                 (horario) => {
                   const alunoNome =
@@ -854,6 +1122,10 @@ export default function Agenda() {
 
                   const ocupado =
                     !!horario.aluno_id
+
+                  const creatingMeet =
+                    creatingMeetId ===
+                    horario.id
 
                   return (
                     <div
@@ -866,6 +1138,9 @@ export default function Agenda() {
                           : 'available'
                       }`}
                     >
+
+                      {/* HORÁRIO */}
+
                       <div className="agenda-time">
                         <strong>
                           {formatHour(
@@ -880,8 +1155,12 @@ export default function Agenda() {
                         </span>
                       </div>
 
+                      {/* INFORMAÇÕES */}
+
                       <div className="agenda-item-main">
+
                         <div className="agenda-item-top">
+
                           <span className="agenda-language">
                             {getIdiomaLabel(
                               horario.idioma,
@@ -903,9 +1182,11 @@ export default function Agenda() {
                                 ? 'Disponível'
                                 : 'Indisponível'}
                           </span>
+
                         </div>
 
                         <div className="agenda-student">
+
                           <UserRound
                             size={16}
                           />
@@ -914,10 +1195,83 @@ export default function Agenda() {
                             {alunoNome ||
                               'Nenhum aluno vinculado'}
                           </span>
+
                         </div>
+
+                        <div
+                          style={{
+                            display:
+                              'flex',
+                            alignItems:
+                              'center',
+                            gap:
+                              '8px',
+                            marginTop:
+                              '8px',
+                          }}
+                        >
+
+                          <Video
+                            size={15}
+                          />
+
+                          <span>
+                            {horario.meet_url
+                              ? 'Google Meet configurado'
+                              : 'Google Meet não configurado'}
+                          </span>
+
+                        </div>
+
                       </div>
 
+                      {/* AÇÕES */}
+
                       <div className="agenda-actions">
+
+                        {/* GOOGLE MEET */}
+
+                        {horario.meet_url ? (
+
+                          <button
+                            type="button"
+                            className="agenda-action-button"
+                            onClick={() =>
+                              openMeet(
+                                horario.meet_url,
+                              )
+                            }
+                            title="Abrir aula no Google Meet"
+                          >
+                            <ExternalLink
+                              size={17}
+                            />
+                          </button>
+
+                        ) : (
+
+                          <button
+                            type="button"
+                            className="agenda-action-button"
+                            onClick={() =>
+                              createMeet(
+                                horario,
+                              )
+                            }
+                            disabled={
+                              creatingMeet
+                            }
+                            title="Criar sala Google Meet"
+                          >
+                            <Video
+                              size={17}
+                            />
+                          </button>
+
+                        )}
+
+                        {/* DESVINCULAR ALUNO */}
+
                         {ocupado && (
                           <button
                             type="button"
@@ -929,9 +1283,13 @@ export default function Agenda() {
                             }
                             title="Desvincular aluno"
                           >
-                            <X size={17} />
+                            <X
+                              size={17}
+                            />
                           </button>
                         )}
+
+                        {/* DISPONIBILIDADE */}
 
                         {!ocupado && (
                           <button
@@ -954,6 +1312,8 @@ export default function Agenda() {
                           </button>
                         )}
 
+                        {/* EDITAR */}
+
                         <button
                           type="button"
                           className="agenda-action-button"
@@ -964,22 +1324,53 @@ export default function Agenda() {
                           }
                           title="Editar horário"
                         >
-                          <Edit3 size={17} />
+                          <Edit3
+                            size={17}
+                          />
                         </button>
+
                       </div>
+
+                      {/* STATUS CRIAÇÃO MEET */}
+
+                      {creatingMeet && (
+                        <div
+                          style={{
+                            position:
+                              'absolute',
+                            right:
+                              '20px',
+                            bottom:
+                              '-28px',
+                            fontSize:
+                              '12px',
+                            opacity:
+                              0.7,
+                          }}
+                        >
+                          Criando sala...
+                        </div>
+                      )}
+
                     </div>
                   )
                 },
               )}
+
             </div>
           )}
+
         </div>
       </div>
+
+      {/* MODAL */}
 
       {modalOpen && (
         <div
           className="agenda-modal-overlay"
-          onMouseDown={(event) => {
+          onMouseDown={(
+            event,
+          ) => {
             if (
               event.target ===
               event.currentTarget
@@ -988,8 +1379,13 @@ export default function Agenda() {
             }
           }}
         >
+
           <div className="agenda-modal">
+
+            {/* HEADER */}
+
             <div className="agenda-modal-header">
+
               <div>
                 <h2>
                   {editingId
@@ -1009,27 +1405,45 @@ export default function Agenda() {
                 onClick={
                   closeModal
                 }
-                disabled={saving}
+                disabled={
+                  saving
+                }
               >
-                <X size={19} />
+                <X
+                  size={19}
+                />
               </button>
+
             </div>
 
+            {/* FORMULÁRIO */}
+
             <div className="agenda-form">
+
+              {/* IDIOMA */}
+
               <div className="agenda-form-field">
+
                 <label htmlFor="agenda-idioma">
                   Idioma
                 </label>
 
                 <select
                   id="agenda-idioma"
-                  value={form.idioma}
-                  onChange={(event) =>
+                  value={
+                    form.idioma
+                  }
+                  onChange={(
+                    event,
+                  ) =>
                     setForm(
-                      (current) => ({
+                      (
+                        current,
+                      ) => ({
                         ...current,
                         idioma:
-                          event.target
+                          event
+                            .target
                             .value as
                             | 'ingles'
                             | 'alemao',
@@ -1037,8 +1451,11 @@ export default function Agenda() {
                     )
                   }
                 >
+
                   {idiomas.map(
-                    (idioma) => (
+                    (
+                      idioma,
+                    ) => (
                       <option
                         key={
                           idioma.value
@@ -1047,14 +1464,21 @@ export default function Agenda() {
                           idioma.value
                         }
                       >
-                        {idioma.label}
+                        {
+                          idioma.label
+                        }
                       </option>
                     ),
                   )}
+
                 </select>
+
               </div>
 
+              {/* DIA */}
+
               <div className="agenda-form-field">
+
                 <label htmlFor="agenda-dia">
                   Dia da semana
                 </label>
@@ -1064,21 +1488,29 @@ export default function Agenda() {
                   value={
                     form.dia_semana
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setForm(
-                      (current) => ({
+                      (
+                        current,
+                      ) => ({
                         ...current,
                         dia_semana:
                           Number(
-                            event.target
+                            event
+                              .target
                               .value,
                           ),
                       }),
                     )
                   }
                 >
+
                   {diasSemana.map(
-                    (dia) => (
+                    (
+                      dia,
+                    ) => (
                       <option
                         key={
                           dia.value
@@ -1087,15 +1519,23 @@ export default function Agenda() {
                           dia.value
                         }
                       >
-                        {dia.label}
+                        {
+                          dia.label
+                        }
                       </option>
                     ),
                   )}
+
                 </select>
+
               </div>
 
+              {/* HORÁRIOS */}
+
               <div className="agenda-form-row">
+
                 <div className="agenda-form-field">
+
                   <label htmlFor="agenda-inicio">
                     Horário inicial
                   </label>
@@ -1106,20 +1546,27 @@ export default function Agenda() {
                     value={
                       form.hora_inicio
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event,
+                    ) =>
                       setForm(
-                        (current) => ({
+                        (
+                          current,
+                        ) => ({
                           ...current,
                           hora_inicio:
-                            event.target
+                            event
+                              .target
                               .value,
                         }),
                       )
                     }
                   />
+
                 </div>
 
                 <div className="agenda-form-field">
+
                   <label htmlFor="agenda-fim">
                     Horário final
                   </label>
@@ -1130,21 +1577,31 @@ export default function Agenda() {
                     value={
                       form.hora_fim
                     }
-                    onChange={(event) =>
+                    onChange={(
+                      event,
+                    ) =>
                       setForm(
-                        (current) => ({
+                        (
+                          current,
+                        ) => ({
                           ...current,
                           hora_fim:
-                            event.target
+                            event
+                              .target
                               .value,
                         }),
                       )
                     }
                   />
+
                 </div>
+
               </div>
 
+              {/* ALUNO */}
+
               <div className="agenda-form-field">
+
                 <label htmlFor="agenda-aluno">
                   Aluno
                 </label>
@@ -1154,9 +1611,13 @@ export default function Agenda() {
                   value={
                     form.aluno_id
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setForm(
-                      (current) => ({
+                      (
+                        current,
+                      ) => ({
                         ...current,
                         aluno_id:
                           event.target
@@ -1170,15 +1631,22 @@ export default function Agenda() {
                     )
                   }
                 >
+
                   <option value="">
                     Nenhum aluno
                   </option>
 
                   {alunos.map(
-                    (aluno) => (
+                    (
+                      aluno,
+                    ) => (
                       <option
-                        key={aluno.id}
-                        value={aluno.id}
+                        key={
+                          aluno.id
+                        }
+                        value={
+                          aluno.id
+                        }
                       >
                         {
                           aluno.nome_completo
@@ -1186,10 +1654,15 @@ export default function Agenda() {
                       </option>
                     ),
                   )}
+
                 </select>
+
               </div>
 
+              {/* DISPONIBILIDADE */}
+
               <label className="agenda-toggle">
+
                 <input
                   type="checkbox"
                   checked={
@@ -1199,12 +1672,17 @@ export default function Agenda() {
                   disabled={
                     !!form.aluno_id
                   }
-                  onChange={(event) =>
+                  onChange={(
+                    event,
+                  ) =>
                     setForm(
-                      (current) => ({
+                      (
+                        current,
+                      ) => ({
                         ...current,
                         disponivel:
-                          event.target
+                          event
+                            .target
                             .checked,
                       }),
                     )
@@ -1215,17 +1693,24 @@ export default function Agenda() {
                   Horário disponível
                   para matrícula
                 </span>
+
               </label>
+
             </div>
 
+            {/* FOOTER */}
+
             <div className="agenda-modal-footer">
+
               <button
                 type="button"
                 className="agenda-cancel-button"
                 onClick={
                   closeModal
                 }
-                disabled={saving}
+                disabled={
+                  saving
+                }
               >
                 Cancelar
               </button>
@@ -1236,7 +1721,9 @@ export default function Agenda() {
                 onClick={
                   handleSave
                 }
-                disabled={saving}
+                disabled={
+                  saving
+                }
               >
                 {saving
                   ? 'Salvando...'
@@ -1244,10 +1731,14 @@ export default function Agenda() {
                     ? 'Salvar alterações'
                     : 'Criar horário'}
               </button>
+
             </div>
+
           </div>
+
         </div>
       )}
+
     </section>
   )
 }

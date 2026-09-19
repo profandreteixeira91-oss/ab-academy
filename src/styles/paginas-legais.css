@@ -1,0 +1,148 @@
+.legal-page {
+  min-height: 100vh;
+  background: var(--background-light, #f6f7fb);
+  color: var(--text-primary, #1f2937);
+  padding: 48px 24px;
+}
+
+.legal-container {
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
+  background: #ffffff;
+  border-radius: 16px;
+  padding: 48px;
+  box-shadow: 0 10px 35px rgba(15, 23, 42, 0.08);
+}
+
+.legal-header {
+  margin-bottom: 42px;
+  padding-bottom: 28px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.legal-back {
+  display: inline-block;
+  margin-bottom: 28px;
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.legal-back:hover {
+  text-decoration: underline;
+}
+
+.legal-header h1 {
+  margin: 0 0 10px;
+  font-size: 36px;
+  line-height: 1.2;
+  color: #111827;
+}
+
+.legal-updated {
+  margin: 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.legal-section {
+  margin-bottom: 34px;
+}
+
+.legal-section h2 {
+  margin: 0 0 14px;
+  font-size: 22px;
+  line-height: 1.35;
+  color: #111827;
+}
+
+.legal-section p {
+  margin: 0 0 14px;
+  font-size: 16px;
+  line-height: 1.75;
+  color: #4b5563;
+}
+
+.legal-section ul {
+  margin: 0 0 16px;
+  padding-left: 24px;
+}
+
+.legal-section li {
+  margin-bottom: 8px;
+  color: #4b5563;
+  font-size: 16px;
+  line-height: 1.65;
+}
+
+.legal-section a {
+  color: #2563eb;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.legal-section a:hover {
+  text-decoration: underline;
+}
+
+.legal-footer {
+  margin-top: 48px;
+  padding-top: 28px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.legal-footer strong {
+  color: #111827;
+  font-size: 18px;
+}
+
+.legal-footer div {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.legal-footer a {
+  color: #2563eb;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.legal-footer a:hover {
+  text-decoration: underline;
+}
+
+@media (max-width: 700px) {
+  .legal-page {
+    padding: 20px 12px;
+  }
+
+  .legal-container {
+    padding: 28px 20px;
+    border-radius: 12px;
+  }
+
+  .legal-header h1 {
+    font-size: 28px;
+  }
+
+  .legal-section h2 {
+    font-size: 20px;
+  }
+
+  .legal-section p,
+  .legal-section li {
+    font-size: 15px;
+  }
+
+  .legal-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

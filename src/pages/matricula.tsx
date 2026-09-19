@@ -2118,6 +2118,8 @@ function Matricula() {
       return
     }
 
+    
+
     /*
      * VALOR DO PAGAMENTO
      *
@@ -2336,6 +2338,23 @@ function Matricula() {
     window.location.assign(
       `/checkout/${pagamentoId}`,
     )
+
+  } catch (error) {
+
+    console.error(
+      'Erro inesperado ao confirmar matrícula:',
+      error,
+    )
+
+    setScheduleError(
+      'Ocorreu um erro inesperado ao iniciar o pagamento.',
+    )
+
+  } finally {
+
+    setBookingLoading(false)
+  }
+}
 
 
   /* =========================================================
@@ -4870,8 +4889,8 @@ function Matricula() {
                   <button
                   type="button"
                   className="btn btn-primary"
-                  onClick={handleConfirmBooking}
-                  disabled={bookingLoading}
+                  onClick={handleContinueToPayment}
+                  disabled={bookingLoading || !bookingConfirmed}
                 >
 
                     Continuar para pagamento

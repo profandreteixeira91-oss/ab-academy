@@ -4,6 +4,8 @@ import Checkout from './pages/checkout'
 import Aluno from './pages/Aluno'
 import Admin from './pages/Admin'
 import AdminAccess from './pages/admin/AdminAccess'
+import PoliticaPrivacidade from './pages/PoliticaPrivacidade'
+import TermosServico from './pages/TermosServico'
 
 function App() {
   const path = window.location.pathname
@@ -66,6 +68,14 @@ function App() {
       </AdminAccess>
     )
   }
+
+  if (path === '/politica-privacidade') {
+  return <PoliticaPrivacidade />
+}
+
+if (path === '/termos-de-servico') {
+  return <TermosServico />
+}
 
   return <Home />
 }
