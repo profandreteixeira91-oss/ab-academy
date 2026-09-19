@@ -1,0 +1,2029 @@
+.enrollment-page {
+  min-height: 100vh;
+  background: var(--background-light);
+}
+
+/* =========================================================
+   HEADER
+========================================================= */
+
+.enrollment-header {
+  height: 82px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 max(28px, calc((100% - var(--container)) / 2));
+
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+}
+
+.enrollment-logo img {
+  height: 130px;
+  object-fit: contain;
+  margin-top: 10px
+}
+
+.enrollment-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+
+  color: var(--text-secondary);
+
+  font-size: 14px;
+  font-weight: 600;
+
+  transition: color 0.2s ease;
+}
+
+.enrollment-back:hover {
+  color: var(--primary);
+}
+
+/* =========================================================
+   MAIN
+========================================================= */
+
+.enrollment-main {
+  padding: 70px 0 100px;
+}
+
+.enrollment-container {
+  width: min(100% - 40px, 1080px);
+  margin: 0 auto;
+}
+
+.enrollment-heading {
+  max-width: 700px;
+  margin-bottom: 45px;
+}
+
+.enrollment-heading h1 {
+  margin-top: 18px;
+
+  font-family: 'Montserrat', sans-serif;
+  font-size: clamp(36px, 5vw, 56px);
+  line-height: 1.08;
+  font-weight: 800;
+}
+
+.enrollment-heading h1 span {
+  color: var(--primary);
+}
+
+.enrollment-heading p {
+  max-width: 650px;
+  margin-top: 20px;
+
+  color: var(--text-secondary);
+
+  font-size: 17px;
+  line-height: 1.7;
+}
+
+/* =========================================================
+   PROGRESS
+========================================================= */
+
+.enrollment-progress {
+  display: flex;
+  align-items: center;
+
+  margin-bottom: 35px;
+}
+
+.enrollment-progress-step {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.enrollment-progress-step > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 50%;
+
+  background: var(--border);
+  color: var(--text-secondary);
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.enrollment-progress-step.active > span {
+  background: var(--primary);
+  color: white;
+}
+
+.enrollment-progress-step div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.enrollment-progress-step strong {
+  font-size: 13px;
+}
+
+.enrollment-progress-step small {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.enrollment-progress-line {
+  width: 60px;
+  height: 1px;
+
+  margin: 0 18px;
+
+  background: var(--border);
+}
+
+/* =========================================================
+   GRID
+========================================================= */
+
+.enrollment-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+
+  gap: 25px;
+
+  align-items: start;
+}
+
+.enrollment-card,
+.enrollment-summary {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+
+  background: var(--background);
+}
+
+.enrollment-card {
+  padding: 35px;
+}
+
+.enrollment-summary {
+  position: sticky;
+  top: 25px;
+
+  padding: 28px;
+}
+
+/* =========================================================
+   HEADER CARD
+========================================================= */
+
+.enrollment-card-header {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 15px;
+
+  margin-bottom: 25px;
+}
+
+.enrollment-card-number,
+.selection-heading > div > span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 10px;
+
+  background: var(--primary-light);
+  color: var(--primary);
+
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.enrollment-card-header h2,
+.selection-heading h2 {
+  font-family: 'Montserrat', sans-serif;
+
+  font-size: 21px;
+  font-weight: 800;
+}
+
+.enrollment-card-header p,
+.selection-heading p {
+  margin-top: 5px;
+
+  color: var(--text-secondary);
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   GOOGLE
+========================================================= */
+
+.google-login-button {
+  width: 100%;
+  height: 52px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 12px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  background: var(--background);
+  color: var(--text);
+
+  font-size: 14px;
+  font-weight: 700;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.google-login-button:hover {
+  border-color: var(--primary);
+
+  box-shadow:
+    0 5px 18px rgba(16, 24, 40, 0.07);
+}
+
+.google-login-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.google-icon {
+  font-size: 20px;
+  font-weight: 800;
+}
+
+/* =========================================================
+   DIVIDER
+========================================================= */
+
+.enrollment-divider {
+  display: flex;
+  align-items: center;
+
+  gap: 15px;
+
+  margin: 28px 0;
+
+  color: var(--text-secondary);
+
+  font-size: 11px;
+
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.enrollment-divider::before,
+.enrollment-divider::after {
+  content: '';
+
+  flex: 1;
+
+  height: 1px;
+
+  background: var(--border);
+}
+
+/* =========================================================
+   FIELDS
+========================================================= */
+
+.enrollment-fields {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  gap: 15px;
+}
+
+.enrollment-field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.enrollment-field label {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.enrollment-field input {
+  width: 100%;
+  height: 48px;
+
+  box-sizing: border-box;
+
+  padding: 0 14px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  outline: none;
+
+  background: var(--background);
+  color: var(--text);
+
+  font-size: 14px;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.enrollment-field input:focus {
+  border-color: var(--primary);
+
+  box-shadow:
+    0 0 0 3px rgba(22, 70, 216, 0.08);
+}
+
+.enrollment-field input:disabled {
+  cursor: not-allowed;
+
+  background: var(--background-light);
+  color: var(--text-secondary);
+}
+
+/* =========================================================
+   SELECTION
+========================================================= */
+
+.enrollment-selection {
+  margin-top: 35px;
+}
+
+.selection-heading {
+  margin-bottom: 18px;
+}
+
+.selection-heading > div {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+}
+
+/* =========================================================
+   LANGUAGE
+========================================================= */
+
+.language-selection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  gap: 14px;
+}
+
+.language-selection-card,
+.plan-card {
+  width: 100%;
+
+  border: 1px solid var(--border);
+
+  background: var(--background);
+
+  cursor: pointer;
+  text-align: left;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.language-selection-card {
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 17px;
+
+  border-radius: var(--radius-md);
+}
+
+.language-selection-card:hover,
+.plan-card:hover {
+  border-color: var(--primary);
+
+  transform: translateY(-1px);
+}
+
+.language-selection-card img {
+  width: 38px;
+  height: 27px;
+
+  object-fit: cover;
+
+  border-radius: 4px;
+}
+
+.language-selection-card > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+
+  flex: 1;
+}
+
+.language-selection-card strong {
+  font-size: 14px;
+}
+
+.language-selection-card span:not(.selection-radio) {
+  color: var(--text-secondary);
+
+  font-size: 12px;
+}
+
+/* =========================================================
+   RADIO
+========================================================= */
+
+.selection-radio {
+  position: relative;
+
+  width: 19px;
+  height: 19px;
+
+  flex-shrink: 0;
+
+  border: 2px solid var(--border);
+  border-radius: 50%;
+
+  background: var(--background);
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.language-selection-card.selected .selection-radio,
+.plan-card.selected .selection-radio {
+  border-color: var(--primary);
+
+  background: var(--background);
+
+  box-shadow:
+    inset 0 0 0 4px var(--background);
+}
+
+.language-selection-card.selected .selection-radio::after,
+.plan-card.selected .selection-radio::after {
+  content: '';
+
+  position: absolute;
+
+  top: 50%;
+  left: 50%;
+
+  width: 9px;
+  height: 9px;
+
+  border-radius: 50%;
+
+  background: var(--primary);
+
+  transform: translate(-50%, -50%);
+}
+
+/* =========================================================
+   ESTADO SELECIONADO
+========================================================= */
+
+.language-selection-card.selected,
+.plan-card.selected {
+  border-color: var(--primary);
+
+  background: var(--primary-light);
+
+  box-shadow:
+    0 0 0 2px rgba(22, 70, 216, 0.08);
+}
+
+/* =========================================================
+   NÍVEIS DO IDIOMA
+========================================================= */
+
+.language-levels {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+
+  gap: 14px;
+
+  margin-top: 20px;
+}
+
+.language-level-card {
+  display: flex;
+  flex-direction: column;
+
+  min-width: 0;
+
+  padding: 20px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+
+  background: var(--background);
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.language-level-card:hover {
+  border-color: rgba(22, 70, 216, 0.35);
+
+  box-shadow:
+    0 6px 20px rgba(16, 24, 40, 0.06);
+
+  transform: translateY(-1px);
+}
+
+.language-level-card-header {
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  margin-bottom: 7px;
+}
+
+.language-level-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 34px;
+  height: 34px;
+
+  border-radius: 10px;
+
+  background: var(--primary-light);
+  color: var(--primary);
+
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.language-level-card-header strong {
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.language-level-card-description {
+  min-height: 36px;
+
+  margin-bottom: 16px;
+
+  color: var(--text-secondary);
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.language-level-card select {
+  width: 100%;
+  height: 48px;
+
+  box-sizing: border-box;
+
+  padding: 0 12px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  outline: none;
+
+  background: var(--background);
+  color: var(--text);
+
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.language-level-card select:focus {
+  border-color: var(--primary);
+
+  box-shadow:
+    0 0 0 3px rgba(22, 70, 216, 0.08);
+}
+
+.language-level-card select:hover {
+  border-color: rgba(22, 70, 216, 0.4);
+}
+
+/* =========================================================
+   PLANS
+========================================================= */
+
+.plan-selection {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  gap: 14px;
+}
+
+.plan-card {
+  padding: 20px;
+
+  border-radius: var(--radius-lg);
+}
+
+.plan-card-top {
+  display: flex;
+  justify-content: space-between;
+
+  gap: 15px;
+}
+
+.plan-card-top > div {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.plan-card-top strong {
+  font-size: 15px;
+}
+
+.plan-card-top span {
+  color: var(--text-secondary);
+
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.plan-price {
+  display: flex;
+  align-items: baseline;
+
+  gap: 4px;
+
+  margin: 20px 0 6px;
+}
+
+.plan-price strong {
+  font-family: 'Montserrat', sans-serif;
+
+  font-size: 25px;
+}
+
+.plan-price span {
+  color: var(--text-secondary);
+
+  font-size: 12px;
+}
+
+.plan-price .summary-period {
+  color: var(--text-secondary);
+
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.plan-installment {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  min-height: 22px;
+
+  margin-bottom: 17px;
+
+  color: var(--primary);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.plan-installment::before {
+  content: '';
+
+  width: 6px;
+  height: 6px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: var(--primary);
+}
+
+.plan-card ul {
+  display: flex;
+  flex-direction: column;
+
+  gap: 9px;
+
+  padding: 0;
+
+  list-style: none;
+}
+
+.plan-card li {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  color: var(--text-secondary);
+
+  font-size: 12px;
+}
+
+.plan-card li svg {
+  color: var(--success);
+
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   PLANO PERSONALIZADO
+========================================================= */
+
+.personalized-plan-config {
+  width: 100%;
+
+  margin-top: 24px;
+  padding: 28px;
+
+  box-sizing: border-box;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+
+  background: var(--background);
+}
+
+/* =========================================================
+   CABEÇALHO DO PLANO PERSONALIZADO
+========================================================= */
+
+.personalized-plan-config .selection-heading {
+  width: 100%;
+
+  margin: 0 0 24px;
+  padding: 0;
+}
+
+.personalized-plan-config .selection-heading > div {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+}
+
+.personalized-plan-config .selection-heading > div > span {
+  width: 38px;
+  height: 38px;
+
+  min-width: 38px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 10px;
+
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.personalized-plan-config .selection-heading h2 {
+  margin: 0;
+
+  font-family: 'Montserrat', sans-serif;
+
+  font-size: 20px;
+  line-height: 1.3;
+  font-weight: 800;
+
+  color: var(--text);
+}
+
+.personalized-plan-config .selection-heading p {
+  margin: 5px 0 0;
+
+  color: var(--text-secondary);
+
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   OBJETIVO
+========================================================= */
+
+.personalized-plan-config .enrollment-field {
+  width: 100%;
+
+  margin: 0 0 28px;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+.personalized-plan-config .enrollment-field label {
+  margin: 0;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  color: var(--text);
+}
+
+.personalized-plan-config textarea {
+  width: 100%;
+  min-height: 130px;
+
+  box-sizing: border-box;
+
+  display: block;
+
+  padding: 14px 16px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  outline: none;
+
+  background: var(--background);
+  color: var(--text);
+
+  font-family: inherit;
+  font-size: 14px;
+  line-height: 1.5;
+
+  resize: vertical;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.personalized-plan-config textarea::placeholder {
+  color: var(--text-secondary);
+}
+
+.personalized-plan-config textarea:focus {
+  border-color: var(--primary);
+
+  box-shadow:
+    0 0 0 3px rgba(22, 70, 216, 0.08);
+}
+
+/* =========================================================
+   FREQUÊNCIA
+========================================================= */
+
+.personalized-frequency {
+  width: 100%;
+
+  margin: 0 0 28px;
+}
+
+.personalized-frequency-heading {
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 16px;
+
+  margin-bottom: 14px;
+}
+
+.personalized-frequency-heading strong {
+  margin: 0;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  color: var(--text);
+}
+
+.personalized-frequency-heading span {
+  padding: 5px 10px;
+
+  border-radius: 999px;
+
+  background: var(--primary-light);
+  color: var(--primary);
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   OPÇÕES DE FREQUÊNCIA
+========================================================= */
+
+.personalized-frequency-options {
+  width: 100%;
+
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.personalized-frequency-card {
+  width: 100%;
+  min-width: 0;
+  min-height: 145px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+
+  padding: 18px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  background: var(--background);
+  color: var(--text);
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.personalized-frequency-card:hover {
+  border-color: var(--primary);
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 6px 16px rgba(16, 24, 40, 0.06);
+}
+
+.personalized-frequency-card.selected {
+  border-color: var(--primary);
+
+  background: var(--primary-light);
+
+  box-shadow:
+    0 0 0 2px rgba(22, 70, 216, 0.08);
+}
+
+.personalized-frequency-card .selection-radio {
+  width: 19px;
+  height: 19px;
+
+  min-width: 19px;
+
+  margin-top: 1px;
+
+  flex-shrink: 0;
+}
+
+.personalized-frequency-card > div {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  gap: 5px;
+}
+
+.personalized-frequency-card strong {
+  display: block;
+
+  font-size: 14px;
+  line-height: 1.35;
+
+  color: var(--text);
+}
+
+.personalized-frequency-card span {
+  display: block;
+
+  font-size: 15px;
+  font-weight: 800;
+
+  color: var(--primary);
+}
+
+.personalized-frequency-card small {
+  display: block;
+
+  font-size: 11px;
+  line-height: 1.45;
+
+  color: var(--text-secondary);
+}
+
+/* =========================================================
+   FORMA DE CONTRATAÇÃO
+========================================================= */
+
+.personalized-billing {
+  width: 100%;
+
+  margin: 0 0 28px;
+}
+
+.personalized-billing > strong {
+  display: block;
+
+  margin-bottom: 14px;
+
+  font-size: 14px;
+  font-weight: 700;
+
+  color: var(--text);
+}
+
+.personalized-billing-options {
+  width: 100%;
+
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 12px;
+}
+
+.personalized-billing-card {
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 16px 18px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  background: var(--background);
+  color: var(--text);
+
+  text-align: left;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.personalized-billing-card:hover {
+  border-color: var(--primary);
+}
+
+.personalized-billing-card.selected {
+  border-color: var(--primary);
+
+  background: var(--primary-light);
+
+  box-shadow:
+    0 0 0 2px rgba(22, 70, 216, 0.08);
+}
+
+.personalized-billing-card .selection-radio {
+  width: 19px;
+  height: 19px;
+
+  min-width: 19px;
+
+  flex-shrink: 0;
+}
+
+.personalized-billing-card > div {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  gap: 3px;
+}
+
+.personalized-billing-card strong {
+  display: block;
+
+  font-size: 14px;
+  line-height: 1.3;
+
+  color: var(--text);
+}
+
+.personalized-billing-card span {
+  display: block;
+
+  font-size: 15px;
+  font-weight: 800;
+
+  color: var(--primary);
+}
+
+.personalized-billing-card small {
+  display: block;
+
+  font-size: 11px;
+  line-height: 1.3;
+
+  color: var(--success);
+}
+
+/* =========================================================
+   RESUMO DO PREÇO PERSONALIZADO
+========================================================= */
+
+.personalized-price-summary {
+  width: 100%;
+
+  box-sizing: border-box;
+
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  gap: 1px;
+
+  margin-top: 28px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+
+  border-radius: var(--radius-md);
+
+  background: var(--border);
+}
+
+.personalized-price-summary > div {
+  min-width: 0;
+  min-height: 78px;
+
+  box-sizing: border-box;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  padding: 14px 16px;
+
+  background: var(--background);
+}
+
+.personalized-price-summary > div + div {
+  border-left: 1px solid var(--border);
+}
+
+.personalized-price-summary span {
+  display: block;
+
+  margin-bottom: 5px;
+
+  color: var(--text-secondary);
+
+  font-size: 11px;
+  line-height: 1.3;
+}
+
+.personalized-price-summary strong {
+  display: block;
+
+  color: var(--text);
+
+  font-size: 16px;
+  line-height: 1.3;
+}
+
+/* =========================================================
+   SCHEDULE / CALENDÁRIO
+========================================================= */
+
+.schedule-section {
+  margin-top: 35px;
+}
+
+.schedule-calendar {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+
+  gap: 8px;
+
+  margin-top: 18px;
+}
+
+.schedule-date {
+  min-height: 72px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 4px;
+
+  padding: 8px 5px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  background: var(--background);
+  color: var(--text);
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.schedule-date:hover {
+  border-color: var(--primary);
+
+  transform: translateY(-1px);
+}
+
+.schedule-date small {
+  color: var(--text-secondary);
+
+  font-size: 10px;
+  font-weight: 700;
+
+  text-transform: uppercase;
+}
+
+.schedule-date strong {
+  font-size: 17px;
+}
+
+.schedule-date.selected {
+  border-color: var(--primary);
+
+  background: var(--primary);
+  color: white;
+
+  box-shadow:
+    0 5px 16px rgba(22, 70, 216, 0.18);
+}
+
+.schedule-date.selected small {
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* =========================================================
+   DATA FUTURA
+========================================================= */
+
+.future-date-selection {
+  margin-top: 20px;
+
+  padding: 18px;
+
+  border: 1px dashed var(--border);
+  border-radius: var(--radius-md);
+
+  background: var(--background-light);
+}
+
+.future-date-selection > label {
+  display: block;
+
+  margin-bottom: 8px;
+
+  color: var(--text);
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.future-date-selection p {
+  margin-bottom: 12px;
+
+  color: var(--text-secondary);
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.future-date-selection input[type='date'] {
+  width: 100%;
+  height: 48px;
+
+  box-sizing: border-box;
+
+  padding: 0 14px;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  outline: none;
+
+  background: var(--background);
+  color: var(--text);
+
+  font-family: inherit;
+  font-size: 14px;
+
+  cursor: pointer;
+
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.future-date-selection input[type='date']:focus {
+  border-color: var(--primary);
+
+  box-shadow:
+    0 0 0 3px rgba(22, 70, 216, 0.08);
+}
+
+/* =========================================================
+   HORÁRIOS
+========================================================= */
+
+.schedule-times {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+
+  gap: 10px;
+
+  margin-top: 18px;
+}
+
+.schedule-time {
+  min-height: 48px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+
+  background: var(--background);
+  color: var(--text);
+
+  cursor: pointer;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.schedule-time:hover:not(:disabled) {
+  border-color: var(--primary);
+
+  color: var(--primary);
+
+  transform: translateY(-1px);
+}
+
+.schedule-time.selected {
+  border-color: var(--primary);
+
+  background: var(--primary);
+  color: white;
+}
+
+.schedule-time:disabled {
+  cursor: not-allowed;
+
+  opacity: 0.4;
+
+  background: var(--background-light);
+}
+
+/* =========================================================
+   RESUMO DA RECORRÊNCIA
+========================================================= */
+
+.schedule-selected-summary {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 12px;
+
+  margin-top: 20px;
+  padding: 15px;
+
+  border: 1px solid rgba(22, 70, 216, 0.12);
+  border-radius: var(--radius-md);
+
+  background: var(--primary-light);
+}
+
+.schedule-selected-summary svg {
+  flex-shrink: 0;
+
+  margin-top: 2px;
+
+  color: var(--primary);
+}
+
+.schedule-selected-summary strong {
+  display: block;
+
+  color: var(--text);
+
+  font-size: 13px;
+}
+
+.schedule-selected-summary p {
+  margin-top: 4px;
+
+  color: var(--text-secondary);
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   CAL.COM
+========================================================= */
+
+.schedule-cal-container {
+  width: 100%;
+
+  margin-top: 20px;
+
+  overflow: hidden;
+
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+
+  background: var(--background);
+}
+
+.schedule-cal-container iframe {
+  display: block;
+
+  width: 100%;
+  min-height: 650px;
+
+  border: 0;
+}
+
+.schedule-confirmation {
+  display: flex;
+  align-items: flex-start;
+
+  gap: 14px;
+
+  margin-top: 20px;
+  padding: 18px;
+
+  border: 1px solid rgba(22, 70, 216, 0.15);
+  border-radius: var(--radius-lg);
+
+  background: var(--primary-light);
+}
+
+.schedule-confirmation-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  width: 38px;
+  height: 38px;
+
+  border-radius: 50%;
+
+  background: var(--primary);
+  color: white;
+}
+
+.schedule-confirmation-content {
+  display: flex;
+  flex-direction: column;
+
+  gap: 4px;
+}
+
+.schedule-confirmation-content strong {
+  color: var(--text);
+
+  font-size: 14px;
+}
+
+.schedule-confirmation-content span {
+  color: var(--text-secondary);
+
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   SUBMIT
+========================================================= */
+
+.enrollment-submit {
+  width: 100%;
+
+  margin-top: 35px;
+}
+
+.enrollment-security {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  margin-top: 15px;
+
+  color: var(--text-secondary);
+
+  font-size: 11px;
+
+  text-align: center;
+}
+
+.enrollment-security svg {
+  color: var(--success);
+
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   SUMMARY
+========================================================= */
+
+.summary-header {
+  padding-bottom: 22px;
+
+  border-bottom: 1px solid var(--border);
+}
+
+.summary-header > span {
+  color: var(--primary);
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+}
+
+.summary-header h2 {
+  margin-top: 6px;
+
+  font-family: 'Montserrat', sans-serif;
+
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.summary-course {
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+
+  padding: 22px 0;
+}
+
+.summary-course-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 46px;
+  height: 46px;
+
+  border-radius: 12px;
+
+  background: var(--primary-light);
+  color: var(--primary);
+}
+
+.summary-course div:last-child {
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+.summary-course span,
+.summary-item span {
+  color: var(--text-secondary);
+
+  font-size: 11px;
+}
+
+.summary-course strong,
+.summary-item strong {
+  font-size: 13px;
+}
+
+.summary-item {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+.summary-period {
+  color: var(--text-secondary);
+
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.summary-installment {
+  display: flex;
+  align-items: center;
+
+  gap: 5px;
+
+  margin-top: 3px;
+
+  color: var(--primary);
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.summary-installment::before {
+  content: '';
+
+  width: 5px;
+  height: 5px;
+
+  flex-shrink: 0;
+
+  border-radius: 50%;
+
+  background: var(--primary);
+}
+
+.summary-divider {
+  height: 1px;
+
+  margin: 22px 0;
+
+  background: var(--border);
+}
+
+.summary-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.summary-total span {
+  color: var(--text-secondary);
+
+  font-size: 13px;
+}
+
+.summary-total strong {
+  font-family: 'Montserrat', sans-serif;
+
+  font-size: 22px;
+}
+
+.summary-note {
+  display: flex;
+
+  gap: 8px;
+
+  margin-top: 22px;
+  padding: 14px;
+
+  border-radius: var(--radius-md);
+
+  background: var(--primary-light);
+  color: var(--text-secondary);
+
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.summary-note svg {
+  color: var(--primary);
+
+  flex-shrink: 0;
+}
+
+/* =========================================================
+   RESPONSIVO - TABLET
+========================================================= */
+
+@media (max-width: 900px) {
+  .enrollment-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .enrollment-summary {
+    position: static;
+  }
+
+  .schedule-calendar {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .language-levels {
+    grid-template-columns: 1fr;
+  }
+
+  .language-level-card-description {
+    min-height: auto;
+  }
+
+  .schedule-cal-container iframe {
+    min-height: 600px;
+  }
+
+  .personalized-frequency-options {
+    grid-template-columns: 1fr;
+  }
+
+  .personalized-price-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .personalized-price-summary > div:nth-child(3),
+  .personalized-price-summary > div:nth-child(4) {
+    border-top: 1px solid var(--border);
+  }
+
+  .personalized-price-summary > div:nth-child(3) {
+    border-left: none;
+  }
+}
+
+/* =========================================================
+   RESPONSIVO - MOBILE
+========================================================= */
+
+@media (max-width: 700px) {
+  .enrollment-progress {
+    display: none;
+  }
+
+  .enrollment-fields,
+  .language-selection,
+  .plan-selection {
+    grid-template-columns: 1fr;
+  }
+
+  .enrollment-card {
+    padding: 25px 20px;
+  }
+
+  .schedule-calendar {
+    grid-template-columns: repeat(4, 1fr);
+  }
+
+  .schedule-times {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .language-levels {
+    gap: 12px;
+  }
+
+  .language-level-card {
+    padding: 17px;
+  }
+
+  .schedule-cal-container iframe {
+    min-height: 600px;
+  }
+
+  .personalized-plan-config {
+    padding: 22px 18px;
+  }
+
+  .personalized-billing-options {
+    grid-template-columns: 1fr;
+  }
+
+  .personalized-price-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* =========================================================
+   RESPONSIVO - CELULAR
+========================================================= */
+
+@media (max-width: 500px) {
+  .enrollment-header {
+    height: 70px;
+
+    padding: 0 18px;
+  }
+
+  .enrollment-logo img {
+    height: 48px;
+  }
+
+  .enrollment-back {
+    font-size: 12px;
+  }
+
+  .enrollment-main {
+    padding: 45px 0 70px;
+  }
+
+  .enrollment-container {
+    width: min(100% - 28px, 1080px);
+  }
+
+  .enrollment-heading h1 {
+    font-size: 34px;
+  }
+
+  .enrollment-heading p {
+    font-size: 15px;
+  }
+
+  .enrollment-card-header h2,
+  .selection-heading h2 {
+    font-size: 19px;
+  }
+
+  .schedule-calendar {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .schedule-times {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .schedule-date {
+    min-height: 65px;
+  }
+
+  .schedule-selected-summary {
+    padding: 13px;
+  }
+
+  .schedule-cal-container iframe {
+    min-height: 650px;
+  }
+
+  .schedule-confirmation {
+    padding: 14px;
+  }
+
+  .plan-installment,
+  .summary-installment {
+    font-size: 10px;
+  }
+
+  /* Plano personalizado */
+
+  .personalized-plan-config {
+    margin-top: 20px;
+
+    padding: 20px 16px;
+
+    border-radius: var(--radius-md);
+  }
+
+  .personalized-plan-config .selection-heading {
+    margin-bottom: 20px;
+  }
+
+  .personalized-plan-config .selection-heading > div {
+    gap: 10px;
+  }
+
+  .personalized-plan-config .selection-heading > div > span {
+    width: 34px;
+    height: 34px;
+
+    min-width: 34px;
+  }
+
+  .personalized-plan-config .selection-heading h2 {
+    font-size: 18px;
+  }
+
+  .personalized-frequency-heading {
+    align-items: flex-start;
+
+    flex-direction: column;
+
+    gap: 7px;
+  }
+
+  .personalized-frequency-options {
+    grid-template-columns: 1fr;
+  }
+
+  .personalized-frequency-card {
+    min-height: auto;
+
+    padding: 16px;
+  }
+
+  .personalized-billing-options {
+    grid-template-columns: 1fr;
+  }
+
+  .personalized-price-summary {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .personalized-price-summary > div {
+    min-height: 72px;
+
+    padding: 12px;
+  }
+
+  .personalized-price-summary > div + div {
+    border-left: 1px solid var(--border);
+  }
+
+  .personalized-price-summary > div:nth-child(3) {
+    border-left: none;
+
+    border-top: 1px solid var(--border);
+  }
+
+  .personalized-price-summary > div:nth-child(4) {
+    border-top: 1px solid var(--border);
+  }
+}
+
+/* =========================================================
+   RESPONSIVO - CELULAR PEQUENO
+========================================================= */
+
+@media (max-width: 420px) {
+  .personalized-price-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .personalized-price-summary > div + div {
+    border-left: none;
+
+    border-top: 1px solid var(--border);
+  }
+}

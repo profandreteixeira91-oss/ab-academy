@@ -1,0 +1,823 @@
+/* =========================================================
+   PLANOS - ADMIN
+   ========================================================= */
+
+.planos-page {
+  min-height: 100%;
+  padding: 28px;
+  background: var(--background-light, #f6f7fb);
+  color: var(--text-primary, #1f2937);
+  box-sizing: border-box;
+}
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.planos-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.planos-header h1 {
+  margin: 0 0 6px;
+  font-size: 28px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--text-primary, #1f2937);
+}
+
+.planos-header p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-secondary, #6b7280);
+}
+
+.planos-primary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 0;
+  border-radius: 9px;
+  background: var(--primary-color, #2563eb);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  white-space: nowrap;
+}
+
+.planos-primary-button:hover {
+  background: var(--primary-hover, #1d4ed8);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.18);
+}
+
+.planos-primary-button:active {
+  transform: translateY(1px);
+}
+
+.planos-primary-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* =========================================================
+   ALERTAS
+   ========================================================= */
+
+.planos-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  margin-bottom: 20px;
+  border-radius: 9px;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.planos-alert-error {
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.planos-alert-success {
+  border: 1px solid #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+/* =========================================================
+   ESTATÍSTICAS
+   ========================================================= */
+
+.planos-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.planos-stat-card {
+  min-width: 0;
+  padding: 18px 20px;
+  background: #ffffff;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.planos-stat-card span {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-secondary, #6b7280);
+}
+
+.planos-stat-card strong {
+  display: block;
+  font-size: 25px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--text-primary, #111827);
+}
+
+/* =========================================================
+   TOOLBAR
+   ========================================================= */
+
+.planos-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.planos-search {
+  position: relative;
+  flex: 1 1 280px;
+  min-width: 220px;
+}
+
+.planos-search svg {
+  position: absolute;
+  top: 50%;
+  left: 13px;
+  width: 17px;
+  height: 17px;
+  color: #9ca3af;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.planos-search input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px 0 40px;
+  border: 1px solid #dfe3ea;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.planos-search input::placeholder {
+  color: #9ca3af;
+}
+
+.planos-search input:focus {
+  border-color: var(--primary-color, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.planos-filter {
+  height: 42px;
+  min-width: 145px;
+  padding: 10px 16px 10px 12px;
+  border: 1px solid #dfe3ea;
+  border-radius: 9px;
+  background-color: #ffffff;
+  color: #374151;
+  font-size: 15px;
+  outline: none;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.planos-filter:focus {
+  border-color: var(--primary-color, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+/* =========================================================
+   TABELA
+   ========================================================= */
+
+.planos-table-card {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid var(--border-color, #e5e7eb);
+  border-radius: 12px;
+}
+
+.planos-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 240px;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.planos-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #dbeafe;
+  border-top-color: var(--primary-color, #2563eb);
+  border-radius: 50%;
+  animation: planos-spin 0.75s linear infinite;
+}
+
+@keyframes planos-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.planos-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 260px;
+  padding: 32px;
+  text-align: center;
+  box-sizing: border-box;
+}
+
+.planos-empty-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #9ca3af;
+}
+
+.planos-empty strong {
+  margin-bottom: 6px;
+  font-size: 15px;
+  color: #374151;
+}
+
+.planos-empty p {
+  margin: 0 0 18px;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+.planos-secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.planos-secondary-button:hover {
+  background: #f9fafb;
+  border-color: #9ca3af;
+}
+
+.planos-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.planos-table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+  table-layout: auto;
+}
+
+.planos-table thead {
+  background: #f8fafc;
+}
+
+.planos-table th {
+  padding: 13px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  color: #6b7280;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.planos-table td {
+  padding: 15px 16px;
+  border-bottom: 1px solid #eef0f3;
+  color: #374151;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.planos-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.planos-table tbody tr {
+  transition: background-color 0.15s ease;
+}
+
+.planos-table tbody tr:hover {
+  background: #fafbfc;
+}
+
+.planos-actions-column {
+  width: 90px;
+  text-align: right !important;
+}
+
+/* =========================================================
+   CÉLULAS
+   ========================================================= */
+
+.planos-name-cell {
+  min-width: 190px;
+}
+
+.planos-name-cell strong {
+  display: block;
+  margin-bottom: 3px;
+  color: #1f2937;
+  font-weight: 600;
+}
+
+.planos-name-cell span {
+  display: block;
+  max-width: 320px;
+  overflow: hidden;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.planos-language,
+.planos-type {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 7px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.planos-language {
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.planos-type {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+.planos-price {
+  color: #111827;
+  font-size: 14px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.planos-installments {
+  color: #4b5563;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.planos-no-value {
+  color: #9ca3af;
+}
+
+/* =========================================================
+   STATUS
+   ========================================================= */
+
+.planos-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 28px;
+  padding: 0 10px 0 10px ;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.planos-status.active {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.planos-status.inactive {
+  background: #f3f4f6;
+  color: #806b6b;
+}
+
+/* =========================================================
+   AÇÕES
+   ========================================================= */
+
+.planos-row-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+}
+
+.planos-icon-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #6b7280;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.planos-icon-button:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #2563eb;
+}
+
+.planos-icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   MODAL
+   ========================================================= */
+
+.planos-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: rgba(15, 23, 42, 0.48);
+  box-sizing: border-box;
+}
+
+.planos-modal {
+  width: 100%;
+  max-width: 680px;
+  max-height: calc(100vh - 48px);
+  overflow: hidden;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(15, 23, 42, 0.2);
+  display: flex;
+  flex-direction: column;
+}
+
+.planos-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.planos-modal-header h2 {
+  margin: 0;
+  color: #111827;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.planos-modal-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  transition:
+    background-color 0.2s ease,
+    color 0.2s ease;
+}
+
+.planos-modal-close:hover {
+  background: #f3f4f6;
+  color: #111827;
+}
+
+.planos-modal-body {
+  padding: 22px;
+  overflow-y: auto;
+}
+
+.planos-form-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.planos-field {
+  min-width: 0;
+}
+
+.planos-field-full {
+  grid-column: 1 / -1;
+}
+
+.planos-field label {
+  display: block;
+  margin-bottom: 7px;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.planos-field input,
+.planos-field select,
+.planos-field textarea {
+  width: 100%;
+  border: 1px solid #dfe3ea;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #1f2937;
+  font-family: inherit;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.planos-field input,
+.planos-field select {
+  height: 42px;
+  padding: 0 12px;
+}
+
+.planos-field textarea {
+  min-height: 88px;
+  padding: 11px 12px;
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.planos-field input::placeholder,
+.planos-field textarea::placeholder {
+  color: #9ca3af;
+}
+
+.planos-field input:focus,
+.planos-field select:focus,
+.planos-field textarea:focus {
+  border-color: var(--primary-color, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.planos-field input:disabled,
+.planos-field select:disabled,
+.planos-field textarea:disabled {
+  background: #f9fafb;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   STATUS DO FORMULÁRIO
+   ========================================================= */
+
+.planos-field-status {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 15px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  background: #f8fafc;
+}
+
+.planos-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.planos-switch input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.planos-switch-track {
+  position: relative;
+  display: block;
+  width: 42px;
+  height: 24px;
+  flex-shrink: 0;
+  border-radius: 999px;
+  background: #d1d5db;
+  transition: background-color 0.2s ease;
+}
+
+.planos-switch-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  transition: transform 0.2s ease;
+}
+
+.planos-switch input:checked + .planos-switch-track {
+  background: var(--primary-color, #2563eb);
+}
+
+.planos-switch input:checked + .planos-switch-track .planos-switch-thumb {
+  transform: translateX(18px);
+}
+
+.planos-switch input:focus-visible + .planos-switch-track {
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.planos-switch-label {
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+/* =========================================================
+   FOOTER DO MODAL
+   ========================================================= */
+
+.planos-modal-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 22px;
+  border-top: 1px solid #e5e7eb;
+  background: #ffffff;
+}
+
+.planos-modal-footer button {
+  min-width: 100px;
+}
+
+.planos-button-spinner {
+  width: 15px;
+  height: 15px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: planos-spin 0.75s linear infinite;
+}
+
+/* =========================================================
+   RESPONSIVIDADE
+   ========================================================= */
+
+@media (max-width: 900px) {
+  .planos-page {
+    padding: 22px;
+  }
+
+  .planos-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .planos-primary-button {
+    align-self: flex-start;
+  }
+
+  .planos-stats {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .planos-toolbar {
+    align-items: stretch;
+  }
+
+  .planos-search {
+    flex-basis: 100%;
+  }
+
+  .planos-filter {
+    flex: 1 1 150px;
+  }
+}
+
+@media (max-width: 640px) {
+  .planos-page {
+    padding: 16px;
+  }
+
+  .planos-header h1 {
+    font-size: 24px;
+  }
+
+  .planos-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .planos-toolbar {
+    flex-direction: column;
+  }
+
+  .planos-search,
+  .planos-filter {
+    width: 100%;
+    flex-basis: auto;
+  }
+
+  .planos-modal-overlay {
+    align-items: flex-end;
+    padding: 0;
+  }
+
+  .planos-modal {
+    max-height: 94vh;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .planos-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planos-field-full {
+    grid-column: auto;
+  }
+
+  .planos-field-status {
+    grid-column: auto;
+  }
+
+  .planos-modal-footer {
+    padding: 14px 16px;
+  }
+
+  .planos-modal-footer button {
+    flex: 1;
+  }
+}
