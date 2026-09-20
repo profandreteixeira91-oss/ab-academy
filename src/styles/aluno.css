@@ -2170,3 +2170,317 @@
     font-size: 12px;
   }
 }
+
+/* =========================================================
+   LOGIN DO ALUNO
+   ========================================================= */
+
+.student-login-page {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--background-light, #f6f7fb);
+}
+
+.student-login-card {
+  width: 100%;
+  max-width: 430px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 20px;
+  padding: 42px 36px 32px;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.08);
+  text-align: center;
+}
+
+.student-login-logo {
+  display: block;
+  width: 190px;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto 28px;
+}
+
+.student-login-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  color: #64748b;
+}
+
+.student-login-card h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 30px;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+.student-login-card > p {
+  margin: 14px auto 28px;
+  max-width: 340px;
+  color: #64748b;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.student-google-button {
+  width: 100%;
+  min-height: 52px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    transform 0.2s ease;
+}
+
+.student-google-button:hover:not(:disabled) {
+  background: #f8fafc;
+  border-color: #b8c0cc;
+  box-shadow: 0 5px 18px rgba(15, 23, 42, 0.08);
+}
+
+.student-google-button:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.student-google-button:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.student-login-error {
+  margin-bottom: 18px;
+  padding: 12px 14px;
+  border: 1px solid #fecaca;
+  border-radius: 9px;
+  background: #fef2f2;
+  color: #b91c1c;
+  font-size: 13px;
+  line-height: 1.5;
+  text-align: left;
+}
+
+.student-login-footer {
+  margin-top: 28px;
+  padding-top: 20px;
+  border-top: 1px solid #eef0f3;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* =========================================================
+   STUDENT LOGIN FIELD
+   ========================================================= */
+
+.student-login-field {
+  width: 100%;
+  margin-bottom: 18px;
+}
+
+.student-login-field label {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary, #1f2937);
+}
+
+.student-login-field input {
+  width: 100%;
+  height: 48px;
+  padding: 0 14px;
+  border: 1px solid #d9dee8;
+  border-radius: 10px;
+  background: #ffffff;
+  color: var(--text-primary, #1f2937);
+  font-family: inherit;
+  font-size: 15px;
+  outline: none;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease,
+    background-color 0.2s ease;
+  box-sizing: border-box;
+}
+
+.student-login-field input::placeholder {
+  color: #9ca3af;
+}
+
+.student-login-field input:hover {
+  border-color: #b8c0cc;
+}
+
+.student-login-field input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  background: #ffffff;
+}
+
+.student-login-field input:disabled {
+  background: #f3f4f6;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+
+.student-login-field input:invalid:not(:placeholder-shown) {
+  border-color: #dc2626;
+}
+
+.student-login-field .student-login-error {
+  margin-top: 6px;
+  font-size: 13px;
+  color: #dc2626;
+}
+
+.student-login-field .student-login-hint {
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: #6b7280;
+}
+
+.student-login-footer span:first-child {
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.student-login-footer span:last-child {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+@media (max-width: 480px) {
+  .student-login-page {
+    padding: 16px;
+  }
+
+  .student-login-card {
+    padding: 34px 22px 26px;
+    border-radius: 16px;
+  }
+
+  .student-login-card h1 {
+    font-size: 26px;
+  }
+
+  .student-login-logo {
+    width: 165px;
+  }
+}
+/* =========================================================
+   STUDENT PASSWORD RULES
+   ========================================================= */
+
+.student-password-rules {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  margin: -6px 0 18px;
+  padding: 14px 16px;
+  gap: 6px;
+
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  background: #f8fafc;
+
+  box-sizing: border-box;
+}
+
+/* Título */
+
+.student-password-rules span:first-child {
+  margin-bottom: 4px;
+
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  color: #374151;
+}
+
+/* Regras */
+
+.student-password-rules span:not(:first-child) {
+  display: flex;
+  align-items: center;
+
+  min-height: 22px;
+
+  font-size: 12px;
+  line-height: 1.4;
+  color: #6b7280;
+}
+
+/* Marcador */
+
+.student-password-rules span:not(:first-child)::before {
+  content: "NÃO";
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  width: 38px;
+  height: 20px;
+  margin-right: 8px;
+
+  border-radius: 5px;
+
+  background: #fee2e2;
+  color: #b91c1c;
+
+  font-size: 9px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* =========================================================
+   QUANDO A REGRA FOR ATENDIDA
+   ========================================================= */
+
+.student-password-rules span.valid:not(:first-child)::before {
+  content: "SIM";
+
+  background: #dcfce7;
+  color: #15803d;
+}
+
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
+
+@media (max-width: 480px) {
+  .student-password-rules {
+    padding: 12px 14px;
+  }
+
+  .student-password-rules span:not(:first-child) {
+    font-size: 11px;
+  }
+
+  .student-password-rules span:not(:first-child)::before {
+    width: 36px;
+    height: 19px;
+    margin-right: 7px;
+    font-size: 8px;
+  }
+}

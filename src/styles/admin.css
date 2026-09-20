@@ -48,9 +48,10 @@
 }
 
 .admin-sidebar-logo {
-  max-width: 150px;
-  max-height: 48px;
+  width: 100px;
+  height: 100px;
   object-fit: contain;
+  
 }
 
 /* =========================================================
@@ -970,4 +971,94 @@
   .admin-access-card {
     padding: 24px 18px;
   }
+}
+
+/* =========================================================
+   PLANOS E PREÇOS DOS CURSOS
+   ========================================================= */
+
+.course-pricing {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 24px 0 20px;
+}
+
+.course-price-option {
+  padding: 14px 16px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: 12px;
+  background: #f8f9fc;
+}
+
+.course-price-option-featured {
+  border-color: var(--primary-color, #1d4ed8);
+  background: rgba(29, 78, 216, 0.05);
+}
+
+.course-price-option-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.course-price-option-header span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-secondary, #64748b);
+}
+
+.course-price-option-header strong {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary, #111827);
+  white-space: nowrap;
+}
+
+.course-price-option-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin-top: 5px;
+}
+
+.course-price-option-info span {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+}
+
+.course-price-option-info small {
+  font-size: 11px;
+  color: var(--text-secondary, #64748b);
+}
+
+.course-pricing-loading,
+.course-pricing-empty {
+  margin: 24px 0 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f8f9fc;
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
+}
+
+.course-custom-price {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 24px 0 20px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #f8f9fc;
+}
+
+.course-custom-price span {
+  font-size: 12px;
+  color: var(--text-secondary, #64748b);
+}
+
+.course-custom-price strong {
+  font-size: 18px;
+  color: var(--text-primary, #111827);
 }

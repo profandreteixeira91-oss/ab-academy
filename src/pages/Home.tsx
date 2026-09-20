@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   BookOpen,
@@ -6,7 +7,6 @@ import {
   GraduationCap,
   Languages,
   Laptop,
-  Link,
   Users,
 } from 'lucide-react'
 
@@ -14,8 +14,168 @@ import '../styles/home.css'
 import logo from '../assets/logo_abacademy.png'
 import usaFlag from '../assets/flag-usa.svg'
 import germanyFlag from '../assets/flag-germany.svg'
+import { supabase } from '../lib/supabase'
+
+type Plano = {
+  id: string
+  idioma: 'ingles' | 'alemao'
+  tipo: 'mensal' | 'anual'
+  nome: string
+  descricao: string | null
+  preco: number
+  parcelas: number | null
+  valor_parcela: number | null
+  ativo: boolean
+}
 
 function Home() {
+  const [planos, setPlanos] = useState<Plano[]>([])
+  const [loadingPlanos, setLoadingPlanos] = useState(true)
+
+  useEffect(() => {
+    async function loadPlanos() {
+      try {
+        const { data, error } = await supabase
+          .from('planos')
+          .select(`
+            id,
+            idioma,
+            tipo,
+            nome,
+            descricao,
+            preco,
+            parcelas,
+            valor_parcela,
+            ativo
+          `)
+          .eq('ativo', true)
+          .order('idioma')
+          .order('tipo')
+
+        if (error) {
+          console.error('Erro ao carregar planos:', error)
+          return
+        }
+
+        setPlanos(data ?? [])
+      } catch (error) {
+        console.error('Erro inesperado ao carregar planos:', error)
+      } finally {
+        setLoadingPlanos(false)
+      }
+    }
+
+    void loadPlanos()
+  }, [])
+
+  const planosIngles = planos.filter(
+    (plano) => plano.idioma === 'ingles',
+  )
+
+  const planosAlemao = planos.filter(
+    (plano) => plano.idioma === 'alemao',
+  )
+
+  function formatCurrency(value: number | null) {
+    if (value === null || Number.isNaN(Number(value))) {
+      return 'Consulte'
+    }
+
+    return Number(value).toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    })
+  }
+
+  function getPlanoValor(plano: Plano) {
+    if (
+      plano.tipo === 'anual' &&
+      plano.valor_parcela !== null &&
+      plano.valor_parcela !== undefined
+    ) {
+      return formatCurrency(plano.valor_parcela)
+    }
+
+    if (
+      plano.tipo === 'mensal' &&
+      plano.valor_parcela !== null &&
+      plano.valor_parcela !== undefined
+    ) {
+      return formatCurrency(plano.valor_parcela)
+    }
+
+    return formatCurrency(plano.preco)
+  }
+
+  function renderPlanos(idiomaPlanos: Plano[]) {
+    if (loadingPlanos) {
+      return (
+        <div className="course-pricing-loading">
+          Carregando planos...
+        </div>
+      )
+    }
+
+    if (idiomaPlanos.length === 0) {
+      return (
+        <div className="course-pricing-empty">
+          Planos disponíveis em breve.
+        </div>
+      )
+    }
+
+    const planosMensais = idiomaPlanos.filter(
+      (plano) => plano.tipo === 'mensal',
+    )
+
+    const planosAnuais = idiomaPlanos.filter(
+      (plano) => plano.tipo === 'anual',
+    )
+
+    return (
+      <div className="course-pricing">
+        {planosMensais.map((plano) => (
+          <div className="course-price-option" key={plano.id}>
+            <div className="course-price-option-header">
+              <span>Plano Mensal</span>
+              <strong>{getPlanoValor(plano)}</strong>
+            </div>
+
+            <div className="course-price-option-info">
+              <span>
+                {plano.descricao || 'Pagamento mensal'}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {planosAnuais.map((plano) => (
+          <div
+            className="course-price-option course-price-option-featured"
+            key={plano.id}
+          >
+            <div className="course-price-option-header">
+              <span>Plano Anual</span>
+              <strong>{getPlanoValor(plano)}</strong>
+            </div>
+
+            <div className="course-price-option-info">
+              <span>
+                {plano.parcelas && plano.parcelas > 1
+                  ? `em ${plano.parcelas} parcelas`
+                  : 'Pagamento anual'}
+              </span>
+
+              {plano.descricao && (
+                <small>{plano.descricao}</small>
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
+
   return (
     <div className="home">
       {/* HEADER */}
@@ -33,14 +193,21 @@ function Home() {
             <a href="#contato">Contato</a>
           </nav>
 
-        <div className="header-actions">
-        <a href="/matricula" className="btn btn-primary header-button">
-            Matricule-se
+          <div className="header-actions">
+            <a
+              href="/matricula"
+              className="btn btn-primary header-button"
+            >
+              Matricule-se
             </a>
-          <a href="/aluno" className="btn btn-primary header-button">
-            Área do aluno
-          </a>
-        </div>
+
+            <a
+              href="/aluno"
+              className="btn btn-primary header-button"
+            >
+              Área do aluno
+            </a>
+          </div>
         </div>
       </header>
 
@@ -103,16 +270,16 @@ function Home() {
                 </div>
 
                 <div className="hero-card-heading">
-                  <span>ESCOLHA SEU IDIOMA</span>
+                  <span><br/ >ESCOLHA SEU IDIOMA</span>
 
                   <h2>
-                    Aprenda.
+                    <br />Aprenda.
                     <br />
                     Evolua.
                   </h2>
 
                   <p>
-                    Desenvolva novas habilidades e prepare-se
+                    <br />Desenvolva novas habilidades e prepare-se
                     para novas oportunidades.
                   </p>
                 </div>
@@ -147,17 +314,17 @@ function Home() {
 
                 <div className="hero-card-footer">
                   <div>
-                    <strong>100%</strong>
+                    <br /><strong>100%  </strong>
                     <span>Online</span>
                   </div>
 
                   <div>
-                    <strong>2 </strong>
+                    <strong>2  </strong>
                     <span>Idiomas</span>
                   </div>
 
                   <div>
-                    <strong>Aprenda do seu jeito </strong>
+                    <strong>Aprenda do seu jeito</strong>
                   </div>
                 </div>
               </div>
@@ -165,312 +332,354 @@ function Home() {
           </div>
         </section>
 
-       {/* SOBRE */}
-<section className="section about-section" id="sobre">
-  <div className="container">
-    <div className="about-grid">
-      <div className="about-content">
-        <div className="section-label">
-          Sobre a AB Academy
-        </div>
+        {/* SOBRE */}
+        <section className="section about-section" id="sobre">
+          <div className="container">
+            <div className="about-grid">
+              <div className="about-content">
+                <div className="section-label">
+                  Sobre a AB Academy
+                </div>
 
-        <h2 className="section-title">
-          Aprender um idioma é abrir novas possibilidades.
-        </h2>
+                <h2 className="section-title">
+                  Aprender um idioma é abrir novas possibilidades.
+                </h2>
 
-        <p className="section-description">
-          A AB Academy nasceu com o propósito de tornar o
-          aprendizado de idiomas mais acessível, prático e
-          conectado aos objetivos de cada aluno.
-        </p>
+                <p className="section-description">
+                  A AB Academy nasceu com o propósito de tornar o
+                  aprendizado de idiomas mais acessível, prático e
+                  conectado aos objetivos de cada aluno.
+                </p>
 
-        <p className="about-text">
-          Oferecemos cursos de inglês e alemão para diferentes
-          níveis e objetivos, combinando uma metodologia
-          estruturada com prática de comunicação e
-          acompanhamento da evolução.
-        </p>
+                <p className="about-text">
+                  Oferecemos cursos de inglês e alemão para diferentes
+                  níveis e objetivos, combinando uma metodologia
+                  estruturada com prática de comunicação e
+                  acompanhamento da evolução.
+                </p>
 
-        <a href="#cursos" className="btn btn-primary">
-          Conheça nossos cursos
-          <ArrowRight size={18} />
-        </a>
-      </div>
+                <a href="#cursos" className="btn btn-primary">
+                  Conheça nossos cursos
+                  <ArrowRight size={18} />
+                </a>
+              </div>
 
-      <div className="about-highlight">
-        <div className="about-highlight-logo">
-        </div>
+              <div className="about-highlight">
+                <div className="about-highlight-logo" />
 
-        <div className="about-highlight-content">
-          <span>NOSSA MISSÃO</span>
+                <div className="about-highlight-content">
+                  <span>NOSSA MISSÃO</span>
 
-          <strong>
-            Conhecimento que
-            <br />
-            conecta pessoas.
-          </strong>
+                  <strong>
+                    Conhecimento que
+                    <br />
+                    conecta pessoas.
+                  </strong>
 
-          <p>
-            Inglês e alemão para estudos, carreira,
-            viagens e novas oportunidades.
-          </p>
-        </div>
+                  <p>
+                    Inglês e alemão para estudos, carreira,
+                    viagens e novas oportunidades.
+                  </p>
+                </div>
 
-        <div className="about-stats">
-          <div>
-            <strong>02</strong>
-            <span>Idiomas</span>
-          </div>
+                <div className="about-stats">
+                  <div>
+                    <strong>02</strong>
+                    <span>Idiomas</span>
+                  </div>
 
-          <div>
-            <strong>01</strong>
-            <span>Plataforma</span>
-          </div>
+                  <div>
+                    <strong>01</strong>
+                    <span>Plataforma</span>
+                  </div>
 
-          <div>
-            <strong>∞</strong>
-            <span>Possibilidades</span>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <div className="features-grid about-features">
-      <article className="feature-card">
-        <div className="feature-icon">
-          <Languages size={26} />
-        </div>
-
-        <h3>Inglês e Alemão</h3>
-
-        <p>
-          Desenvolva suas habilidades em dois dos principais
-          idiomas para comunicação, estudos e carreira.
-        </p>
-      </article>
-
-      <article className="feature-card">
-        <div className="feature-icon">
-          <Users size={26} />
-        </div>
-
-        <h3>Acompanhamento</h3>
-
-        <p>
-          Tenha orientação durante sua jornada e acompanhe
-          seu desenvolvimento ao longo do curso.
-        </p>
-      </article>
-
-      <article className="feature-card">
-        <div className="feature-icon">
-          <Laptop size={26} />
-        </div>
-
-        <h3>Experiência digital</h3>
-
-        <p>
-          Acesse conteúdos, atividades e informações da sua
-          jornada através da plataforma da AB Academy.
-        </p>
-      </article>
-    </div>
-  </div>
-</section>
-
-        {/* CURSOS */}
-<section className="section courses-section" id="cursos">
-  <div className="container">
-    <div className="section-header">
-      <div className="section-label">
-        Nossos cursos
-      </div>
-
-      <h2 className="section-title">
-        Aprenda no seu ritmo. Evolua com propósito.
-      </h2>
-
-      <p className="section-description">
-        Escolha o curso que mais combina com seus objetivos
-        e comece a construir novas possibilidades através
-        de um novo idioma.
-      </p>
-    </div>
-
-    <div className="courses-grid">
-      {/* INGLÊS */}
-      <article className="course-card">
-        <div className="course-card-top">
-          <span className="course-number">01</span>
-
-          <div className="course-icon course-flag">
-            <img src={usaFlag} alt="Bandeira dos Estados Unidos" />
+                  <div>
+                    <strong>∞</strong>
+                    <span>Possibilidades</span>
+                  </div>
+                </div>
+              </div>
             </div>
 
-          <span className="course-tag">
-            Inglês
-          </span>
-        </div>
+            <div className="features-grid about-features">
+              <article className="feature-card">
+                <div className="feature-icon">
+                  <Languages size={26} />
+                </div>
 
-        <h3>Curso de Inglês</h3>
+                <h3>Inglês e Alemão</h3>
 
-        <p>
-          Desenvolva sua comunicação em inglês para situações
-          do dia a dia, estudos, viagens e oportunidades
-          profissionais.
-        </p>
+                <p>
+                  Desenvolva suas habilidades em dois dos principais
+                  idiomas para comunicação, estudos e carreira.
+                </p>
+              </article>
 
-        <div className="course-target">
-          <span>Ideal para</span>
-          <strong>
-            Quem quer se comunicar com mais confiança.
-          </strong>
-        </div>
+              <article className="feature-card">
+                <div className="feature-icon">
+                  <Users size={26} />
+                </div>
 
-        <ul>
-          <li>
-            <CheckCircle2 size={17} />
-            Inglês geral
-          </li>
+                <h3>Acompanhamento</h3>
 
-          <li>
-            <CheckCircle2 size={17} />
-            Comunicação
-          </li>
+                <p>
+                  Tenha orientação durante sua jornada e acompanhe
+                  seu desenvolvimento ao longo do curso.
+                </p>
+              </article>
 
-          <li>
-            <CheckCircle2 size={17} />
-            Inglês para carreira
-          </li>
+              <article className="feature-card">
+                <div className="feature-icon">
+                  <Laptop size={26} />
+                </div>
 
-          <li>
-            <CheckCircle2 size={17} />
-            Desenvolvimento contínuo
-          </li>
-        </ul>
+                <h3>Experiência digital</h3>
 
-        <a href="#contato">
-          Quero saber mais
-          <ArrowRight size={17} />
-        </a>
-      </article>
-
-      {/* ALEMÃO */}
-      <article className="course-card course-card-featured">
-        <div className="course-card-top">
-          <span className="course-number">02</span>
-
-        <div className="course-icon course-flag">
-        <img src={germanyFlag} alt="Bandeira da Alemanha" />
-        </div>
-
-          <span className="course-tag">
-            Alemão
-          </span>
-        </div>
-
-        <h3>Curso de Alemão</h3>
-
-        <p>
-          Aprenda alemão de forma estruturada e desenvolva
-          habilidades para estudos, carreira, viagens e
-          comunicação.
-        </p>
-
-        <div className="course-target">
-          <span>Ideal para</span>
-          <strong>
-            Quem busca novas oportunidades com o alemão.
-          </strong>
-        </div>
-
-        <ul>
-          <li>
-            <CheckCircle2 size={17} />
-            Alemão geral
-          </li>
-
-          <li>
-            <CheckCircle2 size={17} />
-            Comunicação
-          </li>
-
-          <li>
-            <CheckCircle2 size={17} />
-            Alemão para carreira
-          </li>
-
-          <li>
-            <CheckCircle2 size={17} />
-            Desenvolvimento contínuo
-          </li>
-        </ul>
-
-        <a href="#contato">
-          Quero saber mais
-          <ArrowRight size={17} />
-        </a>
-      </article>
-
-      {/* PERSONALIZADO */}
-      <article className="course-card">
-        <div className="course-card-top">
-          <span className="course-number">03</span>
-
-          <div className="course-icon">
-            <Globe2 size={30} />
+                <p>
+                  Acesse conteúdos, atividades e informações da sua
+                  jornada através da plataforma da AB Academy.
+                </p>
+              </article>
+            </div>
           </div>
+        </section>
 
-          <span className="course-tag">
-            Personalizado
-          </span>
-        </div>
+        {/* CURSOS */}
+        <section className="section courses-section" id="cursos">
+          <div className="container">
+            <div className="section-header">
+              <div className="section-label">
+                Nossos cursos
+              </div>
 
-        <h3>Curso Personalizado</h3>
+              <h2 className="section-title">
+                Aprenda no seu ritmo. Evolua com propósito.
+              </h2>
 
-        <p>
-          Um percurso de aprendizagem planejado de acordo
-          com seus objetivos, necessidades, disponibilidade
-          e nível atual.
-        </p>
+              <p className="section-description">
+                Escolha o curso que mais combina com seus objetivos
+                e comece a construir novas possibilidades através
+                de um novo idioma.
+              </p>
+            </div>
 
-        <div className="course-target">
-          <span>Ideal para</span>
-          <strong>
-            Quem precisa de uma jornada de aprendizagem específica.
-          </strong>
-        </div>
+            <div className="courses-grid">
+              {/* INGLÊS */}
+              <article className="course-card">
+                <div className="course-card-top">
+                  <span className="course-number">01</span>
 
-        <ul>
-          <li>
-            <CheckCircle2 size={17} />
-            Objetivos específicos
-          </li>
+                  <div className="course-icon course-flag">
+                    <img
+                      src={usaFlag}
+                      alt="Bandeira dos Estados Unidos"
+                    />
+                  </div>
 
-          <li>
-            <CheckCircle2 size={17} />
-            Conteúdo personalizado
-          </li>
+                  <span className="course-tag">
+                    Inglês
+                  </span>
+                </div>
 
-          <li>
-            <CheckCircle2 size={17} />
-            Acompanhamento individual
-          </li>
+                <h3>Curso de Inglês</h3>
 
-          <li>
-            <CheckCircle2 size={17} />
-            Flexibilidade
-          </li>
-        </ul>
+                <p>
+                  Desenvolva sua comunicação em inglês para situações
+                  do dia a dia, estudos, viagens e oportunidades
+                  profissionais.
+                </p>
 
-        <a href="#contato">
-          Saiba mais
-          <ArrowRight size={17} />
-        </a>
-      </article>
-    </div>
-  </div>
-</section>
+                <div className="course-target">
+                  <span>Ideal para</span>
+                  <strong>
+                    Quem quer se comunicar com mais confiança.
+                  </strong>
+                </div>
+
+                <ul>
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Aula particular
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Uma aula por semana
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Conteúdos personalizados
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Comunicação
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Inglês para carreira
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Desenvolvimento contínuo
+                  </li>
+                </ul>
+
+                {renderPlanos(planosIngles)}
+
+                <a href="/matricula">
+                  Quero me matricular
+                  <ArrowRight size={17} />
+                </a>
+              </article>
+
+              {/* ALEMÃO */}
+              <article className="course-card course-card-featured">
+                <div className="course-card-top">
+                  <span className="course-number">02</span>
+
+                  <div className="course-icon course-flag">
+                    <img
+                      src={germanyFlag}
+                      alt="Bandeira da Alemanha"
+                    />
+                  </div>
+
+                  <span className="course-tag">
+                    Alemão
+                  </span>
+                </div>
+
+                <h3>Curso de Alemão</h3>
+
+                <p>
+                  Aprenda alemão de forma estruturada e desenvolva
+                  habilidades para estudos, carreira, viagens e
+                  comunicação.
+                </p>
+
+                <div className="course-target">
+                  <span>Ideal para</span>
+                  <strong>
+                    Quem busca novas oportunidades com o alemão.
+                  </strong>
+                </div>
+
+                <ul>
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Aula particular
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Uma aula por semana
+                  </li>   
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Alemão geral
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Comunicação
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Alemão para carreira
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Desenvolvimento contínuo
+                  </li>
+                </ul>
+
+                {renderPlanos(planosAlemao)}
+
+                <a href="/matricula">
+                  Quero me matricular
+                  <ArrowRight size={17} />
+                </a>
+              </article>
+
+              {/* PERSONALIZADO */}
+              <article className="course-card">
+                <div className="course-card-top">
+                  <span className="course-number">03</span>
+
+                  <div className="course-icon">
+                    <Globe2 size={30} />
+                  </div>
+
+                  <span className="course-tag">
+                    Personalizado
+                  </span>
+                </div>
+
+                <h3>Curso Personalizado</h3>
+
+                <p>
+                  Um percurso de aprendizagem planejado de acordo
+                  com seus objetivos, necessidades, disponibilidade
+                  e nível atual.
+                </p>
+
+                <div className="course-target">
+                  <span>Ideal para</span>
+                  <strong>
+                    Quem precisa de uma jornada de aprendizagem específica.
+                  </strong>
+                </div>
+
+                <ul>
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Aula particular
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Escolha a quantidade de aulas por semana
+                  </li>
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Objetivos específicos
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Conteúdo personalizado e direcionado
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Acompanhamento individual
+                  </li>
+
+                  <li>
+                    <CheckCircle2 size={17} />
+                    Flexibilidade
+                  </li>
+                </ul>
+
+                <div className="course-custom-price">
+                  <span>Valor personalizado</span>
+                  <strong>Entre em contato</strong>
+                </div>
+
+                <a href="/matricula">
+                  Saiba mais
+                  <ArrowRight size={17} />
+                </a>
+              </article>
+            </div>
+          </div>
+        </section>
 
         {/* METODOLOGIA */}
         <section
@@ -660,7 +869,7 @@ function Home() {
                   </div>
                 </div>
 
-                <a href="#" className="btn btn-primary">
+                <a href="/aluno" className="btn btn-primary">
                   Acessar área do aluno
                   <ArrowRight size={18} />
                 </a>
@@ -738,6 +947,7 @@ function Home() {
             </div>
           </div>
         </section>
+
         {/* CONTATO / CTA */}
         <section className="cta-section" id="contato">
           <div className="container">
@@ -765,7 +975,7 @@ function Home() {
                   <ArrowRight size={18} />
                 </a>
 
-                <a href="#" className="cta-contact-link">
+                <a href="#contato" className="cta-contact-link">
                   Falar com a AB Academy
                   <ArrowRight size={17} />
                 </a>
@@ -773,7 +983,7 @@ function Home() {
             </div>
           </div>
         </section>
-        </main>
+      </main>
 
       {/* FOOTER */}
       <footer className="footer">
@@ -794,20 +1004,26 @@ function Home() {
             <a href="#sobre">Sobre</a>
             <a href="#cursos">Cursos</a>
             <a href="#metodologia">Metodologia</a>
-            <a href="#contato">Contato</a><p></p><p></p>
-            <a href="/politica-privacidade">Política de Privacidade</a>
-            <a href="/termos-de-servico">Termos de Serviço</a>
+            <a href="#contato">Contato</a>
+            <p />
+            <p />
+          
           </div>
         </div>
 
-        <div className="container footer-bottom">
-          <span>
-            © {new Date().getFullYear()} AB Academy. Todos os
-            direitos reservados.<p></p>
-          </span>
-          <span>Desenvolvido por AMT Sistemas & Soluções - <a href="https://www.amtsistemas.com.br">www.amtsistemas.com.br</a>
-          </span>
-        </div>
+        <div className="footer-bottom-inner">
+  <span>
+    Desenvolvido por AMT Sistemas & Soluções -{' '}
+    <a href="https://www.amtsistemas.com.br">
+      www.amtsistemas.com.br
+    </a>
+  </span>
+
+  <div className="footer-legal-links">
+    <a href="/politica-privacidade">Política de Privacidade</a>
+    <a href="/termos-de-servico">Termos de Serviço</a>
+  </div>
+</div>
       </footer>
     </div>
   )

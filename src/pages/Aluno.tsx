@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
-  ArrowLeft,
   BookOpen,
   CalendarDays,
   Check,
@@ -32,7 +31,15 @@ type StudentSection =
   | 'progresso'
   | 'perfil'
 
-type LessonStatus = 'agendada' | 'realizada' | 'cancelada'
+type AuthStep =
+  | 'email'
+  | 'password'
+  | 'create-password'
+
+type LessonStatus =
+  | 'agendada'
+  | 'realizada'
+  | 'cancelada'
 
 type Lesson = {
   id: string
@@ -42,6 +49,7 @@ type Lesson = {
   teacher: string
   status: LessonStatus
   meetUrl?: string
+  startAt: string
 }
 
 type Material = {
@@ -195,7 +203,8 @@ function getYoutubeEmbedUrl(value: string) {
     const url = new URL(value)
 
     if (url.hostname.includes('youtube.com')) {
-      const videoId = url.searchParams.get('v')
+      const videoId =
+        url.searchParams.get('v')
 
       if (videoId) {
         return `https://www.youtube.com/embed/${videoId}`
@@ -269,28 +278,104 @@ function getStatusClass(
   return `student-activity-status ${status}`
 }
 
+function validatePassword(password: string) {
+  if (password.length < 8) {
+    return 'A senha deve possuir pelo menos 8 caracteres.'
+  }
+
+  if (!/[A-Z]/.test(password)) {
+    return 'A senha deve possuir pelo menos uma letra maiúscula.'
+  }
+
+  if (!/[a-z]/.test(password)) {
+    return 'A senha deve possuir pelo menos uma letra minúscula.'
+  }
+
+  if (!/[0-9]/.test(password)) {
+    return 'A senha deve possuir pelo menos um número.'
+  }
+
+  if (!/[^A-Za-z0-9]/.test(password)) {
+    return 'A senha deve possuir pelo menos um caractere especial.'
+  }
+
+  return ''
+}
+
 function Aluno() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loading, setLoading] = useState(true)
+  const [user, setUser] =
+    useState<User | null>(null)
+
+  const [loading, setLoading] =
+    useState(true)
+
+  /*
+   * =========================================================
+   * AUTENTICAÇÃO DO ALUNO
+   * =========================================================
+   *
+   * Fluxo:
+   *
+   * 1. E-mail
+   * 2. student-auth verifica o cadastro
+   * 3. Primeiro acesso:
+   *      cria senha
+   * 4. Acessos seguintes:
+   *      informa senha
+   * 5. Supabase Auth cria a sessão
+   * 6. Portal é liberado
+   */
+
+  const [authStep, setAuthStep] =
+    useState<AuthStep>('email')
+
+  const [authEmail, setAuthEmail] =
+    useState('')
+
+  const [authPassword, setAuthPassword] =
+    useState('')
+
+  const [
+    authPasswordConfirmation,
+    setAuthPasswordConfirmation,
+  ] = useState('')
+
+  const [
+    authStudentName,
+    setAuthStudentName,
+  ] = useState('')
+
+  const [authLoading, setAuthLoading] =
+    useState(false)
+
+  const [authError, setAuthError] =
+    useState('')
+
+  const [authInfo, setAuthInfo] =
+    useState('')
 
   const [section, setSection] =
     useState<StudentSection>('inicio')
 
-  const [mobileMenuOpen, setMobileMenuOpen] =
-    useState(false)
+  const [
+    mobileMenuOpen,
+    setMobileMenuOpen,
+  ] = useState(false)
 
-  const [lessons] = useState<Lesson[]>([
-    {
-      id: '1',
-      language: 'Alemão',
-      date: '22/09/2026',
-      time: '19:00',
-      teacher: 'Professor',
-      status: 'agendada',
-    },
-  ])
+  const [lessons, setLessons] =
+    useState<Lesson[]>([])
 
-  const [materials] = useState<Material[]>([
+  const [
+    lessonsLoading,
+    setLessonsLoading,
+  ] = useState(false)
+
+  const [currentTime, setCurrentTime] =
+    useState(() => Date.now())
+
+  const [materials] = useState<
+    Material[]
+  >([
     {
       id: '1',
       title: 'Material da aula',
@@ -302,19 +387,25 @@ function Aluno() {
   const [activities, setActivities] =
     useState<Activity[]>([])
 
-  const [activitiesLoading, setActivitiesLoading] =
-    useState(false)
+  const [
+    activitiesLoading,
+    setActivitiesLoading,
+  ] = useState(false)
 
-  const [activitiesError, setActivitiesError] =
-    useState('')
+  const [
+    activitiesError,
+    setActivitiesError,
+  ] = useState('')
 
   const [
     selectedActivity,
     setSelectedActivity,
   ] = useState<Activity | null>(null)
 
-  const [selectedExercises, setSelectedExercises] =
-    useState<Exercise[]>([])
+  const [
+    selectedExercises,
+    setSelectedExercises,
+  ] = useState<Exercise[]>([])
 
   const [
     activityLoading,
@@ -326,68 +417,518 @@ function Aluno() {
     setActivityError,
   ] = useState('')
 
-  const [
-    answers,
-    setAnswers,
-  ] = useState<StudentAnswer[]>([])
+  const [answers, setAnswers] =
+    useState<StudentAnswer[]>([])
 
   const [
     submittingActivity,
     setSubmittingActivity,
   ] = useState(false)
 
-  useEffect(() => {
-    let mounted = true
+  const passwordRules = {
+  minLength: authPassword.length >= 8,
+  uppercase: /[A-Z]/.test(authPassword),
+  lowercase: /[a-z]/.test(authPassword),
+  number: /[0-9]/.test(authPassword),
+  special: /[^A-Za-z0-9]/.test(authPassword),
+}
 
-    const loadUser = async () => {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+  /*
+   * =========================================================
+   * VERIFICAR E-MAIL
+   * =========================================================
+   */
 
-      if (!mounted) {
-        return
-      }
+  async function handleCheckEmail() {
+    const email =
+      authEmail.trim().toLowerCase()
 
-      if (!user) {
-        window.location.href = '/matricula'
-        return
-      }
-
-      setUser(user)
-      setLoading(false)
-
-      await loadStudentActivities(user.id)
+    if (!email) {
+      setAuthError(
+        'Informe seu e-mail.',
+      )
+      return
     }
 
-    loadUser()
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        email,
+      )
+    ) {
+      setAuthError(
+        'Informe um e-mail válido.',
+      )
+      return
+    }
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!mounted) {
-          return
-        }
+    try {
+      setAuthLoading(true)
+      setAuthError('')
+      setAuthInfo('')
 
-        if (!session?.user) {
-          window.location.href = '/matricula'
-          return
-        }
-
-        setUser(session.user)
-        setLoading(false)
-
-        loadStudentActivities(
-          session.user.id,
+      const { data, error } =
+        await supabase.functions.invoke(
+          'student-auth',
+          {
+            body: {
+              action: 'check-email',
+              email,
+            },
+          },
         )
-      },
-    )
+
+      if (error) {
+        throw error
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error ||
+            data?.message ||
+            'Não foi possível verificar seu cadastro.',
+        )
+      }
+
+      if (!data.exists) {
+        setAuthError(
+          'Este e-mail não está cadastrado como aluno.',
+        )
+        return
+      }
+
+      setAuthEmail(email)
+
+      setAuthStudentName(
+        data.nome_completo ||
+          '',
+      )
+
+      if (data.first_access) {
+        setAuthPassword('')
+        setAuthPasswordConfirmation('')
+        setAuthStep(
+          'create-password',
+        )
+
+        setAuthInfo(
+          'Este é seu primeiro acesso. Crie uma senha para entrar no portal.',
+        )
+      } else {
+        setAuthPassword('')
+        setAuthStep('password')
+
+        setAuthInfo(
+          'Digite sua senha para acessar o portal.',
+        )
+      }
+    } catch (error) {
+      console.error(
+        'Erro ao verificar e-mail do aluno:',
+        error,
+      )
+
+      setAuthError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível verificar seu e-mail.',
+      )
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  /*
+   * =========================================================
+   * CRIAR SENHA
+   * =========================================================
+   */
+
+  async function handleCreatePassword() {
+    const password = authPassword
+    const confirmation =
+      authPasswordConfirmation
+
+    if (!password) {
+      setAuthError(
+        'Digite uma senha.',
+      )
+      return
+    }
+
+    const passwordError =
+      validatePassword(password)
+
+    if (passwordError) {
+      setAuthError(passwordError)
+      return
+    }
+
+    if (password !== confirmation) {
+      setAuthError(
+        'As senhas não coincidem.',
+      )
+      return
+    }
+
+    try {
+      setAuthLoading(true)
+      setAuthError('')
+      setAuthInfo('')
+
+      const { data, error } =
+        await supabase.functions.invoke(
+          'student-auth',
+          {
+            body: {
+              action: 'create-password',
+              email:
+                authEmail
+                  .trim()
+                  .toLowerCase(),
+              password,
+            },
+          },
+        )
+
+      if (error) {
+        throw error
+      }
+
+      if (!data?.success) {
+        throw new Error(
+          data?.error ||
+            data?.message ||
+            'Não foi possível criar sua senha.',
+        )
+      }
+
+      /*
+       * O Edge Function já criou:
+       *
+       * auth.users
+       * +
+       * alunos.user_id
+       *
+       * Agora fazemos o login normal para receber
+       * a sessão oficial do Supabase.
+       */
+
+      const {
+        error: loginError,
+      } =
+        await supabase.auth.signInWithPassword(
+          {
+            email:
+              authEmail
+                .trim()
+                .toLowerCase(),
+            password,
+          },
+        )
+
+      if (loginError) {
+        throw loginError
+      }
+
+      setAuthPassword('')
+      setAuthPasswordConfirmation('')
+      setAuthInfo('')
+      setAuthError('')
+    } catch (error) {
+      console.error(
+        'Erro ao criar senha do aluno:',
+        error,
+      )
+
+      setAuthError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível criar sua senha.',
+      )
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  /*
+   * =========================================================
+   * LOGIN DO ALUNO
+   * =========================================================
+   */
+
+  async function handleStudentLogin() {
+    const email =
+      authEmail.trim().toLowerCase()
+
+    if (!email) {
+      setAuthError(
+        'Informe seu e-mail.',
+      )
+      return
+    }
+
+    if (!authPassword) {
+      setAuthError(
+        'Informe sua senha.',
+      )
+      return
+    }
+
+    try {
+      setAuthLoading(true)
+      setAuthError('')
+      setAuthInfo('')
+
+      const { error } =
+        await supabase.auth.signInWithPassword(
+          {
+            email,
+            password: authPassword,
+          },
+        )
+
+      if (error) {
+        throw error
+      }
+
+      setAuthPassword('')
+    } catch (error) {
+      console.error(
+        'Erro no login do aluno:',
+        error,
+      )
+
+      setAuthError(
+        'E-mail ou senha inválidos.',
+      )
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  function resetAuthToEmail() {
+    setAuthStep('email')
+    setAuthPassword('')
+    setAuthPasswordConfirmation('')
+    setAuthError('')
+    setAuthInfo('')
+    setAuthStudentName('')
+  }
+
+  useEffect(() => {
+    const interval =
+      window.setInterval(() => {
+        setCurrentTime(
+          Date.now(),
+        )
+      }, 30_000)
 
     return () => {
-      mounted = false
-      subscription.unsubscribe()
+      window.clearInterval(
+        interval,
+      )
     }
   }, [])
+
+  function getNextLessonDate(
+    dayOfWeek: number,
+    time: string,
+  ) {
+    const now = new Date()
+
+    const [hours, minutes] =
+      time
+        .slice(0, 5)
+        .split(':')
+        .map(Number)
+
+    const currentDay =
+      now.getDay()
+
+    let daysUntil =
+      dayOfWeek - currentDay
+
+    if (daysUntil < 0) {
+      daysUntil += 7
+    }
+
+    if (
+      daysUntil === 0 &&
+      (now.getHours() > hours ||
+        (now.getHours() ===
+          hours &&
+          now.getMinutes() >=
+            minutes))
+    ) {
+      daysUntil = 7
+    }
+
+    const lessonDate =
+      new Date(now)
+
+    lessonDate.setDate(
+      now.getDate() + daysUntil,
+    )
+
+    lessonDate.setHours(
+      hours,
+      minutes,
+      0,
+      0,
+    )
+
+    return lessonDate
+  }
+
+  function canEnterLesson(
+    startAt: string,
+  ) {
+    const start =
+      new Date(startAt)
+
+    if (
+      Number.isNaN(
+        start.getTime(),
+      )
+    ) {
+      return false
+    }
+
+    const fiveMinutesBefore =
+      start.getTime() -
+      5 * 60 * 1000
+
+    return (
+      currentTime >=
+      fiveMinutesBefore
+    )
+  }
+
+  function getLessonAccessMessage(
+    startAt: string,
+  ) {
+    const start =
+      new Date(startAt)
+
+    if (
+      Number.isNaN(
+        start.getTime(),
+      )
+    ) {
+      return 'Acesso indisponível'
+    }
+
+    const fiveMinutesBefore =
+      start.getTime() -
+      5 * 60 * 1000
+
+    if (
+      currentTime >=
+      fiveMinutesBefore
+    ) {
+      return 'Entrar na aula'
+    }
+
+    const difference =
+      fiveMinutesBefore -
+      currentTime
+
+    const totalMinutes =
+      Math.ceil(
+        difference / 60000,
+      )
+
+    if (totalMinutes >= 60) {
+      const hours =
+        Math.floor(
+          totalMinutes / 60,
+        )
+
+      const minutes =
+        totalMinutes % 60
+
+      return minutes > 0
+        ? `Disponível em ${hours}h ${minutes}min`
+        : `Disponível em ${hours}h`
+    }
+
+    return `Disponível em ${totalMinutes} min`
+  }
+
+  function openLesson(
+    lesson: Lesson,
+  ) {
+    if (!lesson.meetUrl) {
+      window.alert(
+        'A sala do Google Meet ainda não foi criada para esta aula.',
+      )
+      return
+    }
+
+    if (
+      !canEnterLesson(
+        lesson.startAt,
+      )
+    ) {
+      window.alert(
+        'A sala estará disponível 5 minutos antes do início da aula.',
+      )
+      return
+    }
+
+    window.open(
+      lesson.meetUrl,
+      '_blank',
+      'noopener,noreferrer',
+    )
+  }
+
+  /*
+   * =========================================================
+   * VALIDAR ACESSO DO ALUNO
+   * =========================================================
+   *
+   * O vínculo principal agora é:
+   *
+   * alunos.user_id = auth.users.id
+   *
+   * A matrícula/pagamento já precisa ter sido confirmada
+   * para que o registro em alunos exista.
+   */
+
+  async function validateStudentAccess(
+    userId: string,
+  ) {
+    const {
+      data: aluno,
+      error: alunoError,
+    } = await supabase
+      .from('alunos')
+      .select('id')
+      .eq(
+        'user_id',
+        userId,
+      )
+      .maybeSingle()
+
+    if (alunoError) {
+      throw alunoError
+    }
+
+    if (!aluno) {
+      return false
+    }
+
+    /*
+     * O aluno já foi criado somente depois da confirmação
+     * do pagamento.
+     *
+     * Portanto, encontrar o aluno vinculado ao Auth já é
+     * suficiente para validar o acesso.
+     */
+
+    return true
+  }
 
   async function getStudentId(
     userId: string,
@@ -398,7 +939,10 @@ function Aluno() {
     } = await supabase
       .from('alunos')
       .select('id')
-      .eq('user_id', userId)
+      .eq(
+        'user_id',
+        userId,
+      )
       .maybeSingle()
 
     if (error) {
@@ -414,6 +958,116 @@ function Aluno() {
     return data.id as string
   }
 
+  /*
+   * =========================================================
+   * CARREGAR AULAS
+   * =========================================================
+   */
+
+  async function loadStudentLessons(
+    userId: string,
+  ) {
+    try {
+      setLessonsLoading(true)
+
+      const studentId =
+        await getStudentId(
+          userId,
+        )
+
+      const {
+        data,
+        error,
+      } = await supabase
+        .from('horarios')
+        .select(
+          `
+            id,
+            idioma,
+            dia_semana,
+            hora_inicio,
+            hora_fim,
+            disponivel,
+            meet_url,
+            meet_space_name
+          `,
+        )
+        .eq(
+          'aluno_id',
+          studentId,
+        )
+        .order(
+          'dia_semana',
+        )
+        .order(
+          'hora_inicio',
+        )
+
+      if (error) {
+        throw error
+      }
+
+      const normalizedLessons: Lesson[] =
+        (data || []).map(
+          (horario) => {
+            const startAt =
+              getNextLessonDate(
+                Number(
+                  horario.dia_semana,
+                ),
+                horario.hora_inicio,
+              )
+
+            return {
+              id: horario.id,
+              language:
+                horario.idioma ===
+                'ingles'
+                  ? 'Inglês'
+                  : 'Alemão',
+              date:
+                startAt.toLocaleDateString(
+                  'pt-BR',
+                ),
+              time:
+                horario.hora_inicio.slice(
+                  0,
+                  5,
+                ),
+              teacher:
+                'Professor',
+              status:
+                'agendada',
+              meetUrl:
+                horario.meet_url ||
+                undefined,
+              startAt:
+                startAt.toISOString(),
+            }
+          },
+        )
+
+      setLessons(
+        normalizedLessons,
+      )
+    } catch (error) {
+      console.error(
+        'Erro ao carregar aulas do aluno:',
+        error,
+      )
+
+      setLessons([])
+    } finally {
+      setLessonsLoading(false)
+    }
+  }
+
+  /*
+   * =========================================================
+   * CARREGAR ATIVIDADES
+   * =========================================================
+   */
+
   async function loadStudentActivities(
     userId: string,
   ) {
@@ -422,7 +1076,9 @@ function Aluno() {
       setActivitiesError('')
 
       const studentId =
-        await getStudentId(userId)
+        await getStudentId(
+          userId,
+        )
 
       const {
         data,
@@ -442,34 +1098,49 @@ function Aluno() {
             created_at
           `,
         )
-        .eq('aluno_id', studentId)
-        .neq('status', 'rascunho')
-        .order('created_at', {
-          ascending: false,
-        })
+        .eq(
+          'aluno_id',
+          studentId,
+        )
+        .neq(
+          'status',
+          'rascunho',
+        )
+        .order(
+          'created_at',
+          {
+            ascending: false,
+          },
+        )
 
       if (error) {
         throw error
       }
 
       const normalizedActivities: Activity[] =
-        (data || []).map((activity) => ({
-          id: activity.id,
-          aluno_id: activity.aluno_id,
-          title: activity.titulo,
-          description:
-            activity.descricao,
-          language:
-            activity.idioma as
-              | 'ingles'
-              | 'alemao',
-          dueDate: activity.prazo,
-          status:
-            activity.status as ActivityStatus,
-          nota: activity.nota,
-          createdAt:
-            activity.created_at,
-        }))
+        (data || []).map(
+          (activity) => ({
+            id: activity.id,
+            aluno_id:
+              activity.aluno_id,
+            title:
+              activity.titulo,
+            description:
+              activity.descricao,
+            language:
+              activity.idioma as
+                | 'ingles'
+                | 'alemao',
+            dueDate:
+              activity.prazo,
+            status:
+              activity.status as ActivityStatus,
+            nota:
+              activity.nota,
+            createdAt:
+              activity.created_at,
+          }),
+        )
 
       setActivities(
         normalizedActivities,
@@ -490,11 +1161,199 @@ function Aluno() {
     }
   }
 
+  /*
+   * =========================================================
+   * AUTENTICAÇÃO / SESSÃO SUPABASE
+   * =========================================================
+   */
+
+  useEffect(() => {
+    let mounted = true
+
+    const rejectUnauthorizedStudent =
+      async (
+        message: string,
+      ) => {
+        await supabase.auth.signOut()
+
+        if (!mounted) {
+          return
+        }
+
+        setUser(null)
+        setLoading(false)
+        setAuthError(message)
+      }
+
+    const loadUser = async () => {
+      try {
+        const {
+          data: { user },
+        } =
+          await supabase.auth.getUser()
+
+        if (!mounted) {
+          return
+        }
+
+        if (!user) {
+          setUser(null)
+          setLoading(false)
+          return
+        }
+
+        const hasStudentAccess =
+          await validateStudentAccess(
+            user.id,
+          )
+
+        if (!hasStudentAccess) {
+          await rejectUnauthorizedStudent(
+            'Seu acesso ao portal ainda não está liberado.',
+          )
+
+          return
+        }
+
+        if (!mounted) {
+          return
+        }
+
+        setAuthError('')
+        setUser(user)
+        setLoading(false)
+
+        await Promise.all([
+          loadStudentLessons(
+            user.id,
+          ),
+          loadStudentActivities(
+            user.id,
+          ),
+        ])
+      } catch (error) {
+        console.error(
+          'Erro ao carregar sessão do aluno:',
+          error,
+        )
+
+        if (!mounted) {
+          return
+        }
+
+        setUser(null)
+        setLoading(false)
+        setAuthError(
+          'Não foi possível carregar sua sessão.',
+        )
+      }
+    }
+
+    void loadUser()
+
+    const {
+      data: {
+        subscription,
+      },
+    } =
+      supabase.auth.onAuthStateChange(
+        (_event, session) => {
+          if (!mounted) {
+            return
+          }
+
+          if (!session?.user) {
+            setUser(null)
+            setLoading(false)
+            return
+          }
+
+          void (async () => {
+            try {
+              const hasStudentAccess =
+                await validateStudentAccess(
+                  session.user.id,
+                )
+
+              if (!hasStudentAccess) {
+                window.setTimeout(
+                  () => {
+                    void supabase.auth.signOut()
+                  },
+                  0,
+                )
+
+                if (!mounted) {
+                  return
+                }
+
+                setUser(null)
+                setLoading(false)
+                setAuthError(
+                  'Seu cadastro ainda não está liberado para acesso ao portal.',
+                )
+
+                return
+              }
+
+              if (!mounted) {
+                return
+              }
+
+              setAuthError('')
+              setUser(
+                session.user,
+              )
+              setLoading(false)
+
+              await Promise.all([
+                loadStudentLessons(
+                  session.user.id,
+                ),
+                loadStudentActivities(
+                  session.user.id,
+                ),
+              ])
+            } catch (error) {
+              console.error(
+                'Erro ao validar acesso do aluno:',
+                error,
+              )
+
+              if (!mounted) {
+                return
+              }
+
+              setUser(null)
+              setLoading(false)
+              setAuthError(
+                'Não foi possível validar o cadastro do aluno.',
+              )
+            }
+          })()
+        },
+      )
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+  /*
+   * =========================================================
+   * ATIVIDADES
+   * =========================================================
+   */
+
   async function openActivity(
     activity: Activity,
   ) {
     try {
-      setSelectedActivity(activity)
+      setSelectedActivity(
+        activity,
+      )
+
       setActivityLoading(true)
       setActivityError('')
       setSelectedExercises([])
@@ -504,7 +1363,9 @@ function Aluno() {
         data,
         error,
       } = await supabase
-        .from('atividade_exercicios')
+        .from(
+          'atividade_exercicios',
+        )
         .select(
           `
             id,
@@ -532,61 +1393,70 @@ function Aluno() {
           'atividade_id',
           activity.id,
         )
-        .order('ordem', {
-          ascending: true,
-        })
+        .order(
+          'ordem',
+          {
+            ascending: true,
+          },
+        )
 
       if (error) {
         throw error
       }
 
       const exercises: Exercise[] =
-        (data || []).map((exercise) => ({
-          id: exercise.id,
-          atividade_id:
-            exercise.atividade_id,
-          titulo:
-            exercise.titulo,
-          enunciado:
-            exercise.enunciado,
-          tipo:
-            exercise.tipo as ExerciseType,
-          ordem: exercise.ordem,
-          pontuacao:
-            Number(
-              exercise.pontuacao,
-            ) || 0,
-          alternativas: (
-            exercise.alternativas ||
-            []
-          ).sort(
-            (
-              a: ExerciseAlternative,
-              b: ExerciseAlternative,
-            ) =>
-              a.ordem - b.ordem,
-          ),
-          conteudos: (
-            exercise.conteudos ||
-            []
-          ).sort(
-            (
-              a: ExerciseContent,
-              b: ExerciseContent,
-            ) =>
-              a.ordem - b.ordem,
-          ),
-        }))
+        (data || []).map(
+          (exercise) => ({
+            id: exercise.id,
+            atividade_id:
+              exercise.atividade_id,
+            titulo:
+              exercise.titulo,
+            enunciado:
+              exercise.enunciado,
+            tipo:
+              exercise.tipo as ExerciseType,
+            ordem:
+              exercise.ordem,
+            pontuacao:
+              Number(
+                exercise.pontuacao,
+              ) || 0,
+            alternativas: (
+              exercise.alternativas ||
+              []
+            ).sort(
+              (
+                a: ExerciseAlternative,
+                b: ExerciseAlternative,
+              ) =>
+                a.ordem -
+                b.ordem,
+            ),
+            conteudos: (
+              exercise.conteudos ||
+              []
+            ).sort(
+              (
+                a: ExerciseContent,
+                b: ExerciseContent,
+              ) =>
+                a.ordem -
+                b.ordem,
+            ),
+          }),
+        )
 
       setSelectedExercises(
         exercises,
       )
 
       const initialAnswers =
-        exercises.map((exercise) =>
-          createEmptyAnswer(
-            exercise.id,
-          ),
+        exercises.map(
+          (exercise) =>
+            createEmptyAnswer(
+              exercise.id,
+            ),
         )
 
       if (
@@ -597,11 +1467,20 @@ function Aluno() {
         activity.status ===
           'corrigida'
       ) {
+        const studentId =
+          await getStudentId(
+            user?.id || '',
+          )
+
         const {
-          data: existingAnswers,
-          error: answersError,
+          data:
+            existingAnswers,
+          error:
+            answersError,
         } = await supabase
-          .from('respostas_aluno')
+          .from(
+            'respostas_aluno',
+          )
           .select(
             `
               id,
@@ -619,9 +1498,7 @@ function Aluno() {
           )
           .eq(
             'aluno_id',
-            await getStudentId(
-              user?.id || '',
-            ),
+            studentId,
           )
 
         if (answersError) {
@@ -648,9 +1525,10 @@ function Aluno() {
           if (
             answer.alternativa_id
           ) {
-            target.alternativaIds = [
-              answer.alternativa_id,
-            ]
+            target.alternativaIds =
+              [
+                answer.alternativa_id,
+              ]
           }
         }
       }
@@ -690,14 +1568,16 @@ function Aluno() {
     value: string,
   ) {
     setAnswers((current) =>
-      current.map((answer) =>
-        answer.exerciseId ===
-        exerciseId
-          ? {
-              ...answer,
-              respostaTexto: value,
-            }
-          : answer,
+      current.map(
+        (answer) =>
+          answer.exerciseId ===
+          exerciseId
+            ? {
+                ...answer,
+                respostaTexto:
+                  value,
+              }
+            : answer,
       ),
     )
   }
@@ -768,16 +1648,15 @@ function Aluno() {
   function validateAnswers() {
     for (const exercise of
       selectedExercises) {
-      const answer = getAnswer(
-        exercise.id,
-      )
+      const answer =
+        getAnswer(exercise.id)
 
       if (
         isObjectiveType(
           exercise.tipo,
         ) &&
-        answer.alternativaIds.length ===
-          0
+        answer.alternativaIds
+          .length === 0
       ) {
         return `Responda o exercício ${exercise.ordem + 1}.`
       }
@@ -810,9 +1689,10 @@ function Aluno() {
       return
     }
 
-    const confirmed = window.confirm(
-      'Deseja realmente enviar esta atividade? Depois do envio, as respostas não poderão ser alteradas.',
-    )
+    const confirmed =
+      window.confirm(
+        'Deseja realmente enviar esta atividade? Depois do envio, as respostas não poderão ser alteradas.',
+      )
 
     if (!confirmed) {
       return
@@ -828,10 +1708,14 @@ function Aluno() {
         )
 
       const {
-        data: currentAnswers,
-        error: currentAnswersError,
+        data:
+          currentAnswers,
+        error:
+          currentAnswersError,
       } = await supabase
-        .from('respostas_aluno')
+        .from(
+          'respostas_aluno',
+        )
         .select('id')
         .eq(
           'atividade_id',
@@ -848,7 +1732,8 @@ function Aluno() {
 
       const existingAnswerIds =
         (currentAnswers || []).map(
-          (answer) => answer.id,
+          (answer) =>
+            answer.id,
         )
 
       if (
@@ -858,7 +1743,9 @@ function Aluno() {
         const {
           error: deleteError,
         } = await supabase
-          .from('respostas_aluno')
+          .from(
+            'respostas_aluno',
+          )
           .delete()
           .in(
             'id',
@@ -883,12 +1770,14 @@ function Aluno() {
                 selectedActivity.id,
               exercicio_id:
                 exercise.id,
-              aluno_id: studentId,
+              aluno_id:
+                studentId,
               resposta_texto:
                 answer.respostaTexto.trim() ||
                 null,
               alternativa_id:
-                answer.alternativaIds[0] ||
+                answer
+                  .alternativaIds[0] ||
                 null,
               pontuacao: null,
               feedback: null,
@@ -900,7 +1789,9 @@ function Aluno() {
       const {
         error: insertError,
       } = await supabase
-        .from('respostas_aluno')
+        .from(
+          'respostas_aluno',
+        )
         .insert(
           answerRows,
         )
@@ -914,7 +1805,8 @@ function Aluno() {
       } = await supabase
         .from('atividades')
         .update({
-          status: 'respondida',
+          status:
+            'respondida',
           updated_at:
             new Date().toISOString(),
         })
@@ -932,15 +1824,16 @@ function Aluno() {
       }
 
       setActivities((current) =>
-        current.map((activity) =>
-          activity.id ===
-          selectedActivity.id
-            ? {
-                ...activity,
-                status:
-                  'respondida',
-              }
-            : activity,
+        current.map(
+          (activity) =>
+            activity.id ===
+            selectedActivity.id
+              ? {
+                  ...activity,
+                  status:
+                    'respondida',
+                }
+              : activity,
         ),
       )
 
@@ -981,8 +1874,16 @@ function Aluno() {
   const handleLogout =
     async () => {
       await supabase.auth.signOut()
-      window.location.href =
-        '/matricula'
+
+      setUser(null)
+      setSection('inicio')
+      setAuthError('')
+      setAuthInfo('')
+      setAuthEmail('')
+      setAuthPassword('')
+      setAuthPasswordConfirmation('')
+      setAuthStudentName('')
+      setAuthStep('email')
     }
 
   const navigateTo = (
@@ -1005,11 +1906,12 @@ function Aluno() {
       [activities],
     )
 
-  const nextLesson = lessons.find(
-    (lesson) =>
-      lesson.status ===
-      'agendada',
-  )
+  const nextLesson =
+    lessons.find(
+      (lesson) =>
+        lesson.status ===
+        'agendada',
+    )
 
   const sectionTitles: Record<
     StudentSection,
@@ -1023,6 +1925,12 @@ function Aluno() {
     perfil: 'Meu perfil',
   }
 
+  /*
+   * =========================================================
+   * LOADING
+   * =========================================================
+   */
+
   if (loading) {
     return (
       <div className="student-loading">
@@ -1033,15 +1941,445 @@ function Aluno() {
     )
   }
 
+  /*
+   * =========================================================
+   * LOGIN
+   * =========================================================
+   */
+
   if (!user) {
-    return null
+    return (
+      <div className="student-login-page">
+        <div className="student-login-card">
+          <img
+            src={logo}
+            alt="AB Academy"
+            className="student-login-logo"
+          />
+
+          <span className="student-login-label">
+            PORTAL DO ALUNO
+          </span>
+
+          {authStep ===
+            'email' && (
+            <>
+              <h1>
+                Acesse sua conta
+              </h1>
+
+              <p>
+                Informe o e-mail
+                utilizado na sua
+                matrícula.
+              </p>
+            </>
+          )}
+
+          {authStep ===
+            'password' && (
+            <>
+              <h1>
+                Bem-vindo
+                {authStudentName
+                  ? `, ${
+                      authStudentName.split(
+                        ' ',
+                      )[0]
+                    }`
+                  : ''}
+                !
+              </h1>
+
+              <p>
+                Digite sua senha
+                para acessar o
+                portal do aluno.
+              </p>
+            </>
+          )}
+
+          {authStep ===
+            'create-password' && (
+            <>
+              <h1>
+                Primeiro acesso
+              </h1>
+
+              <p>
+                Crie sua senha para
+                acessar o portal
+                sempre que quiser.
+              </p>
+            </>
+          )}
+
+          {authError && (
+            <div className="student-login-error">
+              {authError}
+            </div>
+          )}
+
+          {authInfo && (
+            <div className="student-login-info">
+              {authInfo}
+            </div>
+          )}
+
+          {authStep ===
+            'email' && (
+            <>
+              <div className="student-login-field">
+                <label htmlFor="student-email">
+                  E-mail
+                </label>
+
+                <input
+                  id="student-email"
+                  type="email"
+                  value={authEmail}
+                  onChange={(
+                    event,
+                  ) => {
+                    setAuthEmail(
+                      event.target
+                        .value,
+                    )
+                    setAuthError('')
+                  }}
+                  onKeyDown={(
+                    event,
+                  ) => {
+                    if (
+                      event.key ===
+                      'Enter'
+                    ) {
+                      void handleCheckEmail()
+                    }
+                  }}
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  disabled={
+                    authLoading
+                  }
+                />
+              </div>
+
+              <button
+                type="button"
+                className="student-primary-button student-auth-button"
+                onClick={
+                  handleCheckEmail
+                }
+                disabled={
+                  authLoading
+                }
+              >
+                {authLoading ? (
+                  <>
+                    <Loader2
+                      size={19}
+                      className="student-spin"
+                    />
+
+                    Verificando...
+                  </>
+                ) : (
+                  <>
+                    Continuar
+                    <ChevronRight
+                      size={18}
+                    />
+                  </>
+                )}
+              </button>
+            </>
+          )}
+
+          {authStep ===
+            'password' && (
+            <>
+              <div className="student-login-field">
+                <label htmlFor="student-email-login">
+                  E-mail
+                </label>
+
+                <input
+                  id="student-email-login"
+                  type="email"
+                  value={authEmail}
+                  onChange={(
+                    event,
+                  ) =>
+                    setAuthEmail(
+                      event.target
+                        .value,
+                    )
+                  }
+                  autoComplete="email"
+                  disabled={
+                    authLoading
+                  }
+                />
+              </div>
+
+              <div className="student-login-field">
+                <label htmlFor="student-password">
+                  Senha
+                </label>
+
+                <input
+                  id="student-password"
+                  type="password"
+                  value={authPassword}
+                  onChange={(
+                    event,
+                  ) => {
+                    setAuthPassword(
+                      event.target
+                        .value,
+                    )
+                    setAuthError('')
+                  }}
+                  onKeyDown={(
+                    event,
+                  ) => {
+                    if (
+                      event.key ===
+                      'Enter'
+                    ) {
+                      void handleStudentLogin()
+                    }
+                  }}
+                  placeholder="Digite sua senha"
+                  autoComplete="current-password"
+                  disabled={
+                    authLoading
+                  }
+                />
+              </div>
+
+              <button
+                type="button"
+                className="student-primary-button student-auth-button"
+                onClick={
+                  handleStudentLogin
+                }
+                disabled={
+                  authLoading
+                }
+              >
+                {authLoading ? (
+                  <>
+                    <Loader2
+                      size={19}
+                      className="student-spin"
+                    />
+
+                    Entrando...
+                  </>
+                ) : (
+                  <>
+                    Entrar
+                    <ChevronRight
+                      size={18}
+                    />
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="student-primary-button student-auth-button"
+                onClick={
+                  resetAuthToEmail
+                }
+                disabled={
+                  authLoading
+                }
+              >
+                ← Usar outro e-mail
+              </button>
+            </>
+          )}
+
+          {authStep ===
+            'create-password' && (
+            <>
+              <div className="student-login-field">
+                <label htmlFor="student-email-create">
+                  E-mail
+                </label>
+
+                <input
+                  id="student-email-create"
+                  type="email"
+                  value={authEmail}
+                  disabled
+                  autoComplete="email"
+                />
+              </div>
+
+              <div className="student-login-field">
+                <label htmlFor="student-new-password">
+                  Criar senha
+                </label>
+
+                <input
+                  id="student-new-password"
+                  type="password"
+                  value={authPassword}
+                  onChange={(
+                    event,
+                  ) => {
+                    setAuthPassword(
+                      event.target
+                        .value,
+                    )
+                    setAuthError('')
+                  }}
+                  placeholder="Crie uma senha segura"
+                  autoComplete="new-password"
+                  disabled={
+                    authLoading
+                  }
+                />
+              </div>
+
+              <div className="student-login-field">
+                <label htmlFor="student-password-confirmation">
+                  Confirmar senha
+                </label>
+
+                <input
+                  id="student-password-confirmation"
+                  type="password"
+                  value={
+                    authPasswordConfirmation
+                  }
+                  onChange={(
+                    event,
+                  ) => {
+                    setAuthPasswordConfirmation(
+                      event.target
+                        .value,
+                    )
+                    setAuthError('')
+                  }}
+                  onKeyDown={(
+                    event,
+                  ) => {
+                    if (
+                      event.key ===
+                      'Enter'
+                    ) {
+                      void handleCreatePassword()
+                    }
+                  }}
+                  placeholder="Digite a senha novamente"
+                  autoComplete="new-password"
+                  disabled={
+                    authLoading
+                  }
+                />
+              </div>
+
+              <div className="student-password-rules">
+                <span>
+                  Sua senha deve conter:
+                </span>
+
+                <span className={passwordRules.minLength ? 'valid' : ''}>
+                  • mínimo de 8 caracteres
+                </span>
+
+                <span className={passwordRules.uppercase ? 'valid' : ''}>
+                  • uma letra maiúscula
+                </span>
+
+                <span className={passwordRules.lowercase ? 'valid' : ''}>
+                  • uma letra minúscula
+                </span>
+
+                <span className={passwordRules.number ? 'valid' : ''}>
+                  • um número
+                </span>
+
+                <span className={passwordRules.special ? 'valid' : ''}>
+                  • um caractere especial
+                </span>
+              </div>
+
+              <button
+                type="button"
+                className="student-primary-button student-auth-button"
+                onClick={
+                  handleCreatePassword
+                }
+                disabled={
+                  authLoading
+                }
+              >
+                {authLoading ? (
+                  <>
+                    <Loader2
+                      size={19}
+                      className="student-spin"
+                    />
+
+                    Criando senha...
+                  </>
+                ) : (
+                  <>
+                    Criar senha e entrar
+                    <CheckCircle2
+                      size={18}
+                    />
+                  </>
+                )}
+              </button>
+
+              <button
+                type="button"
+                className="student-primary-button student-auth-button"
+                onClick={
+                  resetAuthToEmail
+                }
+                disabled={
+                  authLoading
+                }
+              >
+                ← Usar outro e-mail
+              </button>
+            </>
+          )}
+
+          <div className="student-login-footer">
+            <span>
+              AB Academy
+            </span>
+
+            <span>
+              Portal exclusivo para alunos
+            </span>
+          </div>
+        </div>
+      </div>
+    )
   }
+
+  /*
+   * =========================================================
+   * DADOS DO USUÁRIO
+   * =========================================================
+   */
 
   const name =
     user.user_metadata
       ?.full_name ||
     user.user_metadata
       ?.name ||
+    authStudentName ||
     'Aluno'
 
   const avatar =
@@ -1056,7 +2394,6 @@ function Aluno() {
 
   return (
     <div className="student-portal">
-
       {mobileMenuOpen && (
         <button
           type="button"
@@ -1097,7 +2434,8 @@ function Aluno() {
           <button
             type="button"
             className={`student-nav-item ${
-              section === 'inicio'
+              section ===
+              'inicio'
                 ? 'active'
                 : ''
             }`}
@@ -1112,7 +2450,8 @@ function Aluno() {
           <button
             type="button"
             className={`student-nav-item ${
-              section === 'aulas'
+              section ===
+              'aulas'
                 ? 'active'
                 : ''
             }`}
@@ -1162,7 +2501,9 @@ function Aluno() {
               size={19}
             />
 
-            <span>Atividades</span>
+            <span>
+              Atividades
+            </span>
 
             {pendingActivities.length >
               0 && (
@@ -1191,6 +2532,7 @@ function Aluno() {
             <CheckCircle2
               size={19}
             />
+
             <span>
               Meu progresso
             </span>
@@ -1213,14 +2555,19 @@ function Aluno() {
             <UserCircle
               size={19}
             />
-            <span>Meu perfil</span>
+
+            <span>
+              Meu perfil
+            </span>
           </button>
         </nav>
 
         <button
           type="button"
           className="student-logout"
-          onClick={handleLogout}
+          onClick={
+            handleLogout
+          }
         >
           <LogOut size={18} />
           <span>Sair</span>
@@ -1282,9 +2629,7 @@ function Aluno() {
               />
             ) : (
               <div className="student-avatar-placeholder">
-                {name
-                  .charAt(0)
-                  .toUpperCase()}
+                {getInitials(name)}
               </div>
             )}
 
@@ -1317,6 +2662,18 @@ function Aluno() {
               onNavigate={
                 navigateTo
               }
+              onOpenLesson={
+                openLesson
+              }
+              canEnterLesson={
+                canEnterLesson
+              }
+              getLessonAccessMessage={
+                getLessonAccessMessage
+              }
+              currentTime={
+                currentTime
+              }
             />
           )}
 
@@ -1324,13 +2681,30 @@ function Aluno() {
             'aulas' && (
             <MinhasAulas
               lessons={lessons}
+              lessonsLoading={
+                lessonsLoading
+              }
+              onOpenLesson={
+                openLesson
+              }
+              canEnterLesson={
+                canEnterLesson
+              }
+              getLessonAccessMessage={
+                getLessonAccessMessage
+              }
+              currentTime={
+                currentTime
+              }
             />
           )}
 
           {section ===
             'materiais' && (
             <Materiais
-              materials={materials}
+              materials={
+                materials
+              }
             />
           )}
 
@@ -1416,6 +2790,16 @@ type InicioProps = {
   onNavigate: (
     section: StudentSection,
   ) => void
+  onOpenLesson: (
+    lesson: Lesson,
+  ) => void
+  canEnterLesson: (
+    startAt: string,
+  ) => boolean
+  getLessonAccessMessage: (
+    startAt: string,
+  ) => string
+  currentTime: number
 }
 
 function Inicio({
@@ -1424,7 +2808,13 @@ function Inicio({
   pendingActivities,
   materialsCount,
   onNavigate,
+  onOpenLesson,
+  canEnterLesson,
+  getLessonAccessMessage,
+  currentTime,
 }: InicioProps) {
+  void currentTime
+
   return (
     <>
       <div className="student-welcome-card">
@@ -1468,7 +2858,9 @@ function Inicio({
 
             <div>
               <span>
-                {nextLesson.language}
+                {
+                  nextLesson.language
+                }
               </span>
 
               <h3>
@@ -1478,7 +2870,9 @@ function Inicio({
               </h3>
 
               <p>
-                {nextLesson.teacher}
+                {
+                  nextLesson.teacher
+                }
               </p>
             </div>
           </div>
@@ -1486,9 +2880,32 @@ function Inicio({
           <button
             type="button"
             className="student-primary-button"
+            onClick={() =>
+              onOpenLesson(
+                nextLesson,
+              )
+            }
+            disabled={
+              !nextLesson.meetUrl ||
+              !canEnterLesson(
+                nextLesson.startAt,
+              )
+            }
+            title={
+              !nextLesson.meetUrl
+                ? 'A sala ainda não foi criada pelo professor'
+                : getLessonAccessMessage(
+                    nextLesson.startAt,
+                  )
+            }
           >
             <Play size={17} />
-            Entrar na aula
+
+            {!nextLesson.meetUrl
+              ? 'Sala não criada'
+              : getLessonAccessMessage(
+                  nextLesson.startAt,
+                )}
           </button>
         </div>
       ) : (
@@ -1608,11 +3025,29 @@ function Inicio({
 
 type MinhasAulasProps = {
   lessons: Lesson[]
+  lessonsLoading: boolean
+  onOpenLesson: (
+    lesson: Lesson,
+  ) => void
+  canEnterLesson: (
+    startAt: string,
+  ) => boolean
+  getLessonAccessMessage: (
+    startAt: string,
+  ) => string
+  currentTime: number
 }
 
 function MinhasAulas({
   lessons,
+  lessonsLoading,
+  onOpenLesson,
+  canEnterLesson,
+  getLessonAccessMessage,
+  currentTime,
 }: MinhasAulasProps) {
+  void currentTime
+
   return (
     <>
       <div className="student-section-title">
@@ -1625,69 +3060,136 @@ function MinhasAulas({
         </div>
       </div>
 
-      <div className="student-lessons-list">
-        {lessons.map(
-          (lesson) => (
-            <div
-              className="student-lesson-card"
-              key={lesson.id}
-            >
-              <div className="student-lesson-date">
-                <CalendarDays
-                  size={20}
-                />
+      {lessonsLoading ? (
+        <div className="student-empty-state">
+          <Loader2
+            size={28}
+            className="student-spin"
+          />
 
-                <strong>
-                  {lesson.date}
-                </strong>
+          <h3>
+            Carregando suas aulas...
+          </h3>
 
-                <span>
-                  {lesson.time}
-                </span>
-              </div>
+          <p>
+            Aguarde enquanto
+            buscamos sua agenda.
+          </p>
+        </div>
+      ) : lessons.length ===
+        0 ? (
+        <div className="student-empty-state">
+          <CalendarDays
+            size={28}
+          />
 
-              <div className="student-lesson-details">
-                <span>
-                  {
-                    lesson.language
-                  }
-                </span>
+          <h3>
+            Nenhuma aula agendada
+          </h3>
 
-                <h3>
-                  Aula particular
-                </h3>
+          <p>
+            Suas aulas aparecerão
+            aqui.
+          </p>
+        </div>
+      ) : (
+        <div className="student-lessons-list">
+          {lessons.map(
+            (lesson) => {
+              const hasMeet =
+                Boolean(
+                  lesson.meetUrl,
+                )
 
-                <p>
-                  {lesson.teacher}
-                </p>
-              </div>
+              const canEnter =
+                canEnterLesson(
+                  lesson.startAt,
+                )
 
-              <div className="student-lesson-status">
-                {lesson.status ===
-                'agendada'
-                  ? 'Agendada'
-                  : lesson.status ===
-                      'realizada'
-                    ? 'Realizada'
-                    : 'Cancelada'}
-              </div>
-
-              {lesson.status ===
-                'agendada' && (
-                <button
-                  type="button"
-                  className="student-primary-button"
+              return (
+                <div
+                  className="student-lesson-card"
+                  key={lesson.id}
                 >
-                  <Play
-                    size={17}
-                  />
-                  Entrar
-                </button>
-              )}
-            </div>
-          ),
-        )}
-      </div>
+                  <div className="student-lesson-date">
+                    <CalendarDays
+                      size={20}
+                    />
+
+                    <strong>
+                      {lesson.date}
+                    </strong>
+
+                    <span>
+                      {lesson.time}
+                    </span>
+                  </div>
+
+                  <div className="student-lesson-details">
+                    <span>
+                      {
+                        lesson.language
+                      }
+                    </span>
+
+                    <h3>
+                      Aula particular
+                    </h3>
+
+                    <p>
+                      {lesson.teacher}
+                    </p>
+                  </div>
+
+                  <div className="student-lesson-status">
+                    {lesson.status ===
+                    'agendada'
+                      ? 'Agendada'
+                      : lesson.status ===
+                          'realizada'
+                        ? 'Realizada'
+                        : 'Cancelada'}
+                  </div>
+
+                  {lesson.status ===
+                    'agendada' && (
+                    <button
+                      type="button"
+                      className="student-primary-button"
+                      onClick={() =>
+                        onOpenLesson(
+                          lesson,
+                        )
+                      }
+                      disabled={
+                        !hasMeet ||
+                        !canEnter
+                      }
+                      title={
+                        !hasMeet
+                          ? 'A sala ainda não foi criada pelo professor'
+                          : getLessonAccessMessage(
+                              lesson.startAt,
+                            )
+                      }
+                    >
+                      <Play
+                        size={17}
+                      />
+
+                      {!hasMeet
+                        ? 'Sala não criada'
+                        : getLessonAccessMessage(
+                            lesson.startAt,
+                          )}
+                    </button>
+                  )}
+                </div>
+              )
+            },
+          )}
+        </div>
+      )}
     </>
   )
 }
@@ -2271,6 +3773,7 @@ function ActivityModal({
                           size={17}
                           className="student-spin"
                         />
+
                         Enviando...
                       </>
                     ) : (
@@ -2278,6 +3781,7 @@ function ActivityModal({
                         <CheckCircle2
                           size={17}
                         />
+
                         Enviar atividade
                       </>
                     )}
@@ -2290,7 +3794,9 @@ function ActivityModal({
                 <button
                   type="button"
                   className="student-secondary-button"
-                  onClick={onClose}
+                  onClick={
+                    onClose
+                  }
                 >
                   Fechar
                 </button>
@@ -2531,9 +4037,7 @@ function Perfil({
             />
           ) : (
             <div className="student-profile-avatar">
-              {name
-                .charAt(0)
-                .toUpperCase()}
+              {getInitials(name)}
             </div>
           )}
 

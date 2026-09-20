@@ -619,146 +619,185 @@ export default function Agenda() {
    * =========================================================
    */
 
-  async function createMeet(
-    horario: Horario,
-  ) {
-    if (creatingMeetId) {
-      return
+  async function createMeet(horario: Horario) {
+  if (creatingMeetId) {
+    return
+  }
+
+  try {
+    setCreatingMeetId(horario.id)
+    setError(null)
+
+    console.log(
+      '[Google Meet] Iniciando criação para horário:',
+      horario.id,
+    )
+
+    // Primeiro tenta obter a sessão atual
+    let {
+      data: { session },
+      error: sessionError,
+    } = await supabase.auth.getSession()
+
+    if (sessionError) {
+      console.error(
+        '[Google Meet] Erro ao obter sessão:',
+        sessionError,
+      )
+
+      throw sessionError
     }
 
-    try {
-      setCreatingMeetId(horario.id)
-      setError(null)
+    // Se não houver token, tenta renovar a sessão
+    if (!session?.access_token) {
+      console.log(
+        '[Google Meet] Sessão não encontrada. Tentando renovar...',
+      )
 
       const {
-        data: {
-          session,
-        },
-        error: sessionError,
-      } =
-        await supabase.auth.getSession()
+        data: refreshData,
+        error: refreshError,
+      } = await supabase.auth.refreshSession()
 
-      if (sessionError) {
+      if (refreshError) {
         console.error(
-          'Erro ao obter sessão:',
-          sessionError,
+          '[Google Meet] Erro ao renovar sessão:',
+          refreshError,
         )
 
-        throw sessionError
+        throw refreshError
       }
 
-      if (!session?.access_token) {
-        throw new Error(
-          'Sua sessão expirou. Faça login novamente.',
-        )
-      }
-
-      console.log(
-        'Sessão encontrada. Chamando google-meet-create...',
-      )
-
-      const response =
-        await fetch(
-          'https://vwmrxdzskvwojyfddjwd.supabase.co/functions/v1/google-meet-create',
-          {
-            method: 'POST',
-
-            headers: {
-              Authorization:
-                `Bearer ${session.access_token}`,
-
-              apikey:
-                import.meta.env
-                  .VITE_SUPABASE_ANON_KEY,
-
-              'Content-Type':
-                'application/json',
-            },
-
-            body: JSON.stringify({
-              horario_id:
-                horario.id,
-            }),
-          },
-        )
-
-      const responseText =
-        await response.text()
-
-      let data: any = null
-
-      try {
-        data = responseText
-          ? JSON.parse(responseText)
-          : null
-      } catch {
-        data = {
-          error:
-            responseText ||
-            'Resposta inválida da Edge Function.',
-        }
-      }
-
-      console.log(
-        'google-meet-create:',
-        {
-          status: response.status,
-          ok: response.ok,
-          data,
-        },
-      )
-
-      if (!response.ok) {
-        if (
-          data?.code ===
-          'GOOGLE_NOT_CONNECTED'
-        ) {
-          const shouldConnect =
-            window.confirm(
-              'Nenhuma conta Google Meet está conectada.\n\nDeseja conectar agora?',
-            )
-
-          if (shouldConnect) {
-            await connectGoogleMeet()
-          }
-
-          return
-        }
-
-        throw new Error(
-          data?.error ||
-            data?.google_error ||
-            data?.details ||
-            'Não foi possível criar a sala Google Meet.',
-        )
-      }
-
-      if (!data?.meet_url) {
-        throw new Error(
-          'O Google não retornou o link da sala.',
-        )
-      }
-
-      await loadAgenda()
-
-      alert(
-        data.existing
-          ? 'Este horário já possui uma sala Google Meet.'
-          : 'Sala Google Meet criada com sucesso.',
-      )
-    } catch (err) {
-      console.error(
-        'Erro ao criar Google Meet:',
-        err,
-      )
-
-      alert(
-        `Não foi possível criar a sala Google Meet.\n\n${getErrorMessage(err)}`,
-      )
-    } finally {
-      setCreatingMeetId(null)
+      session = refreshData.session
     }
+
+    if (!session?.access_token) {
+      throw new Error(
+        'Sua sessão expirou. Faça login novamente.',
+      )
+    }
+
+    console.log(
+      '[Google Meet] Sessão encontrada.',
+      {
+        userId: session.user?.id,
+        hasToken: !!session.access_token,
+      },
+    )
+
+    const functionUrl =
+      'https://vwmrxdzskvwojyfddjwd.supabase.co/functions/v1/google-meet-create'
+
+    console.log(
+      '[Google Meet] Chamando:',
+      functionUrl,
+    )
+
+    const response = await fetch(
+      functionUrl,
+      {
+        method: 'POST',
+
+        headers: {
+          Authorization:
+            `Bearer ${session.access_token}`,
+
+          apikey:
+            import.meta.env
+              .VITE_SUPABASE_ANON_KEY,
+
+          'Content-Type':
+            'application/json',
+        },
+
+        body: JSON.stringify({
+          horario_id: horario.id,
+        }),
+      },
+    )
+
+    console.log(
+      '[Google Meet] Resposta recebida:',
+      response.status,
+    )
+
+    const responseText =
+      await response.text()
+
+    let data: any = null
+
+    try {
+      data = responseText
+        ? JSON.parse(responseText)
+        : null
+    } catch {
+      data = {
+        error:
+          responseText ||
+          'Resposta inválida da Edge Function.',
+      }
+    }
+
+    console.log(
+      '[Google Meet] Resultado:',
+      {
+        status: response.status,
+        ok: response.ok,
+        data,
+      },
+    )
+
+    if (!response.ok) {
+      if (
+        data?.code ===
+        'GOOGLE_NOT_CONNECTED'
+      ) {
+        const shouldConnect =
+          window.confirm(
+            'Nenhuma conta Google Meet está conectada.\n\nDeseja conectar agora?',
+          )
+
+        if (shouldConnect) {
+          await connectGoogleMeet()
+        }
+
+        return
+      }
+
+      throw new Error(
+        data?.error ||
+          data?.google_error ||
+          data?.details ||
+          'Não foi possível criar a sala Google Meet.',
+      )
+    }
+
+    if (!data?.meet_url) {
+      throw new Error(
+        'O Google não retornou o link da sala.',
+      )
+    }
+
+    await loadAgenda()
+
+    alert(
+      data.existing
+        ? 'Este horário já possui uma sala Google Meet.'
+        : 'Sala Google Meet criada com sucesso.',
+    )
+  } catch (err) {
+    console.error(
+      '[Google Meet] Erro ao criar sala:',
+      err,
+    )
+
+    alert(
+      `Não foi possível criar a sala Google Meet.\n\n${getErrorMessage(err)}`,
+    )
+  } finally {
+    setCreatingMeetId(null)
   }
+}
 
   /*
    * =========================================================
