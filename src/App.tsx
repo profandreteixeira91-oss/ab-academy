@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import Home from './pages/Home'
 
 import Matricula from './pages/matricula'
@@ -27,8 +28,16 @@ import SalaProfessor from './pages/admin/SalaProfessor'
 import Professor from './pages/Professor'
 
 import ProfessorAccess from './pages/ProfessorAccess'
+import SiteFooter from './components/SiteFooter'
 
 function App() {
+  const withFooter = (content: ReactNode) => (
+    <>
+      {content}
+      <SiteFooter />
+    </>
+  )
+
   const path = window.location.pathname
 
   /*
@@ -38,7 +47,7 @@ function App() {
    */
 
   if (path === '/matricula') {
-    return <Matricula />
+    return withFooter(<Matricula />)
   }
 
   /*
@@ -89,10 +98,10 @@ function App() {
       )
     }
 
-    return (
+    return withFooter(
       <Checkout
         pagamentoId={pagamentoId}
-      />
+      />,
     )
   }
 
@@ -103,7 +112,7 @@ function App() {
    */
 
   if (path === '/aluno') {
-    return <Aluno />
+    return withFooter(<Aluno />)
   }
 
   /*
@@ -113,7 +122,7 @@ function App() {
    */
 
   if (path === '/aluno/central') {
-    return <CentralAtividades />
+    return withFooter(<CentralAtividades />)
   }
 
   /*
@@ -123,7 +132,7 @@ function App() {
    */
 
   if (path.startsWith('/aluno/central/atividade/')) {
-    return <CentralAtividade />
+    return withFooter(<CentralAtividade />)
   }
 
   /*
@@ -153,10 +162,10 @@ function App() {
    */
 
   if (path.startsWith('/admin/aula/')) {
-    return (
+    return withFooter(
       <AdminAccess>
         <SalaProfessor />
-      </AdminAccess>
+      </AdminAccess>,
     )
   }
 
@@ -167,7 +176,7 @@ function App() {
    */
 
   if (path.startsWith('/aluno/aula/')) {
-    return <SalaAula />
+    return withFooter(<SalaAula />)
   }
 
   /*
@@ -177,10 +186,10 @@ function App() {
    */
 
   if (path === '/admin/equipe') {
-    return (
+    return withFooter(
       <AdminAccess>
         <Equipe />
-      </AdminAccess>
+      </AdminAccess>,
     )
   }
 
@@ -191,10 +200,10 @@ function App() {
    */
 
   if (path === '/admin') {
-    return (
+    return withFooter(
       <AdminAccess>
         <Admin />
-      </AdminAccess>
+      </AdminAccess>,
     )
   }
 
@@ -205,7 +214,7 @@ function App() {
    */
 
   if (path === '/politica-privacidade') {
-    return <PoliticaPrivacidade />
+    return withFooter(<PoliticaPrivacidade />)
   }
 
   /*
@@ -215,7 +224,7 @@ function App() {
    */
 
   if (path === '/termos-de-servico') {
-    return <TermosServico />
+    return withFooter(<TermosServico />)
   }
 
   /*
@@ -225,7 +234,7 @@ function App() {
    */
 
   if (path === '/professor') {
-    return <Professor />
+    return withFooter(<Professor />)
   }
 
   /*
@@ -234,7 +243,7 @@ function App() {
    * =========================================================
    */
 
-  return <Home />
+  return withFooter(<Home />)
 }
 
 export default App
