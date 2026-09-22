@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3, Loader2, RotateCcw } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3, Loader2, RotateCcw } from 'lucide-react'
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/central-atividade.css'
