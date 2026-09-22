@@ -94,12 +94,15 @@ function CentralAtividade(){
       const currentActivity={...(activityData as Activity),conteudo:normalizeContent((activityData as Activity).conteudo||{})}
       setActivity(currentActivity)
       const {data:sequence}=await supabase.from('central_atividades').select('id,titulo,created_at').eq('idioma',currentActivity.idioma).eq('nivel',currentActivity.nivel).eq('status','publicada').order('created_at',{ascending:true}).order('id',{ascending:true})
-      if(sequence?.length){
-        const index=sequence.findIndex(item=>item.id===currentActivity.id)
+      const {data:completedResponses}=await supabase.from('central_respostas').select('atividade_id').eq('aluno_id',studentData.id).eq('concluida',true)
+      const completedIds=new Set((completedResponses||[]).map(response=>response.atividade_id))
+      const availableSequence=(sequence||[]).filter(item=>!completedIds.has(item.id))
+      if(availableSequence.length){
+        const index=availableSequence.findIndex(item=>item.id===currentActivity.id)
         if(index>=0){
           setActivityNumber(index+1)
-          setActivityTotal(sequence.length)
-          if(sequence[index+1])setNextActivity({id:sequence[index+1].id,titulo:sequence[index+1].titulo})
+          setActivityTotal(availableSequence.length)
+          if(availableSequence[index+1])setNextActivity({id:availableSequence[index+1].id,titulo:availableSequence[index+1].titulo})
         }
       }
       const storedStart=window.sessionStorage.getItem(`ab-academy-activity-start-${activityId}`)
