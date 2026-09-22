@@ -1093,6 +1093,61 @@ button.professor-stat-card:hover {
   min-width: 135px;
 }
 
+.professor-class-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.professor-class-actions .professor-primary-button,
+.professor-class-actions .professor-secondary-button {
+  min-width: 135px;
+}
+
+.professor-secondary-button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 0 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #374151;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.professor-secondary-button:hover {
+  background: #f9fafb;
+  border-color: #d1d5db;
+}
+
+.professor-secondary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.professor-absence-button {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.professor-absence-button:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+}
+
 .professor-attendance-panel {
   margin-top: 20px;
 }
@@ -1428,6 +1483,17 @@ button.professor-stat-card:hover {
 
   .professor-student-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .professor-class-actions {
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .professor-class-actions .professor-primary-button,
+  .professor-class-actions .professor-secondary-button {
+    flex: 1;
+    min-width: 0;
   }
 
   .professor-attendance-card {
