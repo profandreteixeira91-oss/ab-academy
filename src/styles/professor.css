@@ -179,7 +179,7 @@
 }
 
 .professor-login-button:hover:not(:disabled) {
-  background: #000000;
+  background: #f70105;
   transform: translateY(-1px);
 }
 
@@ -225,7 +225,7 @@
   justify-content: center;
 
   border-radius: 11px;
-  background: #111827;
+  background: #f70105;
   color: #ffffff;
 }
 
@@ -391,7 +391,7 @@
 }
 
 .professor-nav button.active {
-  background: #111827;
+  background: #f70105;
   color: #ffffff;
 }
 
@@ -751,6 +751,7 @@ button.professor-stat-card:hover {
 }
 
 .professor-primary-button {
+  color: #f70105;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -763,7 +764,7 @@ button.professor-stat-card:hover {
   border: 0;
   border-radius: 9px;
 
-  background: #111827;
+  background: #f70105;;
   color: #ffffff;
 
   cursor: pointer;
