@@ -25,14 +25,14 @@ language sql
 security definer
 stable
 set search_path = ''
-as $
+as '
   select exists (
     select 1
     from public.alunos a
     where a.id = p_aluno_id
       and a.user_id = auth.uid()
-  );
-$;
+  )
+';
 
 create or replace function public.professor_pode_registrar_aula(
   p_professor_id uuid,
@@ -44,7 +44,7 @@ language sql
 security definer
 stable
 set search_path = ''
-as $
+as '
   select exists (
     select 1
     from public.professores p
@@ -56,8 +56,8 @@ as $
       and p.acesso_portal = true
       and h.id = p_horario_id
       and h.aluno_id = p_aluno_id
-  );
-$;
+  )
+';
 
 grant execute on function public.aluno_dono_registro_aula(uuid) to authenticated;
 grant execute on function public.professor_pode_registrar_aula(uuid, uuid, uuid) to authenticated;
