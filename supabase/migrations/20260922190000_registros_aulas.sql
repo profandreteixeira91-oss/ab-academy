@@ -109,30 +109,13 @@ create policy "registros_aulas_update_professor"
 on public.registros_aulas
 for update
 to authenticated
-using (
-  exists (
-    select 1
-    from public.professores p
-    where p.id = registros_aulas.professor_id
-      and p.user_id = auth.uid()
-      and p.ativo = true
-      and p.acesso_portal = true
-  )
-)
-with check (
-  exists (
-    select 1
-    from public.professores p
-    where p.id = registros_aulas.professor_id
-      and p.user_id = auth.uid()
-      and p.ativo = true
-      and p.acesso_portal = true
-  )
-  and exists (
-    select 1
-    from public.horarios h
-    where h.id = registros_aulas.horario_id
-      and h.professor_id = registros_aulas.professor_id
-      and h.aluno_id = registros_aulas.aluno_id
-  )
-);
+using ((select public.professor_pode_registrar_aula(
+  registros_aulas.professor_id,
+  registros_aulas.horario_id,
+  registros_aulas.aluno_id
+)))
+with check ((select public.professor_pode_registrar_aula(
+  registros_aulas.professor_id,
+  registros_aulas.horario_id,
+  registros_aulas.aluno_id
+)));
