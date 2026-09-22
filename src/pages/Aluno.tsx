@@ -779,58 +779,6 @@ function Aluno() {
 }
 
 
-  function getPreviousLessonOccurrence(
-  dayOfWeek: number,
-  startTime: string,
-  endTime: string,
-) {
-  const now = new Date()
-
-  const [startHours, startMinutes] = startTime
-    .slice(0, 5)
-    .split(':')
-    .map(Number)
-  const [endHours, endMinutes] = endTime
-    .slice(0, 5)
-    .split(':')
-    .map(Number)
-
-  const currentDay = now.getDay()
-  let daysSince = currentDay - dayOfWeek
-
-  if (daysSince < 0) {
-    daysSince += 7
-  }
-
-  if (
-    daysSince === 0 &&
-    (now.getHours() < endHours ||
-      (now.getHours() === endHours &&
-        now.getMinutes() < endMinutes))
-  ) {
-    daysSince = 7
-  }
-
-  const startAt = new Date(now)
-  startAt.setDate(now.getDate() - daysSince)
-  startAt.setHours(
-    startHours,
-    startMinutes,
-    0,
-    0,
-  )
-
-  const endAt = new Date(startAt)
-  endAt.setHours(
-    endHours,
-    endMinutes,
-    0,
-    0,
-  )
-
-  return { startAt, endAt }
-}
-
   function canEnterLesson(startAt: string, endAt: string) {
   const start = new Date(startAt)
   const end = new Date(endAt)
@@ -864,14 +812,11 @@ function Aluno() {
 
   const difference = fiveMinutesBefore - currentTime
   const totalMinutes = Math.ceil(difference / 60000)
+  const days = Math.floor(totalMinutes / 1440)
+  const hours = Math.floor((totalMinutes % 1440) / 60)
+  const minutes = totalMinutes % 60
 
-  if (totalMinutes >= 60) {
-    const hours = Math.floor(totalMinutes / 60)
-    const minutes = totalMinutes % 60
-    return minutes > 0 ? `Disponível em ${hours}h ${minutes}min` : `Disponível em ${hours}h`
-  }
-
-  return `Disponível em ${totalMinutes} min`
+  return `Disponível em ${days} dias, ${hours} horas e ${minutes} minutos`
 }
 
   function openLesson(lesson: Lesson) {
@@ -1983,11 +1928,18 @@ function Aluno() {
     )
 
   const nextLesson =
-    lessons.find(
-      (lesson) =>
-        lesson.status ===
-        'agendada',
-    )
+    useMemo(() => {
+      return [...lessons]
+        .filter(
+          (lesson) =>
+            lesson.status === 'agendada',
+        )
+        .sort(
+          (a, b) =>
+            new Date(a.startAt).getTime() -
+            new Date(b.startAt).getTime(),
+        )[0]
+    }, [lessons])
 
   const sectionTitles: Record<
     StudentSection,
