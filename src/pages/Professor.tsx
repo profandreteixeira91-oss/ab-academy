@@ -653,6 +653,42 @@ function Professor() {
    * ============================================================
    */
 
+  function podeEntrarNaAula(
+    horario: Horario,
+  ) {
+    const now = new Date()
+
+    if (now.getDay() !== horario.dia_semana) {
+      return false
+    }
+
+    const [hours, minutes] =
+      horario.hora_inicio
+        .slice(0, 5)
+        .split(':')
+        .map(Number)
+
+    const [endHours, endMinutes] =
+      horario.hora_fim
+        .slice(0, 5)
+        .split(':')
+        .map(Number)
+
+    const startAt = new Date(now)
+    startAt.setHours(hours, minutes, 0, 0)
+
+    const endAt = new Date(now)
+    endAt.setHours(endHours, endMinutes, 0, 0)
+
+    const accessStart = new Date(
+      startAt.getTime() - 5 * 60 * 1000,
+    )
+
+    return (
+      now.getTime() >= accessStart.getTime() &&
+      now.getTime() <= endAt.getTime()
+    )
+  }
   function getNextLesson(
     horario: Horario,
   ) {
@@ -1538,9 +1574,14 @@ function Professor() {
                         type="button"
                         className="professor-primary-button"
                         onClick={() => {
+                          if (!podeEntrarNaAula(horario)) {
+                            return
+                          }
+
                           window.location.href =
                             `/professor/aula/${horario.id}`
                         }}
+                        disabled={!podeEntrarNaAula(horario)}
                       >
                         <Video
                           size={17}
