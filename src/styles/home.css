@@ -166,6 +166,16 @@ h1, h2, h3 { font-family: var(--font-display); }
 .header-actions { display: flex; align-items: center; gap: 10px; }
 .header-actions .header-button { white-space: nowrap; }
 .header-button { min-height: 44px; padding: 0 18px; }
+.teacher-access-button {
+  background: #fff;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+}
+.teacher-access-button:hover {
+  background: var(--primary-light);
+  color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
 
 @media (max-width: 900px) {
   .header-actions { gap: 7px; }
