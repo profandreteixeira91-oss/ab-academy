@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   Play,
+  Sparkles,
   UserCircle,
   Video,
   X,
@@ -2630,7 +2631,15 @@ function Aluno() {
             )}
           </button>
 
-          <button
+                    <a
+            href="/aluno/central"
+            className="student-nav-item"
+          >
+            <Sparkles size={19} />
+            <span>Central de prática</span>
+          </a>
+
+<button
             type="button"
             className={`student-nav-item ${
               section ===
