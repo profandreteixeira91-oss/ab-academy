@@ -49,6 +49,7 @@ type Lesson = {
   teacher: string
   status: LessonStatus
   meetUrl?: string
+  meetSpaceName?: string
   startAt: string
   endAt: string
 }
@@ -151,6 +152,16 @@ const exerciseTypeLabels: Record<
 const languageLabels = {
   ingles: 'Inglês',
   alemao: 'Alemão',
+}
+
+const openVirtualClassroom = (lessonId: string) => {
+  const classroomUrl = `${window.location.origin}/aluno/aula/${lessonId}`
+
+  window.open(
+    classroomUrl,
+    '_blank',
+    'noopener,noreferrer,width=1440,height=900',
+  )
 }
 
 function formatDate(value: string | null) {
@@ -817,17 +828,19 @@ function Aluno() {
 }
 
   function openLesson(lesson: Lesson) {
-  if (!lesson.meetUrl) {
-    window.alert('A sala do Google Meet ainda não foi criada para esta aula.')
-    return
-  }
-
   if (!canEnterLesson(lesson.startAt, lesson.endAt)) {
-    window.alert('A sala não está disponível neste momento.')
+    window.alert(
+      getLessonAccessMessage(
+        lesson.startAt,
+        lesson.endAt,
+      ),
+    )
+
     return
   }
 
-  window.open(lesson.meetUrl, '_blank', 'noopener,noreferrer')
+  window.location.href =
+    `/aluno/aula/${lesson.id}`
 }
 
   /*
@@ -921,69 +934,71 @@ function Aluno() {
    */
 
   async function loadStudentLessons(userId: string) {
-    try {
-      setLessonsLoading(true)
+  try {
+    setLessonsLoading(true)
 
-      const studentId = await getStudentId(userId)
+    const studentId = await getStudentId(userId)
 
-      const {
-        data: horarios,
-        error: horariosError,
-      } = await supabase
-        .from('horarios')
-        .select(`
-          id,
-          idioma,
-          dia_semana,
-          hora_inicio,
-          hora_fim,
-          disponivel,
-          aluno_id,
-          meet_url,
-          meet_space_name
-        `)
-        .eq('aluno_id', studentId)
-        .order('dia_semana', { ascending: true })
-        .order('hora_inicio', { ascending: true })
+    const {
+      data: horarios,
+      error: horariosError,
+    } = await supabase
+      .from('horarios')
+      .select(`
+        id,
+        idioma,
+        dia_semana,
+        hora_inicio,
+        hora_fim,
+        disponivel,
+        aluno_id,
+        meet_url,
+        meet_space_name
+      `)
+      .eq('aluno_id', studentId)
+      .order('dia_semana', { ascending: true })
+      .order('hora_inicio', { ascending: true })
 
-      if (horariosError) {
-        throw horariosError
-      }
-
-      const normalizedLessons: Lesson[] = (horarios || []).map((horario) => {
-        const { startAt, endAt } = getNextLessonOccurrence(
-          Number(horario.dia_semana),
-          horario.hora_inicio,
-          horario.hora_fim,
-        )
-
-        return {
-          id: horario.id,
-          language:
-            horario.idioma === 'ingles'
-              ? 'Inglês'
-              : 'Alemão',
-          date: startAt.toLocaleDateString('pt-BR'),
-          time: horario.hora_inicio.slice(0, 5),
-          teacher: 'Professor',
-          status: 'agendada',
-          meetUrl: horario.meet_url || undefined,
-          startAt: startAt.toISOString(),
-          endAt: endAt.toISOString(),
-        }
-      })
-
-      setLessons(normalizedLessons)
-    } catch (error) {
-      console.error(
-        'Erro ao carregar aulas do aluno:',
-        error,
-      )
-      setLessons([])
-    } finally {
-      setLessonsLoading(false)
+    if (horariosError) {
+      throw horariosError
     }
+
+    const normalizedLessons: Lesson[] = (horarios || []).map((horario) => {
+      const { startAt, endAt } = getNextLessonOccurrence(
+        Number(horario.dia_semana),
+        horario.hora_inicio,
+        horario.hora_fim,
+      )
+
+      return {
+        id: horario.id,
+        language:
+          horario.idioma === 'ingles'
+            ? 'Inglês'
+            : 'Alemão',
+        date: startAt.toLocaleDateString('pt-BR'),
+        time: horario.hora_inicio.slice(0, 5),
+        teacher: 'Professor',
+        status: 'agendada',
+        meetUrl: horario.meet_url || undefined,
+        meetSpaceName: horario.meet_space_name || undefined,
+        startAt: startAt.toISOString(),
+        endAt: endAt.toISOString(),
+      }
+    })
+
+    setLessons(normalizedLessons)
+  } catch (error) {
+    console.error(
+      'Erro ao carregar aulas do aluno:',
+      error,
+    )
+
+    setLessons([])
+  } finally {
+    setLessonsLoading(false)
   }
+}
 
   /*
    * =========================================================
@@ -2771,35 +2786,24 @@ function Inicio({
           <button
             type="button"
             className="student-primary-button"
-            onClick={() =>
-              onOpenLesson(
-                nextLesson,
-              )
-            }
+            onClick={() => onOpenLesson(nextLesson)}
             disabled={
-              !nextLesson.meetUrl ||
               !canEnterLesson(
                 nextLesson.startAt,
                 nextLesson.endAt,
               )
             }
-            title={
-              !nextLesson.meetUrl
-                ? 'A sala ainda não foi criada pelo professor'
-                : getLessonAccessMessage(
-                    nextLesson.startAt,
-                    nextLesson.endAt,
-                  )
-            }
+            title={getLessonAccessMessage(
+              nextLesson.startAt,
+              nextLesson.endAt,
+            )}
           >
             <Play size={17} />
 
-            {!nextLesson.meetUrl
-              ? 'Sala não criada'
-              : getLessonAccessMessage(
-                  nextLesson.startAt,
-                  nextLesson.endAt,
-                )}
+            {getLessonAccessMessage(
+              nextLesson.startAt,
+              nextLesson.endAt,
+            )}
           </button>
         </div>
       ) : (

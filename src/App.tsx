@@ -1,11 +1,22 @@
 import Home from './pages/Home'
+
 import Matricula from './pages/matricula'
+
 import Checkout from './pages/checkout'
+
 import Aluno from './pages/Aluno'
+
 import Admin from './pages/Admin'
+
 import AdminAccess from './pages/admin/AdminAccess'
+
 import PoliticaPrivacidade from './pages/PoliticaPrivacidade'
+
 import TermosServico from './pages/TermosServico'
+
+import SalaAula from './pages/SalaAula'
+
+import SalaProfessor from './pages/admin/SalaProfessor'
 
 function App() {
   const path = window.location.pathname
@@ -20,7 +31,11 @@ function App() {
       .split('/')[0]
       .trim()
 
-    if (!pagamentoId || pagamentoId === 'undefined' || pagamentoId === 'null') {
+    if (
+      !pagamentoId ||
+      pagamentoId === 'undefined' ||
+      pagamentoId === 'null'
+    ) {
       console.error(
         'ID de pagamento inválido na URL:',
         pagamentoId,
@@ -39,9 +54,11 @@ function App() {
         >
           <div>
             <h1>Pagamento inválido</h1>
+
             <p>
               Não foi possível identificar a intenção de pagamento.
             </p>
+
             <a href="/matricula">
               Voltar para matrícula
             </a>
@@ -61,6 +78,18 @@ function App() {
     return <Aluno />
   }
 
+  if (path.startsWith('/admin/aula/')) {
+  return (
+    <AdminAccess>
+      <SalaProfessor />
+    </AdminAccess>
+  )
+}
+
+  if (path.startsWith('/aluno/aula/')) {
+    return <SalaAula />
+  }
+
   if (path === '/admin') {
     return (
       <AdminAccess>
@@ -70,12 +99,12 @@ function App() {
   }
 
   if (path === '/politica-privacidade') {
-  return <PoliticaPrivacidade />
-}
+    return <PoliticaPrivacidade />
+  }
 
-if (path === '/termos-de-servico') {
-  return <TermosServico />
-}
+  if (path === '/termos-de-servico') {
+    return <TermosServico />
+  }
 
   return <Home />
 }

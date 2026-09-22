@@ -1,0 +1,1254 @@
+/* =========================================================
+   AB ACADEMY — SALA DE AULA
+   Professor + Aluno + LiveKit
+   ========================================================= */
+
+* {
+  box-sizing: border-box;
+}
+
+.academy-live-room {
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  overflow: hidden;
+  background: #0b1020;
+  color: #ffffff;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+/* =========================================================
+   HEADER DA SALA
+   ========================================================= */
+
+.academy-live-header {
+  height: 72px;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  background: #111827;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  z-index: 10;
+}
+
+.academy-live-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.academy-live-brand img {
+  width: 112px;
+  max-height: 42px;
+  object-fit: contain;
+  display: block;
+}
+
+.academy-live-course {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.academy-live-course strong {
+  color: #ffffff;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.academy-live-course span {
+  color: #9ca3af;
+  font-size: 12px;
+  line-height: 1.2;
+}
+
+.academy-live-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #9ca3af;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.academy-live-status > span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6b7280;
+  display: block;
+}
+
+.academy-live-status > span.is-connected {
+  background: #22c55e;
+  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.12);
+}
+
+/* =========================================================
+   ESTRUTURA PRINCIPAL
+   ========================================================= */
+
+.academy-live-main {
+  width: 100%;
+  height: calc(100vh - 72px);
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  overflow: hidden;
+  background: #0b1020;
+}
+
+/* =========================================================
+   ÁREA DE VÍDEO
+   ========================================================= */
+
+.academy-video-area {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #080c16;
+  overflow: hidden;
+}
+
+/* =========================================================
+   VÍDEO ÚNICO
+   ========================================================= */
+
+.academy-video-single {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.academy-video-single .academy-video-tile {
+  width: 100%;
+  height: 100%;
+}
+
+/* =========================================================
+   GRID DE VÍDEOS
+   ========================================================= */
+
+.academy-video-grid {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  padding: 18px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  overflow: auto;
+}
+
+/* =========================================================
+   TILE DE VÍDEO
+   ========================================================= */
+
+.academy-video-tile {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #151b2a;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    0 12px 35px rgba(0, 0, 0, 0.28);
+}
+
+.academy-video-element {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  background: #111827;
+}
+
+/*
+ * Quando o tile possuir vídeo LiveKit,
+ * garantimos que os elementos internos ocupem
+ * toda a área disponível.
+ */
+
+.academy-video-tile video {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+/* =========================================================
+   NOME DO PARTICIPANTE NO VÍDEO
+   ========================================================= */
+
+.academy-video-name {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 3;
+  max-width: calc(100% - 24px);
+  padding: 7px 11px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.62);
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+/* =========================================================
+   VÍDEO VAZIO
+   ========================================================= */
+
+.academy-empty-video {
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 30px;
+  text-align: center;
+  background:
+    radial-gradient(
+      circle at center,
+      rgba(59, 130, 246, 0.08),
+      transparent 42%
+    ),
+    #080c16;
+}
+
+.academy-empty-video-icon {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #93c5fd;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.18);
+}
+
+.academy-empty-video-icon span {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: #3b82f6;
+  box-shadow:
+    0 0 0 8px rgba(59, 130, 246, 0.08),
+    0 0 25px rgba(59, 130, 246, 0.35);
+}
+
+.academy-empty-video strong {
+  color: #ffffff;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.academy-empty-video p {
+  max-width: 360px;
+  margin: 8px 0 0;
+  color: #8b95a7;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* =========================================================
+   CONTROLES
+   ========================================================= */
+
+.academy-controls {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 82px;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #0d1322;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.academy-control-button {
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #1a2233;
+  color: #ffffff;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    transform 0.18s ease;
+}
+
+.academy-control-button:hover {
+  background: #263149;
+  border-color: rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+
+.academy-control-button.is-active {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.45);
+  color: #93c5fd;
+}
+
+.academy-control-button.is-off {
+  background: #3a2027;
+  border-color: rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+.academy-leave-button {
+  min-height: 46px;
+  margin-left: 8px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: #dc2626;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.academy-leave-button:hover {
+  background: #b91c1c;
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   SIDEBAR
+   ========================================================= */
+
+.academy-sidebar {
+  width: 340px;
+  min-width: 340px;
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: #111827;
+  border-left: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+/* =========================================================
+   TÍTULOS DOS PAINÉIS
+   ========================================================= */
+
+.academy-panel-title {
+  min-height: 54px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  background: #141b2a;
+}
+
+.academy-panel-title > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.academy-panel-title svg {
+  color: #93c5fd;
+  flex-shrink: 0;
+}
+
+.academy-panel-title strong {
+  color: #f3f4f6;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.academy-panel-title > span {
+  min-width: 24px;
+  height: 24px;
+  padding: 0 7px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(59, 130, 246, 0.13);
+  color: #93c5fd;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+/* =========================================================
+   PARTICIPANTES
+   ========================================================= */
+
+.academy-participants {
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: 43%;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.academy-participants-list {
+  padding: 8px;
+  overflow-y: auto;
+}
+
+.academy-participant {
+  min-height: 58px;
+  padding: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 9px;
+  transition: background 0.18s ease;
+}
+
+.academy-participant:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.academy-participant-avatar {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #24304a;
+  color: #bfdbfe;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.academy-participant-info {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.academy-participant-info strong {
+  overflow: hidden;
+  color: #f3f4f6;
+  font-size: 12px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.academy-participant-info span {
+  color: #7f8ba1;
+  font-size: 11px;
+}
+
+.academy-speaking,
+.academy-not-speaking {
+  width: 10px;
+  height: 10px;
+  flex: 0 0 10px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.academy-speaking {
+  background: #22c55e;
+  box-shadow:
+    0 0 0 4px rgba(34, 197, 94, 0.1),
+    0 0 12px rgba(34, 197, 94, 0.35);
+}
+
+.academy-not-speaking {
+  background: #374151;
+}
+
+/* =========================================================
+   ESTADO VAZIO DOS PAINÉIS
+   ========================================================= */
+
+.academy-panel-empty {
+  padding: 18px 14px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* =========================================================
+   CHAT
+   ========================================================= */
+
+.academy-chat {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.academy-chat-messages {
+  flex: 1;
+  min-height: 0;
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  background: #0f1625;
+}
+
+.academy-chat-message {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.academy-chat-message-own {
+  align-items: flex-end;
+}
+
+.academy-chat-author {
+  margin-bottom: 4px;
+  padding: 0 4px;
+  color: #7f8ba1;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.academy-chat-bubble {
+  max-width: 88%;
+  padding: 9px 11px;
+  border-radius: 10px 10px 10px 3px;
+  background: #1d293d;
+  color: #e5e7eb;
+  font-size: 12px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.academy-chat-message-own
+  .academy-chat-bubble {
+  border-radius: 10px 10px 3px 10px;
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.academy-chat-empty {
+  flex: 1;
+  min-height: 180px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 25px;
+  text-align: center;
+  color: #6b7280;
+}
+
+.academy-chat-empty svg {
+  margin-bottom: 10px;
+  color: #4b6587;
+}
+
+.academy-chat-empty strong {
+  color: #9ca3af;
+  font-size: 12px;
+}
+
+.academy-chat-empty span {
+  max-width: 200px;
+  margin-top: 5px;
+  color: #667085;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   INPUT DO CHAT
+   ========================================================= */
+
+.academy-chat-input {
+  flex: 0 0 auto;
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: #141b2a;
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.academy-chat-input input {
+  min-width: 0;
+  flex: 1;
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  outline: none;
+  background: #0d1320;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.academy-chat-input input::placeholder {
+  color: #5f6b7f;
+}
+
+.academy-chat-input input:focus {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: #101827;
+}
+
+.academy-chat-input button {
+  height: 40px;
+  padding: 0 13px;
+  border: 0;
+  border-radius: 8px;
+  background: #2563eb;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    opacity 0.18s ease;
+}
+
+.academy-chat-input button:hover:not(:disabled) {
+  background: #1d4ed8;
+}
+
+.academy-chat-input button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* =========================================================
+   SCROLLBARS
+   ========================================================= */
+
+.academy-chat-messages::-webkit-scrollbar,
+.academy-participants-list::-webkit-scrollbar,
+.academy-video-grid::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.academy-chat-messages::-webkit-scrollbar-track,
+.academy-participants-list::-webkit-scrollbar-track,
+.academy-video-grid::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.academy-chat-messages::-webkit-scrollbar-thumb,
+.academy-participants-list::-webkit-scrollbar-thumb,
+.academy-video-grid::-webkit-scrollbar-thumb {
+  border-radius: 10px;
+  background: #293448;
+}
+
+.academy-chat-messages::-webkit-scrollbar-thumb:hover,
+.academy-participants-list::-webkit-scrollbar-thumb:hover,
+.academy-video-grid::-webkit-scrollbar-thumb:hover {
+  background: #3b4a63;
+}
+
+/* =========================================================
+   PÁGINA INICIAL DA SALA
+   ========================================================= */
+
+.virtual-classroom-page {
+  min-height: 100vh;
+  background: #f6f8fc;
+  color: #111827;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.virtual-classroom-header {
+  height: 76px;
+  padding: 0 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.virtual-classroom-brand {
+  display: flex;
+  align-items: center;
+}
+
+.virtual-classroom-brand img {
+  width: 118px;
+  max-height: 44px;
+  object-fit: contain;
+}
+
+.virtual-classroom-header-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+
+.virtual-classroom-header-info span {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.virtual-classroom-header-info strong {
+  color: #111827;
+  font-size: 14px;
+}
+
+/* =========================================================
+   CONTEÚDO DA PÁGINA INICIAL
+   ========================================================= */
+
+.virtual-classroom-content {
+  width: min(1100px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 48px 0 64px;
+}
+
+.virtual-classroom-title-section {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 30px;
+  margin-bottom: 28px;
+}
+
+.virtual-classroom-eyebrow {
+  display: inline-block;
+  margin-bottom: 9px;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+
+.virtual-classroom-title-section h1 {
+  margin: 0;
+  color: #111827;
+  font-size: clamp(28px, 4vw, 42px);
+  line-height: 1.1;
+  letter-spacing: -0.025em;
+}
+
+.virtual-classroom-title-section p {
+  margin: 10px 0 0;
+  color: #6b7280;
+  font-size: 14px;
+}
+
+.virtual-classroom-status {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 13px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.virtual-classroom-status.is-available {
+  background: #ecfdf3;
+  color: #15803d;
+}
+
+.virtual-classroom-status > span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+/* =========================================================
+   CARD DE ENTRADA
+   ========================================================= */
+
+.virtual-classroom-main {
+  width: 100%;
+}
+
+.virtual-classroom-meet-card {
+  width: 100%;
+  min-height: 470px;
+  overflow: hidden;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow:
+    0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+.virtual-classroom-meet-placeholder {
+  min-height: 470px;
+  padding: 50px 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  background:
+    radial-gradient(
+      circle at 50% 20%,
+      rgba(37, 99, 235, 0.08),
+      transparent 40%
+    ),
+    #ffffff;
+}
+
+.virtual-classroom-meet-icon {
+  width: 76px;
+  height: 76px;
+  margin-bottom: 22px;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.virtual-classroom-meet-label {
+  color: #2563eb;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+}
+
+.virtual-classroom-meet-placeholder h2 {
+  margin: 9px 0 0;
+  color: #111827;
+  font-size: 25px;
+}
+
+.virtual-classroom-meet-placeholder p {
+  max-width: 470px;
+  margin: 10px 0 25px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.virtual-classroom-enter-button {
+  min-height: 48px;
+  padding: 0 22px;
+  border: 0;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  background: #2563eb;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow:
+    0 8px 20px rgba(37, 99, 235, 0.2);
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease,
+    box-shadow 0.18s ease;
+}
+
+.virtual-classroom-enter-button:hover:not(:disabled) {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+  box-shadow:
+    0 10px 24px rgba(37, 99, 235, 0.25);
+}
+
+.virtual-classroom-enter-button:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+/* =========================================================
+   LOADING
+   ========================================================= */
+
+.virtual-classroom-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  background: #f6f8fc;
+  color: #6b7280;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+  font-size: 14px;
+}
+
+.virtual-classroom-spinner {
+  animation: academy-spin 0.9s linear infinite;
+}
+
+@keyframes academy-spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* =========================================================
+   PÁGINA DE ERRO
+   ========================================================= */
+
+.virtual-classroom-error-page {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f6f8fc;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+.virtual-classroom-error-card {
+  width: min(440px, 100%);
+  padding: 36px;
+  border: 1px solid #e5e7eb;
+  border-radius: 18px;
+  background: #ffffff;
+  text-align: center;
+  box-shadow:
+    0 18px 50px rgba(15, 23, 42, 0.08);
+}
+
+.virtual-classroom-logo {
+  width: 120px;
+  max-height: 45px;
+  object-fit: contain;
+  margin-bottom: 24px;
+}
+
+.virtual-classroom-error-card h1 {
+  margin: 0;
+  color: #111827;
+  font-size: 24px;
+}
+
+.virtual-classroom-error-card p {
+  margin: 10px 0 22px;
+  color: #6b7280;
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.virtual-classroom-back-button {
+  min-height: 42px;
+  padding: 0 17px;
+  border: 0;
+  border-radius: 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #111827;
+  color: #ffffff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.virtual-classroom-back-button:hover {
+  background: #1f2937;
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   RESPONSIVIDADE — TABLET
+   ========================================================= */
+
+@media (max-width: 1000px) {
+  .academy-live-main {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+
+  .academy-sidebar {
+    width: 300px;
+    min-width: 300px;
+  }
+
+  .academy-video-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   RESPONSIVIDADE — MOBILE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .academy-live-header {
+    height: 62px;
+    padding: 0 14px;
+  }
+
+  .academy-live-brand {
+    gap: 9px;
+  }
+
+  .academy-live-brand img {
+    width: 88px;
+  }
+
+  .academy-live-course strong {
+    font-size: 12px;
+  }
+
+  .academy-live-course span {
+    font-size: 10px;
+  }
+
+  .academy-live-status {
+    font-size: 11px;
+  }
+
+  .academy-live-main {
+    height: calc(100vh - 62px);
+    display: flex;
+    flex-direction: column;
+    overflow: auto;
+  }
+
+  .academy-video-area {
+    flex: 0 0 auto;
+    height: 58vh;
+    min-height: 380px;
+  }
+
+  .academy-sidebar {
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 430px;
+    border-left: 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .academy-participants {
+    max-height: 220px;
+  }
+
+  .academy-chat {
+    min-height: 300px;
+  }
+
+  .academy-video-single,
+  .academy-video-grid {
+    padding: 10px;
+  }
+
+  .academy-video-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .academy-controls {
+    min-height: 70px;
+    padding: 10px;
+  }
+
+  .academy-control-button {
+    width: 42px;
+    height: 42px;
+  }
+
+  .academy-leave-button {
+    min-height: 42px;
+    padding: 0 13px;
+  }
+
+  .academy-leave-button span {
+    display: none;
+  }
+
+  .virtual-classroom-header {
+    height: 66px;
+    padding: 0 18px;
+  }
+
+  .virtual-classroom-brand img {
+    width: 98px;
+  }
+
+  .virtual-classroom-content {
+    width: min(100% - 32px, 1100px);
+    padding: 32px 0 45px;
+  }
+
+  .virtual-classroom-title-section {
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .virtual-classroom-status {
+    align-self: flex-start;
+  }
+
+  .virtual-classroom-meet-card,
+  .virtual-classroom-meet-placeholder {
+    min-height: 420px;
+  }
+}
+
+/* =========================================================
+   RESPONSIVIDADE — MOBILE PEQUENO
+   ========================================================= */
+
+@media (max-width: 480px) {
+  .academy-live-header {
+    padding: 0 10px;
+  }
+
+  .academy-live-course {
+    display: none;
+  }
+
+  .academy-live-status {
+    font-size: 10px;
+  }
+
+  .academy-video-area {
+    height: 52vh;
+    min-height: 320px;
+  }
+
+  .academy-video-name {
+    left: 8px;
+    bottom: 8px;
+    padding: 6px 8px;
+    font-size: 10px;
+  }
+
+  .academy-chat-input {
+    padding: 9px;
+  }
+
+  .academy-chat-input input {
+    height: 38px;
+  }
+
+  .academy-chat-input button {
+    height: 38px;
+    padding: 0 10px;
+  }
+
+  .virtual-classroom-header {
+    padding: 0 14px;
+  }
+
+  .virtual-classroom-header-info span {
+    display: none;
+  }
+
+  .virtual-classroom-content {
+    width: calc(100% - 24px);
+    padding-top: 25px;
+  }
+
+  .virtual-classroom-title-section h1 {
+    font-size: 29px;
+  }
+
+  .virtual-classroom-meet-card,
+  .virtual-classroom-meet-placeholder {
+    min-height: 390px;
+  }
+
+  .virtual-classroom-meet-placeholder {
+    padding: 35px 20px;
+  }
+
+  .virtual-classroom-meet-placeholder h2 {
+    font-size: 22px;
+  }
+
+  .virtual-classroom-error-card {
+    padding: 28px 22px;
+  }
+}

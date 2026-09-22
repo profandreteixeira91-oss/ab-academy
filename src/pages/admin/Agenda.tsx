@@ -4,15 +4,20 @@ import {
   CheckCircle2,
   Clock3,
   Edit3,
-  ExternalLink,
   Plus,
-  Video,
   UserRound,
+  Video,
   X,
 } from 'lucide-react'
 
 import { supabase } from '../../lib/supabase'
 import '../../styles/admin/Agenda.css'
+
+/*
+ * =========================================================
+ * TIPOS
+ * =========================================================
+ */
 
 type Aluno = {
   id: string
@@ -27,8 +32,6 @@ type Horario = {
   hora_fim: string
   disponivel: boolean
   aluno_id: string | null
-  meet_url: string | null
-  meet_space_name: string | null
 }
 
 type HorarioForm = {
@@ -55,14 +58,48 @@ type HorarioForm = {
  */
 
 const diasSemana = [
-  { value: 1, label: 'Segunda', short: 'SEG' },
-  { value: 2, label: 'Terça', short: 'TER' },
-  { value: 3, label: 'Quarta', short: 'QUA' },
-  { value: 4, label: 'Quinta', short: 'QUI' },
-  { value: 5, label: 'Sexta', short: 'SEX' },
-  { value: 6, label: 'Sábado', short: 'SÁB' },
-  { value: 0, label: 'Domingo', short: 'DOM' },
+  {
+    value: 1,
+    label: 'Segunda',
+    short: 'SEG',
+  },
+  {
+    value: 2,
+    label: 'Terça',
+    short: 'TER',
+  },
+  {
+    value: 3,
+    label: 'Quarta',
+    short: 'QUA',
+  },
+  {
+    value: 4,
+    label: 'Quinta',
+    short: 'QUI',
+  },
+  {
+    value: 5,
+    label: 'Sexta',
+    short: 'SEX',
+  },
+  {
+    value: 6,
+    label: 'Sábado',
+    short: 'SÁB',
+  },
+  {
+    value: 0,
+    label: 'Domingo',
+    short: 'DOM',
+  },
 ]
+
+/*
+ * =========================================================
+ * IDIOMAS
+ * =========================================================
+ */
 
 const idiomas = [
   {
@@ -75,6 +112,12 @@ const idiomas = [
   },
 ]
 
+/*
+ * =========================================================
+ * FORMULÁRIO INICIAL
+ * =========================================================
+ */
+
 const initialForm: HorarioForm = {
   idioma: 'ingles',
   dia_semana: 1,
@@ -84,39 +127,45 @@ const initialForm: HorarioForm = {
   aluno_id: '',
 }
 
+/*
+ * =========================================================
+ * DIA ATUAL
+ * =========================================================
+ */
+
 function getCurrentWeekday() {
   return new Date().getDay()
 }
+
+/*
+ * =========================================================
+ * COMPONENTE
+ * =========================================================
+ */
 
 export default function Agenda() {
   const [horarios, setHorarios] = useState<Horario[]>([])
   const [alunos, setAlunos] = useState<Aluno[]>([])
 
-  const [selectedDay, setSelectedDay] = useState(
-    getCurrentWeekday(),
-  )
+  const [selectedDay, setSelectedDay] =
+    useState<number>(getCurrentWeekday())
 
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   const [modalOpen, setModalOpen] = useState(false)
+
   const [editingId, setEditingId] =
     useState<string | null>(null)
 
   const [form, setForm] =
     useState<HorarioForm>(initialForm)
 
-  const [connectingGoogle, setConnectingGoogle] =
-    useState(false)
-
-  const [creatingMeetId, setCreatingMeetId] =
-    useState<string | null>(null)
-
   /*
-   * =========================================================
+   * =======================================================
    * CARREGAR AGENDA
-   * =========================================================
+   * =======================================================
    */
 
   useEffect(() => {
@@ -142,9 +191,7 @@ export default function Agenda() {
               hora_inicio,
               hora_fim,
               disponivel,
-              aluno_id,
-              meet_url,
-              meet_space_name
+              aluno_id
             `,
           )
           .order('dia_semana', {
@@ -189,7 +236,9 @@ export default function Agenda() {
       )
 
       setError(
-        `Não foi possível carregar a agenda.\n${getErrorMessage(err)}`,
+        `Não foi possível carregar a agenda.\n${getErrorMessage(
+          err,
+        )}`,
       )
     } finally {
       setLoading(false)
@@ -197,9 +246,9 @@ export default function Agenda() {
   }
 
   /*
-   * =========================================================
-   * HORÁRIOS DO DIA
-   * =========================================================
+   * =======================================================
+   * HORÁRIOS DO DIA SELECIONADO
+   * =======================================================
    */
 
   const horariosDoDia = useMemo(() => {
@@ -216,9 +265,9 @@ export default function Agenda() {
   }, [horarios, selectedDay])
 
   /*
-   * =========================================================
+   * =======================================================
    * AUXILIARES
-   * =========================================================
+   * =======================================================
    */
 
   function getAlunoNome(
@@ -250,9 +299,9 @@ export default function Agenda() {
   }
 
   /*
-   * =========================================================
+   * =======================================================
    * MODAL - CRIAR
-   * =========================================================
+   * =======================================================
    */
 
   function openCreateModal() {
@@ -267,9 +316,9 @@ export default function Agenda() {
   }
 
   /*
-   * =========================================================
+   * =======================================================
    * MODAL - EDITAR
-   * =========================================================
+   * =======================================================
    */
 
   function openEditModal(
@@ -306,6 +355,12 @@ export default function Agenda() {
     setModalOpen(true)
   }
 
+  /*
+   * =======================================================
+   * FECHAR MODAL
+   * =======================================================
+   */
+
   function closeModal() {
     if (saving) {
       return
@@ -313,13 +368,16 @@ export default function Agenda() {
 
     setModalOpen(false)
     setEditingId(null)
-    setForm(initialForm)
+    setForm({
+      ...initialForm,
+      dia_semana: selectedDay,
+    })
   }
 
   /*
-   * =========================================================
+   * =======================================================
    * SALVAR HORÁRIO
-   * =========================================================
+   * =======================================================
    */
 
   async function handleSave() {
@@ -327,17 +385,30 @@ export default function Agenda() {
       setSaving(true)
       setError(null)
 
+      /*
+       * Validação do horário inicial
+       */
+
       if (!form.hora_inicio) {
         throw new Error(
           'Informe o horário inicial.',
         )
       }
 
+      /*
+       * Validação do horário final
+       */
+
       if (!form.hora_fim) {
         throw new Error(
           'Informe o horário final.',
         )
       }
+
+      /*
+       * O horário final precisa ser maior
+       * que o horário inicial.
+       */
 
       if (
         form.hora_inicio >=
@@ -347,6 +418,12 @@ export default function Agenda() {
           'O horário final deve ser maior que o horário inicial.',
         )
       }
+
+      /*
+       * Quando existe aluno vinculado,
+       * o horário fica automaticamente
+       * indisponível para novas matrículas.
+       */
 
       const payload = {
         idioma: form.idioma,
@@ -361,6 +438,10 @@ export default function Agenda() {
             : form.disponivel,
       }
 
+      /*
+       * EDITAR
+       */
+
       if (editingId) {
         const {
           error: updateError,
@@ -373,10 +454,16 @@ export default function Agenda() {
           throw updateError
         }
 
-        alert(
+        window.alert(
           'Horário atualizado com sucesso.',
         )
-      } else {
+      }
+
+      /*
+       * CRIAR
+       */
+
+      else {
         const {
           error: insertError,
         } = await supabase
@@ -387,14 +474,18 @@ export default function Agenda() {
           throw insertError
         }
 
-        alert(
+        window.alert(
           'Horário criado com sucesso.',
         )
       }
 
       setModalOpen(false)
       setEditingId(null)
-      setForm(initialForm)
+
+      setForm({
+        ...initialForm,
+        dia_semana: selectedDay,
+      })
 
       await loadAgenda()
     } catch (err) {
@@ -403,8 +494,10 @@ export default function Agenda() {
         err,
       )
 
-      alert(
-        `Não foi possível salvar o horário.\n\n${getErrorMessage(err)}`,
+      window.alert(
+        `Não foi possível salvar o horário.\n\n${getErrorMessage(
+          err,
+        )}`,
       )
     } finally {
       setSaving(false)
@@ -412,14 +505,19 @@ export default function Agenda() {
   }
 
   /*
-   * =========================================================
+   * =======================================================
    * DISPONIBILIDADE
-   * =========================================================
+   * =======================================================
    */
 
   async function toggleAvailability(
     horario: Horario,
   ) {
+    /*
+     * Horário ocupado não pode ser
+     * alterado para disponibilidade.
+     */
+
     if (horario.aluno_id) {
       return
     }
@@ -450,16 +548,18 @@ export default function Agenda() {
         err,
       )
 
-      alert(
-        `Não foi possível alterar a disponibilidade.\n\n${getErrorMessage(err)}`,
+      window.alert(
+        `Não foi possível alterar a disponibilidade.\n\n${getErrorMessage(
+          err,
+        )}`,
       )
     }
   }
 
   /*
-   * =========================================================
+   * =======================================================
    * DESVINCULAR ALUNO
-   * =========================================================
+   * =======================================================
    */
 
   async function unlinkStudent(
@@ -502,327 +602,48 @@ export default function Agenda() {
         err,
       )
 
-      alert(
-        `Não foi possível desvincular o aluno.\n\n${getErrorMessage(err)}`,
+      window.alert(
+        `Não foi possível desvincular o aluno.\n\n${getErrorMessage(
+          err,
+        )}`,
       )
     }
   }
 
   /*
-   * =========================================================
-   * GOOGLE MEET - CONEXÃO OAUTH
-   * =========================================================
+   * =======================================================
+   * ENTRAR NA AULA
+   * =======================================================
+   *
+   * A sala agora é interna da AB Academy.
+   *
+   * O professor entra em:
+   *
+   * /admin/aula/{horario.id}
+   *
+   * O componente SalaProfessor será responsável
+   * pela autenticação do LiveKit.
    */
 
-  async function connectGoogleMeet() {
-    if (connectingGoogle) {
-      return
-    }
-
-    try {
-      setConnectingGoogle(true)
-      setError(null)
-
-      const {
-        data: {
-          session,
-        },
-        error: sessionError,
-      } = await supabase.auth.getSession()
-
-      if (sessionError) {
-        throw sessionError
-      }
-
-      if (!session?.access_token) {
-        throw new Error(
-          'Sua sessão expirou. Faça login novamente.',
-        )
-      }
-
-      const response =
-        await fetch(
-          'https://vwmrxdzskvwojyfddjwd.supabase.co/functions/v1/google-meet-auth',
-          {
-            method: 'GET',
-            headers: {
-              Authorization:
-                `Bearer ${session.access_token}`,
-              apikey:
-                import.meta.env
-                  .VITE_SUPABASE_ANON_KEY,
-              'Content-Type':
-                'application/json',
-            },
-          },
-        )
-
-      const responseText =
-        await response.text()
-
-      let data: any = null
-
-      try {
-        data = responseText
-          ? JSON.parse(responseText)
-          : null
-      } catch {
-        data = {
-          error:
-            responseText ||
-            'Resposta inválida da Edge Function.',
-        }
-      }
-
-      console.log(
-        'google-meet-auth:',
-        {
-          status: response.status,
-          ok: response.ok,
-          data,
-        },
-      )
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error ||
-            data?.details ||
-            'Não foi possível iniciar a conexão com o Google.',
-        )
-      }
-
-      if (!data?.authorization_url) {
-        throw new Error(
-          'O Google não retornou a URL de autorização.',
-        )
-      }
-
-      window.location.href =
-        data.authorization_url
-    } catch (err) {
-      console.error(
-        'Erro ao conectar Google Meet:',
-        err,
-      )
-
-      alert(
-        `Não foi possível conectar o Google Meet.\n\n${getErrorMessage(err)}`,
-      )
-
-      setConnectingGoogle(false)
-    }
-  }
-
-  /*
-   * =========================================================
-   * GOOGLE MEET - CRIAR SALA
-   * =========================================================
-   */
-
-  async function createMeet(horario: Horario) {
-  if (creatingMeetId) {
-    return
-  }
-
-  try {
-    setCreatingMeetId(horario.id)
-    setError(null)
-
-    console.log(
-      '[Google Meet] Iniciando criação para horário:',
-      horario.id,
-    )
-
-    // Primeiro tenta obter a sessão atual
-    let {
-      data: { session },
-      error: sessionError,
-    } = await supabase.auth.getSession()
-
-    if (sessionError) {
-      console.error(
-        '[Google Meet] Erro ao obter sessão:',
-        sessionError,
-      )
-
-      throw sessionError
-    }
-
-    // Se não houver token, tenta renovar a sessão
-    if (!session?.access_token) {
-      console.log(
-        '[Google Meet] Sessão não encontrada. Tentando renovar...',
-      )
-
-      const {
-        data: refreshData,
-        error: refreshError,
-      } = await supabase.auth.refreshSession()
-
-      if (refreshError) {
-        console.error(
-          '[Google Meet] Erro ao renovar sessão:',
-          refreshError,
-        )
-
-        throw refreshError
-      }
-
-      session = refreshData.session
-    }
-
-    if (!session?.access_token) {
-      throw new Error(
-        'Sua sessão expirou. Faça login novamente.',
-      )
-    }
-
-    console.log(
-      '[Google Meet] Sessão encontrada.',
-      {
-        userId: session.user?.id,
-        hasToken: !!session.access_token,
-      },
-    )
-
-    const functionUrl =
-      'https://vwmrxdzskvwojyfddjwd.supabase.co/functions/v1/google-meet-create'
-
-    console.log(
-      '[Google Meet] Chamando:',
-      functionUrl,
-    )
-
-    const response = await fetch(
-      functionUrl,
-      {
-        method: 'POST',
-
-        headers: {
-          Authorization:
-            `Bearer ${session.access_token}`,
-
-          apikey:
-            import.meta.env
-              .VITE_SUPABASE_ANON_KEY,
-
-          'Content-Type':
-            'application/json',
-        },
-
-        body: JSON.stringify({
-          horario_id: horario.id,
-        }),
-      },
-    )
-
-    console.log(
-      '[Google Meet] Resposta recebida:',
-      response.status,
-    )
-
-    const responseText =
-      await response.text()
-
-    let data: any = null
-
-    try {
-      data = responseText
-        ? JSON.parse(responseText)
-        : null
-    } catch {
-      data = {
-        error:
-          responseText ||
-          'Resposta inválida da Edge Function.',
-      }
-    }
-
-    console.log(
-      '[Google Meet] Resultado:',
-      {
-        status: response.status,
-        ok: response.ok,
-        data,
-      },
-    )
-
-    if (!response.ok) {
-      if (
-        data?.code ===
-        'GOOGLE_NOT_CONNECTED'
-      ) {
-        const shouldConnect =
-          window.confirm(
-            'Nenhuma conta Google Meet está conectada.\n\nDeseja conectar agora?',
-          )
-
-        if (shouldConnect) {
-          await connectGoogleMeet()
-        }
-
-        return
-      }
-
-      throw new Error(
-        data?.error ||
-          data?.google_error ||
-          data?.details ||
-          'Não foi possível criar a sala Google Meet.',
-      )
-    }
-
-    if (!data?.meet_url) {
-      throw new Error(
-        'O Google não retornou o link da sala.',
-      )
-    }
-
-    await loadAgenda()
-
-    alert(
-      data.existing
-        ? 'Este horário já possui uma sala Google Meet.'
-        : 'Sala Google Meet criada com sucesso.',
-    )
-  } catch (err) {
-    console.error(
-      '[Google Meet] Erro ao criar sala:',
-      err,
-    )
-
-    alert(
-      `Não foi possível criar a sala Google Meet.\n\n${getErrorMessage(err)}`,
-    )
-  } finally {
-    setCreatingMeetId(null)
-  }
-}
-
-  /*
-   * =========================================================
-   * ABRIR GOOGLE MEET
-   * =========================================================
-   */
-
-  function openMeet(
-    meetUrl: string | null,
+  function openTeacherRoom(
+    horario: Horario,
   ) {
-    if (!meetUrl) {
+    if (!horario.aluno_id) {
+      window.alert(
+        'Este horário ainda não possui um aluno vinculado.',
+      )
+
       return
     }
 
-    window.open(
-      meetUrl,
-      '_blank',
-      'noopener,noreferrer',
-    )
+    window.location.href =
+      `/admin/aula/${horario.id}`
   }
 
   /*
-   * =========================================================
+   * =======================================================
    * TRATAMENTO DE ERROS
-   * =========================================================
+   * =======================================================
    */
 
   function getErrorMessage(
@@ -864,15 +685,17 @@ export default function Agenda() {
   }
 
   /*
-   * =========================================================
+   * =======================================================
    * RENDER
-   * =========================================================
+   * =======================================================
    */
 
   return (
     <section className="agenda-page">
 
-      {/* HEADER */}
+      {/* =================================================
+          HEADER
+          ================================================= */}
 
       <div className="agenda-page-header">
         <div>
@@ -893,23 +716,6 @@ export default function Agenda() {
         >
           <button
             type="button"
-            className="agenda-secondary-button"
-            onClick={
-              connectGoogleMeet
-            }
-            disabled={
-              connectingGoogle
-            }
-          >
-            <Video size={18} />
-
-            {connectingGoogle
-              ? 'Conectando...'
-              : 'Conectar Google Meet'}
-          </button>
-
-          <button
-            type="button"
             className="agenda-primary-button"
             onClick={
               openCreateModal
@@ -922,7 +728,9 @@ export default function Agenda() {
         </div>
       </div>
 
-      {/* ERRO */}
+      {/* =================================================
+          ERRO
+          ================================================= */}
 
       {error && (
         <div className="agenda-error">
@@ -930,7 +738,9 @@ export default function Agenda() {
         </div>
       )}
 
-      {/* DIAS */}
+      {/* =================================================
+          DIAS DA SEMANA
+          ================================================= */}
 
       <div className="agenda-day-selector">
         {diasSemana.map(
@@ -986,9 +796,13 @@ export default function Agenda() {
         )}
       </div>
 
-      {/* RESUMO */}
+      {/* =================================================
+          RESUMO
+          ================================================= */}
 
       <div className="agenda-summary">
+
+        {/* DIA */}
 
         <div className="agenda-summary-item">
           <CalendarDays
@@ -1020,6 +834,8 @@ export default function Agenda() {
           </div>
         </div>
 
+        {/* DISPONÍVEIS */}
+
         <div className="agenda-summary-item">
           <CheckCircle2
             size={18}
@@ -1041,6 +857,8 @@ export default function Agenda() {
             </span>
           </div>
         </div>
+
+        {/* OCUPADOS */}
 
         <div className="agenda-summary-item">
           <UserRound
@@ -1065,11 +883,14 @@ export default function Agenda() {
 
       </div>
 
-      {/* PAINEL */}
+      {/* =================================================
+          PAINEL DE HORÁRIOS
+          ================================================= */}
 
       <div className="agenda-panel">
 
         <div className="agenda-panel-header">
+
           <div>
             <h2>
               Horários de{' '}
@@ -1091,25 +912,31 @@ export default function Agenda() {
           <Clock3
             size={20}
           />
+
         </div>
 
         <div className="agenda-panel-content">
 
-          {/* LOADING */}
+          {/* =================================================
+              LOADING
+              ================================================= */}
 
           {loading ? (
             <div className="agenda-loading">
+
               <div className="agenda-loading-spinner" />
 
               <p>
                 Carregando horários...
               </p>
-            </div>
 
+            </div>
           ) : horariosDoDia.length ===
             0 ? (
 
-            /* VAZIO */
+            /* ===============================================
+               VAZIO
+               =============================================== */
 
             <div className="agenda-empty">
 
@@ -1148,12 +975,15 @@ export default function Agenda() {
 
           ) : (
 
-            /* LISTA */
+            /* ===============================================
+               LISTA
+               =============================================== */
 
             <div className="agenda-list">
 
               {horariosDoDia.map(
                 (horario) => {
+
                   const alunoNome =
                     getAlunoNome(
                       horario.aluno_id,
@@ -1161,10 +991,6 @@ export default function Agenda() {
 
                   const ocupado =
                     !!horario.aluno_id
-
-                  const creatingMeet =
-                    creatingMeetId ===
-                    horario.id
 
                   return (
                     <div
@@ -1178,9 +1004,12 @@ export default function Agenda() {
                       }`}
                     >
 
-                      {/* HORÁRIO */}
+                      {/* =================================
+                          HORÁRIO
+                          ================================= */}
 
                       <div className="agenda-time">
+
                         <strong>
                           {formatHour(
                             horario.hora_inicio,
@@ -1192,9 +1021,12 @@ export default function Agenda() {
                             horario.hora_fim,
                           )}
                         </span>
+
                       </div>
 
-                      {/* INFORMAÇÕES */}
+                      {/* =================================
+                          INFORMAÇÕES
+                          ================================= */}
 
                       <div className="agenda-item-main">
 
@@ -1224,6 +1056,8 @@ export default function Agenda() {
 
                         </div>
 
+                        {/* ALUNO */}
+
                         <div className="agenda-student">
 
                           <UserRound
@@ -1236,6 +1070,8 @@ export default function Agenda() {
                           </span>
 
                         </div>
+
+                        {/* STATUS DA AULA */}
 
                         <div
                           style={{
@@ -1255,61 +1091,45 @@ export default function Agenda() {
                           />
 
                           <span>
-                            {horario.meet_url
-                              ? 'Google Meet configurado'
-                              : 'Google Meet não configurado'}
+                            {ocupado
+                              ? 'Aula disponível na AB Academy'
+                              : 'Aguardando matrícula'}
                           </span>
 
                         </div>
 
                       </div>
 
-                      {/* AÇÕES */}
+                      {/* =================================
+                          AÇÕES
+                          ================================= */}
 
                       <div className="agenda-actions">
 
-                        {/* GOOGLE MEET */}
+                        {/* =================================
+                            ENTRAR NA AULA
+                            ================================= */}
 
-                        {horario.meet_url ? (
-
+                        {ocupado && (
                           <button
                             type="button"
                             className="agenda-action-button"
                             onClick={() =>
-                              openMeet(
-                                horario.meet_url,
-                              )
-                            }
-                            title="Abrir aula no Google Meet"
-                          >
-                            <ExternalLink
-                              size={17}
-                            />
-                          </button>
-
-                        ) : (
-
-                          <button
-                            type="button"
-                            className="agenda-action-button"
-                            onClick={() =>
-                              createMeet(
+                              openTeacherRoom(
                                 horario,
                               )
                             }
-                            disabled={
-                              creatingMeet
-                            }
-                            title="Criar sala Google Meet"
+                            title="Entrar na aula"
                           >
                             <Video
                               size={17}
                             />
                           </button>
-
                         )}
 
-                        {/* DESVINCULAR ALUNO */}
+                        {/* =================================
+                            DESVINCULAR ALUNO
+                            ================================= */}
 
                         {ocupado && (
                           <button
@@ -1328,7 +1148,9 @@ export default function Agenda() {
                           </button>
                         )}
 
-                        {/* DISPONIBILIDADE */}
+                        {/* =================================
+                            DISPONIBILIDADE
+                            ================================= */}
 
                         {!ocupado && (
                           <button
@@ -1351,7 +1173,9 @@ export default function Agenda() {
                           </button>
                         )}
 
-                        {/* EDITAR */}
+                        {/* =================================
+                            EDITAR
+                            ================================= */}
 
                         <button
                           type="button"
@@ -1370,27 +1194,6 @@ export default function Agenda() {
 
                       </div>
 
-                      {/* STATUS CRIAÇÃO MEET */}
-
-                      {creatingMeet && (
-                        <div
-                          style={{
-                            position:
-                              'absolute',
-                            right:
-                              '20px',
-                            bottom:
-                              '-28px',
-                            fontSize:
-                              '12px',
-                            opacity:
-                              0.7,
-                          }}
-                        >
-                          Criando sala...
-                        </div>
-                      )}
-
                     </div>
                   )
                 },
@@ -1402,7 +1205,9 @@ export default function Agenda() {
         </div>
       </div>
 
-      {/* MODAL */}
+      {/* =================================================
+          MODAL
+          ================================================= */}
 
       {modalOpen && (
         <div
@@ -1421,11 +1226,14 @@ export default function Agenda() {
 
           <div className="agenda-modal">
 
-            {/* HEADER */}
+            {/* =============================================
+                HEADER
+                ============================================= */}
 
             <div className="agenda-modal-header">
 
               <div>
+
                 <h2>
                   {editingId
                     ? 'Editar horário'
@@ -1436,6 +1244,7 @@ export default function Agenda() {
                   Configure o horário da
                   agenda.
                 </p>
+
               </div>
 
               <button
@@ -1455,11 +1264,15 @@ export default function Agenda() {
 
             </div>
 
-            {/* FORMULÁRIO */}
+            {/* =============================================
+                FORMULÁRIO
+                ============================================= */}
 
             <div className="agenda-form">
 
-              {/* IDIOMA */}
+              {/* =========================================
+                  IDIOMA
+                  ========================================= */}
 
               <div className="agenda-form-field">
 
@@ -1480,6 +1293,7 @@ export default function Agenda() {
                         current,
                       ) => ({
                         ...current,
+
                         idioma:
                           event
                             .target
@@ -1514,7 +1328,9 @@ export default function Agenda() {
 
               </div>
 
-              {/* DIA */}
+              {/* =========================================
+                  DIA DA SEMANA
+                  ========================================= */}
 
               <div className="agenda-form-field">
 
@@ -1535,6 +1351,7 @@ export default function Agenda() {
                         current,
                       ) => ({
                         ...current,
+
                         dia_semana:
                           Number(
                             event
@@ -1569,9 +1386,13 @@ export default function Agenda() {
 
               </div>
 
-              {/* HORÁRIOS */}
+              {/* =========================================
+                  HORÁRIOS
+                  ========================================= */}
 
               <div className="agenda-form-row">
+
+                {/* INÍCIO */}
 
                 <div className="agenda-form-field">
 
@@ -1593,6 +1414,7 @@ export default function Agenda() {
                           current,
                         ) => ({
                           ...current,
+
                           hora_inicio:
                             event
                               .target
@@ -1603,6 +1425,8 @@ export default function Agenda() {
                   />
 
                 </div>
+
+                {/* FIM */}
 
                 <div className="agenda-form-field">
 
@@ -1624,6 +1448,7 @@ export default function Agenda() {
                           current,
                         ) => ({
                           ...current,
+
                           hora_fim:
                             event
                               .target
@@ -1637,7 +1462,9 @@ export default function Agenda() {
 
               </div>
 
-              {/* ALUNO */}
+              {/* =========================================
+                  ALUNO
+                  ========================================= */}
 
               <div className="agenda-form-field">
 
@@ -1658,9 +1485,11 @@ export default function Agenda() {
                         current,
                       ) => ({
                         ...current,
+
                         aluno_id:
                           event.target
                             .value,
+
                         disponivel:
                           event.target
                             .value
@@ -1698,7 +1527,9 @@ export default function Agenda() {
 
               </div>
 
-              {/* DISPONIBILIDADE */}
+              {/* =========================================
+                  DISPONIBILIDADE
+                  ========================================= */}
 
               <label className="agenda-toggle">
 
@@ -1719,6 +1550,7 @@ export default function Agenda() {
                         current,
                       ) => ({
                         ...current,
+
                         disponivel:
                           event
                             .target
@@ -1737,7 +1569,9 @@ export default function Agenda() {
 
             </div>
 
-            {/* FOOTER */}
+            {/* =============================================
+                FOOTER
+                ============================================= */}
 
             <div className="agenda-modal-footer">
 
