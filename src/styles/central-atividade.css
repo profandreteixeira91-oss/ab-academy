@@ -70,6 +70,18 @@
 .central-question strong{display:block;color:#172033;font-size:19px;line-height:1.5;font-weight:750}
 
 /* LANGUAGE / TRANSLATION LAYOUT */
+/* FULL ACTIVITY CONTENT */
+.central-activity-content-grid{width:100%}
+.central-activity-content-main{min-width:0}
+.central-answers-section{margin:0 42px 24px}
+.central-section-label{margin-bottom:10px;color:#64748b;text-transform:uppercase;letter-spacing:.08em;font-size:9px;font-weight:900}
+.central-answers-section .central-exercise-area{padding:0;min-height:0}
+.central-answers-section .central-options{grid-template-columns:repeat(2,minmax(0,1fr))}
+.central-answers-section .central-blanks{grid-template-columns:repeat(2,minmax(0,1fr))}
+.central-answers-section .central-order-list{grid-template-columns:1fr}
+.central-answers-section .central-pairs{grid-template-columns:1fr}
+.central-progress{margin-left:42px;margin-right:42px}
+
 .central-language-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin-bottom:24px}
 .central-language-grid.translated{grid-template-columns:minmax(0,1fr) minmax(0,1fr);margin-left:42px;margin-right:42px;border:1px solid #e2e8f0;border-radius:14px;overflow:hidden;background:#fbfcfe}
 .central-language-column{min-width:0}
@@ -184,6 +196,8 @@
   .central-activity-heading h1{font-size:23px}
   .central-activity-heading p{font-size:13px}
   .central-instructions,.central-translation-toolbar,.central-exercise-text,.central-question,.central-progress{margin-left:20px;margin-right:20px}
+  .central-answers-section{margin-left:20px;margin-right:20px}
+  .central-answers-section .central-options,.central-answers-section .central-blanks{grid-template-columns:1fr}
   .central-language-grid.translated{grid-template-columns:1fr;margin-left:20px;margin-right:20px}
   .central-language-grid.translated .central-language-column+ .central-language-column{border-left:0;border-top:1px solid #e2e8f0}
   .central-language-column .central-exercise-text{padding:16px 18px}
