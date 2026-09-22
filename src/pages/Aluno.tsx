@@ -154,16 +154,6 @@ const languageLabels = {
   alemao: 'Alemão',
 }
 
-const openVirtualClassroom = (lessonId: string) => {
-  const classroomUrl = `${window.location.origin}/aluno/aula/${lessonId}`
-
-  window.open(
-    classroomUrl,
-    '_blank',
-    'noopener,noreferrer,width=1440,height=900',
-  )
-}
-
 function formatDate(value: string | null) {
   if (!value) {
     return 'Sem prazo'
@@ -1083,7 +1073,6 @@ function Aluno() {
       normalizedCompletedLessons,
     )
   } catch (error) {
-    console.error(
     console.error(
       'Erro ao carregar aulas do aluno:',
       error,
@@ -3928,6 +3917,7 @@ function ExerciseContentView({
 
 type ProgressoProps = {
   activities: Activity[]
+  completedLessons: Lesson[]
 }
 
 function Progresso({
@@ -4155,11 +4145,6 @@ function Progresso({
       )}
     </>
   )
-}
-
-type ProgressoProps = {
-  activities: Activity[]
-  completedLessons: Lesson[]
 }
 
 type PerfilProps = {
