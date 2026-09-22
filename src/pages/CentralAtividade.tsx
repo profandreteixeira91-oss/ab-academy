@@ -290,7 +290,7 @@ function CentralAtividade(){
       <div className="central-activity-breadcrumb">
         <a href="/aluno/central">Central</a><span>›</span><span>{LANGUAGE_LABELS[activity.idioma]}</span><span>›</span><span>{activity.nivel}</span>
       </div>
-      <div className="central-activity-layout">
+      <div className="central-activity-shell">
         <aside className="central-activity-sidebar">
           <div className="central-side-brand"><div className="central-side-icon"><CircleHelp size={20}/></div><div><strong>Prática</strong><span>AB Academy</span></div></div>
           <div className="central-side-divider"/>
@@ -305,7 +305,7 @@ function CentralAtividade(){
         <section className="central-activity-card">
           <div className="central-activity-heading">
             <div className="central-activity-heading-content">
-              <div className="central-activity-kicker"><span>ATIVIDADE DE PRÁTICA</span><i/><div className="central-live-time"><Clock3 size={14}/>{formatTime(elapsedSeconds)}</div></div>
+              <div className="central-activity-eyebrow"><span>ATIVIDADE DE PRÁTICA</span><i/><div className="central-live-time"><Clock3 size={14}/>{formatTime(elapsedSeconds)}</div></div>
               <h1>{activity.titulo}</h1>
               {activity.descricao&&<p>{activity.descricao}</p>}
             </div>
@@ -330,7 +330,7 @@ function CentralAtividade(){
           {result?<div className={result.correct?'central-result success':'central-result'}>
 <div className="central-result-hero"><div className="central-result-icon">{result.correct?<CheckCircle2 size={25}/>:<CircleHelp size={25}/>}</div><div className="central-result-copy"><span>{result.correct?'Muito bem!':'Atividade concluída'}</span><strong>{result.message}</strong></div><div className="central-result-score"><strong>{result.score}</strong><span>/100</span></div></div>
 {activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}
-<div className="central-result-actions"><button type="button" className="central-secondary-button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer</button><button type="button" className="central-primary-button" onClick={goNext}>{nextActivity?<>Próxima atividade <ArrowRight size={18}/></>:<>Voltar para a Central <ArrowRight size={18}/></>}</button></div></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
+<div className="central-result-actions"><button type="button" className="central-secondary-button" onClick={()=>{setAnswers({});setResult(null);setSaveState("idle");window.sessionStorage.removeItem(`ab-academy-activity-start-${activity.id}`);const start=Date.now();window.sessionStorage.setItem(`ab-academy-activity-start-${activity.id}`,String(start));setStartedAt(start);setElapsedSeconds(0)}}><RotateCcw size={17}/>Refazer</button><div className="central-result-next">{nextActivity?<><span>PRÓXIMA NA SEQUÊNCIA</span><strong>{nextActivity.titulo}</strong></>:<span>Você chegou ao final desta sequência.</span>}</div><button type="button" className="central-primary-button" onClick={goNext}>{nextActivity?<>Próxima atividade <ArrowRight size={18}/></>:<>Voltar para a Central <ArrowRight size={18}/></>}</button></div></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
         </section>
       </div>
     </main>
