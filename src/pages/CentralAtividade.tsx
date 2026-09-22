@@ -196,13 +196,20 @@ function CentralAtividade(){
   async function submit(){
     if(!activity||!student||!user)return
     setSubmitting(true);setError('');setSaveState('saving')
+    try {
     const auto=['multipla_escolha','multipla_resposta','verdadeiro_falso','resposta_curta','lacunas','ordenar','associar'].includes(activity.tipo_exercicio)
     const correct=auto&&isCorrect(),score=auto?(correct?100:0):0
     const {error:saveError}=await supabase.from('central_respostas').upsert({atividade_id:activity.id,aluno_id:student.id,respostas:answers,pontuacao:score,concluida:true},{onConflict:'atividade_id,aluno_id'})
     if(saveError){console.error(saveError);setError('Não foi possível salvar sua resposta. Tente novamente.');setSubmitting(false);return}
     setResult({correct,score,message:auto?(correct?'Muito bem! Você acertou a atividade.':'Resposta registrada. Revise a explicação e tente novamente.'): 'Resposta registrada para análise.'})
     setSaveState('saved')
-    setSubmitting(false)
+    } catch (e) {
+      console.error(e)
+      setError('Não foi possível salvar sua resposta. Tente novamente.')
+      setSaveState('idle')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function toggleMultiple(id:string){
