@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Loader2, RotateCcw } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3, Loader2, RotateCcw } from 'lucide-react'
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/central-atividade.css'
@@ -68,6 +68,8 @@ function CentralAtividade(){
   const [error,setError]=useState('')
   const [result,setResult]=useState<Result|null>(null)
   const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'>('idle')
+  const [elapsedSeconds,setElapsedSeconds]=useState(0)
+  const [startedAt,setStartedAt]=useState<number|null>(null)
   const answersLoadedRef=useRef(false)
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
 
@@ -84,6 +86,11 @@ function CentralAtividade(){
       const {data:activityData,error:activityError}=await supabase.from('central_atividades').select('id,idioma,nivel,categoria,tipo_exercicio,titulo,descricao,instrucoes,conteudo,explicacao,dificuldade,tempo_estimado').eq('id',activityId).eq('status','publicada').maybeSingle()
       if(activityError||!activityData){setError('Atividade não encontrada ou indisponível.');setLoading(false);return}
       setActivity({ ...(activityData as Activity), conteudo: normalizeContent((activityData as Activity).conteudo || {}) })
+      const storedStart=window.sessionStorage.getItem(`ab-academy-activity-start-${activityId}`)
+      const start=storedStart ? Number(storedStart) : Date.now()
+      if(!storedStart) window.sessionStorage.setItem(`ab-academy-activity-start-${activityId}`,String(start))
+      setStartedAt(start)
+      setElapsedSeconds(Math.max(0,Math.floor((Date.now()-start)/1000)))
       const {data:responseData}=await supabase.from('central_respostas').select('respostas,pontuacao,concluida').eq('atividade_id',activityId).eq('aluno_id',studentData.id).maybeSingle()
       if(responseData?.respostas)setAnswers(responseData.respostas as Record<string,unknown>)
       answersLoadedRef.current=true
@@ -114,6 +121,26 @@ function CentralAtividade(){
     },700)
     return()=>window.clearTimeout(timer)
   },[answers,activity,student,user,result])
+
+  useEffect(()=>{
+    if(!startedAt||result)return
+    const tick=window.setInterval(()=>{
+      setElapsedSeconds(Math.max(0,Math.floor((Date.now()-startedAt)/1000)))
+    },1000)
+    return()=>window.clearInterval(tick)
+  },[startedAt,result])
+
+  function formatTime(total:number){
+    const minutes=Math.floor(total/60).toString().padStart(2,'0')
+    const seconds=(total%60).toString().padStart(2,'0')
+    return `${minutes}:${seconds}`
+  }
+
+  function hasAnswer(){
+    const a=answers.answer
+    if(Array.isArray(a)) return a.some(value=>String(value||'').trim()!=='')
+    return String(a??'').trim()!==''
+  }
 
   function isCorrect(){
     if(!activity)return false
@@ -218,7 +245,7 @@ function CentralAtividade(){
         <section className="central-activity-card">
           <div className="central-activity-heading">
             <div className="central-activity-heading-content">
-              <div className="central-activity-kicker"><span>ATIVIDADE DE PRÁTICA</span><i/></div>
+              <div className="central-activity-kicker"><span>ATIVIDADE DE PRÁTICA</span><i/><div className="central-live-time"><Clock3 size={14}/>{formatTime(elapsedSeconds)}</div></div>
               <h1>{activity.titulo}</h1>
               {activity.descricao&&<p>{activity.descricao}</p>}
             </div>
@@ -228,13 +255,13 @@ function CentralAtividade(){
           {activity.conteudo.text&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{activity.conteudo.text}</p></div>}
           {activity.conteudo.question&&<div className="central-question"><span>Pergunta</span><strong>{activity.conteudo.question}</strong></div>}
           <div className="central-progress">
-            <div className="central-progress-top"><span>Progresso da atividade</span><strong>{result ? '100%' : 'Em andamento'}</strong></div>
-            <div className="central-progress-track"><div className={result ? 'central-progress-fill complete' : 'central-progress-fill'} style={{width:result?'100%':'8%'}}/></div>
+            <div className="central-progress-top"><span>Progresso da atividade</span><strong>{result ? '100%' : hasAnswer() ? 'Em andamento' : 'Comece quando estiver pronto'}</strong></div>
+            <div className="central-progress-track"><div className={result ? 'central-progress-fill complete' : 'central-progress-fill'} style={{width:result?'100%':hasAnswer()?'55%':'0%'}}/></div>
           </div>
           <div className="central-exercise-area">{renderExercise()}</div>
           {error&&<div className="central-form-error">{error}</div>}
           {!result&&<div className="central-save-status">{saveState==='saving'?<><Loader2 size={14} className="central-activity-spin"/> Salvando seu progresso...</>:saveState==='saved'?<><CheckCircle2 size={14}/> Progresso salvo</>:<span>Seu progresso será salvo automaticamente.</span>}</div>}
-          {result?<div className={result.correct?'central-result success':'central-result'}><div className="central-result-title">{result.correct?<CheckCircle2 size={23}/>:<CircleHelp size={23}/>}<strong>{result.message}</strong></div><span>Resultado: {result.score}/100</span>{activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}<button type="button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer atividade</button></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
+          {result?<div className={result.correct?'central-result success':'central-result'}><div className="central-result-title">{result.correct?<CheckCircle2 size={23}/>:<CircleHelp size={23}/>}<strong>{result.message}</strong></div><span>Resultado: {result.score}/100</span>{activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}<button type="button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer atividade</button></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
         </section>
       </div>
     </main>
