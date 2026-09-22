@@ -1023,6 +1023,12 @@ function Aluno() {
       }
     })
 
+    normalizedLessons.sort(
+      (a, b) =>
+        new Date(a.startAt).getTime() -
+        new Date(b.startAt).getTime(),
+    )
+
     const horariosMap = new Map(
       (horarios || []).map((horario) => [
         horario.id,
