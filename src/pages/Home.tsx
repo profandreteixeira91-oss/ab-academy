@@ -992,46 +992,6 @@ function Home() {
         </section>
       </main>
 
-      {/* FOOTER */}
-      <footer className="footer">
-        <div className="container footer-container">
-          <div>
-            <a href="#inicio" className="logo footer-logo">
-              <img src={logo} alt="AB Academy" />
-            </a>
-
-            <p>
-              Inglês e alemão para transformar conhecimento
-              em novas oportunidades.
-            </p>
-          </div>
-
-          <div className="footer-links">
-            <a href="#inicio">Início</a>
-            <a href="#sobre">Sobre</a>
-            <a href="#cursos">Cursos</a>
-            <a href="#metodologia">Metodologia</a>
-            <a href="#contato">Contato</a>
-            <p />
-            <p />
-          
-          </div>
-        </div>
-
-        <div className="footer-bottom-inner">
-  <span>
-    Desenvolvido por AMT Sistemas & Soluções -{' '}
-    <a href="https://www.amtsistemas.com.br">
-      www.amtsistemas.com.br
-    </a>
-  </span>
-
-  <div className="footer-legal-links">
-    <a href="/politica-privacidade">Política de Privacidade</a>
-    <a href="/termos-de-servico">Termos de Serviço</a>
-  </div>
-</div>
-      </footer>
     </div>
   )
 }
