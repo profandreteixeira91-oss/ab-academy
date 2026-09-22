@@ -14,10 +14,14 @@ import {
   CheckCircle2,
   Circle,
   XCircle,
+  ChevronRight,
+  Loader2,
 } from 'lucide-react'
 
+import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/professor.css'
+import '../styles/aluno.css'
 
 import AtividadesAdmin from './admin/Atividades'
 
@@ -2140,84 +2144,103 @@ function Professor() {
 
   if (!professor) {
     return (
-      <div className="professor-login-page">
-        <div className="professor-login-card">
-          <div className="professor-login-icon">
-            <BookOpen size={28} />
-          </div>
+      <div className="student-login-page">
+        <div className="student-login-card">
+          <img
+            src={logo}
+            alt="AB Academy"
+            className="student-login-logo"
+          />
 
-          <div className="professor-login-header">
-            <span className="professor-eyebrow">
-              AB Academy
-            </span>
+          <span className="student-login-label">
+            PORTAL DO PROFESSOR
+          </span>
 
-            <h1>
-              Portal do Professor
-            </h1>
+          <h1>
+            Acesse sua conta
+          </h1>
 
-            <p>
-              Entre com suas
-              credenciais para
-              acessar suas aulas.
-            </p>
-          </div>
+          <p>
+            Informe o e-mail utilizado para
+            acessar o portal do professor.
+          </p>
 
-          <form
-            className="professor-login-form"
-            onSubmit={handleLogin}
-          >
-            <label>
-              E-mail
+          <form onSubmit={handleLogin}>
+            <div className="student-login-field">
+              <label htmlFor="professor-email">
+                E-mail
+              </label>
 
               <input
+                id="professor-email"
                 type="email"
                 value={email}
-                onChange={(event) =>
-                  setEmail(
-                    event.target
-                      .value,
-                  )
-                }
+                onChange={(event) => {
+                  setEmail(event.target.value)
+                  setError('')
+                }}
                 placeholder="seu@email.com"
                 autoComplete="email"
+                disabled={loginLoading}
               />
-            </label>
+            </div>
 
-            <label>
-              Senha
+            <div className="student-login-field">
+              <label htmlFor="professor-password">
+                Senha
+              </label>
 
               <input
+                id="professor-password"
                 type="password"
                 value={password}
-                onChange={(event) =>
-                  setPassword(
-                    event.target
-                      .value,
-                  )
-                }
+                onChange={(event) => {
+                  setPassword(event.target.value)
+                  setError('')
+                }}
                 placeholder="Digite sua senha"
                 autoComplete="current-password"
+                disabled={loginLoading}
               />
-            </label>
+            </div>
 
             {error && (
-              <div className="professor-login-error">
+              <div className="student-login-error">
                 {error}
               </div>
             )}
 
             <button
               type="submit"
-              className="professor-login-button"
-              disabled={
-                loginLoading
-              }
+              className="student-primary-button student-auth-button"
+              disabled={loginLoading}
             >
-              {loginLoading
-                ? 'Entrando...'
-                : 'Entrar no portal'}
+              {loginLoading ? (
+                <>
+                  <Loader2
+                    size={19}
+                    className="student-spin"
+                  />
+                  Entrando...
+                </>
+              ) : (
+                <>
+                  Entrar
+                  <ChevronRight size={18} />
+                </>
+              )}
             </button>
           </form>
+
+          <div className="student-login-footer">
+            <span>
+              AB Academy
+            </span>
+
+            <span>
+              Portal exclusivo para professores
+            </span>
+          </div>
         </div>
       </div>
     )
