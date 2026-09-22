@@ -3,6 +3,7 @@ import {
   BarChart3,
   Bell,
   BookOpen,
+  Sparkles,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
@@ -25,6 +26,7 @@ import Planos from './admin/planos'
 import Equipe from './admin/Equipe'
 
 import '../styles/Admin.css'
+import '../styles/central-admin.css'
 import logo from '../assets/logo_abacademy.png'
 
 type AdminModule = {
@@ -35,6 +37,13 @@ type AdminModule = {
 }
 
 const modules: AdminModule[] = [
+  {
+    id: 'central',
+    title: 'Central de Atividades',
+    description:
+      'Gerencie a biblioteca de prática por idioma e nível.',
+    icon: Sparkles,
+  },
   {
     id: 'agenda',
     title: 'Agenda',
@@ -156,6 +165,11 @@ const navigation = [
         id: 'atividades',
         label: 'Atividades',
         icon: ClipboardList,
+      },
+      {
+        id: 'central',
+        label: 'Central de Atividades',
+        icon: Sparkles,
       },
       {
         id: 'avaliacoes',
@@ -423,7 +437,11 @@ export default function Admin() {
             <Atividades />
           )}
 
-               {/* =================================================
+               {activeModule === 'central' && (
+            <CentralAtividades />
+          )}
+
+          {/* =================================================
               PLANOS
           ================================================= */}
 
@@ -446,7 +464,8 @@ export default function Admin() {
           {activeModule !== 'dashboard' &&
             activeModule !== 'agenda' &&
             activeModule !== 'alunos' &&
-            activeModule !== 'atividades' && 
+            activeModule !== 'atividades' &&
+            activeModule !== 'central' && 
             activeModule !== 'planos' && 
             activeModule !== 'equipe' && (
               <div className="admin-panel">
