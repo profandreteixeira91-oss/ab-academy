@@ -572,7 +572,7 @@
 
 .student-dashboard-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -1737,6 +1737,16 @@
   background: #fff;
 
   box-shadow: var(--student-shadow-sm);
+}
+
+.student-history-icon.presence {
+  background: var(--student-success-bg);
+  color: var(--student-success);
+}
+
+.student-history-icon.absence {
+  background: #fef2f2;
+  color: #b91c1c;
 }
 
 .student-history-icon {
