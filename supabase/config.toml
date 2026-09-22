@@ -21,3 +21,8 @@ entrypoint = "./functions/google-meet-callback/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/google-meet-callback/*.html" ]
+
+[functions.gerar-central-atividades]
+enabled = true
+verify_jwt = false
+entrypoint = "./functions/gerar-central-atividades/index.ts"
