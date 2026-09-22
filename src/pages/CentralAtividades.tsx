@@ -172,6 +172,25 @@ function CentralAtividades() {
     async function loadActivities() {
       setLoading(true)
       setError('')
+
+      const { data: completedResponses, error: completedError } = await supabase
+        .from('central_respostas')
+        .select('atividade_id')
+        .eq('aluno_id', profile?.id || '')
+        .eq('concluida', true)
+
+      if (cancelled) return
+
+      if (completedError) {
+        console.error('Erro ao verificar atividades já realizadas:', completedError)
+        setActivities([])
+        setError('Não foi possível verificar suas atividades realizadas.')
+        setLoading(false)
+        return
+      }
+
+      const completedIds = new Set((completedResponses || []).map((response) => response.atividade_id))
+
       let query = supabase
         .from('central_atividades')
         .select('id, idioma, nivel, categoria, tipo_exercicio, titulo, descricao, instrucoes, dificuldade, tempo_estimado, mes_referencia')
@@ -180,20 +199,22 @@ function CentralAtividades() {
         .eq('status', 'publicada')
         .order('created_at', { ascending: false })
       if (category !== 'todas') query = query.eq('categoria', category)
+
       const { data, error: activitiesError } = await query
       if (cancelled) return
+
       if (activitiesError) {
         console.error('Erro ao carregar atividades da central:', activitiesError)
         setActivities([])
         setError('Não foi possível carregar as atividades no momento.')
       } else {
-        setActivities((data || []) as CentralActivity[])
+        setActivities((data || []).filter((activity) => !completedIds.has(activity.id)) as CentralActivity[])
       }
       setLoading(false)
     }
     void loadActivities()
     return () => { cancelled = true }
-  }, [user, language, level, category])
+  }, [user, profile?.id, language, level, category])
 
   const filteredActivities = useMemo(() => {
     const term = search.trim().toLocaleLowerCase('pt-BR')
@@ -212,25 +233,18 @@ function CentralAtividades() {
     setStarting(true)
     setError('')
 
-    const { data, error: startError } = await supabase
-      .from('central_atividades')
-      .select('id')
-      .eq('idioma', language)
-      .eq('nivel', level)
-      .eq('status', 'publicada')
-      .order('created_at', { ascending: true })
-      .order('id', { ascending: true })
-      .limit(1)
-      .maybeSingle()
+    const firstAvailable = activities
+      .slice()
+      .sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'))
+      [0]
 
-    if (startError || !data?.id) {
-      console.error('Erro ao iniciar Central:', startError)
-      setError('Não há atividades publicadas disponíveis para iniciar esta prática.')
+    if (!firstAvailable?.id) {
+      setError('Você já realizou todas as atividades disponíveis para este idioma e nível.')
       setStarting(false)
       return
     }
 
-    window.location.assign('/aluno/central/atividade/' + data.id)
+    window.location.assign('/aluno/central/atividade/' + firstAvailable.id)
   }
 
   if (loadingAuth) {
