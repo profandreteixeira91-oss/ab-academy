@@ -15,6 +15,7 @@ import {
   Settings,
   Users,
   X,
+  type LucideIcon,
 } from 'lucide-react'
 import { useState } from 'react'
 
@@ -34,7 +35,7 @@ type AdminModule = {
   id: string
   title: string
   description: string
-  icon: typeof LayoutDashboard
+  icon: LucideIcon
 }
 
 const modules: AdminModule[] = [
@@ -438,7 +439,11 @@ export default function Admin() {
             <Atividades />
           )}
 
-               {activeModule === 'central' && (
+               {/* =================================================
+              CENTRAL DE ATIVIDADES
+          ================================================= */}
+
+          {activeModule === 'central' && (
             <CentralAtividades />
           )}
 
@@ -466,8 +471,8 @@ export default function Admin() {
             activeModule !== 'agenda' &&
             activeModule !== 'alunos' &&
             activeModule !== 'atividades' &&
-            activeModule !== 'central' && 
-            activeModule !== 'planos' && 
+            activeModule !== 'central' &&
+            activeModule !== 'planos' &&
             activeModule !== 'equipe' && (
               <div className="admin-panel">
                 <div className="admin-panel-header">
