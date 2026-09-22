@@ -293,9 +293,9 @@ function CentralAtividades() {
                       <span>Dificuldade {activity.dificuldade}/5</span>
                     </div>
                   </div>
-                  <button type="button" className="central-primary-button central-activity-button" disabled title="O motor de resolução será implementado na próxima etapa.">
+                  <a href={"/aluno/central/atividade/" + activity.id} className="central-primary-button central-activity-button">
                     Praticar <ChevronRight size={18} />
-                  </button>
+                  </a>
                 </article>
               )
             })}
