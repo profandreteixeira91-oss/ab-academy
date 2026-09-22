@@ -233,10 +233,7 @@ function CentralAtividades() {
     setStarting(true)
     setError('')
 
-    const firstAvailable = activities
-      .slice()
-      .sort((a, b) => a.titulo.localeCompare(b.titulo, 'pt-BR'))
-      [0]
+    const firstAvailable = activities[activities.length - 1]
 
     if (!firstAvailable?.id) {
       setError('Você já realizou todas as atividades disponíveis para este idioma e nível.')
