@@ -229,3 +229,15 @@
   .central-progress{margin:18px 20px 0}
   .central-save-status{margin:12px 20px 0}
 }
+
+.central-activity-kicker{position:relative}
+.central-live-time{
+  margin-left:auto;display:inline-flex;align-items:center;gap:6px;padding:6px 9px;
+  border:1px solid #e5e7eb;border-radius:8px;background:#f8fafc;color:#64748b;
+  font-size:11px;font-weight:800;letter-spacing:0;font-variant-numeric:tabular-nums;
+}
+.central-live-time svg{color:#2563eb}
+.central-primary-button:disabled{box-shadow:none}
+@media(max-width:650px){
+  .central-live-time{padding:5px 8px}
+}
