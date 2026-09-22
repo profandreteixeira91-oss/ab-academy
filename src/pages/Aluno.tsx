@@ -1218,7 +1218,6 @@ function Aluno() {
 
         if (
           (event === 'SIGNED_IN' ||
-            event === 'TOKEN_REFRESHED' ||
             event === 'USER_UPDATED') &&
           session?.user
         ) {
@@ -1726,6 +1725,7 @@ function Aluno() {
       }
 
       const {
+        data: updatedActivity,
         error: updateError,
       } = await supabase
         .from('atividades')
@@ -1743,9 +1743,20 @@ function Aluno() {
           'aluno_id',
           studentId,
         )
+        .select('id, status')
+        .maybeSingle()
 
       if (updateError) {
         throw updateError
+      }
+
+      if (
+        !updatedActivity ||
+        updatedActivity.status !== 'respondida'
+      ) {
+        throw new Error(
+          'Não foi possível confirmar o envio da atividade. Verifique o acesso do aluno e tente novamente.',
+        )
       }
 
       setActivities((current) =>
