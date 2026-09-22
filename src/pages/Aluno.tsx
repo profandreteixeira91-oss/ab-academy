@@ -1910,3 +1910,40 @@ function Aluno() {
               <p>
                 Digite sua senha
                 para acessar o
+                portal do aluno.
+              </p>
+            </>
+          )}
+
+          {authStep ===
+            'create-password' && (
+            <>
+              <h1>
+                Primeiro acesso
+              </h1>
+
+              <p>
+                Crie sua senha para
+                acessar o portal
+                sempre que quiser.
+              </p>
+            </>
+          )}
+
+          {authError && (
+            <div className="student-login-error">
+              {authError}
+            </div>
+          )}
+
+          {authInfo && (
+            <div className="student-login-info">
+              {authInfo}
+            </div>
+          )}
+
+          {authStep ===
+            'email' && (
+            <>
+              <div className="student-login-field">
+                <label htmlFor="student-email">
