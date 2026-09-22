@@ -21,10 +21,10 @@ export default function SiteFooter() {
       </div>
 
       <div className="site-footer-bottom">
-        <span>AB Academy®</span>
+        <span>AB Academy® 2026 todos os direitos reservados</span>
         <span>
           Desenvolvido por{' '}
-          <a href="https://www.amtsistemas.com.br">AMT Sistemas &amp; Soluções</a>
+          <a href="https://www.amtsistemas.com.br/">AMT Sistemas &amp; Soluções</a>{'  - '}<a href="https://www.amtsistemas.com.br/">www.amtsistemas.com.br</a>
         </span>
         <div className="site-footer-legal">
           <a href="/termos-de-servico">Termos de Serviço</a>
