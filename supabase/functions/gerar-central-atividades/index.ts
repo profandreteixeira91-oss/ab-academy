@@ -95,14 +95,14 @@ FORMATO OBRIGATÓRIO:
 }
 
 ESTRUTURA DE conteudo:
-- multipla_escolha: {"pergunta":"...","alternativas":[{"id":"a","texto":"..."},{"id":"b","texto":"..."},{"id":"c","texto":"..."},{"id":"d","texto":"..."}],"correta":"a"}
-- multipla_resposta: {"pergunta":"...","alternativas":[{"id":"a","texto":"..."},{"id":"b","texto":"..."},{"id":"c","texto":"..."},{"id":"d","texto":"..."}],"corretas":["a","c"]}
-- verdadeiro_falso: {"afirmacao":"...","correta":true}
-- resposta_curta: {"pergunta":"...","resposta_correta":"..."}
-- lacunas: {"frase":"...","lacunas":[{"resposta":"..."}]}
-- ordenar: {"itens":["...","...","..."],"ordem_correta":[0,1,2]}
-- associar: {"esquerda":[{"id":"a","texto":"..."}],"direita":[{"id":"1","texto":"..."}],"pares":{"a":"1"}}
-- dissertativa: {"pergunta":"...","criterios":["..."]}
+- multipla_escolha: {"question":"...","options":[{"id":"a","text":"..."},{"id":"b","text":"..."},{"id":"c","text":"..."},{"id":"d","text":"..."}],"correctAnswer":"a"}
+- multipla_resposta: {"question":"...","options":[{"id":"a","text":"..."},{"id":"b","text":"..."},{"id":"c","text":"..."},{"id":"d","text":"..."}],"correctAnswers":["a","c"]}
+- verdadeiro_falso: {"question":"...","options":[{"id":"true","text":"Verdadeiro"},{"id":"false","text":"Falso"}],"correctAnswer":"true"}
+- resposta_curta: {"question":"...","correctAnswer":"...","acceptableAnswers":["..."]}
+- lacunas: {"text":"...","blanks":[{"id":"1","answer":"...","acceptableAnswers":["..."]}]}
+- ordenar: {"sentences":["...","...","..."],"correctOrder":["...","...","..."]}
+- associar: {"pairs":[{"id":"a","left":"...","right":"..."}]}
+- dissertativa: {"question":"...","criteria":["..."]}
 
 As respostas corretas devem ficar dentro de conteudo para permitir correção automática quando aplicável.
 `

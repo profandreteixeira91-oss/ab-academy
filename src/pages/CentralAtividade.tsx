@@ -17,12 +17,46 @@ type Content = {
   sentences?:string[]; correctOrder?:string[]
   pairs?:{id:string;left:string;right:string}[]
   blanks?:{id:string;answer:string;acceptableAnswers?:string[]}[]
+  pergunta?:string; afirmacao?:string
+  alternativas?:{id:string;text?:string;texto?:string}[]
+  correta?:string|boolean; corretas?:string[]
+  resposta_correta?:string
+  lacunas?:{resposta:string;id?:string;acceptableAnswers?:string[]}[]
+  itens?:string[]; ordem_correta?:number[]
+  esquerda?:{id:string;texto?:string;text?:string}[]
+  direita?:{id:string;texto?:string;text?:string}[]
 }
 type Student={id:string;nome_completo:string}
 type Result={correct:boolean;score:number;message:string}
 const LANGUAGE_LABELS={ingles:'Inglês',alemao:'Alemão'}
 
 function normalize(value:string){return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleLowerCase()}
+
+function normalizeContent(raw: Record<string, unknown>): Content {
+  const c = raw as Content
+  const options = c.options?.length
+    ? c.options
+    : (c.alternativas || []).map(option => ({
+        id: option.id,
+        text: option.text ?? option.texto ?? '',
+      }))
+
+  return {
+    ...c,
+    question: c.question || c.pergunta,
+    options,
+    correctAnswer: c.correctAnswer ?? (c.correta !== undefined ? String(c.correta) : undefined),
+    correctAnswers: c.correctAnswers || c.corretas,
+    acceptableAnswers: c.acceptableAnswers || (c.resposta_correta ? [c.resposta_correta] : undefined),
+    sentences: c.sentences || c.itens,
+    correctOrder: c.correctOrder || c.ordem_correta?.map(String),
+    blanks: c.blanks || c.lacunas?.map((blank, index) => ({
+      id: blank.id || String(index),
+      answer: blank.answer || blank.resposta,
+      acceptableAnswers: blank.acceptableAnswers,
+    })),
+  }
+}
 
 function CentralAtividade(){
   const [user,setUser]=useState<User|null>(null)
@@ -47,7 +81,7 @@ function CentralAtividade(){
       setStudent(studentData as Student)
       const {data:activityData,error:activityError}=await supabase.from('central_atividades').select('id,idioma,nivel,categoria,tipo_exercicio,titulo,descricao,instrucoes,conteudo,explicacao,dificuldade,tempo_estimado').eq('id',activityId).eq('status','publicada').maybeSingle()
       if(activityError||!activityData){setError('Atividade não encontrada ou indisponível.');setLoading(false);return}
-      setActivity(activityData as Activity)
+      setActivity({ ...(activityData as Activity), conteudo: normalizeContent((activityData as Activity).conteudo || {}) })
       const {data:responseData}=await supabase.from('central_respostas').select('respostas,pontuacao,concluida').eq('atividade_id',activityId).eq('aluno_id',studentData.id).maybeSingle()
       if(responseData?.respostas)setAnswers(responseData.respostas as Record<string,unknown>)
       if(responseData?.concluida&&typeof responseData.pontuacao==='number')setResult({correct:responseData.pontuacao>=100,score:responseData.pontuacao,message:responseData.pontuacao>=100?'Resposta correta!':'Atividade concluída. Revise a explicação.'})
@@ -61,7 +95,11 @@ function CentralAtividade(){
     if(!activity)return false
     const c=activity.conteudo||{},a=answers.answer
     switch(activity.tipo_exercicio){
-      case 'multipla_escolha':case 'verdadeiro_falso':return String(a||'')===String(c.correctAnswer||'')
+      case 'multipla_escolha':return String(a||'')===String(c.correctAnswer||'')
+      case 'verdadeiro_falso':{
+        const expected = typeof c.correta === 'boolean' ? String(c.correta) : String(c.correctAnswer || '')
+        return String(a||'') === expected
+      }
       case 'multipla_resposta':{
         const expected=[...(c.correctAnswers||[])].map(String).sort(),actual=Array.isArray(a)?a.map(String).sort():[]
         return JSON.stringify(actual)===JSON.stringify(expected)
@@ -111,7 +149,12 @@ function CentralAtividade(){
   function renderExercise(){
     if(!activity)return null
     const c=activity.conteudo||{}
-    if(activity.tipo_exercicio==='multipla_escolha'||activity.tipo_exercicio==='verdadeiro_falso')return <div className="central-options">{(c.options||[]).map(o=><label key={o.id} className={answers.answer===o.id?'central-option selected':'central-option'}><input type="radio" name="answer" checked={answers.answer===o.id} onChange={()=>setAnswers({...answers,answer:o.id})}/><span>{o.text}</span></label>)}</div>
+    if(activity.tipo_exercicio==='multipla_escolha'||activity.tipo_exercicio==='verdadeiro_falso'){
+      const options = activity.tipo_exercicio === 'verdadeiro_falso' && !(c.options||[]).length
+        ? [{id:'true',text:'Verdadeiro'},{id:'false',text:'Falso'}]
+        : (c.options||[])
+      return <div className="central-options">{options.map(o=><label key={o.id} className={answers.answer===o.id?'central-option selected':'central-option'}><input type="radio" name="answer" checked={answers.answer===o.id} onChange={()=>setAnswers({...answers,answer:o.id})}/><span>{o.text}</span></label>)}</div>
+    }
     if(activity.tipo_exercicio==='multipla_resposta')return <div className="central-options">{(c.options||[]).map(o=>{const selected=Array.isArray(answers.answer)&&answers.answer.includes(o.id);return <label key={o.id} className={selected?'central-option selected':'central-option'}><input type="checkbox" checked={selected} onChange={()=>toggleMultiple(o.id)}/><span>{o.text}</span></label>})}</div>
     if(activity.tipo_exercicio==='resposta_curta')return <input className="central-answer-input" value={String(answers.answer||'')} onChange={e=>setAnswers({...answers,answer:e.target.value})} placeholder="Digite sua resposta..."/>
     if(activity.tipo_exercicio==='dissertativa')return <textarea className="central-answer-textarea" value={String(answers.answer||'')} onChange={e=>setAnswers({...answers,answer:e.target.value})} placeholder="Escreva sua resposta..." rows={7}/>
