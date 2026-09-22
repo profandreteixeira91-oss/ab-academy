@@ -474,6 +474,7 @@ function createEditActivityForm(
 type ProfessorContext = {
   userId: string
   professorId: string | null
+  isAdmin: boolean
 }
 
 async function loadProfessorContext(): Promise<ProfessorContext | null> {
@@ -482,7 +483,28 @@ async function loadProfessorContext(): Promise<ProfessorContext | null> {
   } = await supabase.auth.getUser()
 
   if (!user) return null
-  const { data: professor, error } = await supabase
+
+  const { data: adminUser, error: adminError } = await supabase
+    .from('admin_users')
+    .select('user_id')
+    .eq('user_id', user.id)
+    .maybeSingle()
+
+  if (adminError) {
+    throw new Error(
+      `Não foi possível verificar o acesso administrativo: ${adminError.message}`,
+    )
+  }
+
+  if (adminUser) {
+    return {
+      userId: user.id,
+      professorId: null,
+      isAdmin: true,
+    }
+  }
+
+  const { data: professor, error: professorError } = await supabase
     .from('professores')
     .select('id')
     .eq('user_id', user.id)
@@ -490,15 +512,20 @@ async function loadProfessorContext(): Promise<ProfessorContext | null> {
     .eq('acesso_portal', true)
     .maybeSingle()
 
-  if (error) {
+  if (professorError) {
     throw new Error(
-      `Não foi possível verificar o professor: ${error.message}`,
+      `Não foi possível verificar o professor: ${professorError.message}`,
     )
+  }
+
+  if (!professor) {
+    return null
   }
 
   return {
     userId: user.id,
-    professorId: professor?.id ?? null,
+    professorId: professor.id,
+    isAdmin: false,
   }
 }
 
@@ -550,6 +577,7 @@ export default function Atividades() {
   const [loading, setLoading] = useState(true)
   const [loadingAlunos, setLoadingAlunos] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [isAdmin, setIsAdmin] = useState(false)
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<
@@ -645,9 +673,12 @@ export default function Atividades() {
     const professorContext = await loadProfessorContext()
 
     if (!professorContext) {
+      setIsAdmin(false)
       setAtividades([])
       return
     }
+
+    setIsAdmin(professorContext.isAdmin)
 
     try {
       setAtividades(
@@ -685,6 +716,8 @@ export default function Atividades() {
       return
     }
 
+    setIsAdmin(professorContext.isAdmin)
+
     let query = supabase
       .from('alunos')
       .select(`
@@ -697,8 +730,9 @@ export default function Atividades() {
         ascending: true,
       })
 
-    // Se for professor, mostra somente seus alunos
-    if (professorContext.professorId) {
+    // Professores veem somente seus alunos.
+    // Administradores veem todos os alunos.
+    if (!professorContext.isAdmin && professorContext.professorId) {
       query = query.eq(
         'professor_id',
         professorContext.professorId,
@@ -1938,7 +1972,7 @@ export default function Atividades() {
       setSuccess('')
 
       const professorId =
-        await getAuthenticatedUserId()
+        await getAuthenticatedProfessorId()
 
       const {
         data: activity,
@@ -3070,19 +3104,17 @@ export default function Atividades() {
           </div>
         </div>
 
-        <button
-          type="button"
-          className="atividades-primary-button"
-          onClick={
-            openNewActivity
-          }
-          disabled={
-            loadingAlunos
-          }
-        >
-          <Plus size={18} />
-          Nova atividade
-        </button>
+        {!isAdmin && (
+          <button
+            type="button"
+            className="atividades-primary-button"
+            onClick={openNewActivity}
+            disabled={loadingAlunos}
+          >
+            <Plus size={18} />
+            Nova atividade
+          </button>
+        )}
       </header>
 
       {error && !showBuilder && (
