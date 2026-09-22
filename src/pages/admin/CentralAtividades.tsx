@@ -432,7 +432,7 @@ export default function CentralAtividadesAdmin() {
               {generationProgress && <div className="central-admin-generation-progress"><div className="central-admin-generation-progress-top"><span>{generationProgress.bucket}</span><strong>{generationProgress.current} / {generationProgress.total}</strong></div><div className="central-admin-progress-track"><span style={{ width: `${generationProgress.total ? Math.min(100, generationProgress.current / generationProgress.total * 100) : 0}%` }}/></div><small>Gerando atividades automaticamente. Não feche esta janela.</small></div>}
 
               <div className="central-admin-generator-note"><Sparkles size={17}/><span>As novas atividades entram como <strong>rascunhos</strong>. A geração automática nunca publica conteúdo sem sua revisão.</span></div>
-            </div>            </div>
+            </div>
             <footer className="central-admin-modal-foot"><span>{generatorMode === 'biblioteca' ? 'Até 100 por bloco · geração automática' : generatorMode === 'meta' ? 'A quantidade é calculada automaticamente' : 'Máximo de 20 por lote'}</span><div><button type="button" className="central-admin-secondary" onClick={() => setGeneratorOpen(false)} disabled={generating}>Cancelar</button><button type="button" className="central-admin-publish" onClick={() => void generateActivities()} disabled={generating}>{generating ? <Loader2 size={16} className="central-admin-spin"/> : <WandSparkles size={16}/>} {generating ? 'Gerando automaticamente...' : generatorMode === 'biblioteca' ? 'Completar biblioteca' : generatorMode === 'meta' ? 'Completar até 100' : 'Gerar lote'}</button></div></footer>
           </section>
         </div>
