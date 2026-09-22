@@ -70,6 +70,9 @@ function CentralAtividade(){
   const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'>('idle')
   const [elapsedSeconds,setElapsedSeconds]=useState(0)
   const [startedAt,setStartedAt]=useState<number|null>(null)
+  const [translation,setTranslation]=useState<Content|null>(null)
+  const [translating,setTranslating]=useState(false)
+  const [translationError,setTranslationError]=useState('')
   const answersLoadedRef=useRef(false)
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
 
@@ -142,6 +145,24 @@ function CentralAtividade(){
     return String(a??'').trim()!==''
   }
 
+  async function translateActivity(){
+    if(!activity||!user)return
+    if(translation){setTranslation(null);return}
+    setTranslating(true);setTranslationError('')
+    const {data:{session}}=await supabase.auth.getSession()
+    if(!session){setTranslationError('Sua sessão expirou.');setTranslating(false);return}
+    const {data,error:translationInvokeError}=await supabase.functions.invoke('traduzir-central-atividade',{
+      body:{idioma:activity.idioma,content:activity.conteudo,target:'pt'},
+      headers:{Authorization:'Bearer '+session.access_token},
+    })
+    if(translationInvokeError||!data?.translation){
+      setTranslationError('Não foi possível traduzir agora. Tente novamente.')
+    }else{
+      setTranslation(normalizeContent(data.translation as Record<string,unknown>))
+    }
+    setTranslating(false)
+  }
+
   function isCorrect(){
     if(!activity)return false
     const c=activity.conteudo||{},a=answers.answer
@@ -198,9 +219,11 @@ function CentralAtividade(){
     setAnswers({...answers,answer:current})
   }
 
-  function renderExercise(){
-    if(!activity)return null
-    const c=activity.conteudo||{}
+  function renderExercise(contentOverride?:Content){
+    const renderContent=contentOverride||activity?.conteudo
+    if(!activity||!renderContent)return null
+    const c=renderContent
+
     if(activity.tipo_exercicio==='multipla_escolha'||activity.tipo_exercicio==='verdadeiro_falso'){
       const options = activity.tipo_exercicio === 'verdadeiro_falso' && !(c.options||[]).length
         ? [{id:'true',text:'Verdadeiro'},{id:'false',text:'Falso'}]
@@ -252,13 +275,19 @@ function CentralAtividade(){
           </div>
 
           {activity.instrucoes&&<div className="central-instructions"><div className="central-instructions-icon"><CircleHelp size={17}/></div><div><strong>Como fazer</strong><p>{activity.instrucoes}</p></div></div>}
-          {activity.conteudo.text&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{activity.conteudo.text}</p></div>}
-          {activity.conteudo.question&&<div className="central-question"><span>Pergunta</span><strong>{activity.conteudo.question}</strong></div>}
+          <div className="central-translation-toolbar">
+            <button type="button" onClick={()=>void translateActivity()} disabled={translating}>
+              {translating?<><Loader2 size={15} className="central-activity-spin"/>Traduzindo...</>:translation?<><ArrowLeft size={15}/>Voltar ao idioma original</>:<>Aa&nbsp; Traduzir para português</>}
+            </button>
+            {translationError&&<span>{translationError}</span>}
+          </div>
+          {(translation?.text||activity.conteudo.text)&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{translation?.text||activity.conteudo.text}</p></div>}
+          {(translation?.question||activity.conteudo.question)&&<div className="central-question"><span>Pergunta</span><strong>{translation?.question||activity.conteudo.question}</strong></div>}
           <div className="central-progress">
             <div className="central-progress-top"><span>Progresso da atividade</span><strong>{result ? '100%' : hasAnswer() ? 'Em andamento' : 'Comece quando estiver pronto'}</strong></div>
             <div className="central-progress-track"><div className={result ? 'central-progress-fill complete' : 'central-progress-fill'} style={{width:result?'100%':hasAnswer()?'55%':'0%'}}/></div>
           </div>
-          <div className="central-exercise-area">{renderExercise()}</div>
+          <div className="central-exercise-area">{renderExercise(translation||undefined)}</div>
           {error&&<div className="central-form-error">{error}</div>}
           {!result&&<div className="central-save-status">{saveState==='saving'?<><Loader2 size={14} className="central-activity-spin"/> Salvando seu progresso...</>:saveState==='saved'?<><CheckCircle2 size={14}/> Progresso salvo</>:<span>Seu progresso será salvo automaticamente.</span>}</div>}
           {result?<div className={result.correct?'central-result success':'central-result'}><div className="central-result-title">{result.correct?<CheckCircle2 size={23}/>:<CircleHelp size={23}/>}<strong>{result.message}</strong></div><span>Resultado: {result.score}/100</span>{activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}<button type="button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer atividade</button></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
