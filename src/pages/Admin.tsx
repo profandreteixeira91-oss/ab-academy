@@ -24,6 +24,7 @@ import Alunos from './admin/Alunos'
 import Atividades from './admin/Atividades'
 import Planos from './admin/planos'
 import Equipe from './admin/Equipe'
+import CentralAtividades from './admin/CentralAtividades'
 
 import '../styles/Admin.css'
 import '../styles/central-admin.css'
