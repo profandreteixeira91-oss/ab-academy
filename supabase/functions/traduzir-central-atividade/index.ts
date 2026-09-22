@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
     const content = body?.content ?? {}
     const prompt = `Traduza do ${idioma} para ${target === "pt" ? "português do Brasil" : target === "en" ? "inglês" : "alemão"} o JSON abaixo para ajudar um aluno a entender a atividade. Preserve a estrutura, IDs e valores de respostas corretas. Traduza somente textos que o aluno vê. Retorne somente JSON válido.
 ${JSON.stringify(content)}`
-    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=" + encodeURIComponent(key), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { temperature: 0.15, responseMimeType: "application/json" } }) })
+    const response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=" + encodeURIComponent(key), { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }], generationConfig: { responseMimeType: "application/json" } }) })
     if (!response.ok) throw new Error("Falha na tradução.")
     const data = await response.json()
     const translated = data?.candidates?.[0]?.content?.parts?.[0]?.text
