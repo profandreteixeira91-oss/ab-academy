@@ -334,7 +334,7 @@ function CentralAtividade(){
               </div>
               <div className="central-answers-section">
                 <div className="central-section-label">RESPOSTA</div>
-                <div className="central-exercise-area">{renderExercise(translation||undefined)}</div>
+                <div className="central-exercise-area">{renderExercise()}</div>
               </div>
               <div className="central-progress">
                 <div className="central-progress-top"><span>Progresso da atividade</span><strong>{result ? '100%' : hasAnswer() ? 'Em andamento' : 'Comece quando estiver pronto'}</strong></div>
