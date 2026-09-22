@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { ChevronRight, Loader2 } from 'lucide-react'
+import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
+import { ChevronRight, Loader2, LockKeyhole } from 'lucide-react'
 import logo from '../../assets/logo_abacademy.png'
 import { supabase } from '../../lib/supabase'
 
@@ -7,7 +7,7 @@ import '../../styles/admin/AdminAccess.css'
 import '../../styles/aluno.css'
 
 type AdminAccessProps = {
-  children: React.ReactNode
+  children: ReactNode
 }
 
 export default function AdminAccess({
@@ -115,7 +115,7 @@ export default function AdminAccess({
   }
 
   function handleSubmit(
-    event: React.FormEvent<HTMLFormElement>,
+    event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault()
 
