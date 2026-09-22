@@ -38,3 +38,7 @@ jobs:
         run: supabase functions deploy gerar-central-atividades
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      - name: Deploy Activity Translation function
+        run: supabase functions deploy traduzir-central-atividade
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
