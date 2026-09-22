@@ -168,6 +168,34 @@ function CentralAtividades() {
   }, [activities, search])
 
   const selectedLevel = LEVELS.find((item) => item.value === level)
+  const [starting, setStarting] = useState(false)
+
+  async function startActivities() {
+    if (!language || starting) return
+
+    setStarting(true)
+    setError('')
+
+    const { data, error: startError } = await supabase
+      .from('central_atividades')
+      .select('id')
+      .eq('idioma', language)
+      .eq('nivel', level)
+      .eq('status', 'publicada')
+      .order('created_at', { ascending: true })
+      .order('id', { ascending: true })
+      .limit(1)
+      .maybeSingle()
+
+    if (startError || !data?.id) {
+      console.error('Erro ao iniciar Central:', startError)
+      setError('Não há atividades publicadas disponíveis para iniciar esta prática.')
+      setStarting(false)
+      return
+    }
+
+    window.location.assign('/aluno/central/atividade/' + data.id)
+  }
 
   if (loadingAuth) {
     return (
@@ -230,9 +258,9 @@ function CentralAtividades() {
               <span><CheckCircle2 size={15}/> Atividades contínuas</span>
             </div>
           </div>
-          <a href={language && activities[0] ? "/aluno/central/atividade/" + activities[0].id : "#"} className={language && activities.length ? "central-start-button" : "central-start-button disabled"} onClick={(event) => { if (!language || !activities.length) event.preventDefault() }}>
-            Iniciar atividades <ChevronRight size={20}/>
-          </a>
+          <button type="button" className={language && !starting ? "central-start-button" : "central-start-button disabled"} onClick={() => void startActivities()} disabled={!language || starting}>
+            {starting ? <><Loader2 size={19} className="central-spin"/> Abrindo atividades...</> : <>Iniciar atividades <ChevronRight size={20}/></>}
+          </button>
         </section>
 
         <section className="central-how-it-works">
