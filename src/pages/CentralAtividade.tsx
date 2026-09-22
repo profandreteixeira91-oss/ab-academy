@@ -168,18 +168,45 @@ function CentralAtividade(){
   if(!activity)return <div className="central-activity-page"><div className="central-activity-error"><CircleHelp size={22}/><strong>{error||'Atividade indisponível.'}</strong><a href="/aluno/central">Voltar para a Central</a></div></div>
 
   return <div className="central-activity-page">
-    <header className="central-activity-header"><a href="/aluno/central" className="central-activity-back"><ArrowLeft size={18}/>Central de Atividades</a><img src={logo} alt="AB Academy"/></header>
+    <header className="central-activity-header">
+      <div className="central-activity-header-inner">
+        <a href="/aluno/central" className="central-activity-back"><ArrowLeft size={18}/><span>Central de Atividades</span></a>
+        <img src={logo} alt="AB Academy"/>
+      </div>
+    </header>
     <main className="central-activity-main">
-      <div className="central-activity-breadcrumb">{LANGUAGE_LABELS[activity.idioma]} · {activity.nivel} · {activity.categoria}</div>
-      <section className="central-activity-card">
-        <div className="central-activity-heading"><div><span>ATIVIDADE DE PRÁTICA</span><h1>{activity.titulo}</h1>{activity.descricao&&<p>{activity.descricao}</p>}</div><div className="central-activity-time">{activity.tempo_estimado} min · dificuldade {activity.dificuldade}/5</div></div>
-        {activity.instrucoes&&<div className="central-instructions"><strong>Instruções</strong><p>{activity.instrucoes}</p></div>}
-        {activity.conteudo.text&&<div className="central-exercise-text">{activity.conteudo.text}</div>}
-        {activity.conteudo.question&&<div className="central-question">{activity.conteudo.question}</div>}
-        {renderExercise()}
-        {error&&<div className="central-form-error">{error}</div>}
-        {result?<div className={result.correct?'central-result success':'central-result'}><div>{result.correct?<CheckCircle2 size={23}/>:<CircleHelp size={23}/>}<strong>{result.message}</strong></div><span>Resultado: {result.score}/100</span>{activity.explicacao&&<p>{activity.explicacao}</p>}<button type="button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer</button></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
-      </section>
+      <div className="central-activity-breadcrumb">
+        <a href="/aluno/central">Central</a><span>›</span><span>{LANGUAGE_LABELS[activity.idioma]}</span><span>›</span><span>{activity.nivel}</span>
+      </div>
+      <div className="central-activity-layout">
+        <aside className="central-activity-sidebar">
+          <div className="central-side-brand"><div className="central-side-icon"><CircleHelp size={20}/></div><div><strong>Prática</strong><span>AB Academy</span></div></div>
+          <div className="central-side-divider"/>
+          <div className="central-side-item"><span>Idioma</span><strong>{LANGUAGE_LABELS[activity.idioma]}</strong></div>
+          <div className="central-side-item"><span>Nível</span><strong>{activity.nivel}</strong></div>
+          <div className="central-side-item"><span>Categoria</span><strong>{activity.categoria}</strong></div>
+          <div className="central-side-item"><span>Tempo estimado</span><strong>{activity.tempo_estimado} min</strong></div>
+          <div className="central-side-item"><span>Dificuldade</span><strong>{activity.dificuldade}/5</strong></div>
+          <a href="/aluno/central" className="central-side-back"><ArrowLeft size={16}/>Voltar para a Central</a>
+        </aside>
+
+        <section className="central-activity-card">
+          <div className="central-activity-heading">
+            <div className="central-activity-heading-content">
+              <div className="central-activity-kicker"><span>ATIVIDADE DE PRÁTICA</span><i/></div>
+              <h1>{activity.titulo}</h1>
+              {activity.descricao&&<p>{activity.descricao}</p>}
+            </div>
+          </div>
+
+          {activity.instrucoes&&<div className="central-instructions"><div className="central-instructions-icon"><CircleHelp size={17}/></div><div><strong>Como fazer</strong><p>{activity.instrucoes}</p></div></div>}
+          {activity.conteudo.text&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{activity.conteudo.text}</p></div>}
+          {activity.conteudo.question&&<div className="central-question"><span>Pergunta</span><strong>{activity.conteudo.question}</strong></div>}
+          <div className="central-exercise-area">{renderExercise()}</div>
+          {error&&<div className="central-form-error">{error}</div>}
+          {result?<div className={result.correct?'central-result success':'central-result'}><div className="central-result-title">{result.correct?<CheckCircle2 size={23}/>:<CircleHelp size={23}/>}<strong>{result.message}</strong></div><span>Resultado: {result.score}/100</span>{activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}<button type="button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer atividade</button></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
+        </section>
+      </div>
     </main>
   </div>
 }
