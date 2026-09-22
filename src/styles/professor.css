@@ -1092,6 +1092,110 @@ button.professor-stat-card:hover {
   min-width: 135px;
 }
 
+.professor-attendance-panel {
+  margin-top: 20px;
+}
+
+.professor-attendance-list {
+  display: flex;
+  flex-direction: column;
+}
+
+.professor-attendance-card {
+  display: grid;
+  grid-template-columns: 120px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.professor-attendance-card:last-child {
+  border-bottom: 0;
+}
+
+.professor-attendance-date {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.professor-attendance-date strong {
+  color: #111827;
+  font-size: 12px;
+}
+
+.professor-attendance-date span {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.professor-attendance-info {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.professor-attendance-info strong {
+  overflow: hidden;
+  color: #111827;
+  font-size: 13px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.professor-attendance-info span {
+  color: #6b7280;
+  font-size: 11px;
+}
+
+.professor-attendance-info small {
+  color: #9ca3af;
+  font-size: 10px;
+}
+
+.professor-attendance-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.professor-attendance-button {
+  min-height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 0 11px;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  background: #ffffff;
+  color: #6b7280;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.professor-attendance-button.presence.active {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.professor-attendance-button.absence.active {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.professor-attendance-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+
 /* =========================================================
    ALUNOS
    ========================================================= */
@@ -1323,6 +1427,18 @@ button.professor-stat-card:hover {
 
   .professor-student-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .professor-attendance-card {
+    grid-template-columns: 1fr;
+  }
+
+  .professor-attendance-actions {
+    width: 100%;
+  }
+
+  .professor-attendance-button {
+    flex: 1;
   }
 
   .professor-agenda-card {
