@@ -12,8 +12,8 @@
   height: 100vh;
   min-height: 100vh;
   overflow: hidden;
-  background: #0b1020;
-  color: #ffffff;
+  background: #fbfbfc;
+  color: #0b0b0b;
   font-family:
     Inter,
     system-ui,
@@ -34,7 +34,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 0 24px;
-  background: #111827;
+  background: #fff;
   border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   position: relative;
   z-index: 10;
@@ -48,8 +48,7 @@
 }
 
 .academy-live-brand img {
-  width: 112px;
-  max-height: 42px;
+  width: 100px;
   object-fit: contain;
   display: block;
 }
@@ -62,7 +61,7 @@
 }
 
 .academy-live-course strong {
-  color: #ffffff;
+  color: #0d0d0d;
   font-size: 15px;
   font-weight: 700;
   line-height: 1.2;
@@ -108,7 +107,7 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) 340px;
   overflow: hidden;
-  background: #0b1020;
+  background: #f5f5f6;
 }
 
 /* =========================================================
@@ -121,7 +120,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  background: #080c16;
+  background: #fcfafa;
   overflow: hidden;
 }
 
@@ -169,7 +168,7 @@
   min-height: 0;
   overflow: hidden;
   border-radius: 14px;
-  background: #151b2a;
+  background: #f4f4f6;
   border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow:
     0 12px 35px rgba(0, 0, 0, 0.28);
@@ -208,8 +207,8 @@
   max-width: calc(100% - 24px);
   padding: 7px 11px;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.62);
-  color: #ffffff;
+  background: rgba(250, 248, 248, 0.62);
+  color: #0e0e0e;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.2;
@@ -264,7 +263,7 @@
 }
 
 .academy-empty-video strong {
-  color: #ffffff;
+  color: #0e0e0e;
   font-size: 17px;
   font-weight: 700;
 }
@@ -290,7 +289,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
-  background: #0d1322;
+  background: #f3f4f5;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 
@@ -383,7 +382,7 @@
   justify-content: space-between;
   gap: 10px;
   border-bottom: 1px solid rgba(255, 255, 255, 0.07);
-  background: #141b2a;
+  background: #f4f4f6;
 }
 
 .academy-panel-title > div {
@@ -399,7 +398,7 @@
 }
 
 .academy-panel-title strong {
-  color: #f3f4f6;
+  color: #0a0a0a;
   font-size: 13px;
   font-weight: 700;
 }
@@ -428,7 +427,8 @@
   max-height: 43%;
   display: flex;
   flex-direction: column;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(244, 241, 241, 0.08);
+  background: #fff
 }
 
 .academy-participants-list {
@@ -447,7 +447,7 @@
 }
 
 .academy-participant:hover {
-  background: rgba(255, 255, 255, 0.04);
+  background: #2602f5
 }
 
 .academy-participant-avatar {
@@ -458,7 +458,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #24304a;
+  background: #eff0f1;
   color: #bfdbfe;
   font-size: 13px;
   font-weight: 700;
@@ -474,7 +474,7 @@
 
 .academy-participant-info strong {
   overflow: hidden;
-  color: #f3f4f6;
+  color: #0c0c0c;
   font-size: 12px;
   font-weight: 600;
   text-overflow: ellipsis;
@@ -540,7 +540,7 @@
   flex-direction: column;
   gap: 12px;
   overflow-y: auto;
-  background: #0f1625;
+  background: #f5f6f8;
 }
 
 .academy-chat-message {
@@ -566,7 +566,7 @@
   max-width: 88%;
   padding: 9px 11px;
   border-radius: 10px 10px 10px 3px;
-  background: #1d293d;
+  background: #0456fb;
   color: #e5e7eb;
   font-size: 12px;
   line-height: 1.45;
@@ -598,7 +598,7 @@
 }
 
 .academy-chat-empty strong {
-  color: #9ca3af;
+  color: #0c0c0c;
   font-size: 12px;
 }
 
@@ -620,7 +620,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #141b2a;
+  background: #f8f9fa;
   border-top: 1px solid rgba(255, 255, 255, 0.07);
 }
 
@@ -632,8 +632,8 @@
   border: 1px solid rgba(255, 255, 255, 0.09);
   border-radius: 8px;
   outline: none;
-  background: #0d1320;
-  color: #ffffff;
+  background: #fafbfc;
+  color: #0c0c0c;
   font-family: inherit;
   font-size: 12px;
   transition:
@@ -647,7 +647,7 @@
 
 .academy-chat-input input:focus {
   border-color: rgba(59, 130, 246, 0.55);
-  background: #101827;
+  background: #fafafc;
 }
 
 .academy-chat-input button {
@@ -689,20 +689,20 @@
 .academy-chat-messages::-webkit-scrollbar-track,
 .academy-participants-list::-webkit-scrollbar-track,
 .academy-video-grid::-webkit-scrollbar-track {
-  background: transparent;
+  background: #fff;
 }
 
 .academy-chat-messages::-webkit-scrollbar-thumb,
 .academy-participants-list::-webkit-scrollbar-thumb,
 .academy-video-grid::-webkit-scrollbar-thumb {
   border-radius: 10px;
-  background: #293448;
+  background: #f2f3f6;
 }
 
 .academy-chat-messages::-webkit-scrollbar-thumb:hover,
 .academy-participants-list::-webkit-scrollbar-thumb:hover,
 .academy-video-grid::-webkit-scrollbar-thumb:hover {
-  background: #3b4a63;
+  background: #f5f7f9;
 }
 
 /* =========================================================
@@ -1074,7 +1074,7 @@
   }
 
   .academy-live-brand img {
-    width: 88px;
+    width: 120px;
   }
 
   .academy-live-course strong {
