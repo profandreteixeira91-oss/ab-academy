@@ -14,6 +14,7 @@ import {
   GraduationCap,
   UsersRound,
   RefreshCw,
+  UserCog,
 } from 'lucide-react'
 
 import { supabase } from '../../lib/supabase'
@@ -21,7 +22,18 @@ import '../../styles/admin/Alunos.css'
 
 type Idioma = 'ingles' | 'alemao'
 
-type Nivel = 'basico' | 'intermediario' | 'avancado'
+type Nivel =
+  | 'basico'
+  | 'intermediario'
+  | 'avancado'
+
+type Professor = {
+  id: string
+  nome_completo: string
+  email: string
+  ativo: boolean
+  acesso_portal: boolean
+}
 
 type Aluno = {
   id: string
@@ -37,6 +49,7 @@ type Aluno = {
   nivel_conversacao: Nivel
   nivel_escrita: Nivel
   nivel_compreensao: Nivel
+  professor_id: string | null
   created_at: string
   updated_at: string
 }
@@ -53,6 +66,7 @@ type AlunoForm = {
   nivel_conversacao: Nivel
   nivel_escrita: Nivel
   nivel_compreensao: Nivel
+  professor_id: string | null
 }
 
 const idiomaLabels: Record<Idioma, string> = {
@@ -78,6 +92,7 @@ const emptyForm: AlunoForm = {
   nivel_conversacao: 'basico',
   nivel_escrita: 'basico',
   nivel_compreensao: 'basico',
+  professor_id: null,
 }
 
 function formatCpf(value: string) {
@@ -92,7 +107,10 @@ function formatCpf(value: string) {
   }
 
   if (numbers.length <= 9) {
-    return `${numbers.slice(0, 3)}.${numbers.slice(3, 6)}.${numbers.slice(6)}`
+    return `${numbers.slice(0, 3)}.${numbers.slice(
+      3,
+      6,
+    )}.${numbers.slice(6)}`
   }
 
   return `${numbers.slice(0, 3)}.${numbers.slice(
@@ -159,35 +177,63 @@ function getInitials(name: string) {
 function createFormFromAluno(aluno: Aluno): AlunoForm {
   return {
     nome_completo: aluno.nome_completo || '',
-    cpf: aluno.cpf ? formatCpf(aluno.cpf) : '',
+
+    cpf: aluno.cpf
+      ? formatCpf(aluno.cpf)
+      : '',
+
     email: aluno.email || '',
-    data_nascimento: aluno.data_nascimento || '',
+
+    data_nascimento:
+      aluno.data_nascimento || '',
+
     telefone: aluno.telefone
       ? formatPhone(aluno.telefone)
       : '',
+
     responsavel_nome:
       aluno.responsavel_nome || '',
+
     responsavel_contato:
       aluno.responsavel_contato
         ? formatPhone(aluno.responsavel_contato)
         : '',
+
     idioma: aluno.idioma,
+
     nivel_conversacao:
       aluno.nivel_conversacao,
-    nivel_escrita: aluno.nivel_escrita,
+
+    nivel_escrita:
+      aluno.nivel_escrita,
+
     nivel_compreensao:
       aluno.nivel_compreensao,
+
+    professor_id:
+      aluno.professor_id || null,
   }
 }
 
 export default function Alunos() {
-  const [alunos, setAlunos] = useState<Aluno[]>([])
-  const [loading, setLoading] = useState(true)
-  const [refreshing, setRefreshing] = useState(false)
+  const [alunos, setAlunos] =
+    useState<Aluno[]>([])
 
-  const [search, setSearch] = useState('')
+  const [professores, setProfessores] =
+    useState<Professor[]>([])
+
+  const [loading, setLoading] =
+    useState(true)
+
+  const [refreshing, setRefreshing] =
+    useState(false)
+
+  const [search, setSearch] =
+    useState('')
+
   const [idiomaFilter, setIdiomaFilter] =
     useState<'todos' | Idioma>('todos')
+
   const [nivelFilter, setNivelFilter] =
     useState<'todos' | Nivel>('todos')
 
@@ -200,17 +246,26 @@ export default function Alunos() {
   const [form, setForm] =
     useState<AlunoForm>(emptyForm)
 
-  const [saving, setSaving] = useState(false)
-  const [error, setError] = useState('')
-  const [success, setSuccess] = useState('')
+  const [saving, setSaving] =
+    useState(false)
+
+  const [error, setError] =
+    useState('')
+
+  const [success, setSuccess] =
+    useState('')
 
   useEffect(() => {
     loadAlunos()
   }, [])
 
-  async function loadAlunos(
-    showRefresh = false,
-  ) {
+  /*
+   * ============================================================
+   * CARREGAR ALUNOS E PROFESSORES
+   * ============================================================
+   */
+
+  async function loadAlunos(showRefresh = false) {
     try {
       if (showRefresh) {
         setRefreshing(true)
@@ -220,13 +275,13 @@ export default function Alunos() {
 
       setError('')
 
-      const {
-        data,
-        error: loadError,
-      } = await supabase
-        .from('alunos')
-        .select(
-          `
+      const [
+        alunosResult,
+        professoresResult,
+      ] = await Promise.all([
+        supabase
+          .from('alunos')
+          .select(`
             id,
             user_id,
             nome_completo,
@@ -240,33 +295,79 @@ export default function Alunos() {
             nivel_conversacao,
             nivel_escrita,
             nivel_compreensao,
+            professor_id,
             created_at,
             updated_at
-          `,
-        )
-        .order('nome_completo', {
-          ascending: true,
-        })
+          `)
+          .order('nome_completo', {
+            ascending: true,
+          }),
 
-      if (loadError) {
+        supabase
+          .from('professores')
+          .select(`
+            id,
+            nome_completo,
+            email,
+            ativo,
+            acesso_portal
+          `)
+          .eq('ativo', true)
+          .order('nome_completo', {
+            ascending: true,
+          }),
+      ])
+
+      /*
+       * ==========================================================
+       * ALUNOS
+       * ==========================================================
+       */
+
+      if (alunosResult.error) {
         console.error(
-          'Erro ao carregar alunos:',
-          loadError,
+          '[Alunos] Erro ao carregar alunos:',
+          alunosResult.error,
         )
 
         setError(
-          `Não foi possível carregar os alunos: ${loadError.message}`,
+          `Não foi possível carregar os alunos: ${alunosResult.error.message}`,
         )
 
         return
       }
 
       setAlunos(
-        (data || []) as Aluno[],
+        (alunosResult.data ?? []) as Aluno[],
+      )
+
+      /*
+       * ==========================================================
+       * PROFESSORES
+       * ==========================================================
+       */
+
+      if (professoresResult.error) {
+        console.error(
+          '[Alunos] Erro ao carregar professores:',
+          professoresResult.error,
+        )
+
+        setProfessores([])
+
+        setError(
+          `Não foi possível carregar os professores: ${professoresResult.error.message}`,
+        )
+
+        return
+      }
+
+      setProfessores(
+        (professoresResult.data ?? []) as Professor[],
       )
     } catch (err) {
       console.error(
-        'Erro inesperado ao carregar alunos:',
+        '[Alunos] Erro inesperado:',
         err,
       )
 
@@ -279,11 +380,45 @@ export default function Alunos() {
     }
   }
 
+  /*
+   * ============================================================
+   * NOME DO PROFESSOR
+   * ============================================================
+   */
+
+  function getProfessorNome(
+    professorId: string | null,
+  ) {
+    if (!professorId) {
+      return 'Nenhum professor'
+    }
+
+    const professor = professores.find(
+      (item) => item.id === professorId,
+    )
+
+    return (
+      professor?.nome_completo ??
+      'Professor não encontrado'
+    )
+  }
+
+  /*
+   * ============================================================
+   * FILTROS
+   * ============================================================
+   */
+
   const filteredAlunos = useMemo(() => {
     const normalizedSearch =
       search.trim().toLowerCase()
 
     return alunos.filter((aluno) => {
+      const professorNome =
+        getProfessorNome(
+          aluno.professor_id,
+        ).toLowerCase()
+
       const matchesSearch =
         !normalizedSearch ||
         aluno.nome_completo
@@ -297,7 +432,10 @@ export default function Alunos() {
           .includes(normalizedSearch) ||
         aluno.telefone
           .toLowerCase()
-          .includes(normalizedSearch)
+          .includes(normalizedSearch) ||
+        professorNome.includes(
+          normalizedSearch,
+        )
 
       const matchesIdioma =
         idiomaFilter === 'todos' ||
@@ -305,9 +443,12 @@ export default function Alunos() {
 
       const matchesNivel =
         nivelFilter === 'todos' ||
-        aluno.nivel_conversacao === nivelFilter ||
-        aluno.nivel_escrita === nivelFilter ||
-        aluno.nivel_compreensao === nivelFilter
+        aluno.nivel_conversacao ===
+          nivelFilter ||
+        aluno.nivel_escrita ===
+          nivelFilter ||
+        aluno.nivel_compreensao ===
+          nivelFilter
 
       return (
         matchesSearch &&
@@ -320,7 +461,14 @@ export default function Alunos() {
     search,
     idiomaFilter,
     nivelFilter,
+    professores,
   ])
+
+  /*
+   * ============================================================
+   * MODAIS
+   * ============================================================
+   */
 
   function openDetails(aluno: Aluno) {
     setSelectedAluno(aluno)
@@ -332,9 +480,11 @@ export default function Alunos() {
   function openEdit(aluno: Aluno) {
     setEditingAluno(aluno)
     setSelectedAluno(null)
+
     setForm(
       createFormFromAluno(aluno),
     )
+
     setError('')
     setSuccess('')
   }
@@ -350,9 +500,15 @@ export default function Alunos() {
     setSuccess('')
   }
 
+  /*
+   * ============================================================
+   * FORMULÁRIO
+   * ============================================================
+   */
+
   function updateForm(
     field: keyof AlunoForm,
-    value: string,
+    value: string | null,
   ) {
     setForm((current) => ({
       ...current,
@@ -360,155 +516,209 @@ export default function Alunos() {
     }))
   }
 
+  /*
+   * ============================================================
+   * SALVAR ALUNO
+   * ============================================================
+   */
+
   async function handleSave() {
     if (!editingAluno) {
       return
     }
 
-    setError('')
-    setSuccess('')
-
-    if (!form.nome_completo.trim()) {
-      setError(
-        'Informe o nome completo do aluno.',
-      )
-      return
-    }
-
-    if (!form.cpf.trim()) {
-      setError('Informe o CPF do aluno.')
-      return
-    }
-
-    if (!form.email.trim()) {
-      setError('Informe o e-mail do aluno.')
-      return
-    }
-
-    if (!form.data_nascimento) {
-      setError(
-        'Informe a data de nascimento.',
-      )
-      return
-    }
-
-    if (!form.telefone.trim()) {
-      setError(
-        'Informe o telefone do aluno.',
-      )
-      return
-    }
-
-    setSaving(true)
-
     try {
+      setSaving(true)
+      setError('')
+      setSuccess('')
+
+      /*
+       * IMPORTANTE:
+       *
+       * Normalizamos o valor antes de enviar.
+       * Se nenhum professor estiver selecionado,
+       * o banco recebe NULL.
+       */
+      const professorId =
+        form.professor_id?.trim() || null
+
       const payload = {
         nome_completo:
           form.nome_completo.trim(),
-        cpf: form.cpf.replace(/\D/g, ''),
-        email: form.email.trim(),
+
+        cpf:
+          form.cpf.replace(/\D/g, ''),
+
+        email:
+          form.email.trim(),
+
         data_nascimento:
-          form.data_nascimento,
+          form.data_nascimento || null,
+
         telefone:
           form.telefone.replace(/\D/g, ''),
+
         responsavel_nome:
           form.responsavel_nome.trim() ||
           null,
+
         responsavel_contato:
-          form.responsavel_contato
-            ? form.responsavel_contato.replace(
-                /\D/g,
-                '',
-              )
-            : null,
-        idioma: form.idioma,
+          form.responsavel_contato.replace(
+            /\D/g,
+            '',
+          ) || null,
+
+        idioma:
+          form.idioma,
+
         nivel_conversacao:
           form.nivel_conversacao,
+
         nivel_escrita:
           form.nivel_escrita,
+
         nivel_compreensao:
           form.nivel_compreensao,
-        updated_at:
-          new Date().toISOString(),
+
+        professor_id:
+          professorId,
       }
 
+      console.log(
+        '[Alunos] ID do aluno:',
+        editingAluno.id,
+      )
+
+      console.log(
+        '[Alunos] Professor selecionado:',
+        professorId,
+      )
+
+      console.log(
+        '[Alunos] Payload enviado:',
+        payload,
+      )
+
+      /*
+       * ========================================================
+       * ATUALIZAÇÃO
+       * ========================================================
+       *
+       * Não usamos .single().
+       *
+       * O .select() retorna o registro atualizado para
+       * confirmarmos que o professor_id realmente foi
+       * gravado no banco.
+       */
+
       const {
-        data,
+        data: updatedRows,
         error: updateError,
       } = await supabase
         .from('alunos')
         .update(payload)
         .eq('id', editingAluno.id)
-        .select(
-          `
-            id,
-            user_id,
-            nome_completo,
-            cpf,
-            email,
-            data_nascimento,
-            telefone,
-            responsavel_nome,
-            responsavel_contato,
-            idioma,
-            nivel_conversacao,
-            nivel_escrita,
-            nivel_compreensao,
-            created_at,
-            updated_at
-          `,
-        )
-        .single()
+        .select('id, professor_id')
+
+      /*
+       * ========================================================
+       * ERRO DO SUPABASE
+       * ========================================================
+       */
 
       if (updateError) {
         console.error(
-          'Erro ao atualizar aluno:',
+          '[Alunos] Erro no UPDATE:',
           updateError,
         )
 
-        if (
-          updateError.code ===
-          '23505'
-        ) {
-          setError(
-            'Este CPF ou e-mail já está cadastrado.',
-          )
-        } else {
-          setError(
-            `Não foi possível atualizar o aluno: ${updateError.message}`,
-          )
-        }
+        setError(
+          `Não foi possível atualizar o aluno: ${updateError.message}`,
+        )
+
+        return
+      }
+
+      /*
+       * ========================================================
+       * VERIFICAR SE O UPDATE REALMENTE ALTEROU UMA LINHA
+       * ========================================================
+       */
+
+      if (
+        !updatedRows ||
+        updatedRows.length === 0
+      ) {
+        console.error(
+          '[Alunos] Nenhuma linha foi atualizada.',
+        )
+
+        setError(
+          'O aluno não foi atualizado no Supabase. Verifique as políticas RLS da tabela alunos.',
+        )
 
         return
       }
 
       const updatedAluno =
-        data as Aluno
+        updatedRows[0]
 
-      setAlunos((current) =>
-        current.map((aluno) =>
-          aluno.id === updatedAluno.id
-            ? updatedAluno
-            : aluno,
-        ),
-      )
-
-      setEditingAluno(
+      console.log(
+        '[Alunos] Registro retornado pelo Supabase:',
         updatedAluno,
       )
 
-      setForm(
-        createFormFromAluno(
-          updatedAluno,
-        ),
-      )
+      /*
+       * ========================================================
+       * CONFIRMAR PROFESSOR_ID
+       * ========================================================
+       */
+
+      if (
+        updatedAluno.professor_id !==
+        professorId
+      ) {
+        console.error(
+          '[Alunos] professor_id diferente do esperado:',
+          {
+            esperado: professorId,
+            recebido:
+              updatedAluno.professor_id,
+          },
+        )
+
+        setError(
+          'O aluno foi atualizado, mas o professor não foi vinculado corretamente no Supabase.',
+        )
+
+        return
+      }
+
+      /*
+       * ========================================================
+       * RECARREGAR DADOS DO BANCO
+       * ========================================================
+       */
+
+      await loadAlunos()
+
+      /*
+       * ========================================================
+       * SUCESSO
+       * ========================================================
+       */
 
       setSuccess(
-        'Dados do aluno atualizados com sucesso.',
+        professorId
+          ? 'Aluno atualizado e professor vinculado com sucesso.'
+          : 'Aluno atualizado com sucesso.',
       )
+
+      setEditingAluno(null)
+      setSelectedAluno(null)
     } catch (err) {
       console.error(
-        'Erro inesperado ao atualizar aluno:',
+        '[Alunos] Erro inesperado ao salvar:',
         err,
       )
 
@@ -520,11 +730,23 @@ export default function Alunos() {
     }
   }
 
+  /*
+   * ============================================================
+   * LIMPAR FILTROS
+   * ============================================================
+   */
+
   function clearFilters() {
     setSearch('')
     setIdiomaFilter('todos')
     setNivelFilter('todos')
   }
+
+  /*
+   * ============================================================
+   * RENDER
+   * ============================================================
+   */
 
   return (
     <div className="alunos-page">
@@ -532,17 +754,16 @@ export default function Alunos() {
         <div>
           <div className="alunos-title-row">
             <div className="alunos-title-icon">
-              <GraduationCap
-                size={24}
-              />
+              <GraduationCap size={24} />
             </div>
 
             <div>
               <h1>Alunos</h1>
 
               <p>
-                Gerencie os alunos cadastrados
-                na AB Academy.
+                Gerencie os alunos
+                cadastrados na AB
+                Academy.
               </p>
             </div>
           </div>
@@ -555,7 +776,8 @@ export default function Alunos() {
             loadAlunos(true)
           }
           disabled={
-            loading || refreshing
+            loading ||
+            refreshing
           }
         >
           <RefreshCw
@@ -593,9 +815,7 @@ export default function Alunos() {
           </div>
 
           <div>
-            <span>
-              Total de alunos
-            </span>
+            <span>Total de alunos</span>
 
             <strong>
               {alunos.length}
@@ -645,9 +865,7 @@ export default function Alunos() {
 
         <div className="alunos-stat-card">
           <div className="alunos-stat-icon">
-            <GraduationCap
-              size={20}
-            />
+            <GraduationCap size={20} />
           </div>
 
           <div>
@@ -666,7 +884,7 @@ export default function Alunos() {
 
           <input
             type="text"
-            placeholder="Pesquisar por nome, CPF, e-mail ou telefone..."
+            placeholder="Pesquisar por nome, CPF, e-mail, telefone ou professor..."
             value={search}
             onChange={(event) =>
               setSearch(
@@ -731,16 +949,12 @@ export default function Alunos() {
         </select>
 
         {(search ||
-          idiomaFilter !==
-            'todos' ||
-          nivelFilter !==
-            'todos') && (
+          idiomaFilter !== 'todos' ||
+          nivelFilter !== 'todos') && (
           <button
             type="button"
             className="alunos-clear-filters"
-            onClick={
-              clearFilters
-            }
+            onClick={clearFilters}
           >
             Limpar filtros
           </button>
@@ -756,13 +970,10 @@ export default function Alunos() {
               Carregando alunos...
             </span>
           </div>
-        ) : filteredAlunos.length ===
-          0 ? (
+        ) : filteredAlunos.length === 0 ? (
           <div className="alunos-empty">
             <div className="alunos-empty-icon">
-              <UsersRound
-                size={30}
-              />
+              <UsersRound size={30} />
             </div>
 
             <h2>
@@ -775,13 +986,10 @@ export default function Alunos() {
                 : 'Nenhum aluno corresponde aos filtros selecionados.'}
             </p>
 
-            {alunos.length >
-              0 && (
+            {alunos.length > 0 && (
               <button
                 type="button"
-                onClick={
-                  clearFilters
-                }
+                onClick={clearFilters}
               >
                 Limpar filtros
               </button>
@@ -793,10 +1001,17 @@ export default function Alunos() {
               <thead>
                 <tr>
                   <th>Aluno</th>
+
                   <th>CPF</th>
+
                   <th>Contato</th>
+
                   <th>Idioma</th>
+
+                  <th>Professor</th>
+
                   <th>Níveis</th>
+
                   <th className="alunos-actions-column">
                     Ações
                   </th>
@@ -806,11 +1021,7 @@ export default function Alunos() {
               <tbody>
                 {filteredAlunos.map(
                   (aluno) => (
-                    <tr
-                      key={
-                        aluno.id
-                      }
-                    >
+                    <tr key={aluno.id}>
                       <td>
                         <div className="alunos-person">
                           <div className="alunos-avatar">
@@ -845,7 +1056,9 @@ export default function Alunos() {
                       <td>
                         <div className="alunos-contact">
                           <span>
-                            {aluno.email}
+                            {
+                              aluno.email
+                            }
                           </span>
 
                           <span>
@@ -866,6 +1079,18 @@ export default function Alunos() {
                             ]
                           }
                         </span>
+                      </td>
+
+                      <td>
+                        <div className="alunos-professor-cell">
+                          <UserCog size={16} />
+
+                          <span>
+                            {getProfessorNome(
+                              aluno.professor_id,
+                            )}
+                          </span>
+                        </div>
                       </td>
 
                       <td>
@@ -913,9 +1138,7 @@ export default function Alunos() {
                               )
                             }
                           >
-                            <Eye
-                              size={17}
-                            />
+                            <Eye size={17} />
                           </button>
 
                           <button
@@ -927,9 +1150,7 @@ export default function Alunos() {
                               )
                             }
                           >
-                            <Pencil
-                              size={17}
-                            />
+                            <Pencil size={17} />
                           </button>
                         </div>
                       </td>
@@ -942,12 +1163,14 @@ export default function Alunos() {
         )}
       </div>
 
+      {/* ========================================================
+          MODAL — VISUALIZAÇÃO
+          ======================================================== */}
+
       {selectedAluno && (
         <div
           className="alunos-modal-overlay"
-          onMouseDown={(
-            event,
-          ) => {
+          onMouseDown={(event) => {
             if (
               event.target ===
               event.currentTarget
@@ -970,9 +1193,7 @@ export default function Alunos() {
 
               <button
                 type="button"
-                onClick={
-                  closeModal
-                }
+                onClick={closeModal}
                 className="alunos-modal-close"
               >
                 <X size={20} />
@@ -1004,16 +1225,12 @@ export default function Alunos() {
             </div>
 
             <div className="alunos-detail-section">
-              <h3>
-                Dados pessoais
-              </h3>
+              <h3>Dados pessoais</h3>
 
               <div className="alunos-detail-grid">
                 <div className="alunos-detail-item">
                   <span>
-                    <UserRound
-                      size={16}
-                    />
+                    <UserRound size={16} />
                     Nome completo
                   </span>
 
@@ -1026,9 +1243,7 @@ export default function Alunos() {
 
                 <div className="alunos-detail-item">
                   <span>
-                    <FileText
-                      size={16}
-                    />
+                    <FileText size={16} />
                     CPF
                   </span>
 
@@ -1041,9 +1256,7 @@ export default function Alunos() {
 
                 <div className="alunos-detail-item">
                   <span>
-                    <Mail
-                      size={16}
-                    />
+                    <Mail size={16} />
                     E-mail
                   </span>
 
@@ -1056,9 +1269,7 @@ export default function Alunos() {
 
                 <div className="alunos-detail-item">
                   <span>
-                    <Phone
-                      size={16}
-                    />
+                    <Phone size={16} />
                     Telefone
                   </span>
 
@@ -1071,9 +1282,7 @@ export default function Alunos() {
 
                 <div className="alunos-detail-item">
                   <span>
-                    <CalendarDays
-                      size={16}
-                    />
+                    <CalendarDays size={16} />
                     Data de nascimento
                   </span>
 
@@ -1088,15 +1297,32 @@ export default function Alunos() {
 
             <div className="alunos-detail-section">
               <h3>
-                Responsável
+                Professor responsável
               </h3>
 
               <div className="alunos-detail-grid">
                 <div className="alunos-detail-item">
                   <span>
-                    <UserRound
-                      size={16}
-                    />
+                    <UserCog size={16} />
+                    Professor
+                  </span>
+
+                  <strong>
+                    {getProfessorNome(
+                      selectedAluno.professor_id,
+                    )}
+                  </strong>
+                </div>
+              </div>
+            </div>
+
+            <div className="alunos-detail-section">
+              <h3>Responsável</h3>
+
+              <div className="alunos-detail-grid">
+                <div className="alunos-detail-item">
+                  <span>
+                    <UserRound size={16} />
                     Nome
                   </span>
 
@@ -1108,9 +1334,7 @@ export default function Alunos() {
 
                 <div className="alunos-detail-item">
                   <span>
-                    <Phone
-                      size={16}
-                    />
+                    <Phone size={16} />
                     Contato
                   </span>
 
@@ -1147,9 +1371,7 @@ export default function Alunos() {
                 </div>
 
                 <div className="alunos-level-card">
-                  <span>
-                    Escrita
-                  </span>
+                  <span>Escrita</span>
 
                   <strong>
                     {
@@ -1182,9 +1404,7 @@ export default function Alunos() {
               <button
                 type="button"
                 className="alunos-secondary-button"
-                onClick={
-                  closeModal
-                }
+                onClick={closeModal}
               >
                 Fechar
               </button>
@@ -1206,12 +1426,14 @@ export default function Alunos() {
         </div>
       )}
 
+      {/* ========================================================
+          MODAL — EDIÇÃO
+          ======================================================== */}
+
       {editingAluno && (
         <div
           className="alunos-modal-overlay"
-          onMouseDown={(
-            event,
-          ) => {
+          onMouseDown={(event) => {
             if (
               event.target ===
               event.currentTarget
@@ -1223,9 +1445,7 @@ export default function Alunos() {
           <div className="alunos-modal alunos-edit-modal">
             <div className="alunos-modal-header">
               <div>
-                <h2>
-                  Editar aluno
-                </h2>
+                <h2>Editar aluno</h2>
 
                 <p>
                   Atualize os dados
@@ -1235,9 +1455,7 @@ export default function Alunos() {
 
               <button
                 type="button"
-                onClick={
-                  closeModal
-                }
+                onClick={closeModal}
                 className="alunos-modal-close"
                 disabled={saving}
               >
@@ -1258,10 +1476,12 @@ export default function Alunos() {
             )}
 
             <div className="alunos-form">
+              {/* ==================================================
+                  DADOS PESSOAIS
+                  ================================================== */}
+
               <div className="alunos-form-section">
-                <h3>
-                  Dados pessoais
-                </h3>
+                <h3>Dados pessoais</h3>
 
                 <div className="alunos-form-grid">
                   <label className="alunos-field alunos-field-full">
@@ -1270,23 +1490,17 @@ export default function Alunos() {
                     </span>
 
                     <div className="alunos-input-wrapper">
-                      <UserRound
-                        size={17}
-                      />
+                      <UserRound size={17} />
 
                       <input
                         type="text"
                         value={
                           form.nome_completo
                         }
-                        onChange={(
-                          event,
-                        ) =>
+                        onChange={(event) =>
                           updateForm(
                             'nome_completo',
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                         }
                       />
@@ -1294,29 +1508,19 @@ export default function Alunos() {
                   </label>
 
                   <label className="alunos-field">
-                    <span>
-                      CPF
-                    </span>
+                    <span>CPF</span>
 
                     <div className="alunos-input-wrapper">
-                      <FileText
-                        size={17}
-                      />
+                      <FileText size={17} />
 
                       <input
                         type="text"
-                        value={
-                          form.cpf
-                        }
-                        onChange={(
-                          event,
-                        ) =>
+                        value={form.cpf}
+                        onChange={(event) =>
                           updateForm(
                             'cpf',
                             formatCpf(
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                             ),
                           )
                         }
@@ -1330,23 +1534,17 @@ export default function Alunos() {
                     </span>
 
                     <div className="alunos-input-wrapper">
-                      <CalendarDays
-                        size={17}
-                      />
+                      <CalendarDays size={17} />
 
                       <input
                         type="date"
                         value={
                           form.data_nascimento
                         }
-                        onChange={(
-                          event,
-                        ) =>
+                        onChange={(event) =>
                           updateForm(
                             'data_nascimento',
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                         }
                       />
@@ -1354,28 +1552,18 @@ export default function Alunos() {
                   </label>
 
                   <label className="alunos-field">
-                    <span>
-                      E-mail
-                    </span>
+                    <span>E-mail</span>
 
                     <div className="alunos-input-wrapper">
-                      <Mail
-                        size={17}
-                      />
+                      <Mail size={17} />
 
                       <input
                         type="email"
-                        value={
-                          form.email
-                        }
-                        onChange={(
-                          event,
-                        ) =>
+                        value={form.email}
+                        onChange={(event) =>
                           updateForm(
                             'email',
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                         }
                       />
@@ -1383,29 +1571,21 @@ export default function Alunos() {
                   </label>
 
                   <label className="alunos-field">
-                    <span>
-                      Telefone
-                    </span>
+                    <span>Telefone</span>
 
                     <div className="alunos-input-wrapper">
-                      <Phone
-                        size={17}
-                      />
+                      <Phone size={17} />
 
                       <input
                         type="text"
                         value={
                           form.telefone
                         }
-                        onChange={(
-                          event,
-                        ) =>
+                        onChange={(event) =>
                           updateForm(
                             'telefone',
                             formatPhone(
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                             ),
                           )
                         }
@@ -1415,10 +1595,81 @@ export default function Alunos() {
                 </div>
               </div>
 
+              {/* ==================================================
+                  PROFESSOR
+                  ================================================== */}
+
               <div className="alunos-form-section">
                 <h3>
-                  Responsável
+                  Professor responsável
                 </h3>
+
+                <div className="alunos-form-grid">
+                  <label className="alunos-field alunos-field-full">
+                    <span>
+                      Professor
+                    </span>
+
+                    <div className="alunos-input-wrapper">
+                      <UserCog size={17} />
+
+                      <select
+                        value={
+                          form.professor_id ??
+                          ''
+                        }
+                        onChange={(event) =>
+                          updateForm(
+                            'professor_id',
+                            event.target.value ||
+                              null,
+                          )
+                        }
+                        disabled={saving}
+                      >
+                        <option value="">
+                          Nenhum professor
+                        </option>
+
+                        {professores.map(
+                          (professor) => (
+                            <option
+                              key={
+                                professor.id
+                              }
+                              value={
+                                professor.id
+                              }
+                            >
+                              {
+                                professor.nome_completo
+                              }
+                              {' — '}
+                              {
+                                professor.email
+                              }
+                            </option>
+                          ),
+                        )}
+                      </select>
+                    </div>
+                  </label>
+                </div>
+
+                <p className="alunos-professor-help">
+                  O professor selecionado
+                  poderá visualizar este
+                  aluno no portal do
+                  professor.
+                </p>
+              </div>
+
+              {/* ==================================================
+                  RESPONSÁVEL
+                  ================================================== */}
+
+              <div className="alunos-form-section">
+                <h3>Responsável</h3>
 
                 <div className="alunos-form-grid">
                   <label className="alunos-field">
@@ -1427,23 +1678,17 @@ export default function Alunos() {
                     </span>
 
                     <div className="alunos-input-wrapper">
-                      <UserRound
-                        size={17}
-                      />
+                      <UserRound size={17} />
 
                       <input
                         type="text"
                         value={
                           form.responsavel_nome
                         }
-                        onChange={(
-                          event,
-                        ) =>
+                        onChange={(event) =>
                           updateForm(
                             'responsavel_nome',
-                            event
-                              .target
-                              .value,
+                            event.target.value,
                           )
                         }
                       />
@@ -1456,24 +1701,18 @@ export default function Alunos() {
                     </span>
 
                     <div className="alunos-input-wrapper">
-                      <Phone
-                        size={17}
-                      />
+                      <Phone size={17} />
 
                       <input
                         type="text"
                         value={
                           form.responsavel_contato
                         }
-                        onChange={(
-                          event,
-                        ) =>
+                        onChange={(event) =>
                           updateForm(
                             'responsavel_contato',
                             formatPhone(
-                              event
-                                .target
-                                .value,
+                              event.target.value,
                             ),
                           )
                         }
@@ -1483,6 +1722,10 @@ export default function Alunos() {
                 </div>
               </div>
 
+              {/* ==================================================
+                  IDIOMA E NÍVEIS
+                  ================================================== */}
+
               <div className="alunos-form-section">
                 <h3>
                   Idioma e níveis
@@ -1490,26 +1733,19 @@ export default function Alunos() {
 
                 <div className="alunos-form-grid alunos-level-form-grid">
                   <label className="alunos-field">
-                    <span>
-                      Idioma
-                    </span>
+                    <span>Idioma</span>
 
                     <div className="alunos-input-wrapper">
-                      <Languages
-                        size={17}
-                      />
+                      <Languages size={17} />
 
                       <select
                         value={
                           form.idioma
                         }
-                        onChange={(
-                          event,
-                        ) =>
+                        onChange={(event) =>
                           updateForm(
                             'idioma',
-                            event
-                              .target
+                            event.target
                               .value as Idioma,
                           )
                         }
@@ -1534,13 +1770,10 @@ export default function Alunos() {
                       value={
                         form.nivel_conversacao
                       }
-                      onChange={(
-                        event,
-                      ) =>
+                      onChange={(event) =>
                         updateForm(
                           'nivel_conversacao',
-                          event
-                            .target
+                          event.target
                             .value as Nivel,
                         )
                       }
@@ -1560,21 +1793,16 @@ export default function Alunos() {
                   </label>
 
                   <label className="alunos-field">
-                    <span>
-                      Escrita
-                    </span>
+                    <span>Escrita</span>
 
                     <select
                       value={
                         form.nivel_escrita
                       }
-                      onChange={(
-                        event,
-                      ) =>
+                      onChange={(event) =>
                         updateForm(
                           'nivel_escrita',
-                          event
-                            .target
+                          event.target
                             .value as Nivel,
                         )
                       }
@@ -1602,13 +1830,10 @@ export default function Alunos() {
                       value={
                         form.nivel_compreensao
                       }
-                      onChange={(
-                        event,
-                      ) =>
+                      onChange={(event) =>
                         updateForm(
                           'nivel_compreensao',
-                          event
-                            .target
+                          event.target
                             .value as Nivel,
                         )
                       }
@@ -1630,13 +1855,15 @@ export default function Alunos() {
               </div>
             </div>
 
+            {/* ====================================================
+                RODAPÉ DO MODAL
+                ==================================================== */}
+
             <div className="alunos-modal-footer">
               <button
                 type="button"
                 className="alunos-secondary-button"
-                onClick={
-                  closeModal
-                }
+                onClick={closeModal}
                 disabled={saving}
               >
                 Cancelar
@@ -1645,9 +1872,7 @@ export default function Alunos() {
               <button
                 type="button"
                 className="alunos-primary-button"
-                onClick={
-                  handleSave
-                }
+                onClick={handleSave}
                 disabled={saving}
               >
                 {saving ? (

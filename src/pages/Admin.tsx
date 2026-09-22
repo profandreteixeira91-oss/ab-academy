@@ -22,6 +22,7 @@ import Agenda from './admin/Agenda'
 import Alunos from './admin/Alunos'
 import Atividades from './admin/Atividades'
 import Planos from './admin/planos'
+import Equipe from './admin/Equipe'
 
 import '../styles/Admin.css'
 import logo from '../assets/logo_abacademy.png'
@@ -431,6 +432,14 @@ export default function Admin() {
           )}
 
           {/* =================================================
+              EQUIPE
+          ================================================= */}
+
+          {activeModule === 'equipe' && (
+            <Equipe />
+          )}
+
+          {/* =================================================
               DEMAIS MÓDULOS
           ================================================= */}
 
@@ -438,7 +447,8 @@ export default function Admin() {
             activeModule !== 'agenda' &&
             activeModule !== 'alunos' &&
             activeModule !== 'atividades' && 
-            activeModule !== 'planos' && (
+            activeModule !== 'planos' && 
+            activeModule !== 'equipe' && (
               <div className="admin-panel">
                 <div className="admin-panel-header">
                   <h2 className="admin-panel-title">

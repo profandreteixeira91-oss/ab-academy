@@ -8,6 +8,8 @@ import Aluno from './pages/Aluno'
 
 import Admin from './pages/Admin'
 
+import Equipe from './pages/admin/Equipe'
+
 import AdminAccess from './pages/admin/AdminAccess'
 
 import PoliticaPrivacidade from './pages/PoliticaPrivacidade'
@@ -18,12 +20,28 @@ import SalaAula from './pages/SalaAula'
 
 import SalaProfessor from './pages/admin/SalaProfessor'
 
+import Professor from './pages/Professor'
+
+import ProfessorAccess from './pages/ProfessorAccess'
+
 function App() {
   const path = window.location.pathname
+
+  /*
+   * =========================================================
+   * MATRÍCULA
+   * =========================================================
+   */
 
   if (path === '/matricula') {
     return <Matricula />
   }
+
+  /*
+   * =========================================================
+   * CHECKOUT
+   * =========================================================
+   */
 
   if (path.startsWith('/checkout/')) {
     const pagamentoId = path
@@ -74,21 +92,79 @@ function App() {
     )
   }
 
+  /*
+   * =========================================================
+   * PORTAL DO ALUNO
+   * =========================================================
+   */
+
   if (path === '/aluno') {
     return <Aluno />
   }
 
-  if (path.startsWith('/admin/aula/')) {
+  /*
+   * =========================================================
+   * SALA VIRTUAL DO PROFESSOR
+   *
+   * O professor entra diretamente pelo próprio portal.
+   * A validação de acesso à sala é feita pelo SalaProfessor
+   * e pela Edge Function do LiveKit.
+   * =========================================================
+   */
+
+  if (path.startsWith('/professor/aula/')) {
   return (
-    <AdminAccess>
+    <ProfessorAccess>
       <SalaProfessor />
-    </AdminAccess>
+    </ProfessorAccess>
   )
 }
+
+  /*
+   * =========================================================
+   * SALA VIRTUAL DO ADMIN
+   *
+   * Esta rota continua protegida pelo AdminAccess.
+   * =========================================================
+   */
+
+  if (path.startsWith('/admin/aula/')) {
+    return (
+      <AdminAccess>
+        <SalaProfessor />
+      </AdminAccess>
+    )
+  }
+
+  /*
+   * =========================================================
+   * SALA VIRTUAL DO ALUNO
+   * =========================================================
+   */
 
   if (path.startsWith('/aluno/aula/')) {
     return <SalaAula />
   }
+
+  /*
+   * =========================================================
+   * EQUIPE ADMINISTRATIVA
+   * =========================================================
+   */
+
+  if (path === '/admin/equipe') {
+    return (
+      <AdminAccess>
+        <Equipe />
+      </AdminAccess>
+    )
+  }
+
+  /*
+   * =========================================================
+   * ADMIN
+   * =========================================================
+   */
 
   if (path === '/admin') {
     return (
@@ -98,13 +174,41 @@ function App() {
     )
   }
 
+  /*
+   * =========================================================
+   * POLÍTICA DE PRIVACIDADE
+   * =========================================================
+   */
+
   if (path === '/politica-privacidade') {
     return <PoliticaPrivacidade />
   }
 
+  /*
+   * =========================================================
+   * TERMOS DE SERVIÇO
+   * =========================================================
+   */
+
   if (path === '/termos-de-servico') {
     return <TermosServico />
   }
+
+  /*
+   * =========================================================
+   * PORTAL DO PROFESSOR
+   * =========================================================
+   */
+
+  if (path === '/professor') {
+    return <Professor />
+  }
+
+  /*
+   * =========================================================
+   * HOME
+   * =========================================================
+   */
 
   return <Home />
 }

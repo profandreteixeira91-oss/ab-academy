@@ -27,6 +27,13 @@ type Aluno = {
   nome_completo: string
 }
 
+type Professor = {
+  id: string
+  nome_completo: string
+  email: string
+  ativo: boolean
+}
+
 type Horario = {
   id: string
   idioma: 'ingles' | 'alemao'
@@ -35,6 +42,7 @@ type Horario = {
   hora_fim: string
   disponivel: boolean
   aluno_id: string | null
+  professor_id: string | null
 }
 
 type HorarioForm = {
@@ -44,6 +52,7 @@ type HorarioForm = {
   hora_fim: string
   disponivel: boolean
   aluno_id: string
+  professor_id: string
 }
 
 type BulkCreateForm = {
@@ -53,6 +62,7 @@ type BulkCreateForm = {
   hora_fim: string
   duracao: number
   disponivel: boolean
+  professor_id: string
 }
 
 type BulkEditForm = {
@@ -61,6 +71,7 @@ type BulkEditForm = {
   hora_inicio: string
   hora_fim: string
   disponivel: '' | 'true' | 'false'
+  professor_id: '' | '__none__' | string
 }
 
 /*
@@ -137,6 +148,7 @@ const initialForm: HorarioForm = {
   hora_fim: '09:00',
   disponivel: true,
   aluno_id: '',
+  professor_id: '',
 }
 
 const initialBulkCreateForm: BulkCreateForm = {
@@ -146,6 +158,7 @@ const initialBulkCreateForm: BulkCreateForm = {
   hora_fim: '18:00',
   duracao: 60,
   disponivel: true,
+  professor_id: '',
 }
 
 const initialBulkEditForm: BulkEditForm = {
@@ -154,6 +167,7 @@ const initialBulkEditForm: BulkEditForm = {
   hora_inicio: '',
   hora_fim: '',
   disponivel: '',
+  professor_id: '',
 }
 
 /*
@@ -165,6 +179,7 @@ const initialBulkEditForm: BulkEditForm = {
 export default function Agenda() {
   const [horarios, setHorarios] = useState<Horario[]>([])
   const [alunos, setAlunos] = useState<Aluno[]>([])
+  const [professores, setProfessores] = useState<Professor[]>([])
 
   const [selectedDay, setSelectedDay] =
     useState<number>(new Date().getDay())
@@ -230,6 +245,7 @@ export default function Agenda() {
       const [
         horariosResult,
         alunosResult,
+        professoresResult,
       ] = await Promise.all([
         supabase
           .from('horarios')
@@ -240,7 +256,8 @@ export default function Agenda() {
             hora_inicio,
             hora_fim,
             disponivel,
-            aluno_id
+            aluno_id,
+            professor_id
           `)
           .order('dia_semana', {
             ascending: true,
@@ -258,6 +275,19 @@ export default function Agenda() {
           .order('nome_completo', {
             ascending: true,
           }),
+
+        supabase
+          .from('professores')
+          .select(`
+            id,
+            nome_completo,
+            email,
+            ativo
+          `)
+          .eq('ativo', true)
+          .order('nome_completo', {
+            ascending: true,
+          }),
       ])
 
       if (horariosResult.error) {
@@ -268,12 +298,20 @@ export default function Agenda() {
         throw alunosResult.error
       }
 
+      if (professoresResult.error) {
+        throw professoresResult.error
+      }
+
       setHorarios(
         (horariosResult.data || []) as Horario[],
       )
 
       setAlunos(
         (alunosResult.data || []) as Aluno[],
+      )
+
+      setProfessores(
+        (professoresResult.data || []) as Professor[],
       )
 
       setSelectedIds((current) =>
@@ -388,6 +426,21 @@ export default function Agenda() {
     return (
       alunos.find(
         (aluno) => aluno.id === alunoId,
+      )?.nome_completo || null
+    )
+  }
+
+  function getProfessorNome(
+    professorId: string | null,
+  ) {
+    if (!professorId) {
+      return null
+    }
+
+    return (
+      professores.find(
+        (professor) =>
+          professor.id === professorId,
       )?.nome_completo || null
     )
   }
@@ -546,6 +599,9 @@ export default function Agenda() {
 
       aluno_id:
         horario.aluno_id || '',
+
+      professor_id:
+        horario.professor_id || '',
     })
 
     setModalOpen(true)
@@ -626,6 +682,8 @@ export default function Agenda() {
           form.hora_fim,
         aluno_id:
           form.aluno_id || null,
+        professor_id:
+          form.professor_id || null,
         disponivel:
           form.aluno_id
             ? false
@@ -787,6 +845,7 @@ export default function Agenda() {
         hora_fim: string
         disponivel: boolean
         aluno_id: null
+        professor_id: string | null
       }[] = []
 
       const conflicts: string[] = []
@@ -838,6 +897,9 @@ export default function Agenda() {
               disponivel:
                 bulkCreateForm.disponivel,
               aluno_id: null,
+              professor_id:
+                bulkCreateForm.professor_id ||
+                null,
             })
           }
 
@@ -853,7 +915,7 @@ export default function Agenda() {
           conflicts.length > 0
         ) {
           throw new Error(
-            `Nenhum novo horário foi criado porque todos os horários gerados já existem.`,
+            'Nenhum novo horário foi criado porque todos os horários gerados já existem.',
           )
         }
 
@@ -876,7 +938,7 @@ export default function Agenda() {
         `${newSlots.length} horário(s) criado(s) com sucesso.`
 
       if (conflicts.length > 0) {
-        message += `\n\n${conflicts.length} horário(s) já existente(s) foram ignorados.`
+        message += `\n\n${conflicts.length} horário(s) já existente(s) foram ignorado(s).`
       }
 
       closeBulkCreateModal()
@@ -925,6 +987,7 @@ export default function Agenda() {
     }
 
     setBulkEditOpen(false)
+
     setBulkEditForm(
       initialBulkEditForm,
     )
@@ -947,9 +1010,8 @@ export default function Agenda() {
         selectedHorarios
 
       /*
-       * Horários ocupados podem ser
-       * editados, mas o aluno permanece
-       * vinculado ao horário.
+       * Validar os novos horários
+       * antes de alterar qualquer registro.
        */
 
       for (const horario of selected) {
@@ -1004,9 +1066,6 @@ export default function Agenda() {
       /*
        * Atualização individual dos
        * registros selecionados.
-       *
-       * Isso permite que cada horário
-       * mantenha seu aluno_id.
        */
 
       for (const horario of selected) {
@@ -1048,11 +1107,6 @@ export default function Agenda() {
           bulkEditForm.disponivel !==
           ''
         ) {
-          /*
-           * Horário ocupado continua
-           * indisponível.
-           */
-
           payload.disponivel =
             horario.aluno_id
               ? false
@@ -1060,6 +1114,17 @@ export default function Agenda() {
                   'true'
                 ? true
                 : false
+        }
+
+        if (
+          bulkEditForm.professor_id !==
+          ''
+        ) {
+          payload.professor_id =
+            bulkEditForm.professor_id ===
+            '__none__'
+              ? null
+              : bulkEditForm.professor_id
         }
 
         if (
@@ -1399,6 +1464,7 @@ export default function Agenda() {
         </div>
 
         <div className="agenda-header-actions">
+
           <button
             type="button"
             className="agenda-secondary-header-button"
@@ -1422,6 +1488,7 @@ export default function Agenda() {
 
             Novo horário
           </button>
+
         </div>
       </div>
 
@@ -1436,6 +1503,7 @@ export default function Agenda() {
       {/* DIAS */}
 
       <div className="agenda-day-selector">
+
         {diasSemana.map(
           (dia) => {
             const active =
@@ -1488,6 +1556,7 @@ export default function Agenda() {
             )
           },
         )}
+
       </div>
 
       {/* RESUMO */}
@@ -1495,6 +1564,7 @@ export default function Agenda() {
       <div className="agenda-summary">
 
         <div className="agenda-summary-item">
+
           <CalendarDays
             size={18}
           />
@@ -1522,9 +1592,11 @@ export default function Agenda() {
               }
             </span>
           </div>
+
         </div>
 
         <div className="agenda-summary-item">
+
           <CheckCircle2
             size={18}
           />
@@ -1544,9 +1616,11 @@ export default function Agenda() {
               Disponíveis
             </span>
           </div>
+
         </div>
 
         <div className="agenda-summary-item">
+
           <UserRound
             size={18}
           />
@@ -1565,6 +1639,7 @@ export default function Agenda() {
               Ocupados
             </span>
           </div>
+
         </div>
 
       </div>
@@ -1594,6 +1669,7 @@ export default function Agenda() {
           </div>
 
           <div className="agenda-panel-header-right">
+
             {horariosDoDia.length >
               0 && (
               <button
@@ -1622,6 +1698,7 @@ export default function Agenda() {
             <Clock3
               size={20}
             />
+
           </div>
 
         </div>
@@ -1633,6 +1710,7 @@ export default function Agenda() {
           <div className="agenda-bulk-toolbar">
 
             <div className="agenda-bulk-info">
+
               <CheckSquare
                 size={18}
               />
@@ -1650,6 +1728,7 @@ export default function Agenda() {
               >
                 Limpar seleção
               </button>
+
             </div>
 
             <div className="agenda-bulk-actions">
@@ -1685,12 +1764,14 @@ export default function Agenda() {
               </button>
 
             </div>
+
           </div>
         )}
 
         <div className="agenda-panel-content">
 
           {loading ? (
+
             <div className="agenda-loading">
 
               <div className="agenda-loading-spinner" />
@@ -1700,6 +1781,7 @@ export default function Agenda() {
               </p>
 
             </div>
+
           ) : horariosDoDia.length ===
             0 ? (
 
@@ -1723,6 +1805,7 @@ export default function Agenda() {
               </p>
 
               <div className="agenda-empty-actions">
+
                 <button
                   type="button"
                   className="agenda-secondary-button"
@@ -1750,6 +1833,7 @@ export default function Agenda() {
 
                   Criar em massa
                 </button>
+
               </div>
 
             </div>
@@ -1763,6 +1847,11 @@ export default function Agenda() {
                   const alunoNome =
                     getAlunoNome(
                       horario.aluno_id,
+                    )
+
+                  const professorNome =
+                    getProfessorNome(
+                      horario.professor_id,
                     )
 
                   const ocupado =
@@ -1819,6 +1908,7 @@ export default function Agenda() {
                       </button>
 
                       <div className="agenda-time">
+
                         <strong>
                           {formatHour(
                             horario.hora_inicio,
@@ -1830,6 +1920,7 @@ export default function Agenda() {
                             horario.hora_fim,
                           )}
                         </span>
+
                       </div>
 
                       <div className="agenda-item-main">
@@ -1869,6 +1960,20 @@ export default function Agenda() {
                           <span>
                             {alunoNome ||
                               'Nenhum aluno vinculado'}
+                          </span>
+
+                        </div>
+
+                        <div className="agenda-student">
+
+                          <UserRound
+                            size={16}
+                          />
+
+                          <span>
+                            {professorNome
+                              ? `Professor: ${professorNome}`
+                              : 'Nenhum professor atribuído'}
                           </span>
 
                         </div>
@@ -2196,6 +2301,59 @@ export default function Agenda() {
 
               <div className="agenda-form-field">
 
+                <label htmlFor="agenda-professor">
+                  Professor responsável
+                </label>
+
+                <select
+                  id="agenda-professor"
+                  value={
+                    form.professor_id
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setForm(
+                      (
+                        current,
+                      ) => ({
+                        ...current,
+                        professor_id:
+                          event
+                            .target
+                            .value,
+                      }),
+                    )
+                  }
+                >
+                  <option value="">
+                    Nenhum professor
+                  </option>
+
+                  {professores.map(
+                    (
+                      professor,
+                    ) => (
+                      <option
+                        key={
+                          professor.id
+                        }
+                        value={
+                          professor.id
+                        }
+                      >
+                        {
+                          professor.nome_completo
+                        }
+                      </option>
+                    ),
+                  )}
+                </select>
+
+              </div>
+
+              <div className="agenda-form-field">
+
                 <label htmlFor="agenda-aluno">
                   Aluno
                 </label>
@@ -2425,10 +2583,63 @@ export default function Agenda() {
               <div className="agenda-form-field">
 
                 <label>
+                  Professor responsável
+                </label>
+
+                <select
+                  value={
+                    bulkCreateForm.professor_id
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setBulkCreateForm(
+                      (
+                        current,
+                      ) => ({
+                        ...current,
+                        professor_id:
+                          event
+                            .target
+                            .value,
+                      }),
+                    )
+                  }
+                >
+                  <option value="">
+                    Nenhum professor
+                  </option>
+
+                  {professores.map(
+                    (
+                      professor,
+                    ) => (
+                      <option
+                        key={
+                          professor.id
+                        }
+                        value={
+                          professor.id
+                        }
+                      >
+                        {
+                          professor.nome_completo
+                        }
+                      </option>
+                    ),
+                  )}
+                </select>
+
+              </div>
+
+              <div className="agenda-form-field">
+
+                <label>
                   Dias da semana
                 </label>
 
                 <div className="agenda-weekday-grid">
+
                   {diasSemana.map(
                     (
                       dia,
@@ -2472,6 +2683,7 @@ export default function Agenda() {
                       )
                     },
                   )}
+
                 </div>
 
               </div>
@@ -2623,6 +2835,7 @@ export default function Agenda() {
               </label>
 
               <div className="agenda-bulk-preview">
+
                 <strong>
                   Geração automática
                 </strong>
@@ -2633,6 +2846,7 @@ export default function Agenda() {
                   novos horários serão
                   criados.
                 </span>
+
               </div>
 
             </div>
@@ -2720,6 +2934,7 @@ export default function Agenda() {
             <div className="agenda-form">
 
               <div className="agenda-bulk-edit-warning">
+
                 <Edit3 size={17} />
 
                 <span>
@@ -2728,6 +2943,7 @@ export default function Agenda() {
                   Campos em "Manter atual"
                   permanecerão iguais.
                 </span>
+
               </div>
 
               <div className="agenda-form-field">
@@ -2777,6 +2993,65 @@ export default function Agenda() {
                       >
                         {
                           idioma.label
+                        }
+                      </option>
+                    ),
+                  )}
+                </select>
+
+              </div>
+
+              <div className="agenda-form-field">
+
+                <label>
+                  Professor responsável
+                </label>
+
+                <select
+                  value={
+                    bulkEditForm.professor_id
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setBulkEditForm(
+                      (
+                        current,
+                      ) => ({
+                        ...current,
+                        professor_id:
+                          event
+                            .target
+                            .value as
+                            | ''
+                            | '__none__'
+                            | string,
+                      }),
+                    )
+                  }
+                >
+                  <option value="">
+                    Manter atual
+                  </option>
+
+                  <option value="__none__">
+                    Remover professor
+                  </option>
+
+                  {professores.map(
+                    (
+                      professor,
+                    ) => (
+                      <option
+                        key={
+                          professor.id
+                        }
+                        value={
+                          professor.id
+                        }
+                      >
+                        {
+                          professor.nome_completo
                         }
                       </option>
                     ),
