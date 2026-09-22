@@ -89,6 +89,47 @@
 }
 .central-side-back:hover{color:var(--ca-blue);transform:translateX(-2px)}
 
+/* =========================================================
+   ESTRUTURA DO CONTEÚDO
+   O TSX usa estes dois containers para impedir compressão,
+   sobreposição e herança de grids externos.
+   ========================================================= */
+
+.central-activity-content-grid{
+  display:block;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+
+.central-activity-content-main{
+  display:block;
+  width:100%;
+  min-width:0;
+  max-width:none;
+  box-sizing:border-box;
+}
+
+.central-activity-content-main > *{
+  max-width:none;
+}
+
+.central-activity-card,
+.central-activity-card *,
+.central-activity-card *::before,
+.central-activity-card *::after{
+  box-sizing:border-box;
+}
+
+.central-activity-card p,
+.central-activity-card h1,
+.central-activity-card h2,
+.central-activity-card h3,
+.central-activity-card strong,
+.central-activity-card span{
+  overflow-wrap:anywhere;
+}
+
 .central-activity-card{
   min-width:0;overflow:hidden;border:1px solid #dfe3ea;border-radius:22px;background:var(--ca-surface);
   box-shadow:0 22px 60px rgba(16,24,40,.055),0 3px 10px rgba(16,24,40,.025);
@@ -191,14 +232,21 @@
 
 /* Cada item ocupa uma linha inteira. Nunca formar colunas laterais. */
 .central-options{
-  display:flex;
-  flex-direction:column;
-  width:100%;
+  display:flex !important;
+  flex-direction:column !important;
+  align-items:stretch !important;
+  justify-content:flex-start !important;
+  width:100% !important;
+  max-width:none !important;
   gap:9px;
 }
 .central-option{
   position:relative;
-  width:100%;
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  width:100% !important;
+  max-width:none !important;
   min-height:58px;
   box-sizing:border-box;
   display:flex;
@@ -219,8 +267,24 @@
   border-color:#7aa7f8;background:linear-gradient(135deg,#f5f9ff,#eff6ff);
   box-shadow:0 0 0 3px rgba(37,99,235,.07);
 }
-.central-option input{width:17px;height:17px;flex:0 0 17px;margin:0;accent-color:var(--ca-blue)}
-.central-option span{min-width:0;flex:1;color:#344054;font-size:13px;line-height:1.55;font-weight:650}
+.central-option input{
+  width:17px !important;
+  height:17px !important;
+  min-width:17px;
+  flex:0 0 17px;
+  margin:0;
+  accent-color:var(--ca-blue);
+}
+.central-option span{
+  display:block;
+  min-width:0;
+  flex:1 1 auto;
+  width:auto;
+  color:#344054;
+  font-size:13px;
+  line-height:1.55;
+  font-weight:650;
+}
 .central-option:has(input:focus-visible){outline:3px solid rgba(37,99,235,.14);outline-offset:2px}
 
 .central-answer-input,.central-answer-textarea,.central-pair select{
@@ -397,7 +461,7 @@
   }
   .central-language-grid.translated .central-language-column .central-exercise-text,
   .central-language-grid.translated .central-language-column .central-question{margin:0;padding:16px 18px}
-  .central-options,.central-blanks{grid-template-columns:1fr}
+  .central-options,.central-blanks{grid-template-columns:none}
   .central-question strong{font-size:17px}
   .central-option{min-height:56px;padding:12px}
   .central-option span{font-size:12px}
