@@ -8,6 +8,8 @@ import Aluno from './pages/Aluno'
 
 import CentralAtividades from './pages/CentralAtividades'
 
+import CentralAtividade from './pages/CentralAtividade'
+
 import Admin from './pages/Admin'
 
 import Equipe from './pages/admin/Equipe'
@@ -112,6 +114,16 @@ function App() {
 
   if (path === '/aluno/central') {
     return <CentralAtividades />
+  }
+
+  /*
+   * =========================================================
+   * ATIVIDADE DA CENTRAL
+   * =========================================================
+   */
+
+  if (path.startsWith('/aluno/central/atividade/')) {
+    return <CentralAtividade />
   }
 
   /*
