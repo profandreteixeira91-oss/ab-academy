@@ -146,7 +146,7 @@ export default function CentralAtividadesAdmin() {
           let remaining = Math.max(0, 100 - (count || 0))
           let batchIndex = 0
           while (remaining > 0) {
-            const category = CATEGORIES.filter(x => x[0] !== 'todas')[batchIndex % 7][0]
+            const categoria = CATEGORIES.filter(x => x[0] !== 'todas')[batchIndex % 7][0]
             const type = TYPES[batchIndex % TYPES.length][0]
             const quantity = Math.min(20, remaining)
             setGenerationProgress({
