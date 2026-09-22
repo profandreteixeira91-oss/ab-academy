@@ -955,30 +955,6 @@ function Aluno() {
       throw horariosError
     }
 
-    const normalizedLessons: Lesson[] = (horarios || []).map((horario) => {
-      const { startAt, endAt } = getNextLessonOccurrence(
-        Number(horario.dia_semana),
-        horario.hora_inicio,
-        horario.hora_fim,
-      )
-
-      return {
-        id: horario.id,
-        language:
-          horario.idioma === 'ingles'
-            ? 'Inglês'
-            : 'Alemão',
-        date: startAt.toLocaleDateString('pt-BR'),
-        time: horario.hora_inicio.slice(0, 5),
-        teacher: 'Professor',
-        status: 'agendada',
-        meetUrl: horario.meet_url || undefined,
-        meetSpaceName: horario.meet_space_name || undefined,
-        startAt: startAt.toISOString(),
-        endAt: endAt.toISOString(),
-      }
-    })
-
     const {
       data: registros,
       error: registrosError,
@@ -1000,6 +976,47 @@ function Aluno() {
     if (registrosError) {
       throw registrosError
     }
+
+    const normalizedLessons: Lesson[] = (horarios || []).map((horario) => {
+      const { startAt, endAt } = getNextLessonOccurrence(
+        Number(horario.dia_semana),
+        horario.hora_inicio,
+        horario.hora_fim,
+      )
+
+      const lessonDate =
+        startAt.getFullYear() +
+        '-' +
+        String(startAt.getMonth() + 1).padStart(2, '0') +
+        '-' +
+        String(startAt.getDate()).padStart(2, '0')
+
+      const registro =
+        (registros || []).find(
+          (item) =>
+            item.horario_id === horario.id &&
+            item.data_aula === lessonDate,
+        )
+
+      return {
+        id: horario.id,
+        language:
+          horario.idioma === 'ingles'
+            ? 'Inglês'
+            : 'Alemão',
+        date: startAt.toLocaleDateString('pt-BR'),
+        time: horario.hora_inicio.slice(0, 5),
+        teacher: 'Professor',
+        status:
+          registro?.status === 'falta'
+            ? 'falta'
+            : 'agendada',
+        meetUrl: horario.meet_url || undefined,
+        meetSpaceName: horario.meet_space_name || undefined,
+        startAt: startAt.toISOString(),
+        endAt: endAt.toISOString(),
+      }
+    })
 
     const horariosMap = new Map(
       (horarios || []).map((horario) => [
@@ -3204,8 +3221,10 @@ function MinhasAulas({
                           : 'Cancelada'}
                   </div>
 
-                  {lesson.status ===
-                    'agendada' && (
+                  {(lesson.status ===
+                    'agendada' ||
+                    lesson.status ===
+                      'falta') && (
                     <button
                       type="button"
                       className="student-primary-button"
@@ -3215,28 +3234,33 @@ function MinhasAulas({
                         )
                       }
                       disabled={
+                        lesson.status === 'falta' ||
                         !hasMeet ||
                         !canEnter
                       }
                       title={
-                        !hasMeet
-                          ? 'A sala ainda não foi criada pelo professor'
-                          : getLessonAccessMessage(
-                              lesson.startAt,
-                              lesson.endAt,
-                            )
+                        lesson.status === 'falta'
+                          ? 'A falta foi registrada pelo professor para esta aula'
+                          : !hasMeet
+                            ? 'A sala ainda não foi criada pelo professor'
+                            : getLessonAccessMessage(
+                                lesson.startAt,
+                                lesson.endAt,
+                              )
                       }
                     >
                       <Play
                         size={17}
                       />
 
-                      {!hasMeet
-                        ? 'Sala não criada'
-                        : getLessonAccessMessage(
-                            lesson.startAt,
-                            lesson.endAt,
-                          )}
+                      {lesson.status === 'falta'
+                        ? 'Falta registrada'
+                        : !hasMeet
+                          ? 'Sala não criada'
+                          : getLessonAccessMessage(
+                              lesson.startAt,
+                              lesson.endAt,
+                            )}
                     </button>
                   )}
                 </div>
