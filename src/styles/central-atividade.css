@@ -32,7 +32,7 @@
 @keyframes centralActivitySpin{to{transform:rotate(360deg)}}
 
 .central-activity-header{
-  height:78px;display:flex;align-items:center;position:sticky;top:0;z-index:30;
+  height:120px;display:flex;align-items:center;position:sticky;top:0;z-index:30;
   background:rgba(255,255,255,.88);border-bottom:1px solid rgba(228,231,236,.9);
   box-shadow:0 1px 0 rgba(16,24,40,.02);backdrop-filter:blur(18px);
 }
