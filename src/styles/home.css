@@ -1901,3 +1901,178 @@ h1, h2, h3 { font-family: var(--font-display); }
     min-height:390px;
   }
 }
+
+
+/* =========================================================
+   CORREÇÃO FINAL — LOGOS E ESPAÇAMENTO
+   ========================================================= */
+
+.home .header .logo{
+  display:flex;
+  align-items:center;
+  flex-shrink:0;
+}
+
+.home .header .logo img{
+  height:52px;
+  max-width:205px;
+}
+
+.home .hero-card{
+  min-height:540px;
+  padding:38px 38px 32px;
+}
+
+.home .hero-card-brand{
+  min-height:52px;
+}
+
+.home .hero-card-brand img{
+  height:52px;
+  max-width:205px;
+  width:auto;
+  object-fit:contain;
+}
+
+.home .hero-card-heading{
+  margin-top:28px;
+}
+
+.home .hero-card-heading span{
+  line-height:1.4;
+}
+
+.home .hero-card-heading h2{
+  margin-top:10px;
+}
+
+.home .hero-card-heading p{
+  margin-top:14px;
+}
+
+.home .language-options{
+  margin-top:26px;
+}
+
+.home .hero-card-footer{
+  left:38px;
+  right:38px;
+  bottom:28px;
+}
+
+.home .about-highlight-logo{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  min-height:58px;
+}
+
+.home .about-highlight-logo img{
+  display:block;
+  width:auto;
+  height:58px;
+  max-width:210px;
+  object-fit:contain;
+  filter:brightness(0) invert(1);
+}
+
+.home .about-highlight-content{
+  margin-top:28px;
+}
+
+.home .about-stats{
+  margin-top:34px;
+}
+
+.home .footer-logo img{
+  height:76px;
+  max-width:210px;
+}
+
+/* Impede conteúdo interno de criar colisões em telas menores */
+.home .hero-card-content,
+.home .hero-card-heading,
+.home .language-options,
+.home .hero-card-footer,
+.home .about-highlight-content,
+.home .about-stats{
+  min-width:0;
+}
+
+@media (max-width:700px){
+  .home .header .logo img{
+    height:43px;
+    max-width:165px;
+  }
+
+  .home .hero-card{
+    min-height:530px;
+    padding:30px 28px 28px;
+  }
+
+  .home .hero-card-brand img{
+    height:46px;
+    max-width:180px;
+  }
+
+  .home .hero-card-heading{
+    margin-top:25px;
+  }
+
+  .home .hero-card-heading h2{
+    font-size:38px;
+  }
+
+  .home .language-options{
+    margin-top:22px;
+  }
+
+  .home .hero-card-footer{
+    left:28px;
+    right:28px;
+    bottom:24px;
+  }
+
+  .home .about-highlight-logo img{
+    height:52px;
+    max-width:185px;
+  }
+
+  .home .about-highlight-content{
+    margin-top:24px;
+  }
+
+  .home .footer-logo img{
+    height:68px;
+    max-width:190px;
+  }
+}
+
+@media (max-width:480px){
+  .home .header .logo img{
+    height:40px;
+    max-width:150px;
+  }
+
+  .home .hero-card{
+    min-height:560px;
+  }
+
+  .home .hero-card-brand img{
+    height:42px;
+    max-width:165px;
+  }
+
+  .home .hero-card-heading h2{
+    font-size:34px;
+  }
+
+  .home .hero-card-footer{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .home .footer-logo img{
+    height:64px;
+  }
+}
