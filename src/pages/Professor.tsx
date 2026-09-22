@@ -777,8 +777,7 @@ function Professor() {
   ) {
     if (
       !professor ||
-      !horario.aluno_id ||
-      !podeEntrarNaAula(horario)
+      !horario.aluno_id
     ) {
       return
     }
@@ -1785,7 +1784,6 @@ function Professor() {
                             void registrarFalta(horario)
                           }}
                           disabled={
-                            !podeEntrarNaAula(horario) ||
                             Boolean(
                               getRegistroAulaAtual(horario),
                             ) ||
