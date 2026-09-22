@@ -18,6 +18,8 @@ import {
 import { supabase } from '../lib/supabase'
 import '../styles/professor.css'
 
+import AtividadesAdmin from './admin/Atividades'
+
 type ProfessorData = {
   id: string
   user_id: string | null
@@ -1889,7 +1891,7 @@ function Professor() {
       return renderAlunos()
 
     case 'atividades':
-      return renderAtividades()
+      return <AtividadesAdmin professorMode />
 
     default:
       return renderDashboard()
