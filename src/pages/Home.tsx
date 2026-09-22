@@ -277,16 +277,16 @@ function Home() {
                 </div>
 
                 <div className="hero-card-heading">
-                  <span><br/ >ESCOLHA SEU IDIOMA</span>
+                  <span>ESCOLHA SEU IDIOMA</span>
 
                   <h2>
-                    <br />Aprenda.
+                    Aprenda.
                     <br />
                     Evolua.
                   </h2>
 
                   <p>
-                    <br />Desenvolva novas habilidades e prepare-se
+                    Desenvolva novas habilidades e prepare-se
                     para novas oportunidades.
                   </p>
                 </div>
@@ -321,12 +321,12 @@ function Home() {
 
                 <div className="hero-card-footer">
                   <div>
-                    <br /><strong>100%  </strong>
+                    <strong>100%</strong>
                     <span>Online</span>
                   </div>
 
                   <div>
-                    <strong>2  </strong>
+                    <strong>2</strong>
                     <span>Idiomas</span>
                   </div>
 
@@ -372,7 +372,7 @@ function Home() {
               </div>
 
               <div className="about-highlight">
-                <div className="about-highlight-logo" />
+                <div className="about-highlight-logo"><img src={logo} alt="AB Academy" /></div>
 
                 <div className="about-highlight-content">
                   <span>NOSSA MISSÃO</span>
