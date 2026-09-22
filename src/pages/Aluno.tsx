@@ -6,6 +6,7 @@ import {
   Check,
   CheckCircle2,
   ChevronRight,
+  XCircle,
   ClipboardList,
   FileText,
   Home,
@@ -39,6 +40,7 @@ type AuthStep =
 type LessonStatus =
   | 'agendada'
   | 'realizada'
+  | 'falta'
   | 'cancelada'
 
 type Lesson = {
@@ -367,7 +369,7 @@ function Aluno() {
   const [lessons, setLessons] =
     useState<Lesson[]>([])
 
-  const [completedLessons, setCompletedLessons] =
+  const [lessonHistory, setLessonHistory] =
     useState<Lesson[]>([])
 
   const [
@@ -1032,46 +1034,99 @@ function Aluno() {
       }
     })
 
-    const normalizedCompletedLessons: Lesson[] = (horarios || [])
-      .map((horario) => {
-        const { startAt, endAt } =
-          getPreviousLessonOccurrence(
-            Number(horario.dia_semana),
-            horario.hora_inicio,
-            horario.hora_fim,
+    const {
+      data: registros,
+      error: registrosError,
+    } = await supabase
+      .from('registros_aulas')
+      .select(
+        `id,
+         horario_id,
+         aluno_id,
+         professor_id,
+         data_aula,
+         status`,
+      )
+      .eq('aluno_id', studentId)
+      .order('data_aula', {
+        ascending: false,
+      })
+
+    if (registrosError) {
+      throw registrosError
+    }
+
+    const horariosMap = new Map(
+      (horarios || []).map((horario) => [
+        horario.id,
+        horario,
+      ]),
+    )
+
+    const normalizedLessonHistory: Lesson[] =
+      (registros || [])
+        .map((registro) => {
+          const horario = horariosMap.get(
+            registro.horario_id,
           )
 
-        return {
-          id: horario.id,
-          language:
-            horario.idioma === 'ingles'
-              ? 'Inglês'
-              : 'Alemão',
-          date: startAt.toLocaleDateString('pt-BR'),
-          time: horario.hora_inicio.slice(0, 5),
-          teacher: 'Professor',
-          status: 'realizada' as LessonStatus,
-          meetUrl: horario.meet_url || undefined,
-          meetSpaceName:
-            horario.meet_space_name || undefined,
-          startAt: startAt.toISOString(),
-          endAt: endAt.toISOString(),
-        }
-      })
-      .filter(
-        (lesson) =>
-          new Date(lesson.endAt).getTime() <= Date.now(),
-      )
-      .sort(
-        (a, b) =>
-          new Date(b.startAt).getTime() -
-          new Date(a.startAt).getTime(),
-      )
+          if (!horario) {
+            return null
+          }
+
+          const [year, month, day] =
+            registro.data_aula.split('-').map(Number)
+          const [hours, minutes] =
+            horario.hora_inicio.slice(0, 5).split(':').map(Number)
+          const [endHours, endMinutes] =
+            horario.hora_fim.slice(0, 5).split(':').map(Number)
+
+          const startAt = new Date(
+            year,
+            month - 1,
+            day,
+            hours,
+            minutes,
+            0,
+            0,
+          )
+          const endAt = new Date(
+            year,
+            month - 1,
+            day,
+            endHours,
+            endMinutes,
+            0,
+            0,
+          )
+
+          return {
+            id: horario.id,
+            language:
+              horario.idioma === 'ingles'
+                ? 'Inglês'
+                : 'Alemão',
+            date: startAt.toLocaleDateString('pt-BR'),
+            time: horario.hora_inicio.slice(0, 5),
+            teacher: 'Professor',
+            status:
+              registro.status === 'presente'
+                ? 'realizada'
+                : 'falta',
+            meetUrl: horario.meet_url || undefined,
+            meetSpaceName:
+              horario.meet_space_name || undefined,
+            startAt: startAt.toISOString(),
+            endAt: endAt.toISOString(),
+          } as Lesson
+        })
+        .filter(
+          (lesson): lesson is Lesson =>
+            Boolean(lesson),
+        )
 
     setLessons(normalizedLessons)
-    setCompletedLessons(
-      normalizedCompletedLessons,
-    )
+    setLessonHistory(normalizedLessonHistory)
   } catch (error) {
     console.error(
       'Erro ao carregar aulas do aluno:',
@@ -1079,7 +1134,7 @@ function Aluno() {
     )
 
     setLessons([])
-    setCompletedLessons([])
+    setLessonHistory([])
   } finally {
     setLessonsLoading(false)
   }
@@ -2753,8 +2808,8 @@ function Aluno() {
               activities={
                 activities
               }
-              completedLessons={
-                completedLessons
+              lessonHistory={
+                lessonHistory
               }
             />
           )}
@@ -2839,7 +2894,25 @@ function Inicio({
   getLessonAccessMessage,
   currentTime,
 }: InicioProps) {
-  void currentTime
+  function getCountdown(startAt: string) {
+    const difference = Math.max(
+      0,
+      new Date(startAt).getTime() - currentTime,
+    )
+
+    const totalMinutes = Math.floor(
+      difference / 60000,
+    )
+    const days = Math.floor(
+      totalMinutes / 1440,
+    )
+    const hours = Math.floor(
+      (totalMinutes % 1440) / 60,
+    )
+    const minutes = totalMinutes % 60
+
+    return `${days} dias, ${hours} horas e ${minutes} minutos`
+  }
 
   return (
     <>
@@ -2896,10 +2969,14 @@ function Inicio({
               </h3>
 
               <p>
-                {
-                  nextLesson.teacher
-                }
+                {getCountdown(
+                  nextLesson.startAt,
+                )}
               </p>
+
+              <small>
+                {nextLesson.teacher}
+              </small>
             </div>
           </div>
 
@@ -3168,8 +3245,11 @@ function MinhasAulas({
                       ? 'Agendada'
                       : lesson.status ===
                           'realizada'
-                        ? 'Realizada'
-                        : 'Cancelada'}
+                        ? 'Presente'
+                        : lesson.status ===
+                            'falta'
+                          ? 'Falta'
+                          : 'Cancelada'}
                   </div>
 
                   {lesson.status ===
@@ -3917,12 +3997,12 @@ function ExerciseContentView({
 
 type ProgressoProps = {
   activities: Activity[]
-  completedLessons: Lesson[]
+  lessonHistory: Lesson[]
 }
 
 function Progresso({
   activities,
-  completedLessons,
+  lessonHistory,
 }: ProgressoProps) {
   const completedActivities =
     activities.filter(
@@ -3963,14 +4043,44 @@ function Progresso({
 
       <div className="student-progress-summary">
         <div className="student-progress-summary-card">
-          <span>AULAS REALIZADAS</span>
+          <span>AULAS REGISTRADAS</span>
 
           <strong>
-            {completedLessons.length}
+            {lessonHistory.length}
           </strong>
 
           <p>
-            Últimas aulas encerradas.
+            Presenças e faltas registradas pelo professor.
+          </p>
+        </div>
+
+        <div className="student-progress-summary-card">
+          <span>PRESENÇAS</span>
+
+          <strong>
+            {lessonHistory.filter(
+              (lesson) =>
+                lesson.status === 'realizada',
+            ).length}
+          </strong>
+
+          <p>
+            Aulas com presença registrada.
+          </p>
+        </div>
+
+        <div className="student-progress-summary-card">
+          <span>FALTAS</span>
+
+          <strong>
+            {lessonHistory.filter(
+              (lesson) =>
+                lesson.status === 'falta',
+            ).length}
+          </strong>
+
+          <p>
+            Aulas com falta registrada.
           </p>
         </div>
 
@@ -4011,7 +4121,7 @@ function Progresso({
         </div>
       </div>
 
-      {completedLessons.length === 0 ? (
+      {lessonHistory.length === 0 ? (
         <div className="student-empty-state">
           <CalendarDays
             size={28}
@@ -4027,16 +4137,24 @@ function Progresso({
         </div>
       ) : (
         <div className="student-history-list">
-          {completedLessons.map(
+          {lessonHistory.map(
             (lesson) => (
               <div
                 className="student-history-card"
                 key={`${lesson.id}-${lesson.startAt}`}
               >
-                <div className="student-history-icon">
-                  <Check
-                    size={19}
-                  />
+                <div
+                  className={`student-history-icon ${
+                    lesson.status === 'falta'
+                      ? 'absence'
+                      : 'presence'
+                  }`}
+                >
+                  {lesson.status === 'falta' ? (
+                    <XCircle size={19} />
+                  ) : (
+                    <Check size={19} />
+                  )}
                 </div>
 
                 <div className="student-history-main">
@@ -4049,7 +4167,10 @@ function Progresso({
                   </h3>
 
                   <p>
-                    {lesson.teacher}
+                    {lesson.teacher} •{' '}
+                    {lesson.status === 'falta'
+                      ? 'Aluno não compareceu'
+                      : 'Aluno presente'}
                   </p>
                 </div>
 
