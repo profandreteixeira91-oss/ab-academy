@@ -2928,7 +2928,7 @@ function Inicio({
           </span>
 
           <h2>
-            Bem-vindo, {name}!
+            Bem-vindo(a) {name}!
           </h2>
 
           <p>
