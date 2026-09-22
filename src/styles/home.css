@@ -2076,3 +2076,77 @@ h1, h2, h3 { font-family: var(--font-display); }
     height:64px;
   }
 }
+
+
+/* =========================================================
+   DESTAQUE EXTRA — LOGOS PRINCIPAIS
+   ========================================================= */
+
+.home .header-container{
+  min-height:88px;
+}
+
+.home .header .logo img{
+  height:68px;
+  max-width:255px;
+}
+
+.home .hero-card-brand{
+  min-height:72px;
+}
+
+.home .hero-card-brand img{
+  height:72px;
+  max-width:270px;
+}
+
+.home .footer-logo img{
+  height:94px;
+  max-width:260px;
+}
+
+@media (max-width:700px){
+  .home .header-container{
+    min-height:76px;
+  }
+
+  .home .header .logo img{
+    height:54px;
+    max-width:205px;
+  }
+
+  .home .hero-card-brand{
+    min-height:58px;
+  }
+
+  .home .hero-card-brand img{
+    height:58px;
+    max-width:220px;
+  }
+
+  .home .footer-logo img{
+    height:80px;
+    max-width:220px;
+  }
+}
+
+@media (max-width:480px){
+  .home .header-container{
+    min-height:72px;
+  }
+
+  .home .header .logo img{
+    height:50px;
+    max-width:190px;
+  }
+
+  .home .hero-card-brand img{
+    height:54px;
+    max-width:205px;
+  }
+
+  .home .footer-logo img{
+    height:74px;
+    max-width:205px;
+  }
+}
