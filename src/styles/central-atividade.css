@@ -210,3 +210,22 @@
   .central-order-item>div{grid-column:2}
   .central-order-item button{margin-left:0;margin-right:5px}
 }
+
+.central-progress{
+  margin:22px 38px 0;padding:14px 16px;border:1px solid #e7ebf1;border-radius:12px;background:#fbfcfe;
+}
+.central-progress-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
+.central-progress-top span{font-size:10px;text-transform:uppercase;letter-spacing:.07em;color:#94a3b8;font-weight:850}
+.central-progress-top strong{font-size:11px;color:#2563eb}
+.central-progress-track{height:6px;border-radius:99px;background:#e9eef5;overflow:hidden}
+.central-progress-fill{height:100%;width:8%;border-radius:99px;background:#3b82f6;transition:width .3s ease}
+.central-progress-fill.complete{background:#16a34a}
+.central-save-status{
+  min-height:18px;margin:14px 38px 0;display:flex;align-items:center;gap:6px;
+  color:#94a3b8;font-size:11px;font-weight:650;
+}
+.central-save-status svg{color:#16a34a}
+@media(max-width:650px){
+  .central-progress{margin:18px 20px 0}
+  .central-save-status{margin:12px 20px 0}
+}
