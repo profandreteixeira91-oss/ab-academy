@@ -303,6 +303,246 @@ function formatScore(value: number) {
   })
 }
 
+type ActivityEditData = {
+  id: string
+  aluno_id: string
+  titulo: string
+  descricao: string | null
+  idioma: Idioma
+  prazo: string | null
+}
+
+type ActivityEditAlternative = {
+  id: string
+  texto: string
+  correta: boolean
+  ordem: number
+}
+
+type ActivityEditContent = {
+  id: string
+  tipo: TipoConteudo
+  conteudo: string
+  ordem: number
+}
+
+type ActivityEditExercise = {
+  id: string
+  tipo: TipoExercicio
+  titulo: string | null
+  enunciado: string
+  ordem: number
+  pontuacao: number
+  alternativas: ActivityEditAlternative[] | null
+  conteudos: ActivityEditContent[] | null
+}
+
+type ActivityEditQueryResult = {
+  id: string
+  tipo: TipoExercicio
+  titulo: string | null
+  enunciado: string
+  ordem: number
+  pontuacao: number
+  alternativas: ActivityEditAlternative[] | null
+  conteudos: ActivityEditContent[] | null
+}
+
+async function fetchActivityEditData(id: string) {
+  const {
+    data: atividade,
+    error: atividadeError,
+  } = await supabase
+    .from('atividades')
+    .select(`
+      id,
+      aluno_id,
+      titulo,
+      descricao,
+      idioma,
+      prazo,
+      status
+    `)
+    .eq('id', id)
+    .single()
+
+  if (atividadeError || !atividade) {
+    throw new Error(
+      `Não foi possível carregar a atividade: ${
+        atividadeError?.message || 'atividade não encontrada'
+      }`,
+    )
+  }
+
+  const {
+    data: exercicios,
+    error: exerciciosError,
+  } = await supabase
+    .from('atividade_exercicios')
+    .select(`
+      id,
+      tipo,
+      titulo,
+      enunciado,
+      ordem,
+      pontuacao,
+      alternativas:exercicio_alternativas (
+        id,
+        texto,
+        correta,
+        ordem
+      ),
+      conteudos:exercicio_conteudos (
+        id,
+        tipo,
+        conteudo,
+        ordem
+      )
+    `)
+    .eq('atividade_id', id)
+    .order('ordem', {
+      ascending: true,
+    })
+
+  if (exerciciosError) {
+    throw new Error(
+      `Não foi possível carregar os exercícios: ${exerciciosError.message}`,
+    )
+  }
+
+  return {
+    atividade: atividade as unknown as ActivityEditData,
+    exercicios: (exercicios || []) as unknown as ActivityEditQueryResult[],
+  }
+}
+
+function mapActivityEditExercises(
+  exercicios: ActivityEditQueryResult[],
+): ExercicioForm[] {
+  return exercicios.map((exercicio) => ({
+    id: exercicio.id,
+    tipo: exercicio.tipo,
+    titulo: exercicio.titulo || '',
+    enunciado: exercicio.enunciado || '',
+    ordem: exercicio.ordem ?? 0,
+    pontuacao: Number(exercicio.pontuacao ?? 1),
+    isNew: false,
+    alternativas: (exercicio.alternativas || [])
+      .slice()
+      .sort((a, b) => a.ordem - b.ordem)
+      .map((alternativa) => ({
+        id: alternativa.id,
+        texto: alternativa.texto,
+        correta: alternativa.correta,
+        ordem: alternativa.ordem,
+        isNew: false,
+      })),
+    conteudos: (exercicio.conteudos || [])
+      .slice()
+      .sort((a, b) => a.ordem - b.ordem)
+      .map((conteudo) => ({
+        id: conteudo.id,
+        tipo: conteudo.tipo,
+        conteudo: conteudo.conteudo,
+        ordem: conteudo.ordem,
+        isNew: false,
+      })),
+  }))
+}
+
+function createEditActivityForm(
+  atividade: ActivityEditData,
+  exercicios: ExercicioForm[],
+): AtividadeForm {
+  const finalExercises =
+    exercicios.length > 0
+      ? exercicios
+      : [createEmptyExercicio(0)]
+
+  return {
+    aluno_id: atividade.aluno_id,
+    titulo: atividade.titulo,
+    descricao: atividade.descricao || '',
+    idioma: atividade.idioma,
+    prazo: atividade.prazo
+      ? new Date(atividade.prazo).toISOString().slice(0, 16)
+      : '',
+    exercicios: finalExercises,
+  }
+}
+
+type ProfessorContext = {
+  userId: string
+  professorId: string | null
+}
+
+async function loadProfessorContext(): Promise<ProfessorContext | null> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) return null
+  const { data: professor, error } = await supabase
+    .from('professores')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('ativo', true)
+    .eq('acesso_portal', true)
+    .maybeSingle()
+
+  if (error) {
+    throw new Error(
+      `Não foi possível verificar o professor: ${error.message}`,
+    )
+  }
+
+  return {
+    userId: user.id,
+    professorId: professor?.id ?? null,
+  }
+}
+
+async function fetchAtividades(professorId: string | null) {
+  let query = supabase
+    .from('atividades')
+    .select(`
+      id,
+      aluno_id,
+      titulo,
+      descricao,
+      idioma,
+      status,
+      prazo,
+      nota,
+      created_at,
+      updated_at,
+      aluno:alunos (
+        nome_completo
+      )
+    `)
+    .order('created_at', { ascending: false })
+
+  if (professorId) {
+    const { data: alunosProfessor, error: alunosError } =
+      await supabase
+        .from('alunos')
+        .select('id')
+        .eq('professor_id', professorId)
+
+    if (alunosError) throw alunosError
+    const alunoIds = (alunosProfessor || []).map(
+      (aluno) => aluno.id,
+    )
+
+    if (alunoIds.length === 0) return []
+    query = query.in('aluno_id', alunoIds)
+  }
+
+  const { data, error } = await query
+  if (error) throw error
+  return (data || []) as unknown as AtividadeLista[]
+}
+
 export default function Atividades() {
   const [atividades, setAtividades] = useState<AtividadeLista[]>([])
   const [alunos, setAlunos] = useState<Aluno[]>([])
@@ -315,6 +555,22 @@ export default function Atividades() {
   const [statusFilter, setStatusFilter] = useState<
     'todos' | StatusAtividade
   >('todos')
+
+  const filteredAtividades = useMemo(() => {
+    const normalizedSearch = search.trim().toLocaleLowerCase()
+
+    return atividades.filter((atividade) => {
+      const matchesStatus =
+        statusFilter === 'todos' || atividade.status === statusFilter
+      const studentName = atividade.aluno?.nome_completo || ''
+      const matchesSearch =
+        !normalizedSearch ||
+        atividade.titulo.toLocaleLowerCase().includes(normalizedSearch) ||
+        studentName.toLocaleLowerCase().includes(normalizedSearch)
+
+      return matchesStatus && matchesSearch
+    })
+  }, [atividades, search, statusFilter])
 
   const [showBuilder, setShowBuilder] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
@@ -363,133 +619,119 @@ export default function Atividades() {
   }, [])
 
   async function loadData() {
-    await Promise.all([
+    const results = await Promise.allSettled([
       loadAtividades(),
       loadAlunos(),
     ])
+
+    const rejected = results.find(
+      (result): result is PromiseRejectedResult =>
+        result.status === 'rejected',
+    )
+
+    if (rejected) {
+      console.error(rejected.reason)
+      setError(
+        'Ocorreu um erro inesperado ao carregar os dados.',
+      )
+    }
   }
 
   async function loadAtividades() {
+  try {
+    setLoading(true)
+    setError('')
+
+    const professorContext = await loadProfessorContext()
+
+    if (!professorContext) {
+      setAtividades([])
+      return
+    }
+
     try {
-      setLoading(true)
-      setError('')
-
-      const { data, error: loadError } = await supabase
-        .from('atividades')
-        .select(`
-          id,
-          aluno_id,
-          titulo,
-          descricao,
-          idioma,
-          status,
-          prazo,
-          nota,
-          created_at,
-          updated_at,
-          aluno:alunos (
-            nome_completo
-          )
-        `)
-        .order('created_at', { ascending: false })
-
-      if (loadError) {
-        console.error(
-          'Erro ao carregar atividades:',
-          loadError,
-        )
-
-        setError(
-          `Não foi possível carregar as atividades: ${loadError.message}`,
-        )
-
-        return
-      }
-
       setAtividades(
-        (data || []) as unknown as AtividadeLista[],
+        await fetchAtividades(professorContext.professorId),
       )
-    } catch (err) {
-      console.error(err)
+    } catch (loadError) {
+      console.error('Erro ao carregar atividades:', loadError)
+      const message =
+        loadError instanceof Error
+          ? loadError.message
+          : 'erro desconhecido'
+      setError(
+        `Não foi possível carregar as atividades: ${message}`,
+      )
+    }
+  } catch (err) {
+    console.error(err)
+
+    setError(
+      'Ocorreu um erro inesperado ao carregar as atividades.',
+    )
+  } finally {
+    setLoading(false)
+  }
+}
+
+    async function loadAlunos() {
+  try {
+    setLoadingAlunos(true)
+
+    const professorContext = await loadProfessorContext()
+
+    if (!professorContext) {
+      setAlunos([])
+      return
+    }
+
+    let query = supabase
+      .from('alunos')
+      .select(`
+        id,
+        nome_completo,
+        email,
+        idioma
+      `)
+      .order('nome_completo', {
+        ascending: true,
+      })
+
+    // Se for professor, mostra somente seus alunos
+    if (professorContext.professorId) {
+      query = query.eq(
+        'professor_id',
+        professorContext.professorId,
+      )
+    }
+
+    const { data, error: loadError } =
+      await query
+
+    if (loadError) {
+      console.error(
+        'Erro ao carregar alunos:',
+        loadError,
+      )
 
       setError(
-        'Ocorreu um erro inesperado ao carregar as atividades.',
+        `Não foi possível carregar os alunos: ${loadError.message}`,
       )
-    } finally {
-      setLoading(false)
+
+      return
     }
+
+    setAlunos((data || []) as Aluno[])
+  } catch (err) {
+    console.error(err)
+
+    setError(
+      'Ocorreu um erro inesperado ao carregar os alunos.',
+    )
+  } finally {
+    setLoadingAlunos(false)
   }
-
-  async function loadAlunos() {
-    try {
-      setLoadingAlunos(true)
-
-      const { data, error: loadError } = await supabase
-        .from('alunos')
-        .select(`
-          id,
-          nome_completo,
-          email,
-          idioma
-        `)
-        .order('nome_completo', {
-          ascending: true,
-        })
-
-      if (loadError) {
-        console.error(
-          'Erro ao carregar alunos:',
-          loadError,
-        )
-
-        setError(
-          `Não foi possível carregar os alunos: ${loadError.message}`,
-        )
-
-        return
-      }
-
-      setAlunos((data || []) as Aluno[])
-    } catch (err) {
-      console.error(err)
-
-      setError(
-        'Ocorreu um erro inesperado ao carregar os alunos.',
-      )
-    } finally {
-      setLoadingAlunos(false)
-    }
-  }
-
-  const filteredAtividades = useMemo(() => {
-    const normalizedSearch = search
-      .trim()
-      .toLowerCase()
-
-    return atividades.filter((atividade) => {
-      const nomeAluno =
-        atividade.aluno?.nome_completo || ''
-
-      const matchesSearch =
-        !normalizedSearch ||
-        atividade.titulo
-          .toLowerCase()
-          .includes(normalizedSearch) ||
-        nomeAluno
-          .toLowerCase()
-          .includes(normalizedSearch)
-
-      const matchesStatus =
-        statusFilter === 'todos' ||
-        atividade.status === statusFilter
-
-      return matchesSearch && matchesStatus
-    })
-  }, [
-    atividades,
-    search,
-    statusFilter,
-  ])
+}
 
   /* =========================================================
      BUILDER
@@ -521,146 +763,27 @@ export default function Atividades() {
       setSuccess('')
       setSaving(true)
 
-      const {
-        data: atividade,
-        error: atividadeError,
-      } = await supabase
-        .from('atividades')
-        .select(`
-          id,
-          aluno_id,
-          titulo,
-          descricao,
-          idioma,
-          prazo,
-          status
-        `)
-        .eq('id', id)
-        .single()
+      const { atividade, exercicios } =
+        await fetchActivityEditData(id)
+      const mappedExercises = mapActivityEditExercises(
+        exercicios,
+      )
+      const editForm = createEditActivityForm(
+        atividade,
+        mappedExercises,
+      )
 
-      if (atividadeError || !atividade) {
-        setError(
-          `Não foi possível carregar a atividade: ${
-            atividadeError?.message ||
-            'atividade não encontrada'
-          }`,
-        )
-
-        return
-      }
-
-      const {
-        data: exercicios,
-        error: exerciciosError,
-      } = await supabase
-        .from('atividade_exercicios')
-        .select(`
-          id,
-          tipo,
-          titulo,
-          enunciado,
-          ordem,
-          pontuacao,
-          alternativas:exercicio_alternativas (
-            id,
-            texto,
-            correta,
-            ordem
-          ),
-          conteudos:exercicio_conteudos (
-            id,
-            tipo,
-            conteudo,
-            ordem
-          )
-        `)
-        .eq('atividade_id', id)
-        .order('ordem', {
-          ascending: true,
-        })
-
-      if (exerciciosError) {
-        setError(
-          `Não foi possível carregar os exercícios: ${exerciciosError.message}`,
-        )
-
-        return
-      }
-
-      const mappedExercises: ExercicioForm[] = (
-        exercicios || []
-      ).map((exercicio: any) => ({
-        id: exercicio.id,
-        tipo: exercicio.tipo,
-        titulo: exercicio.titulo || '',
-        enunciado: exercicio.enunciado || '',
-        ordem: exercicio.ordem ?? 0,
-        pontuacao: Number(
-          exercicio.pontuacao ?? 1,
-        ),
-        isNew: false,
-
-        alternativas: (
-          exercicio.alternativas || []
-        )
-          .sort(
-            (a: any, b: any) =>
-              a.ordem - b.ordem,
-          )
-          .map((alternativa: any) => ({
-            id: alternativa.id,
-            texto: alternativa.texto,
-            correta: alternativa.correta,
-            ordem: alternativa.ordem,
-            isNew: false,
-          })),
-
-        conteudos: (
-          exercicio.conteudos || []
-        )
-          .sort(
-            (a: any, b: any) =>
-              a.ordem - b.ordem,
-          )
-          .map((conteudo: any) => ({
-            id: conteudo.id,
-            tipo: conteudo.tipo,
-            conteudo: conteudo.conteudo,
-            ordem: conteudo.ordem,
-            isNew: false,
-          })),
-      }))
-
-      const finalExercises =
-        mappedExercises.length > 0
-          ? mappedExercises
-          : [createEmptyExercicio(0)]
-
-      setForm({
-        aluno_id: atividade.aluno_id,
-        titulo: atividade.titulo,
-        descricao: atividade.descricao || '',
-        idioma: atividade.idioma,
-        prazo: atividade.prazo
-          ? new Date(atividade.prazo)
-              .toISOString()
-              .slice(0, 16)
-          : '',
-        exercicios: finalExercises,
-      })
-
+      setForm(editForm)
       setEditingId(atividade.id)
-
-      setExpandedExercises([
-        finalExercises[0].id,
-      ])
-
+      setExpandedExercises([editForm.exercicios[0].id])
       setShowBuilder(true)
     } catch (err) {
       console.error(err)
 
       setError(
-        'Ocorreu um erro ao abrir a atividade.',
+        err instanceof Error
+          ? err.message
+          : 'Ocorreu um erro ao abrir a atividade.',
       )
     } finally {
       setSaving(false)
@@ -872,10 +995,10 @@ export default function Atividades() {
     )
   }
 
-  function updateExercise(
+  function updateExercise<K extends keyof ExercicioForm>(
     exerciseId: string,
-    field: keyof ExercicioForm,
-    value: any,
+    field: K,
+    value: ExercicioForm[K],
   ) {
     setForm((current) => ({
       ...current,
@@ -962,7 +1085,7 @@ export default function Atividades() {
               return {
                 ...exercise,
                 tipo,
-                alternativas,
+                alternativas: alternatives,
               }
             }
 
@@ -1052,11 +1175,11 @@ export default function Atividades() {
     }))
   }
 
-  function updateAlternative(
+  function updateAlternative<K extends keyof AlternativaForm>(
     exerciseId: string,
     alternativeId: string,
-    field: keyof AlternativaForm,
-    value: any,
+    field: K,
+    value: AlternativaForm[K],
   ) {
     setForm((current) => ({
       ...current,
@@ -1408,24 +1531,45 @@ export default function Atividades() {
     return true
   }
 
-  async function getAuthenticatedUserId() {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser()
+  async function getAuthenticatedProfessorId() {
+  const {
+    data: { user },
+    error: userError,
+  } = await supabase.auth.getUser()
 
-    if (userError) {
-      throw userError
-    }
-
-    if (!user) {
-      throw new Error(
-        'Usuário não autenticado. Faça login novamente.',
-      )
-    }
-
-    return user.id
+  if (userError) {
+    throw userError
   }
+
+  if (!user) {
+    throw new Error(
+      'Usuário não autenticado. Faça login novamente.',
+    )
+  }
+
+  const {
+    data: professor,
+    error: professorError,
+  } = await supabase
+    .from('professores')
+    .select('id')
+    .eq('user_id', user.id)
+    .eq('ativo', true)
+    .eq('acesso_portal', true)
+    .maybeSingle()
+
+  if (professorError) {
+    throw professorError
+  }
+
+  if (!professor) {
+    throw new Error(
+      'Professor não encontrado ou sem acesso ao portal.',
+    )
+  }
+
+  return professor.id
+}
 
   async function saveAlternatives(
     exerciseId: string,
@@ -1526,7 +1670,7 @@ export default function Atividades() {
 
     try {
       const professorId =
-        await getAuthenticatedUserId()
+        await getAuthenticatedProfessorId()
 
       const prazo = form.prazo
         ? new Date(
@@ -3211,8 +3355,7 @@ export default function Atividades() {
                         >
                           {
                             statusLabels[
-                              atividade
-                                .status
+                              atividade.status as StatusAtividade
                             ]
                           }
                         </span>

@@ -18,6 +18,8 @@ import {
 import { supabase } from '../lib/supabase'
 import '../styles/professor.css'
 
+import Atividades from './admin/Atividades'
+
 type ProfessorData = {
   id: string
   user_id: string | null
@@ -75,15 +77,6 @@ const diasSemana = [
   { value: 6, label: 'Sábado', short: 'SÁB' },
   { value: 0, label: 'Domingo', short: 'DOM' },
 ]
-
-const statusLabels: Record<string, string> = {
-  rascunho: 'Rascunho',
-  enviada: 'Enviada',
-  em_andamento: 'Em andamento',
-  respondida: 'Respondida',
-  em_correcao: 'Em correção',
-  corrigida: 'Corrigida',
-}
 
 function Professor() {
   const [loading, setLoading] = useState(true)
@@ -239,42 +232,19 @@ function Professor() {
    * ============================================================
    * CARREGAR DADOS DO PROFESSOR
    * ============================================================
-   *
-   * ALUNOS:
-   *
-   * Agora são encontrados diretamente através de:
-   *
-   * alunos.professor_id = professor.id
-   *
-   * HORÁRIOS:
-   *
-   * Continuam sendo encontrados através de:
-   *
-   * horarios.professor_id = professor.id
-   *
-   * Dessa forma, o vínculo do aluno não depende mais
-   * de existir um horário cadastrado.
    */
 
   async function loadProfessorData(
     professorId: string,
   ) {
     try {
-      /*
-       * ==========================================================
-       * IDIOMAS, HORÁRIOS E ALUNOS EM PARALELO
-       * ==========================================================
-       */
-
       const [
         idiomasResult,
         horariosResult,
         alunosResult,
       ] = await Promise.all([
         /*
-         * --------------------------------------------------------
          * IDIOMAS
-         * --------------------------------------------------------
          */
 
         supabase
@@ -284,9 +254,7 @@ function Professor() {
           .order('idioma'),
 
         /*
-         * --------------------------------------------------------
          * HORÁRIOS
-         * --------------------------------------------------------
          */
 
         supabase
@@ -311,9 +279,7 @@ function Professor() {
           }),
 
         /*
-         * --------------------------------------------------------
          * ALUNOS VINCULADOS DIRETAMENTE
-         * --------------------------------------------------------
          */
 
         supabase
@@ -331,9 +297,7 @@ function Professor() {
       ])
 
       /*
-       * ==========================================================
        * IDIOMAS
-       * ==========================================================
        */
 
       if (idiomasResult.error) {
@@ -351,9 +315,7 @@ function Professor() {
       }
 
       /*
-       * ==========================================================
        * HORÁRIOS
-       * ==========================================================
        */
 
       if (horariosResult.error) {
@@ -371,9 +333,7 @@ function Professor() {
       }
 
       /*
-       * ==========================================================
        * ALUNOS
-       * ==========================================================
        */
 
       if (alunosResult.error) {
@@ -394,9 +354,7 @@ function Professor() {
       setAlunos(alunosCarregados)
 
       /*
-       * ==========================================================
        * IDS DOS ALUNOS
-       * ==========================================================
        */
 
       const alunoIds =
@@ -409,9 +367,7 @@ function Professor() {
           )
 
       /*
-       * ==========================================================
        * NENHUM ALUNO VINCULADO
-       * ==========================================================
        */
 
       if (alunoIds.length === 0) {
@@ -420,9 +376,7 @@ function Professor() {
       }
 
       /*
-       * ==========================================================
        * ATIVIDADES DOS ALUNOS
-       * ==========================================================
        */
 
       const {
@@ -546,11 +500,6 @@ function Professor() {
       }
 
       setPassword('')
-
-      /*
-       * O evento SIGNED_IN do Supabase
-       * fará o carregamento do portal.
-       */
     } catch (err) {
       console.error(
         '[Professor] Erro no login:',
@@ -576,7 +525,9 @@ function Professor() {
       setLogoutLoading(true)
       setError('')
 
-      const { error: logoutError } = await supabase.auth.signOut()
+      const {
+        error: logoutError,
+      } = await supabase.auth.signOut()
 
       if (logoutError) {
         throw logoutError
@@ -589,8 +540,14 @@ function Professor() {
       setAtividades([])
       setActiveSection('dashboard')
     } catch (err) {
-      console.error('[Professor] Erro ao sair do portal:', err)
-      setError('Não foi possível sair do portal. Tente novamente.')
+      console.error(
+        '[Professor] Erro ao sair do portal:',
+        err,
+      )
+
+      setError(
+        'Não foi possível sair do portal. Tente novamente.',
+      )
     } finally {
       setLogoutLoading(false)
     }
@@ -1711,140 +1668,6 @@ function Professor() {
 
   /*
    * ============================================================
-   * ATIVIDADES
-   * ============================================================
-   */
-
-  function renderAtividades() {
-    return (
-      <div className="professor-content">
-        <div className="professor-page-header">
-          <div>
-            <span className="professor-eyebrow">
-              Acompanhamento
-            </span>
-
-            <h1>
-              Atividades
-            </h1>
-
-            <p>
-              Acompanhe as atividades
-              dos seus alunos.
-            </p>
-          </div>
-        </div>
-
-        <section className="professor-panel">
-          <div className="professor-panel-header">
-            <div>
-              <span className="professor-eyebrow">
-                Atividades dos
-                alunos
-              </span>
-
-              <h2>
-                {atividades.length}{' '}
-                atividade(s)
-              </h2>
-            </div>
-
-            <ClipboardList
-              size={20}
-            />
-          </div>
-
-          {atividades.length > 0 ? (
-            <div className="professor-activity-list">
-              {atividades.map(
-                (atividade) => (
-                  <div
-                    className="professor-activity-card"
-                    key={
-                      atividade.id
-                    }
-                  >
-                    <div className="professor-activity-icon">
-                      <ClipboardList
-                        size={21}
-                      />
-                    </div>
-
-                    <div className="professor-activity-info">
-                      <strong>
-                        {
-                          atividade.titulo
-                        }
-                      </strong>
-
-                      <span>
-                        {getAlunoNome(
-                          atividade.aluno_id,
-                        )}
-                      </span>
-
-                      <span>
-                        {getIdiomaLabel(
-                          atividade.idioma,
-                        )}
-                      </span>
-
-                      {atividade.descricao && (
-                        <p>
-                          {
-                            atividade.descricao
-                          }
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="professor-activity-status">
-                      <span>
-                        {statusLabels[
-                          atividade.status
-                        ] ??
-                          atividade.status}
-                      </span>
-
-                      {atividade.nota !==
-                        null && (
-                        <strong>
-                          Nota:{' '}
-                          {
-                            atividade.nota
-                          }
-                        </strong>
-                      )}
-                    </div>
-                  </div>
-                ),
-              )}
-            </div>
-          ) : (
-            <div className="professor-empty-state">
-              <ClipboardList
-                size={40}
-              />
-
-              <strong>
-                Nenhuma atividade
-                encontrada
-              </strong>
-
-              <span>
-                As atividades dos
-                seus alunos
-                aparecerão aqui.
-              </span>
-            </div>
-          )}
-        </section>
-      </div>
-    )
-  }
-
-  /*
-   * ============================================================
    * CONTEÚDO
    * ============================================================
    */
@@ -1864,7 +1687,7 @@ function Professor() {
         return renderAlunos()
 
       case 'atividades':
-        return renderAtividades()
+        return <Atividades />
 
       default:
         return renderDashboard()
