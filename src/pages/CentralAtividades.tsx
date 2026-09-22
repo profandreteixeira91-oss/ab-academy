@@ -218,87 +218,36 @@ function CentralAtividades() {
           </div>
         </section>
 
-        <section className="central-filters">
-          <div className="central-filter-heading">
-            <div><Filter size={18} /><strong>Escolha sua prática</strong></div>
-            <span>{filteredActivities.length} atividade(s)</span>
+        <section className="central-start-card">
+          <div className="central-start-visual"><Sparkles size={30}/></div>
+          <div className="central-start-content">
+            <span className="central-eyebrow">SUA PRÁTICA</span>
+            <h2>Pronto para praticar?</h2>
+            <p>Vamos começar uma sequência de atividades preparada para <strong>{language ? LANGUAGE_LABELS[language] : 'seu idioma'}</strong> no nível <strong>{selectedLevel?.label || 'Iniciante'}</strong>. Você responderá uma atividade por vez e avançará automaticamente para a próxima.</p>
+            <div className="central-start-meta">
+              <span><Languages size={15}/> {language ? LANGUAGE_LABELS[language] : 'Idioma'}</span>
+              <span><GraduationCap size={15}/> {selectedLevel?.label || 'Iniciante'}</span>
+              <span><CheckCircle2 size={15}/> Atividades contínuas</span>
+            </div>
           </div>
-          <div className="central-filter-grid">
-            <label>
-              <span>Idioma</span>
-              <select value={language} onChange={(event) => setLanguage(event.target.value as Language)}>
-                <option value="" disabled>Selecione</option>
-                <option value="ingles">Inglês</option>
-                <option value="alemao">Alemão</option>
-              </select>
-            </label>
-            <label>
-              <span>Nível</span>
-              <select value={level} onChange={(event) => setLevel(event.target.value as Level)}>
-                {LEVELS.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
-            </label>
-            <label>
-              <span>Categoria</span>
-              <select value={category} onChange={(event) => setCategory(event.target.value as Category | 'todas')}>
-                <option value="todas">Todas as categorias</option>
-                {CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
-              </select>
-            </label>
-            <label className="central-search-field">
-              <span>Buscar</span>
-              <div><Search size={17} /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar atividade..." /></div>
-            </label>
-          </div>
+          <a href={language && activities[0] ? "/aluno/central/atividade/" + activities[0].id : "#"} className={language && activities.length ? "central-start-button" : "central-start-button disabled"} onClick={(event) => { if (!language || !activities.length) event.preventDefault() }}>
+            Iniciar atividades <ChevronRight size={20}/>
+          </a>
         </section>
 
-        <section className="central-levels">
-          {LEVELS.map((item) => (
-            <button key={item.value} type="button" className={item.value === level ? 'active' : ''} onClick={() => setLevel(item.value)}>
-              <span>{item.label}</span><small>{item.description}</small>
-            </button>
-          ))}
+        <section className="central-how-it-works">
+          <div><span>1</span><div><strong>Inicie</strong><small>Comece sua sessão de prática.</small></div></div>
+          <div><span>2</span><div><strong>Responda</strong><small>Faça uma atividade por vez.</small></div></div>
+          <div><span>3</span><div><strong>Avance</strong><small>Após concluir, siga para a próxima.</small></div></div>
         </section>
 
-        {error && <div className="central-error"><CircleHelp size={18} />{error}</div>}
+        {error && <div className="central-error"><CircleHelp size={18}/>{error}</div>}
 
-        {loading ? (
-          <div className="central-empty"><Loader2 size={28} className="central-spin" /><h2>Carregando atividades</h2><p>Buscando práticas disponíveis para seu nível.</p></div>
-        ) : filteredActivities.length === 0 ? (
+        {!loading && !error && !activities.length && (
           <div className="central-empty">
-            <div className="central-empty-icon"><BookOpen size={27} /></div>
-            <h2>Estamos preparando seu conteúdo</h2>
-            <p>Ainda não há atividades publicadas para <strong>{LANGUAGE_LABELS[language as Language] || 'este idioma'}</strong> no nível <strong>{selectedLevel?.label || 'selecionado'}</strong>. A biblioteca será alimentada continuamente.</p>
-            <button type="button" className="central-primary-button" onClick={() => setCategory('todas')}>
-              Ver todas as categorias <ChevronRight size={18} />
-            </button>
-          </div>
-        ) : (
-          <div className="central-activity-grid">
-            {filteredActivities.map((activity) => {
-              const CategoryIcon = CATEGORIES.find((item) => item.value === activity.categoria)?.icon || BookOpen
-              return (
-                <article key={activity.id} className="central-activity-card">
-                  <div className="central-activity-icon"><CategoryIcon size={21} /></div>
-                  <div className="central-activity-content">
-                    <div className="central-activity-top">
-                      <span>{CATEGORIES.find((item) => item.value === activity.categoria)?.label}</span>
-                      <small>{activity.tempo_estimado} min</small>
-                    </div>
-                    <h2>{activity.titulo}</h2>
-                    <p>{activity.descricao || activity.instrucoes || 'Pratique este conteúdo e desenvolva suas habilidades no idioma.'}</p>
-                    <div className="central-activity-meta">
-                      <span>{LANGUAGE_LABELS[activity.idioma]}</span>
-                      <span>{LEVELS.find((item) => item.value === activity.nivel)?.label}</span>
-                      <span>Dificuldade {activity.dificuldade}/5</span>
-                    </div>
-                  </div>
-                  <a href={"/aluno/central/atividade/" + activity.id} className="central-primary-button central-activity-button">
-                    Praticar <ChevronRight size={18} />
-                  </a>
-                </article>
-              )
-            })}
+            <div className="central-empty-icon"><BookOpen size={27}/></div>
+            <h2>Seu conteúdo está sendo preparado</h2>
+            <p>Ainda não há atividades publicadas para esta combinação de idioma e nível.</p>
           </div>
         )}
       </main>
