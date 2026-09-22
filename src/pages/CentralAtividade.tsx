@@ -318,8 +318,18 @@ function CentralAtividade(){
             </button>
             {translationError&&<span>{translationError}</span>}
           </div>
-          {(translation?.text||activity.conteudo.text)&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{translation?.text||activity.conteudo.text}</p></div>}
-          {(translation?.question||activity.conteudo.question)&&<div className="central-question"><span>Pergunta</span><strong>{translation?.question||activity.conteudo.question}</strong></div>}
+          <div className={translation ? 'central-language-grid translated' : 'central-language-grid'}>
+            <div className="central-language-column">
+              <div className="central-language-label">Idioma original</div>
+              {(activity.conteudo.text)&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{activity.conteudo.text}</p></div>}
+              {(activity.conteudo.question)&&<div className="central-question"><span>Pergunta</span><strong>{activity.conteudo.question}</strong></div>}
+            </div>
+            {translation&&<div className="central-language-column translated-column">
+              <div className="central-language-label">Português</div>
+              {translation.text&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{translation.text}</p></div>}
+              {translation.question&&<div className="central-question"><span>Pergunta</span><strong>{translation.question}</strong></div>}
+            </div>}
+          </div>
           <div className="central-progress">
             <div className="central-progress-top"><span>Progresso da atividade</span><strong>{result ? '100%' : hasAnswer() ? 'Em andamento' : 'Comece quando estiver pronto'}</strong></div>
             <div className="central-progress-track"><div className={result ? 'central-progress-fill complete' : 'central-progress-fill'} style={{width:result?'100%':hasAnswer()?'55%':'0%'}}/></div>
