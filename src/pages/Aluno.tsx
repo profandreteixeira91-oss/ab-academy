@@ -50,6 +50,7 @@ type Lesson = {
   status: LessonStatus
   meetUrl?: string
   startAt: string
+  endAt: string
 }
 
 type Material = {
@@ -730,158 +731,104 @@ function Aluno() {
     }
   }, [])
 
-  function getNextLessonDate(
-    dayOfWeek: number,
-    time: string,
+  function getNextLessonOccurrence(
+  dayOfWeek: number,
+  startTime: string,
+  endTime: string,
+) {
+  const now = new Date()
+
+  const [startHours, startMinutes] = startTime.slice(0, 5).split(':').map(Number)
+  const [endHours, endMinutes] = endTime.slice(0, 5).split(':').map(Number)
+
+  if (
+    [startHours, startMinutes, endHours, endMinutes].some((value) =>
+      Number.isNaN(value),
+    )
   ) {
-    const now = new Date()
-
-    const [hours, minutes] =
-      time
-        .slice(0, 5)
-        .split(':')
-        .map(Number)
-
-    const currentDay =
-      now.getDay()
-
-    let daysUntil =
-      dayOfWeek - currentDay
-
-    if (daysUntil < 0) {
-      daysUntil += 7
-    }
-
-    if (
-      daysUntil === 0 &&
-      (now.getHours() > hours ||
-        (now.getHours() ===
-          hours &&
-          now.getMinutes() >=
-            minutes))
-    ) {
-      daysUntil = 7
-    }
-
-    const lessonDate =
-      new Date(now)
-
-    lessonDate.setDate(
-      now.getDate() + daysUntil,
-    )
-
-    lessonDate.setHours(
-      hours,
-      minutes,
-      0,
-      0,
-    )
-
-    return lessonDate
+    throw new Error('Horário de aula inválido.')
   }
 
-  function canEnterLesson(
-    startAt: string,
+  const currentDay = now.getDay()
+  let daysUntil = dayOfWeek - currentDay
+  if (daysUntil < 0) daysUntil += 7
+
+  // só pula pra semana que vem se o TÉRMINO de hoje já passou
+  if (
+    daysUntil === 0 &&
+    (now.getHours() > endHours ||
+      (now.getHours() === endHours && now.getMinutes() >= endMinutes))
   ) {
-    const start =
-      new Date(startAt)
-
-    if (
-      Number.isNaN(
-        start.getTime(),
-      )
-    ) {
-      return false
-    }
-
-    const fiveMinutesBefore =
-      start.getTime() -
-      5 * 60 * 1000
-
-    return (
-      currentTime >=
-      fiveMinutesBefore
-    )
+    daysUntil = 7
   }
 
-  function getLessonAccessMessage(
-    startAt: string,
-  ) {
-    const start =
-      new Date(startAt)
+  const startAt = new Date(now)
+  startAt.setDate(now.getDate() + daysUntil)
+  startAt.setHours(startHours, startMinutes, 0, 0)
 
-    if (
-      Number.isNaN(
-        start.getTime(),
-      )
-    ) {
-      return 'Acesso indisponível'
-    }
+  const endAt = new Date(startAt)
+  endAt.setHours(endHours, endMinutes, 0, 0)
 
-    const fiveMinutesBefore =
-      start.getTime() -
-      5 * 60 * 1000
+  return { startAt, endAt }
+}
 
-    if (
-      currentTime >=
-      fiveMinutesBefore
-    ) {
-      return 'Entrar na aula'
-    }
 
-    const difference =
-      fiveMinutesBefore -
-      currentTime
+  function canEnterLesson(startAt: string, endAt: string) {
+  const start = new Date(startAt)
+  const end = new Date(endAt)
 
-    const totalMinutes =
-      Math.ceil(
-        difference / 60000,
-      )
-
-    if (totalMinutes >= 60) {
-      const hours =
-        Math.floor(
-          totalMinutes / 60,
-        )
-
-      const minutes =
-        totalMinutes % 60
-
-      return minutes > 0
-        ? `Disponível em ${hours}h ${minutes}min`
-        : `Disponível em ${hours}h`
-    }
-
-    return `Disponível em ${totalMinutes} min`
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return false
   }
 
-  function openLesson(
-    lesson: Lesson,
-  ) {
-    if (!lesson.meetUrl) {
-      window.alert(
-        'A sala do Google Meet ainda não foi criada para esta aula.',
-      )
-      return
-    }
+  const fiveMinutesBefore = start.getTime() - 5 * 60 * 1000
 
-    if (
-      !canEnterLesson(
-        lesson.startAt,
-      )
-    ) {
-      window.alert(
-        'A sala estará disponível 5 minutos antes do início da aula.',
-      )
-      return
-    }
+  return currentTime >= fiveMinutesBefore && currentTime <= end.getTime()
+}
 
-    window.open(
-      lesson.meetUrl,
-      '_blank',
-      'noopener,noreferrer',
-    )
+ function getLessonAccessMessage(startAt: string, endAt: string) {
+  const start = new Date(startAt)
+  const end = new Date(endAt)
+
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+    return 'Acesso indisponível'
   }
+
+  if (currentTime > end.getTime()) {
+    return 'Aula encerrada'
+  }
+
+  const fiveMinutesBefore = start.getTime() - 5 * 60 * 1000
+
+  if (currentTime >= fiveMinutesBefore) {
+    return 'Entrar na aula'
+  }
+
+  const difference = fiveMinutesBefore - currentTime
+  const totalMinutes = Math.ceil(difference / 60000)
+
+  if (totalMinutes >= 60) {
+    const hours = Math.floor(totalMinutes / 60)
+    const minutes = totalMinutes % 60
+    return minutes > 0 ? `Disponível em ${hours}h ${minutes}min` : `Disponível em ${hours}h`
+  }
+
+  return `Disponível em ${totalMinutes} min`
+}
+
+  function openLesson(lesson: Lesson) {
+  if (!lesson.meetUrl) {
+    window.alert('A sala do Google Meet ainda não foi criada para esta aula.')
+    return
+  }
+
+  if (!canEnterLesson(lesson.startAt, lesson.endAt)) {
+    window.alert('A sala não está disponível neste momento.')
+    return
+  }
+
+  window.open(lesson.meetUrl, '_blank', 'noopener,noreferrer')
+}
 
   /*
    * =========================================================
@@ -896,66 +843,75 @@ function Aluno() {
    * para que o registro em alunos exista.
    */
 
-  async function validateStudentAccess(
-    userId: string,
-  ) {
-    const {
-      data: aluno,
-      error: alunoError,
-    } = await supabase
-      .from('alunos')
-      .select('id')
-      .eq(
-        'user_id',
-        userId,
-      )
-      .maybeSingle()
-
-    if (alunoError) {
-      throw alunoError
-    }
-
-    if (!aluno) {
-      return false
-    }
-
-    /*
-     * O aluno já foi criado somente depois da confirmação
-     * do pagamento.
-     *
-     * Portanto, encontrar o aluno vinculado ao Auth já é
-     * suficiente para validar o acesso.
-     */
-
-    return true
-  }
-
   async function getStudentId(
     userId: string,
   ) {
     const {
+      data: authData,
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError) {
+      throw authError
+    }
+
+    const authenticatedUser =
+      authData.user
+
+    if (
+      !authenticatedUser ||
+      authenticatedUser.id !== userId
+    ) {
+      throw new Error(
+        'Sessão do aluno inválida.',
+      )
+    }
+
+    const email =
+      authenticatedUser.email
+        ?.trim()
+        .toLowerCase()
+
+    if (!email) {
+      throw new Error(
+        'O usuário autenticado não possui e-mail.',
+      )
+    }
+
+    /*
+     * A consulta ao cadastro é feita pelo Edge Function.
+     * Isso evita depender das políticas RLS de alunos para
+     * descobrir o ID interno do aluno.
+     */
+    const {
       data,
       error,
-    } = await supabase
-      .from('alunos')
-      .select('id')
-      .eq(
-        'user_id',
-        userId,
-      )
-      .maybeSingle()
+    } = await supabase.functions.invoke(
+      'student-auth',
+      {
+        body: {
+          action: 'check-email',
+          email,
+        },
+      },
+    )
 
     if (error) {
       throw error
     }
 
-    if (!data) {
+    if (
+      !data?.success ||
+      !data?.exists ||
+      !data?.aluno_id
+    ) {
       throw new Error(
-        'Cadastro do aluno não encontrado.',
+        data?.error ||
+          'Cadastro do aluno não encontrado.',
       )
     }
 
-    return data.id as string
+    return data.aluno_id as string
   }
 
   /*
@@ -964,98 +920,65 @@ function Aluno() {
    * =========================================================
    */
 
-  async function loadStudentLessons(
-    userId: string,
-  ) {
+  async function loadStudentLessons(userId: string) {
     try {
       setLessonsLoading(true)
 
-      const studentId =
-        await getStudentId(
-          userId,
-        )
+      const studentId = await getStudentId(userId)
 
       const {
-        data,
-        error,
+        data: horarios,
+        error: horariosError,
       } = await supabase
         .from('horarios')
-        .select(
-          `
-            id,
-            idioma,
-            dia_semana,
-            hora_inicio,
-            hora_fim,
-            disponivel,
-            meet_url,
-            meet_space_name
-          `,
-        )
-        .eq(
-          'aluno_id',
-          studentId,
-        )
-        .order(
-          'dia_semana',
-        )
-        .order(
-          'hora_inicio',
-        )
+        .select(`
+          id,
+          idioma,
+          dia_semana,
+          hora_inicio,
+          hora_fim,
+          disponivel,
+          aluno_id,
+          meet_url,
+          meet_space_name
+        `)
+        .eq('aluno_id', studentId)
+        .order('dia_semana', { ascending: true })
+        .order('hora_inicio', { ascending: true })
 
-      if (error) {
-        throw error
+      if (horariosError) {
+        throw horariosError
       }
 
-      const normalizedLessons: Lesson[] =
-        (data || []).map(
-          (horario) => {
-            const startAt =
-              getNextLessonDate(
-                Number(
-                  horario.dia_semana,
-                ),
-                horario.hora_inicio,
-              )
-
-            return {
-              id: horario.id,
-              language:
-                horario.idioma ===
-                'ingles'
-                  ? 'Inglês'
-                  : 'Alemão',
-              date:
-                startAt.toLocaleDateString(
-                  'pt-BR',
-                ),
-              time:
-                horario.hora_inicio.slice(
-                  0,
-                  5,
-                ),
-              teacher:
-                'Professor',
-              status:
-                'agendada',
-              meetUrl:
-                horario.meet_url ||
-                undefined,
-              startAt:
-                startAt.toISOString(),
-            }
-          },
+      const normalizedLessons: Lesson[] = (horarios || []).map((horario) => {
+        const { startAt, endAt } = getNextLessonOccurrence(
+          Number(horario.dia_semana),
+          horario.hora_inicio,
+          horario.hora_fim,
         )
 
-      setLessons(
-        normalizedLessons,
-      )
+        return {
+          id: horario.id,
+          language:
+            horario.idioma === 'ingles'
+              ? 'Inglês'
+              : 'Alemão',
+          date: startAt.toLocaleDateString('pt-BR'),
+          time: horario.hora_inicio.slice(0, 5),
+          teacher: 'Professor',
+          status: 'agendada',
+          meetUrl: horario.meet_url || undefined,
+          startAt: startAt.toISOString(),
+          endAt: endAt.toISOString(),
+        }
+      })
+
+      setLessons(normalizedLessons)
     } catch (error) {
       console.error(
         'Erro ao carregar aulas do aluno:',
         error,
       )
-
       setLessons([])
     } finally {
       setLessonsLoading(false)
@@ -1170,67 +1093,78 @@ function Aluno() {
   useEffect(() => {
     let mounted = true
 
-    const rejectUnauthorizedStudent =
-      async (
-        message: string,
-      ) => {
-        await supabase.auth.signOut()
+    const loadAuthenticatedUser =
+      async (authenticatedUser: User) => {
+        try {
+          /*
+           * O student-auth valida o cadastro usando service role.
+           * Não dependemos de uma consulta direta à tabela alunos
+           * para liberar a sessão do portal.
+           */
+          await getStudentId(
+            authenticatedUser.id,
+          )
 
-        if (!mounted) {
-          return
+          if (!mounted) {
+            return
+          }
+
+          setAuthError('')
+          setUser(authenticatedUser)
+          setLoading(false)
+
+          await Promise.all([
+            loadStudentLessons(
+              authenticatedUser.id,
+            ),
+            loadStudentActivities(
+              authenticatedUser.id,
+            ),
+          ])
+        } catch (error) {
+          console.error(
+            'Erro ao carregar acesso do aluno:',
+            error,
+          )
+
+          if (!mounted) {
+            return
+          }
+
+          setUser(null)
+          setLoading(false)
+          setAuthError(
+            error instanceof Error
+              ? error.message
+              : 'Não foi possível validar o cadastro do aluno.',
+          )
         }
-
-        setUser(null)
-        setLoading(false)
-        setAuthError(message)
       }
 
     const loadUser = async () => {
       try {
         const {
-          data: { user },
-        } =
-          await supabase.auth.getUser()
+          data: { user: currentUser },
+          error,
+        } = await supabase.auth.getUser()
+
+        if (error) {
+          throw error
+        }
 
         if (!mounted) {
           return
         }
 
-        if (!user) {
+        if (!currentUser) {
           setUser(null)
           setLoading(false)
           return
         }
 
-        const hasStudentAccess =
-          await validateStudentAccess(
-            user.id,
-          )
-
-        if (!hasStudentAccess) {
-          await rejectUnauthorizedStudent(
-            'Seu acesso ao portal ainda não está liberado.',
-          )
-
-          return
-        }
-
-        if (!mounted) {
-          return
-        }
-
-        setAuthError('')
-        setUser(user)
-        setLoading(false)
-
-        await Promise.all([
-          loadStudentLessons(
-            user.id,
-          ),
-          loadStudentActivities(
-            user.id,
-          ),
-        ])
+        await loadAuthenticatedUser(
+          currentUser,
+        )
       } catch (error) {
         console.error(
           'Erro ao carregar sessão do aluno:',
@@ -1252,87 +1186,42 @@ function Aluno() {
     void loadUser()
 
     const {
-      data: {
-        subscription,
-      },
-    } =
-      supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          if (!mounted) {
-            return
-          }
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!mounted) {
+          return
+        }
 
-          if (!session?.user) {
-            setUser(null)
-            setLoading(false)
-            return
-          }
+        if (event === 'SIGNED_OUT') {
+          setUser(null)
+          setLoading(false)
+          setLessons([])
+          setActivities([])
+          return
+        }
 
-          void (async () => {
-            try {
-              const hasStudentAccess =
-                await validateStudentAccess(
-                  session.user.id,
-                )
-
-              if (!hasStudentAccess) {
-                window.setTimeout(
-                  () => {
-                    void supabase.auth.signOut()
-                  },
-                  0,
-                )
-
-                if (!mounted) {
-                  return
-                }
-
-                setUser(null)
-                setLoading(false)
-                setAuthError(
-                  'Seu cadastro ainda não está liberado para acesso ao portal.',
-                )
-
-                return
-              }
-
-              if (!mounted) {
-                return
-              }
-
-              setAuthError('')
-              setUser(
+        if (
+          (event === 'SIGNED_IN' ||
+            event === 'TOKEN_REFRESHED' ||
+            event === 'USER_UPDATED') &&
+          session?.user
+        ) {
+          /*
+           * Não fazemos consultas Supabase diretamente dentro
+           * do callback de autenticação. O setTimeout evita
+           * bloqueio/concorrência com a atualização da sessão.
+           */
+          window.setTimeout(() => {
+            if (mounted) {
+              void loadAuthenticatedUser(
                 session.user,
               )
-              setLoading(false)
-
-              await Promise.all([
-                loadStudentLessons(
-                  session.user.id,
-                ),
-                loadStudentActivities(
-                  session.user.id,
-                ),
-              ])
-            } catch (error) {
-              console.error(
-                'Erro ao validar acesso do aluno:',
-                error,
-              )
-
-              if (!mounted) {
-                return
-              }
-
-              setUser(null)
-              setLoading(false)
-              setAuthError(
-                'Não foi possível validar o cadastro do aluno.',
-              )
             }
-          })()
-        },
-      )
+          }, 0)
+        }
+      },
+    )
 
     return () => {
       mounted = false
@@ -2795,9 +2684,11 @@ type InicioProps = {
   ) => void
   canEnterLesson: (
     startAt: string,
+    endAt: string,
   ) => boolean
   getLessonAccessMessage: (
     startAt: string,
+    endAt: string,
   ) => string
   currentTime: number
 }
@@ -2889,6 +2780,7 @@ function Inicio({
               !nextLesson.meetUrl ||
               !canEnterLesson(
                 nextLesson.startAt,
+                nextLesson.endAt,
               )
             }
             title={
@@ -2896,6 +2788,7 @@ function Inicio({
                 ? 'A sala ainda não foi criada pelo professor'
                 : getLessonAccessMessage(
                     nextLesson.startAt,
+                    nextLesson.endAt,
                   )
             }
           >
@@ -2905,6 +2798,7 @@ function Inicio({
               ? 'Sala não criada'
               : getLessonAccessMessage(
                   nextLesson.startAt,
+                  nextLesson.endAt,
                 )}
           </button>
         </div>
@@ -3031,9 +2925,11 @@ type MinhasAulasProps = {
   ) => void
   canEnterLesson: (
     startAt: string,
+    endAt: string,
   ) => boolean
   getLessonAccessMessage: (
     startAt: string,
+    endAt: string,
   ) => string
   currentTime: number
 }
@@ -3104,6 +3000,7 @@ function MinhasAulas({
               const canEnter =
                 canEnterLesson(
                   lesson.startAt,
+                  lesson.endAt,
                 )
 
               return (
@@ -3170,6 +3067,7 @@ function MinhasAulas({
                           ? 'A sala ainda não foi criada pelo professor'
                           : getLessonAccessMessage(
                               lesson.startAt,
+                              lesson.endAt,
                             )
                       }
                     >
@@ -3181,6 +3079,7 @@ function MinhasAulas({
                         ? 'Sala não criada'
                         : getLessonAccessMessage(
                             lesson.startAt,
+                            lesson.endAt,
                           )}
                     </button>
                   )}

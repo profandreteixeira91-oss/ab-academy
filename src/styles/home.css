@@ -897,6 +897,10 @@ h1, h2, h3 { font-family: var(--font-display); }
   align-items: center;
   justify-content: space-between;
   gap: 12px;
+  padding: 50px 0 20px 0;
+  margin-left: 50px;
+  margin-right: 50px;
+
 }
 
 .footer-legal-links { display: flex; gap: 20px; }

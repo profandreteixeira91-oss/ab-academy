@@ -125,11 +125,11 @@ function Home() {
     }
 
     const planosMensais = idiomaPlanos.filter(
-      (plano) => plano.tipo === 'mensal',
+      (plano) => plano.nome === 'Plano Mensal',
     )
 
     const planosAnuais = idiomaPlanos.filter(
-      (plano) => plano.tipo === 'anual',
+      (plano) => plano.nome === 'Plano Anual',
     )
 
     return (
