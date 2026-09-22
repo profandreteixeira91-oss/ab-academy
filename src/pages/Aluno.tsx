@@ -925,9 +925,14 @@ function Aluno() {
    * =========================================================
    */
 
-  async function loadStudentLessons(userId: string) {
+  async function loadStudentLessons(
+    userId: string,
+    showLoading = true,
+  ) {
   try {
-    setLessonsLoading(true)
+    if (showLoading) {
+      setLessonsLoading(true)
+    }
 
     const studentId = await getStudentId(userId)
 
@@ -1098,9 +1103,34 @@ function Aluno() {
     setLessons([])
     setLessonHistory([])
   } finally {
-    setLessonsLoading(false)
+    if (showLoading) {
+      setLessonsLoading(false)
+    }
   }
 }
+
+  /*
+   * =========================================================
+   * ATUALIZAR REGISTROS DE AULAS
+   * =========================================================
+   */
+
+  useEffect(() => {
+    if (!user) {
+      return
+    }
+
+    const interval = window.setInterval(() => {
+      void loadStudentLessons(
+        user.id,
+        false,
+      )
+    }, 10000)
+
+    return () => {
+      window.clearInterval(interval)
+    }
+  }, [user])
 
   /*
    * =========================================================
