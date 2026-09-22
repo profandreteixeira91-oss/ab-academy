@@ -950,7 +950,8 @@ function Aluno() {
         disponivel,
         aluno_id,
         meet_url,
-        meet_space_name
+        meet_space_name,
+        professor_id
       `)
       .eq('aluno_id', studentId)
       .order('dia_semana', { ascending: true })
@@ -982,6 +983,35 @@ function Aluno() {
       throw registrosError
     }
 
+    const professorIds = Array.from(
+      new Set(
+        (horarios || [])
+          .map((horario) => horario.professor_id)
+          .filter(Boolean),
+      ),
+    )
+
+    const {
+      data: professores,
+      error: professoresError,
+    } = professorIds.length
+      ? await supabase
+          .from('professores')
+          .select('id, nome_completo')
+          .in('id', professorIds)
+      : { data: [], error: null }
+
+    if (professoresError) {
+      throw professoresError
+    }
+
+    const professoresMap = new Map(
+      (professores || []).map((professor) => [
+        professor.id,
+        professor.nome_completo,
+      ]),
+    )
+
     const normalizedLessons: Lesson[] = (horarios || []).map((horario) => {
       const { startAt, endAt } = getNextLessonOccurrence(
         Number(horario.dia_semana),
@@ -1011,7 +1041,9 @@ function Aluno() {
             : 'Alemão',
         date: startAt.toLocaleDateString('pt-BR'),
         time: horario.hora_inicio.slice(0, 5),
-        teacher: 'Professor',
+        teacher:
+          professoresMap.get(horario.professor_id) ||
+          'Professor',
         status:
           registro?.status === 'falta'
             ? 'falta'
@@ -1081,7 +1113,9 @@ function Aluno() {
                 : 'Alemão',
             date: startAt.toLocaleDateString('pt-BR'),
             time: horario.hora_inicio.slice(0, 5),
-            teacher: 'Professor',
+            teacher:
+              professoresMap.get(horario.professor_id) ||
+              'Professor',
             status:
               registro.status === 'presente'
                 ? 'realizada'
