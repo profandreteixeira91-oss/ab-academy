@@ -13,6 +13,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Circle,
+  XCircle,
 } from 'lucide-react'
 
 import { supabase } from '../lib/supabase'
@@ -61,6 +62,15 @@ type Atividade = {
   created_at: string
 }
 
+type RegistroAula = {
+  id: string
+  horario_id: string
+  aluno_id: string
+  professor_id: string
+  data_aula: string
+  status: 'presente' | 'falta'
+}
+
 type PortalSection =
   | 'dashboard'
   | 'agenda'
@@ -106,6 +116,12 @@ function Professor() {
 
   const [atividades, setAtividades] =
     useState<Atividade[]>([])
+
+  const [registrosAulas, setRegistrosAulas] =
+    useState<RegistroAula[]>([])
+
+  const [registroFaltaLoading, setRegistroFaltaLoading] =
+    useState<string | null>(null)
 
   const [activeSection, setActiveSection] =
     useState<PortalSection>('dashboard')
@@ -272,6 +288,7 @@ function Professor() {
         idiomasResult,
         horariosResult,
         alunosResult,
+        registrosResult,
       ] = await Promise.all([
         /*
          * --------------------------------------------------------
@@ -330,6 +347,29 @@ function Professor() {
           .order('nome_completo', {
             ascending: true,
           }),
+
+        /*
+         * --------------------------------------------------------
+         * REGISTROS DE AULAS
+         * --------------------------------------------------------
+         */
+
+        supabase
+          .from('registros_aulas')
+          .select(
+            `
+            id,
+            horario_id,
+            aluno_id,
+            professor_id,
+            data_aula,
+            status
+            `,
+          )
+          .eq('professor_id', professorId)
+          .order('data_aula', {
+            ascending: false,
+          }),
       ])
 
       /*
@@ -369,6 +409,26 @@ function Professor() {
         setHorarios(
           (horariosResult.data ??
             []) as Horario[],
+        )
+      }
+
+      /*
+       * ==========================================================
+       * REGISTROS DE AULAS
+       * ==========================================================
+       */
+
+      if (registrosResult.error) {
+        console.error(
+          '[Professor] Erro ao carregar registros de aulas:',
+          registrosResult.error,
+        )
+
+        setRegistrosAulas([])
+      } else {
+        setRegistrosAulas(
+          (registrosResult.data ??
+            []) as RegistroAula[],
         )
       }
 
@@ -474,6 +534,7 @@ function Professor() {
       setHorarios([])
       setAlunos([])
       setAtividades([])
+      setRegistrosAulas([])
     }
   }
 
@@ -691,6 +752,125 @@ function Professor() {
       now.getTime() <= endAt.getTime()
     )
   }
+  function getTodayDateKey() {
+    const now = new Date()
+
+    return [
+      now.getFullYear(),
+      String(now.getMonth() + 1).padStart(2, '0'),
+      String(now.getDate()).padStart(2, '0'),
+    ].join('-')
+  }
+
+  function getRegistroAulaAtual(
+    horario: Horario,
+  ) {
+    return registrosAulas.find(
+      (registro) =>
+        registro.horario_id === horario.id &&
+        registro.data_aula === getTodayDateKey(),
+    )
+  }
+
+  async function registrarFalta(
+    horario: Horario,
+  ) {
+    if (
+      !professor ||
+      !horario.aluno_id ||
+      !podeEntrarNaAula(horario)
+    ) {
+      return
+    }
+
+    const registroExistente =
+      getRegistroAulaAtual(horario)
+
+    if (registroExistente) {
+      return
+    }
+
+    const dataAula = getTodayDateKey()
+
+    try {
+      setRegistroFaltaLoading(horario.id)
+
+      const { data, error } = await supabase
+        .from('registros_aulas')
+        .insert({
+          horario_id: horario.id,
+          aluno_id: horario.aluno_id,
+          professor_id: professor.id,
+          data_aula: dataAula,
+          status: 'falta',
+        })
+        .select(
+          `
+          id,
+          horario_id,
+          aluno_id,
+          professor_id,
+          data_aula,
+          status
+          `,
+        )
+        .single()
+
+      if (error) {
+        if (error.code === '23505') {
+          const { data: registroAtual } =
+            await supabase
+              .from('registros_aulas')
+              .select(
+                `
+                id,
+                horario_id,
+                aluno_id,
+                professor_id,
+                data_aula,
+                status
+                `,
+              )
+              .eq('horario_id', horario.id)
+              .eq('data_aula', dataAula)
+              .maybeSingle()
+
+          if (registroAtual) {
+            setRegistrosAulas((current) => [
+              registroAtual as RegistroAula,
+              ...current.filter(
+                (registro) =>
+                  registro.id !== registroAtual.id,
+              ),
+            ])
+          }
+
+          return
+        }
+
+        throw error
+      }
+
+      if (data) {
+        setRegistrosAulas((current) => [
+          data as RegistroAula,
+          ...current,
+        ])
+      }
+    } catch (error) {
+      console.error(
+        '[Professor] Erro ao registrar falta:',
+        error,
+      )
+
+      window.alert(
+        'Não foi possível registrar a falta. Tente novamente.',
+      )
+    } finally {
+      setRegistroFaltaLoading(null)
+    }
+  }
+
   function getNextLesson(
     horario: Horario,
   ) {
@@ -1572,25 +1752,61 @@ function Professor() {
                         </small>
                       </div>
 
-                      <button
-                        type="button"
-                        className="professor-primary-button"
-                        onClick={() => {
-                          if (!podeEntrarNaAula(horario)) {
-                            return
+                      <div className="professor-class-actions">
+                        <button
+                          type="button"
+                          className="professor-primary-button"
+                          onClick={() => {
+                            if (!podeEntrarNaAula(horario)) {
+                              return
+                            }
+
+                            window.location.href =
+                              `/professor/aula/${horario.id}`
+                          }}
+                          disabled={
+                            !podeEntrarNaAula(horario) ||
+                            Boolean(
+                              getRegistroAulaAtual(horario),
+                            )
                           }
+                        >
+                          <Video
+                            size={17}
+                          />
 
-                          window.location.href =
-                            `/professor/aula/${horario.id}`
-                        }}
-                        disabled={!podeEntrarNaAula(horario)}
-                      >
-                        <Video
-                          size={17}
-                        />
+                          Entrar na aula
+                        </button>
 
-                        Entrar na aula
-                      </button>
+                        <button
+                          type="button"
+                          className="professor-secondary-button professor-absence-button"
+                          onClick={() => {
+                            void registrarFalta(horario)
+                          }}
+                          disabled={
+                            !podeEntrarNaAula(horario) ||
+                            Boolean(
+                              getRegistroAulaAtual(horario),
+                            ) ||
+                            registroFaltaLoading ===
+                              horario.id
+                          }
+                        >
+                          <XCircle
+                            size={17}
+                          />
+
+                          {registroFaltaLoading ===
+                          horario.id
+                            ? 'Registrando...'
+                            : getRegistroAulaAtual(
+                                  horario,
+                                )?.status === 'falta'
+                              ? 'Falta registrada'
+                              : 'Registrar Falta'}
+                        </button>
+                      </div>
                     </div>
                   ),
                 )}
