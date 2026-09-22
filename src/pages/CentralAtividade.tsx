@@ -73,6 +73,9 @@ function CentralAtividade(){
   const [translation,setTranslation]=useState<Content|null>(null)
   const [translating,setTranslating]=useState(false)
   const [translationError,setTranslationError]=useState('')
+  const [nextActivity,setNextActivity]=useState<{id:string;titulo:string}|null>(null)
+  const [activityNumber,setActivityNumber]=useState<number|null>(null)
+  const [activityTotal,setActivityTotal]=useState<number|null>(null)
   const answersLoadedRef=useRef(false)
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
 
@@ -88,7 +91,17 @@ function CentralAtividade(){
       setStudent(studentData as Student)
       const {data:activityData,error:activityError}=await supabase.from('central_atividades').select('id,idioma,nivel,categoria,tipo_exercicio,titulo,descricao,instrucoes,conteudo,explicacao,dificuldade,tempo_estimado').eq('id',activityId).eq('status','publicada').maybeSingle()
       if(activityError||!activityData){setError('Atividade não encontrada ou indisponível.');setLoading(false);return}
-      setActivity({ ...(activityData as Activity), conteudo: normalizeContent((activityData as Activity).conteudo || {}) })
+      const currentActivity={...(activityData as Activity),conteudo:normalizeContent((activityData as Activity).conteudo||{})}
+      setActivity(currentActivity)
+      const {data:sequence}=await supabase.from('central_atividades').select('id,titulo,created_at').eq('idioma',currentActivity.idioma).eq('nivel',currentActivity.nivel).eq('status','publicada').order('created_at',{ascending:true}).order('id',{ascending:true})
+      if(sequence?.length){
+        const index=sequence.findIndex(item=>item.id===currentActivity.id)
+        if(index>=0){
+          setActivityNumber(index+1)
+          setActivityTotal(sequence.length)
+          if(sequence[index+1])setNextActivity({id:sequence[index+1].id,titulo:sequence[index+1].titulo})
+        }
+      }
       const storedStart=window.sessionStorage.getItem(`ab-academy-activity-start-${activityId}`)
       const start=storedStart ? Number(storedStart) : Date.now()
       if(!storedStart) window.sessionStorage.setItem(`ab-academy-activity-start-${activityId}`,String(start))
@@ -227,6 +240,7 @@ function CentralAtividade(){
     }
   }
 
+  function goNext(){window.location.href=nextActivity?`/aluno/central/atividade/${nextActivity.id}`:'/aluno/central'}
   function toggleMultiple(id:string){
     const current=Array.isArray(answers.answer)?answers.answer as string[]:[]
     setAnswers({...answers,answer:current.includes(id)?current.filter(x=>x!==id):[...current,id]})
@@ -269,6 +283,7 @@ function CentralAtividade(){
       <div className="central-activity-header-inner">
         <a href="/aluno/central" className="central-activity-back"><ArrowLeft size={18}/><span>Central de Atividades</span></a>
         <img src={logo} alt="AB Academy"/>
+        <div className="central-header-progress">{activityNumber&&activityTotal?<><strong>{activityNumber}</strong><span>/ {activityTotal}</span></>:<span>Prática</span>}</div>
       </div>
     </header>
     <main className="central-activity-main">
@@ -312,7 +327,10 @@ function CentralAtividade(){
           <div className="central-exercise-area">{renderExercise(translation||undefined)}</div>
           {error&&<div className="central-form-error">{error}</div>}
           {!result&&<div className="central-save-status">{saveState==='saving'?<><Loader2 size={14} className="central-activity-spin"/> Salvando seu progresso...</>:saveState==='saved'?<><CheckCircle2 size={14}/> Progresso salvo</>:<span>Seu progresso será salvo automaticamente.</span>}</div>}
-          {result?<div className={result.correct?'central-result success':'central-result'}><div className="central-result-title">{result.correct?<CheckCircle2 size={23}/>:<CircleHelp size={23}/>}<strong>{result.message}</strong></div><span>Resultado: {result.score}/100</span>{activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}<button type="button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer atividade</button></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
+          {result?<div className={result.correct?'central-result success':'central-result'}>
+<div className="central-result-hero"><div className="central-result-icon">{result.correct?<CheckCircle2 size={25}/>:<CircleHelp size={25}/>}</div><div className="central-result-copy"><span>{result.correct?'Muito bem!':'Atividade concluída'}</span><strong>{result.message}</strong></div><div className="central-result-score"><strong>{result.score}</strong><span>/100</span></div></div>
+{activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}
+<div className="central-result-actions"><button type="button" className="central-secondary-button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer</button><button type="button" className="central-primary-button" onClick={goNext}>{nextActivity?<>Próxima atividade <ArrowRight size={18}/></>:<>Voltar para a Central <ArrowRight size={18}/></>}</button></div></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
         </section>
       </div>
     </main>
