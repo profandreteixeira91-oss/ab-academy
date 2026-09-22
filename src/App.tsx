@@ -6,6 +6,8 @@ import Checkout from './pages/checkout'
 
 import Aluno from './pages/Aluno'
 
+import CentralAtividades from './pages/CentralAtividades'
+
 import Admin from './pages/Admin'
 
 import Equipe from './pages/admin/Equipe'
@@ -100,6 +102,16 @@ function App() {
 
   if (path === '/aluno') {
     return <Aluno />
+  }
+
+  /*
+   * =========================================================
+   * CENTRAL DE ATIVIDADES
+   * =========================================================
+   */
+
+  if (path === '/aluno/central') {
+    return <CentralAtividades />
   }
 
   /*
