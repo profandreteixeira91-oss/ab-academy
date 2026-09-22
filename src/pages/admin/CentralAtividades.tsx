@@ -109,51 +109,82 @@ export default function CentralAtividadesAdmin() {
       if (generatorMode === 'lote') {
         const generated = await invokeGeneration(generator)
         window.alert(`${generated} atividade(s) gerada(s) como rascunho.`)
-      } else {
-        const buckets = generatorMode === 'meta'
-          ? [{ idioma: generator.idioma, nivel: generator.nivel }]
-          : ['ingles','alemao'].flatMap(idioma => LEVELS.map(([nivel]) => ({ idioma, nivel })))
+      } else if (generatorMode === 'meta') {
+        const { count } = await supabase
+          .from('central_atividades')
+          .select('id', { count: 'exact', head: true })
+          .eq('idioma', generator.idioma)
+          .eq('nivel', generator.nivel)
+          .neq('status', 'arquivada')
 
-        let totalGenerated = 0
-        let totalTarget = 0
-        for (const bucket of buckets) {
-          const { count } = await supabase
-            .from('central_atividades')
-            .select('id', { count: 'exact', head: true })
-            .eq('idioma', bucket.idioma)
-            .eq('nivel', bucket.nivel)
-            .neq('status', 'arquivada')
-
-          const existing = count || 0
-          const missing = Math.max(0, 100 - existing)
-          totalTarget += missing
-        }
-
-        if (totalTarget === 0) {
-          window.alert('A biblioteca já atingiu a meta de 100 atividades em todos os blocos selecionados.')
+        const missing = Math.max(0, 100 - (count || 0))
+        if (missing === 0) {
+          window.alert('Este bloco já atingiu a meta de 100 atividades.')
           return
         }
 
-        let completed = 0
-        for (const bucket of buckets) {
-          const { count } = await supabase
-            .from('central_atividades')
-            .select('id', { count: 'exact', head: true })
-            .eq('idioma', bucket.idioma)
-            .eq('nivel', bucket.nivel)
-            .neq('status', 'arquivada')
+        let totalGenerated = 0
+        let remaining = missing
+        let batchIndex = 0
 
-          let remaining = Math.max(0, 100 - (count || 0))
-          let batchIndex = 0
-          while (remaining > 0) {
+        while (remaining > 0) {
+          const categoria = CATEGORIES.filter(x => x[0] !== 'todas')[batchIndex % 7][0]
+          const type = TYPES[batchIndex % TYPES.length][0]
+          const quantidade = Math.min(20, remaining)
+
+          setGenerationProgress({
+            current: totalGenerated,
+            total: missing,
+            bucket: `${generator.idioma === 'ingles' ? 'Inglês' : 'Alemão'} · ${label(LEVELS, generator.nivel)}`,
+          })
+
+          const generated = await invokeGeneration({
+            idioma: generator.idioma,
+            nivel: generator.nivel,
+            categoria,
+            tipo_exercicio: type,
+            quantidade,
+          })
+
+          if (generated <= 0) throw new Error('A IA não gerou novas atividades neste lote.')
+
+          totalGenerated += generated
+          remaining -= generated
+          batchIndex += 1
+
+          setGenerationProgress({
+            current: Math.min(totalGenerated, missing),
+            total: missing,
+            bucket: `${generator.idioma === 'ingles' ? 'Inglês' : 'Alemão'} · ${label(LEVELS, generator.nivel)}`,
+          })
+        }
+
+        window.alert(`${totalGenerated} atividade(s) gerada(s) como rascunho. O bloco foi completado até a meta de 100.`)
+      } else {
+        // Completar biblioteca gera exatamente 100 novas atividades por execução,
+        // distribuídas pelos 10 blocos de idioma + nível.
+        const buckets = ['ingles','alemao'].flatMap(idioma =>
+          LEVELS.map(([nivel]) => ({ idioma, nivel }))
+        )
+
+        const libraryTarget = 100
+        let totalGenerated = 0
+        let batchIndex = 0
+
+        while (totalGenerated < libraryTarget) {
+          for (const bucket of buckets) {
+            if (totalGenerated >= libraryTarget) break
+
             const categoria = CATEGORIES.filter(x => x[0] !== 'todas')[batchIndex % 7][0]
             const type = TYPES[batchIndex % TYPES.length][0]
-            const quantidade = Math.min(20, remaining)
+            const quantidade = Math.min(10, libraryTarget - totalGenerated)
+
             setGenerationProgress({
-              current: completed,
-              total: totalTarget,
+              current: totalGenerated,
+              total: libraryTarget,
               bucket: `${bucket.idioma === 'ingles' ? 'Inglês' : 'Alemão'} · ${label(LEVELS, bucket.nivel)}`,
             })
+
             const generated = await invokeGeneration({
               idioma: bucket.idioma,
               nivel: bucket.nivel,
@@ -161,21 +192,23 @@ export default function CentralAtividadesAdmin() {
               tipo_exercicio: type,
               quantidade,
             })
+
             if (generated <= 0) throw new Error('A IA não gerou novas atividades neste lote.')
+
             totalGenerated += generated
-            completed += generated
-            remaining -= generated
             batchIndex += 1
+
             setGenerationProgress({
-              current: Math.min(completed, totalTarget),
-              total: totalTarget,
+              current: Math.min(totalGenerated, libraryTarget),
+              total: libraryTarget,
               bucket: `${bucket.idioma === 'ingles' ? 'Inglês' : 'Alemão'} · ${label(LEVELS, bucket.nivel)}`,
             })
           }
         }
 
-        window.alert(`${totalGenerated} atividade(s) gerada(s) como rascunho. A biblioteca foi preenchida até a meta dos blocos selecionados.`)
+        window.alert(`${totalGenerated} atividade(s) gerada(s) como rascunho. A geração da biblioteca foi concluída.`)
       }
+
       setGeneratorOpen(false)
       await load()
     } catch (error) {
@@ -186,7 +219,6 @@ export default function CentralAtividadesAdmin() {
       setGenerationProgress(null)
     }
   }
-
   function toggleSelection(id: string) {
     setSelectedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
   }
