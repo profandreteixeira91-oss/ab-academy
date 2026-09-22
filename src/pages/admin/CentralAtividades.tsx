@@ -148,7 +148,7 @@ export default function CentralAtividadesAdmin() {
           while (remaining > 0) {
             const categoria = CATEGORIES.filter(x => x[0] !== 'todas')[batchIndex % 7][0]
             const type = TYPES[batchIndex % TYPES.length][0]
-            const quantity = Math.min(20, remaining)
+            const quantidade = Math.min(20, remaining)
             setGenerationProgress({
               current: completed,
               total: totalTarget,
