@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
   ArrowLeft, BookOpen, CheckCircle2, ChevronRight, CircleHelp,
-  Filter, GraduationCap, Headphones, Languages, Loader2, PenLine, Search, Sparkles,
+  Filter, GraduationCap, Headphones, Languages, Loader2, PenLine, Search, Sparkles, Target,
 } from 'lucide-react'
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
@@ -77,6 +77,7 @@ function CentralAtividades() {
   const [level, setLevel] = useState<Level>('iniciante')
   const [category, setCategory] = useState<Category | 'todas'>('todas')
   const [search, setSearch] = useState('')
+  const [activityStats, setActivityStats] = useState({ completed: 0, correct: 0 })
 
   useEffect(() => {
     let mounted = true
@@ -126,6 +127,41 @@ function CentralAtividades() {
     void loadProfile()
     return () => { cancelled = true }
   }, [user])
+
+  useEffect(() => {
+    if (!profile?.id) {
+      setActivityStats({ completed: 0, correct: 0 })
+      return
+    }
+
+    let cancelled = false
+
+    async function loadActivityStats() {
+      const { data, error: statsError } = await supabase
+        .from('central_respostas')
+        .select('pontuacao, concluida')
+        .eq('aluno_id', profile.id)
+        .eq('concluida', true)
+
+      if (cancelled) return
+
+      if (statsError) {
+        console.error('Erro ao carregar resumo das atividades:', statsError)
+        setActivityStats({ completed: 0, correct: 0 })
+        return
+      }
+
+      const completed = data?.length || 0
+      const correct = (data || []).filter(
+        (response) => typeof response.pontuacao === 'number' && response.pontuacao >= 100,
+      ).length
+
+      setActivityStats({ completed, correct })
+    }
+
+    void loadActivityStats()
+    return () => { cancelled = true }
+  }, [profile?.id])
 
   useEffect(() => {
     if (!user || !language) {
@@ -243,6 +279,32 @@ function CentralAtividades() {
           <div className="central-profile-level">
             <small>Nível recomendado</small>
             <strong>{selectedLevel?.label || 'Iniciante'}</strong>
+          </div>
+        </section>
+
+        <section className="central-activity-summary">
+          <div className="central-summary-heading">
+            <div>
+              <span className="central-eyebrow">SEU RESUMO</span>
+              <h2>Seu desempenho nas atividades</h2>
+            </div>
+            <Target size={22} />
+          </div>
+          <div className="central-summary-grid">
+            <div className="central-summary-item">
+              <div className="central-summary-icon"><CheckCircle2 size={20} /></div>
+              <div>
+                <strong>{activityStats.completed}</strong>
+                <span>Atividades realizadas</span>
+              </div>
+            </div>
+            <div className="central-summary-item">
+              <div className="central-summary-icon"><Target size={20} /></div>
+              <div>
+                <strong>{activityStats.completed ? Math.round((activityStats.correct / activityStats.completed) * 100) : 0}%</strong>
+                <span>Taxa de acertos</span>
+              </div>
+            </div>
           </div>
         </section>
 
