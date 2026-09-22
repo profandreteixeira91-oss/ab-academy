@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Archive, CheckCircle2, Eye, Filter, Loader2, Pencil, RefreshCw, Save, Sparkles, X } from 'lucide-react'
+import { Archive, CheckCircle2, Eye, Filter, Loader2, Pencil, RefreshCw, Save, Sparkles, WandSparkles, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 type Activity = {
@@ -46,6 +46,9 @@ export default function CentralAtividadesAdmin() {
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Activity | null>(null)
   const [jsonText, setJsonText] = useState('')
+  const [generatorOpen, setGeneratorOpen] = useState(false)
+  const [generating, setGenerating] = useState(false)
+  const [generator, setGenerator] = useState({ idioma: 'ingles', nivel: 'iniciante', categoria: 'vocabulario', tipo_exercicio: 'multipla_escolha', quantidade: 5 })
 
   async function load() {
     setLoading(true)
@@ -83,6 +86,23 @@ export default function CentralAtividadesAdmin() {
     drafts: activities.filter(a => a.status === 'rascunho').length,
     ai: activities.filter(a => a.origem === 'ia').length,
   }), [activities])
+
+  async function generateActivities() {
+    setGenerating(true)
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Sua sessão administrativa expirou. Faça login novamente.')
+      const { data, error } = await supabase.functions.invoke('gerar-central-atividades', { body: generator, headers: { Authorization: 'Bearer ' + session.access_token } })
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
+      window.alert(`${data?.generated || 0} atividade(s) gerada(s) como rascunho.`)
+      setGeneratorOpen(false)
+      await load()
+    } catch (error) {
+      console.error(error)
+      window.alert(error instanceof Error ? error.message : 'Não foi possível gerar as atividades.')
+    } finally { setGenerating(false) }
+  }
 
   const openEditor = (activity: Activity) => {
     setSelected(activity)
@@ -182,9 +202,10 @@ export default function CentralAtividadesAdmin() {
           <h2>Biblioteca de prática</h2>
           <p>Gerencie, revise e publique atividades por idioma, nível e categoria.</p>
         </div>
-        <button type="button" className="central-admin-refresh" onClick={() => void load()} disabled={loading}>
-          <RefreshCw size={17}/>Atualizar
-        </button>
+        <div className="central-admin-intro-actions">
+          <button type="button" className="central-admin-generate" onClick={() => setGeneratorOpen(true)}><WandSparkles size={17}/>Gerar com IA</button>
+          <button type="button" className="central-admin-refresh" onClick={() => void load()} disabled={loading}><RefreshCw size={17}/>Atualizar</button>
+        </div>
       </div>
 
       <div className="central-admin-stats">
@@ -243,6 +264,26 @@ export default function CentralAtividadesAdmin() {
           </article>
         ))}
       </div>
+
+      {generatorOpen && (
+        <div className="central-admin-overlay" onMouseDown={e => { if (e.target === e.currentTarget && !generating) setGeneratorOpen(false) }}>
+          <section className="central-admin-modal central-admin-generator-modal">
+            <header className="central-admin-modal-head"><div><span>GERAÇÃO AUTOMÁTICA</span><h3>Gerar atividades com IA</h3></div><button type="button" onClick={() => setGeneratorOpen(false)} disabled={generating}><X size={20}/></button></header>
+            <div className="central-admin-generator">
+              <p>A IA criará as atividades diretamente na biblioteca como <strong>rascunhos</strong>. Você poderá revisar, editar e publicar depois.</p>
+              <div className="central-admin-form-grid">
+                <label>Idioma<select value={generator.idioma} onChange={e => setGenerator(g => ({...g, idioma:e.target.value}))}><option value="ingles">Inglês</option><option value="alemao">Alemão</option></select></label>
+                <label>Nível<select value={generator.nivel} onChange={e => setGenerator(g => ({...g, nivel:e.target.value}))}>{LEVELS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+                <label>Categoria<select value={generator.categoria} onChange={e => setGenerator(g => ({...g, categoria:e.target.value}))}>{CATEGORIES.filter(x => x[0] !== 'todas').map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+                <label>Tipo de exercício<select value={generator.tipo_exercicio} onChange={e => setGenerator(g => ({...g, tipo_exercicio:e.target.value}))}>{TYPES.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+                <label>Quantidade<select value={generator.quantidade} onChange={e => setGenerator(g => ({...g, quantidade:Number(e.target.value)}))}>{[1,5,10,15,20].map(v => <option key={v} value={v}>{v} atividades</option>)}</select></label>
+              </div>
+              <div className="central-admin-generator-note"><Sparkles size={17}/><span>As atividades são geradas com conteúdo, instruções, respostas e explicações estruturadas para o motor da Central.</span></div>
+            </div>
+            <footer className="central-admin-modal-foot"><span>Máximo de 20 por geração</span><div><button type="button" className="central-admin-secondary" onClick={() => setGeneratorOpen(false)} disabled={generating}>Cancelar</button><button type="button" className="central-admin-publish" onClick={() => void generateActivities()} disabled={generating}>{generating ? <Loader2 size={16} className="central-admin-spin"/> : <WandSparkles size={16}/>} {generating ? 'Gerando...' : 'Gerar atividades'}</button></div></footer>
+          </section>
+        </div>
+      )}
 
       {selected && form && (
         <div className="central-admin-overlay" onMouseDown={e => { if (e.target === e.currentTarget) closeEditor() }}>
