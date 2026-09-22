@@ -988,3 +988,916 @@ h1, h2, h3 { font-family: var(--font-display); }
 
   .feature-card, .course-card { padding: 24px; }
 }
+
+/* =========================================================
+   AB ACADEMY — REFINAMENTO UX/UI 2026
+   Direção: language-school + premium education + SaaS
+   ========================================================= */
+
+.home{
+  --home-blue:#2457d6;
+  --home-blue-dark:#163b9c;
+  --home-navy:#102044;
+  --home-muted:#60708d;
+  --home-line:#e7ecf4;
+  --home-soft:#f5f8fc;
+  --home-radius:22px;
+  background:#fff;
+  color:var(--home-navy);
+}
+
+.home .container{
+  width:min(1180px,calc(100% - 48px));
+}
+
+/* Header: navegação mais limpa e orientada à conversão */
+.home .header{
+  background:rgba(255,255,255,.88);
+  border-bottom:1px solid rgba(16,32,68,.07);
+  box-shadow:0 4px 24px rgba(16,32,68,.035);
+}
+
+.home .header-container{
+  min-height:78px;
+}
+
+.home .logo img{
+  height:44px;
+  max-width:166px;
+}
+
+.home .navigation{
+  gap:26px;
+  margin-left:auto;
+}
+
+.home .navigation a{
+  font-size:13.5px;
+  font-weight:650;
+  color:#52617b;
+}
+
+.home .navigation a::after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-8px;
+  height:2px;
+  border-radius:999px;
+  background:var(--home-blue);
+  transform:scaleX(0);
+  transform-origin:center;
+  transition:transform .2s ease;
+}
+
+.home .navigation a:hover::after{
+  transform:scaleX(1);
+}
+
+.home .header-actions{
+  gap:8px;
+}
+
+.home .header-button{
+  min-height:42px;
+  padding:0 15px;
+  border-radius:11px;
+  font-size:12.5px;
+}
+
+.home .header-actions .header-button:first-child{
+  background:transparent;
+  color:var(--home-blue);
+  border:1px solid #d6e0f2;
+  box-shadow:none;
+}
+
+.home .header-actions .header-button:nth-child(2){
+  background:var(--home-blue);
+  border-color:var(--home-blue);
+  box-shadow:0 8px 20px rgba(36,87,214,.18);
+}
+
+.home .teacher-access-button{
+  background:#fff;
+  color:var(--home-navy);
+  border-color:#d6e0f2;
+}
+
+.home .teacher-access-button:hover{
+  background:#f4f7fc;
+  color:var(--home-blue);
+  border-color:#bfcde7;
+}
+
+/* Hero: menos "cartão genérico", mais impacto de escola premium */
+.home .hero{
+  min-height:680px;
+  background:
+    radial-gradient(circle at 78% 28%,rgba(71,126,255,.13),transparent 31%),
+    linear-gradient(180deg,#fff 0%,#f9fbff 100%);
+}
+
+.home .hero::before{
+  opacity:.32;
+  background-size:72px 72px;
+  mask-image:radial-gradient(ellipse 65% 65% at 78% 42%,black,transparent 78%);
+}
+
+.home .hero-container{
+  grid-template-columns:minmax(0,1.03fr) minmax(390px,.97fr);
+  gap:72px;
+  padding-top:88px;
+  padding-bottom:88px;
+}
+
+.home .hero-content{
+  max-width:650px;
+}
+
+.home .hero .section-label{
+  margin-bottom:24px;
+  padding:8px 13px;
+  border-color:#d9e5fb;
+  background:#eef4ff;
+  color:var(--home-blue);
+  font-size:11px;
+  font-weight:750;
+  letter-spacing:.04em;
+  text-transform:uppercase;
+}
+
+.home .hero h1{
+  max-width:650px;
+  font-size:clamp(43px,5vw,66px);
+  line-height:1.055;
+  letter-spacing:-.045em;
+  font-weight:800;
+}
+
+.home .hero h1 span{
+  background:linear-gradient(90deg,#2457d6,#477ff2);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+
+.home .hero-content > p{
+  max-width:590px;
+  margin-top:26px;
+  font-size:17px;
+  line-height:1.78;
+  color:#5d6d88;
+}
+
+.home .hero-actions{
+  gap:12px;
+  margin-top:30px;
+}
+
+.home .hero-actions .btn{
+  min-height:52px;
+  border-radius:12px;
+  padding:0 23px;
+}
+
+.home .hero-actions .btn-primary{
+  box-shadow:0 14px 30px rgba(36,87,214,.22);
+}
+
+.home .hero-actions .btn-outline{
+  background:#fff;
+  border:1px solid #d8e1ef;
+  color:var(--home-navy);
+}
+
+.home .hero-actions .btn-outline:hover{
+  border-color:#b8c9e7;
+  background:#f7f9fd;
+}
+
+.home .hero-benefits{
+  gap:10px 22px;
+  margin-top:26px;
+}
+
+.home .hero-benefits div{
+  gap:7px;
+  color:#63718a;
+  font-size:12.5px;
+  font-weight:600;
+}
+
+.home .hero-benefits svg{
+  color:#2b9a79;
+}
+
+/* Hero visual */
+.home .hero-visual{
+  position:relative;
+  padding:10px 12px 22px;
+}
+
+.home .hero-visual::before,
+.home .hero-visual::after{
+  content:'';
+  position:absolute;
+  border-radius:28px;
+  pointer-events:none;
+}
+
+.home .hero-visual::before{
+  inset:30px -5px 0 35px;
+  background:linear-gradient(135deg,#dfeaff,#f4f8ff);
+  transform:rotate(2.5deg);
+}
+
+.home .hero-visual::after{
+  width:110px;
+  height:110px;
+  right:-18px;
+  top:-18px;
+  border:1px solid #cfe0ff;
+  background:rgba(255,255,255,.45);
+  box-shadow:0 15px 35px rgba(36,87,214,.08);
+}
+
+.home .hero-card{
+  position:relative;
+  z-index:2;
+  min-height:500px;
+  padding:34px;
+  border:1px solid rgba(255,255,255,.8);
+  border-radius:26px;
+  background:linear-gradient(150deg,#173d9f 0%,#2457d6 58%,#477ff2 100%);
+  box-shadow:0 30px 70px rgba(21,55,139,.25);
+  overflow:hidden;
+}
+
+.home .hero-card::before{
+  content:'';
+  position:absolute;
+  width:310px;
+  height:310px;
+  right:-110px;
+  top:-120px;
+  border-radius:50%;
+  background:rgba(255,255,255,.10);
+}
+
+.home .hero-card::after{
+  content:'';
+  position:absolute;
+  width:220px;
+  height:220px;
+  left:-100px;
+  bottom:-120px;
+  border-radius:50%;
+  border:1px solid rgba(255,255,255,.15);
+}
+
+.home .hero-card-brand{
+  position:relative;
+  z-index:2;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  min-height:38px;
+}
+
+.home .hero-card-brand img{
+  width:auto;
+  height:34px;
+  max-width:135px;
+  object-fit:contain;
+  filter:brightness(0) invert(1);
+}
+
+.home .hero-card-heading{
+  position:relative;
+  z-index:2;
+  margin-top:38px;
+  color:#fff;
+}
+
+.home .hero-card-heading span{
+  display:block;
+  font-size:10px;
+  font-weight:800;
+  letter-spacing:.14em;
+  opacity:.7;
+}
+
+.home .hero-card-heading h2{
+  margin:8px 0 0;
+  font-size:clamp(34px,4vw,48px);
+  line-height:1.02;
+  letter-spacing:-.04em;
+  font-weight:800;
+}
+
+.home .hero-card-heading p{
+  max-width:330px;
+  margin-top:16px;
+  color:rgba(255,255,255,.76);
+  font-size:13px;
+  line-height:1.65;
+}
+
+.home .language-options{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:34px;
+}
+
+.home .language-option{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-width:0;
+  padding:14px;
+  border:1px solid rgba(255,255,255,.16);
+  border-radius:15px;
+  background:rgba(255,255,255,.10);
+  color:#fff;
+  backdrop-filter:blur(8px);
+  transition:transform .2s ease,background .2s ease,border-color .2s ease;
+}
+
+.home .language-option:hover{
+  transform:translateY(-3px);
+  background:rgba(255,255,255,.16);
+  border-color:rgba(255,255,255,.3);
+}
+
+.home .language-flag{
+  width:38px;
+  height:38px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 38px;
+  border-radius:11px;
+  background:#fff;
+  font-size:20px;
+}
+
+.home .language-info{
+  display:flex;
+  flex-direction:column;
+  min-width:0;
+  flex:1;
+}
+
+.home .language-info strong{
+  font-size:13px;
+  font-weight:750;
+}
+
+.home .language-info span{
+  margin-top:2px;
+  color:rgba(255,255,255,.62);
+  font-size:10px;
+}
+
+.home .language-option > svg{
+  opacity:.7;
+}
+
+.home .hero-card-footer{
+  position:absolute;
+  z-index:2;
+  left:34px;
+  right:34px;
+  bottom:30px;
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:12px;
+  padding-top:20px;
+  border-top:1px solid rgba(255,255,255,.16);
+}
+
+.home .hero-card-footer div{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.home .hero-card-footer strong{
+  color:#fff;
+  font-size:14px;
+  font-weight:800;
+}
+
+.home .hero-card-footer span{
+  color:rgba(255,255,255,.58);
+  font-size:9px;
+  font-weight:650;
+  text-transform:uppercase;
+  letter-spacing:.05em;
+}
+
+/* Seções: ritmo visual de plataformas educacionais modernas */
+.home .section{
+  padding:112px 0;
+}
+
+.home .section-header{
+  max-width:720px;
+  margin:0 auto 58px;
+  text-align:center;
+}
+
+.home .section-header .section-label{
+  margin-bottom:8px;
+}
+
+.home .section-header .section-description{
+  margin-left:auto;
+  margin-right:auto;
+}
+
+.home .section-label{
+  border-color:#dce6f6;
+  background:#f1f5fb;
+  color:#315fc9;
+  font-size:10.5px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.home .section-title{
+  font-size:clamp(31px,3.7vw,48px);
+  line-height:1.08;
+  letter-spacing:-.035em;
+  font-weight:800;
+}
+
+.home .section-description{
+  color:#64738d;
+  font-size:15.5px;
+  line-height:1.78;
+}
+
+/* Sobre */
+.home .about-section{
+  background:#fff;
+}
+
+.home .about-grid{
+  gap:90px;
+}
+
+.home .about-content{
+  max-width:600px;
+}
+
+.home .about-content .btn{
+  margin-top:12px;
+}
+
+.home .about-highlight{
+  border-radius:26px;
+  background:
+    radial-gradient(circle at 85% 15%,rgba(89,143,255,.25),transparent 30%),
+    linear-gradient(145deg,#102b73,#2457d6);
+  box-shadow:0 24px 55px rgba(24,59,143,.18);
+}
+
+.home .about-stats{
+  border-top-color:rgba(255,255,255,.16);
+}
+
+.home .about-stats strong,
+.home .about-highlight-content strong{
+  color:#fff;
+}
+
+.home .about-highlight-content p{
+  color:rgba(255,255,255,.72);
+}
+
+/* Cards de benefícios */
+.home .about-features{
+  margin-top:72px;
+  gap:16px;
+}
+
+.home .feature-card{
+  padding:28px;
+  border:1px solid #e7edf6;
+  border-radius:18px;
+  box-shadow:none;
+  background:#fff;
+}
+
+.home .feature-card:hover{
+  transform:translateY(-5px);
+  border-color:#c9d8ef;
+  box-shadow:0 18px 38px rgba(16,32,68,.08);
+}
+
+.home .feature-icon{
+  width:46px;
+  height:46px;
+  margin-bottom:18px;
+  border-radius:12px;
+  background:#eef4ff;
+  color:var(--home-blue);
+}
+
+.home .feature-card h3{
+  font-size:17px;
+}
+
+.home .feature-card p{
+  font-size:13.5px;
+  line-height:1.7;
+}
+
+/* Cursos: hierarquia mais clara e comparação rápida */
+.home .courses-section{
+  background:#f6f8fc;
+  border-top:1px solid #edf1f7;
+  border-bottom:1px solid #edf1f7;
+}
+
+.home .courses-grid{
+  gap:18px;
+}
+
+.home .course-card{
+  padding:30px;
+  border:1px solid #e3e9f2;
+  border-radius:20px;
+  box-shadow:0 8px 28px rgba(16,32,68,.035);
+  background:#fff;
+}
+
+.home .course-card:hover{
+  transform:translateY(-6px);
+  border-color:#c7d6ef;
+  box-shadow:0 22px 45px rgba(16,32,68,.09);
+}
+
+.home .course-card-featured{
+  border:2px solid #3b6fe0;
+  box-shadow:0 20px 45px rgba(36,87,214,.12);
+}
+
+.home .course-card-featured::before{
+  top:18px;
+  right:-34px;
+  background:#2457d6;
+  font-size:9px;
+}
+
+.home .course-tag{
+  background:#edf4ff;
+  color:#315fc9;
+}
+
+.home .course-target{
+  background:#f7f9fc;
+  border:1px solid #edf1f6;
+}
+
+.home .course-price-option{
+  background:#f8fafc;
+  border-color:#e5eaf2;
+}
+
+.home .course-price-option-featured{
+  background:#eef4ff;
+  border-color:#b9ccef;
+}
+
+.home .course-card > a{
+  min-height:44px;
+  justify-content:center;
+  margin-top:20px;
+  padding:0 16px;
+  border-radius:11px;
+  background:#2457d6;
+  color:#fff;
+  font-weight:700;
+}
+
+.home .course-card > a:hover{
+  gap:10px;
+  background:#163b9c;
+}
+
+/* Metodologia: narrativa + prova visual */
+.home .methodology-section{
+  background:#fff;
+}
+
+.home .methodology-header{
+  margin-bottom:58px;
+}
+
+.home .methodology-step{
+  min-height:205px;
+  padding:26px;
+  border:1px solid #e5ebf4;
+  border-radius:18px;
+  background:#fff;
+  box-shadow:0 7px 22px rgba(16,32,68,.025);
+}
+
+.home .methodology-step:hover{
+  border-color:#c9d8ef;
+  box-shadow:0 17px 34px rgba(16,32,68,.07);
+}
+
+.home .methodology-step-icon{
+  background:#eef4ff;
+  color:#2457d6;
+}
+
+.home .methodology-visual{
+  border-radius:25px;
+  background:linear-gradient(150deg,#102b73,#2457d6 60%,#477ff2);
+  box-shadow:0 25px 55px rgba(16,48,126,.2);
+}
+
+/* Área do aluno: tratar como produto digital */
+.home .platform-section{
+  background:#f6f8fc;
+  border-top:1px solid #edf1f7;
+}
+
+.home .platform-window{
+  border:1px solid #e1e8f2;
+  border-radius:22px;
+  box-shadow:0 28px 60px rgba(16,32,68,.11);
+}
+
+.home .platform-window-header{
+  padding:13px 19px;
+  background:#fbfcfe;
+}
+
+.home .platform-dashboard{
+  padding:27px;
+}
+
+.home .platform-progress-card{
+  background:#eef4ff;
+}
+
+.home .platform-dashboard-grid > div{
+  background:#fff;
+  border-color:#e7edf5;
+  transition:transform .18s ease,box-shadow .18s ease;
+}
+
+.home .platform-dashboard-grid > div:hover{
+  transform:translateY(-2px);
+  box-shadow:0 8px 20px rgba(16,32,68,.06);
+}
+
+/* CTA final: uma única decisão clara */
+.home .cta-section{
+  padding:96px 0 112px;
+  background:#fff;
+}
+
+.home .cta-container{
+  padding:58px 62px;
+  border-radius:26px;
+  background:
+    radial-gradient(circle at 88% 10%,rgba(111,163,255,.3),transparent 28%),
+    linear-gradient(120deg,#163b9c,#2457d6 65%,#356fe8);
+  box-shadow:0 28px 65px rgba(28,67,155,.2);
+}
+
+.home .cta-content h2{
+  letter-spacing:-.035em;
+}
+
+.home .cta-actions .btn-secondary{
+  min-height:50px;
+  border:0;
+  box-shadow:0 10px 25px rgba(10,29,76,.16);
+}
+
+.home .cta-contact-link{
+  font-size:12.5px;
+}
+
+/* Footer mais editorial e limpo */
+.home .footer{
+  padding-top:70px;
+  background:#fff;
+}
+
+.home .footer-container{
+  padding-bottom:45px;
+}
+
+.home .footer-links{
+  gap:24px;
+}
+
+.home .footer-links a{
+  font-size:13px;
+  font-weight:600;
+}
+
+.home .footer-bottom-inner{
+  margin-left:0;
+  margin-right:0;
+  padding:22px max(24px,calc((100vw - 1180px)/2)) 28px;
+  border-top:1px solid #edf1f6;
+  font-size:11.5px;
+}
+
+/* =========================================================
+   RESPONSIVO — prioridade: clareza e conversão no mobile
+   ========================================================= */
+
+@media (max-width:1000px){
+  .home .container{
+    width:min(100% - 40px,760px);
+  }
+
+  .home .hero-container{
+    gap:50px;
+    padding-top:70px;
+    padding-bottom:70px;
+  }
+
+  .home .hero{
+    min-height:auto;
+  }
+
+  .home .navigation{
+    display:none;
+  }
+
+  .home .header-actions{
+    margin-left:auto;
+  }
+
+  .home .about-grid{
+    gap:55px;
+  }
+}
+
+@media (max-width:700px){
+  .home .container{
+    width:calc(100% - 32px);
+  }
+
+  .home .header-container{
+    min-height:68px;
+    gap:8px;
+  }
+
+  .home .logo img{
+    height:37px;
+    max-width:135px;
+  }
+
+  .home .header-actions{
+    gap:6px;
+  }
+
+  .home .header-button{
+    min-height:38px;
+    padding:0 10px;
+    font-size:10.5px;
+  }
+
+  .home .header-actions .header-button:first-child{
+    display:none;
+  }
+
+  .home .hero-container{
+    padding-top:58px;
+    padding-bottom:58px;
+    gap:42px;
+  }
+
+  .home .hero h1{
+    font-size:clamp(38px,11vw,52px);
+  }
+
+  .home .hero-content > p{
+    font-size:15px;
+    line-height:1.7;
+  }
+
+  .home .hero-actions{
+    flex-direction:column;
+  }
+
+  .home .hero-actions .btn{
+    width:100%;
+  }
+
+  .home .hero-benefits{
+    flex-direction:column;
+    align-items:flex-start;
+    margin-left:auto;
+    margin-right:auto;
+    width:max-content;
+    max-width:100%;
+  }
+
+  .home .hero-card{
+    min-height:470px;
+    padding:28px;
+  }
+
+  .home .language-options{
+    grid-template-columns:1fr;
+    gap:9px;
+    margin-top:28px;
+  }
+
+  .home .hero-card-footer{
+    left:28px;
+    right:28px;
+    bottom:25px;
+  }
+
+  .home .hero-card-footer strong{
+    font-size:12px;
+  }
+
+  .home .section{
+    padding:82px 0;
+  }
+
+  .home .section-header{
+    margin-bottom:40px;
+  }
+
+  .home .section-title{
+    font-size:31px;
+  }
+
+  .home .about-features{
+    margin-top:50px;
+  }
+
+  .home .cta-section{
+    padding:70px 0 82px;
+  }
+
+  .home .cta-container{
+    padding:40px 28px;
+  }
+
+  .home .cta-content h2{
+    font-size:34px;
+  }
+
+  .home .footer-bottom-inner{
+    padding-left:16px;
+    padding-right:16px;
+  }
+}
+
+@media (max-width:480px){
+  .home .teacher-access-button{
+    display:none;
+  }
+
+  .home .header-actions .header-button:nth-child(2){
+    min-width:100px;
+  }
+
+  .home .hero-card{
+    min-height:500px;
+    padding:24px;
+  }
+
+  .home .hero-card-heading{
+    margin-top:28px;
+  }
+
+  .home .hero-card-footer{
+    grid-template-columns:repeat(2,1fr);
+  }
+
+  .home .hero-card-footer div:last-child{
+    grid-column:1/-1;
+  }
+
+  .home .course-card{
+    padding:24px;
+  }
+
+  .home .methodology-visual{
+    min-height:390px;
+  }
+}
