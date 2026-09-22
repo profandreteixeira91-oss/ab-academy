@@ -207,6 +207,13 @@ function Home() {
             >
               Área do aluno
             </a>
+
+            <a
+              href="/professor"
+              className="btn btn-outline header-button teacher-access-button"
+            >
+              Portal do professor
+            </a>
           </div>
         </div>
       </header>
