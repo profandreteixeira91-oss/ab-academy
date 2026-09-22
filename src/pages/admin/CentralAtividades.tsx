@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Archive, CheckCircle2, Eye, Filter, Loader2, Pencil, RefreshCw, Save, Sparkles, WandSparkles, X } from 'lucide-react'
+import { Archive, CheckCircle2, Eye, Filter, Loader2, Pencil, RefreshCw, Save, Sparkles, WandSparkles, X, CheckSquare, Plus, Square, UploadCloud } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 type Activity = {
@@ -48,7 +48,10 @@ export default function CentralAtividadesAdmin() {
   const [jsonText, setJsonText] = useState('')
   const [generatorOpen, setGeneratorOpen] = useState(false)
   const [generating, setGenerating] = useState(false)
-  const [generator, setGenerator] = useState({ idioma: 'ingles', nivel: 'iniciante', categoria: 'vocabulario', tipo_exercicio: 'multipla_escolha', quantidade: 5 })
+  const [generationProgress, setGenerationProgress] = useState<{ current: number; total: number; bucket: string } | null>(null)
+  const [generatorMode, setGeneratorMode] = useState<'lote' | 'meta' | 'biblioteca'>('meta')
+  const [generator, setGenerator] = useState({ idioma: 'ingles', nivel: 'iniciante', categoria: 'vocabulario', tipo_exercicio: 'multipla_escolha', quantidade: 10 })
+  const [selectedIds, setSelectedIds] = useState<string[]>([])
 
   async function load() {
     setLoading(true)
@@ -87,21 +90,146 @@ export default function CentralAtividadesAdmin() {
     ai: activities.filter(a => a.origem === 'ia').length,
   }), [activities])
 
+  async function invokeGeneration(payload: typeof generator) {
+    const { data: { session } } = await supabase.auth.getSession()
+    if (!session?.access_token) throw new Error('Sua sessão administrativa expirou. Faça login novamente.')
+    const { data, error } = await supabase.functions.invoke('gerar-central-atividades', {
+      body: payload,
+      headers: { Authorization: 'Bearer ' + session.access_token },
+    })
+    if (error) throw error
+    if (data?.error) throw new Error(data.error)
+    return Number(data?.generated || 0)
+  }
+
   async function generateActivities() {
     setGenerating(true)
+    setGenerationProgress(null)
     try {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session?.access_token) throw new Error('Sua sessão administrativa expirou. Faça login novamente.')
-      const { data, error } = await supabase.functions.invoke('gerar-central-atividades', { body: generator, headers: { Authorization: 'Bearer ' + session.access_token } })
-      if (error) throw error
-      if (data?.error) throw new Error(data.error)
-      window.alert(`${data?.generated || 0} atividade(s) gerada(s) como rascunho.`)
+      if (generatorMode === 'lote') {
+        const generated = await invokeGeneration(generator)
+        window.alert(`${generated} atividade(s) gerada(s) como rascunho.`)
+      } else {
+        const buckets = generatorMode === 'meta'
+          ? [{ idioma: generator.idioma, nivel: generator.nivel }]
+          : ['ingles','alemao'].flatMap(idioma => LEVELS.map(([nivel]) => ({ idioma, nivel })))
+
+        let totalGenerated = 0
+        let totalTarget = 0
+        for (const bucket of buckets) {
+          const { count } = await supabase
+            .from('central_atividades')
+            .select('id', { count: 'exact', head: true })
+            .eq('idioma', bucket.idioma)
+            .eq('nivel', bucket.nivel)
+            .neq('status', 'arquivada')
+
+          const existing = count || 0
+          const missing = Math.max(0, 100 - existing)
+          totalTarget += missing
+        }
+
+        if (totalTarget === 0) {
+          window.alert('A biblioteca já atingiu a meta de 100 atividades em todos os blocos selecionados.')
+          return
+        }
+
+        let completed = 0
+        for (const bucket of buckets) {
+          const { count } = await supabase
+            .from('central_atividades')
+            .select('id', { count: 'exact', head: true })
+            .eq('idioma', bucket.idioma)
+            .eq('nivel', bucket.nivel)
+            .neq('status', 'arquivada')
+
+          let remaining = Math.max(0, 100 - (count || 0))
+          let batchIndex = 0
+          while (remaining > 0) {
+            const category = CATEGORIES.filter(x => x[0] !== 'todas')[batchIndex % 7][0]
+            const type = TYPES[batchIndex % TYPES.length][0]
+            const quantity = Math.min(20, remaining)
+            setGenerationProgress({
+              current: completed,
+              total: totalTarget,
+              bucket: `${bucket.idioma === 'ingles' ? 'Inglês' : 'Alemão'} · ${label(LEVELS, bucket.nivel)}`,
+            })
+            const generated = await invokeGeneration({
+              idioma: bucket.idioma,
+              nivel: bucket.nivel,
+              categoria,
+              tipo_exercicio: type,
+              quantidade,
+            })
+            if (generated <= 0) throw new Error('A IA não gerou novas atividades neste lote.')
+            totalGenerated += generated
+            completed += generated
+            remaining -= generated
+            batchIndex += 1
+            setGenerationProgress({
+              current: Math.min(completed, totalTarget),
+              total: totalTarget,
+              bucket: `${bucket.idioma === 'ingles' ? 'Inglês' : 'Alemão'} · ${label(LEVELS, bucket.nivel)}`,
+            })
+          }
+        }
+
+        window.alert(`${totalGenerated} atividade(s) gerada(s) como rascunho. A biblioteca foi preenchida até a meta dos blocos selecionados.`)
+      }
       setGeneratorOpen(false)
       await load()
     } catch (error) {
       console.error(error)
       window.alert(error instanceof Error ? error.message : 'Não foi possível gerar as atividades.')
-    } finally { setGenerating(false) }
+    } finally {
+      setGenerating(false)
+      setGenerationProgress(null)
+    }
+  }
+
+  function toggleSelection(id: string) {
+    setSelectedIds(current => current.includes(id) ? current.filter(item => item !== id) : [...current, id])
+  }
+
+  function toggleVisibleSelection() {
+    const visibleDraftIds = filtered.filter(a => a.status === 'rascunho').map(a => a.id)
+    if (!visibleDraftIds.length) return
+    setSelectedIds(current => {
+      const allSelected = visibleDraftIds.every(id => current.includes(id))
+      return allSelected
+        ? current.filter(id => !visibleDraftIds.includes(id))
+        : Array.from(new Set([...current, ...visibleDraftIds]))
+    })
+  }
+
+  async function publishIds(ids: string[]) {
+    const uniqueIds = Array.from(new Set(ids))
+    if (!uniqueIds.length) return
+    setActionLoading('bulk')
+    const { error } = await supabase
+      .from('central_atividades')
+      .update({ status: 'publicada' })
+      .in('id', uniqueIds)
+      .eq('status', 'rascunho')
+
+    if (error) {
+      console.error(error)
+      window.alert('Não foi possível publicar as atividades selecionadas.')
+    } else {
+      setSelectedIds([])
+      await load()
+    }
+    setActionLoading(null)
+  }
+
+  async function publishAllVisibleDrafts() {
+    const ids = filtered.filter(a => a.status === 'rascunho').map(a => a.id)
+    if (!ids.length) {
+      window.alert('Não há rascunhos no filtro atual.')
+      return
+    }
+    if (!window.confirm(`Publicar ${ids.length} rascunho(s) de uma vez?`)) return
+    await publishIds(ids)
   }
 
   const openEditor = (activity: Activity) => {
@@ -203,7 +331,8 @@ export default function CentralAtividadesAdmin() {
           <p>Gerencie, revise e publique atividades por idioma, nível e categoria.</p>
         </div>
         <div className="central-admin-intro-actions">
-          <button type="button" className="central-admin-generate" onClick={() => setGeneratorOpen(true)}><WandSparkles size={17}/>Gerar com IA</button>
+          <button type="button" className="central-admin-generate" onClick={() => { setGeneratorMode('meta'); setGeneratorOpen(true) }}><WandSparkles size={17}/>Gerar com IA</button>
+          <button type="button" className="central-admin-auto" onClick={() => { setGeneratorMode('biblioteca'); setGeneratorOpen(true) }}><Sparkles size={17}/>Completar biblioteca</button>
           <button type="button" className="central-admin-refresh" onClick={() => void load()} disabled={loading}><RefreshCw size={17}/>Atualizar</button>
         </div>
       </div>
@@ -216,7 +345,7 @@ export default function CentralAtividadesAdmin() {
       </div>
 
       <div className="central-admin-goals">
-        <div><strong>Meta da biblioteca</strong><span>100 atividades para cada combinação de idioma + nível.</span></div>
+        <div className="central-admin-goals-head"><div><strong>Meta da biblioteca</strong><span>100 atividades para cada combinação de idioma + nível.</span></div><div className="central-admin-goal-actions"><button type="button" onClick={() => { setGeneratorMode('biblioteca'); setGeneratorOpen(true) }}><Sparkles size={15}/>Completar tudo</button><button type="button" onClick={() => void publishAllVisibleDrafts()} disabled={actionLoading === 'bulk'}><UploadCloud size={15}/>Publicar rascunhos</button></div></div>
         <div className="central-admin-goal-grid">
           {['ingles','alemao'].flatMap(lang => LEVELS.map(([value, name]) => (
             <div key={lang + value}>
@@ -236,13 +365,21 @@ export default function CentralAtividadesAdmin() {
       </div>
 
       <div className="central-admin-list">
-        <div className="central-admin-list-head"><span>{filtered.length} atividade(s)</span><span><Filter size={15}/> Filtros aplicados</span></div>
+        <div className="central-admin-list-head">
+          <span>{filtered.length} atividade(s)</span>
+          <div className="central-admin-list-head-actions">
+            {filtered.some(a => a.status === 'rascunho') && <button type="button" onClick={toggleVisibleSelection}><CheckSquare size={15}/>Selecionar rascunhos</button>}
+            {selectedIds.length > 0 && <button type="button" className="central-admin-bulk-publish" onClick={() => void publishIds(selectedIds)} disabled={actionLoading === 'bulk'}>{actionLoading === 'bulk' ? <Loader2 size={15} className="central-admin-spin"/> : <UploadCloud size={15}/>}Publicar selecionadas ({selectedIds.length})</button>}
+            <span><Filter size={15}/> Filtros aplicados</span>
+          </div>
+        </div>
         {loading ? (
           <div className="central-admin-empty"><Loader2 size={25} className="central-admin-spin"/>Carregando biblioteca...</div>
         ) : filtered.length === 0 ? (
           <div className="central-admin-empty"><Sparkles size={25}/><strong>Nenhuma atividade encontrada</strong><span>As atividades geradas pela IA aparecerão aqui como rascunhos.</span></div>
         ) : filtered.map(a => (
-          <article key={a.id} className="central-admin-row">
+          <article key={a.id} className={`central-admin-row ${selectedIds.includes(a.id) ? 'selected' : ''}`}>
+            {a.status === 'rascunho' && <button type="button" className="central-admin-select" onClick={() => toggleSelection(a.id)} aria-label={selectedIds.includes(a.id) ? 'Desmarcar atividade' : 'Selecionar atividade'}>{selectedIds.includes(a.id) ? <CheckSquare size={18}/> : <Square size={18}/>}</button>}
             <button type="button" className="central-admin-row-open" onClick={() => openEditor(a)}>
               <div className="central-admin-row-main">
                 <div className="central-admin-tags">
@@ -270,17 +407,33 @@ export default function CentralAtividadesAdmin() {
           <section className="central-admin-modal central-admin-generator-modal">
             <header className="central-admin-modal-head"><div><span>GERAÇÃO AUTOMÁTICA</span><h3>Gerar atividades com IA</h3></div><button type="button" onClick={() => setGeneratorOpen(false)} disabled={generating}><X size={20}/></button></header>
             <div className="central-admin-generator">
-              <p>A IA criará as atividades diretamente na biblioteca como <strong>rascunhos</strong>. Você poderá revisar, editar e publicar depois.</p>
-              <div className="central-admin-form-grid">
-                <label>Idioma<select value={generator.idioma} onChange={e => setGenerator(g => ({...g, idioma:e.target.value}))}><option value="ingles">Inglês</option><option value="alemao">Alemão</option></select></label>
-                <label>Nível<select value={generator.nivel} onChange={e => setGenerator(g => ({...g, nivel:e.target.value}))}>{LEVELS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-                <label>Categoria<select value={generator.categoria} onChange={e => setGenerator(g => ({...g, categoria:e.target.value}))}>{CATEGORIES.filter(x => x[0] !== 'todas').map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-                <label>Tipo de exercício<select value={generator.tipo_exercicio} onChange={e => setGenerator(g => ({...g, tipo_exercicio:e.target.value}))}>{TYPES.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
-                <label>Quantidade<select value={generator.quantidade} onChange={e => setGenerator(g => ({...g, quantidade:Number(e.target.value)}))}>{[1,5,10,15,20].map(v => <option key={v} value={v}>{v} atividades</option>)}</select></label>
+              <div className="central-admin-generator-mode">
+                <button type="button" className={generatorMode === 'meta' ? 'active' : ''} onClick={() => setGeneratorMode('meta')} disabled={generating}><Sparkles size={16}/>Completar nível</button>
+                <button type="button" className={generatorMode === 'biblioteca' ? 'active' : ''} onClick={() => setGeneratorMode('biblioteca')} disabled={generating}><WandSparkles size={16}/>Completar biblioteca</button>
+                <button type="button" className={generatorMode === 'lote' ? 'active' : ''} onClick={() => setGeneratorMode('lote')} disabled={generating}><Plus size={16}/>Gerar lote</button>
               </div>
-              <div className="central-admin-generator-note"><Sparkles size={17}/><span>As atividades são geradas com conteúdo, instruções, respostas e explicações estruturadas para o motor da Central.</span></div>
-            </div>
-            <footer className="central-admin-modal-foot"><span>Máximo de 20 por geração</span><div><button type="button" className="central-admin-secondary" onClick={() => setGeneratorOpen(false)} disabled={generating}>Cancelar</button><button type="button" className="central-admin-publish" onClick={() => void generateActivities()} disabled={generating}>{generating ? <Loader2 size={16} className="central-admin-spin"/> : <WandSparkles size={16}/>} {generating ? 'Gerando...' : 'Gerar atividades'}</button></div></footer>
+
+              <div className="central-admin-generator-hero">
+                <div className="central-admin-generator-icon"><WandSparkles size={22}/></div>
+                <div>
+                  <strong>{generatorMode === 'biblioteca' ? 'Preenchimento automático da biblioteca' : generatorMode === 'meta' ? 'Preencher automaticamente até 100' : 'Gerar um lote personalizado'}</strong>
+                  <p>{generatorMode === 'biblioteca' ? 'O sistema identifica automaticamente os blocos abaixo da meta e gera lotes de até 20 atividades, alternando categorias e tipos para manter a biblioteca diversificada.' : generatorMode === 'meta' ? 'Escolha idioma e nível. A IA calcula quantas atividades faltam para chegar a 100 e gera os lotes automaticamente.' : 'Use um lote pontual quando quiser produzir uma quantidade específica para uma categoria.'}</p>
+                </div>
+              </div>
+
+              <div className="central-admin-form-grid">
+                <label>Idioma<select value={generator.idioma} onChange={e => setGenerator(g => ({...g, idioma:e.target.value}))} disabled={generatorMode === 'biblioteca' || generating}><option value="ingles">Inglês</option><option value="alemao">Alemão</option></select></label>
+                <label>Nível<select value={generator.nivel} onChange={e => setGenerator(g => ({...g, nivel:e.target.value}))} disabled={generatorMode === 'biblioteca' || generating}>{LEVELS.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+                <label>Categoria<select value={generator.categoria} onChange={e => setGenerator(g => ({...g, categoria:e.target.value}))} disabled={generatorMode !== 'lote' || generating}>{CATEGORIES.filter(x => x[0] !== 'todas').map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+                <label>Tipo de exercício<select value={generator.tipo_exercicio} onChange={e => setGenerator(g => ({...g, tipo_exercicio:e.target.value}))} disabled={generatorMode !== 'lote' || generating}>{TYPES.map(([v,l]) => <option key={v} value={v}>{l}</option>)}</select></label>
+                {generatorMode === 'lote' && <label>Quantidade<select value={generator.quantidade} onChange={e => setGenerator(g => ({...g, quantidade:Number(e.target.value)}))} disabled={generating}>{[5,10,15,20].map(v => <option key={v} value={v}>{v} atividades</option>)}</select></label>}
+              </div>
+
+              {generationProgress && <div className="central-admin-generation-progress"><div className="central-admin-generation-progress-top"><span>{generationProgress.bucket}</span><strong>{generationProgress.current} / {generationProgress.total}</strong></div><div className="central-admin-progress-track"><span style={{ width: `${generationProgress.total ? Math.min(100, generationProgress.current / generationProgress.total * 100) : 0}%` }}/></div><small>Gerando atividades automaticamente. Não feche esta janela.</small></div>}
+
+              <div className="central-admin-generator-note"><Sparkles size={17}/><span>As novas atividades entram como <strong>rascunhos</strong>. A geração automática nunca publica conteúdo sem sua revisão.</span></div>
+            </div>            </div>
+            <footer className="central-admin-modal-foot"><span>{generatorMode === 'biblioteca' ? 'Até 100 por bloco · geração automática' : generatorMode === 'meta' ? 'A quantidade é calculada automaticamente' : 'Máximo de 20 por lote'}</span><div><button type="button" className="central-admin-secondary" onClick={() => setGeneratorOpen(false)} disabled={generating}>Cancelar</button><button type="button" className="central-admin-publish" onClick={() => void generateActivities()} disabled={generating}>{generating ? <Loader2 size={16} className="central-admin-spin"/> : <WandSparkles size={16}/>} {generating ? 'Gerando automaticamente...' : generatorMode === 'biblioteca' ? 'Completar biblioteca' : generatorMode === 'meta' ? 'Completar até 100' : 'Gerar lote'}</button></div></footer>
           </section>
         </div>
       )}
