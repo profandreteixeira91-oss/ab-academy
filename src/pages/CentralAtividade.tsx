@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Loader2, RotateCcw } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3, Loader2, RotateCcw } from 'lucide-react'
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/central-atividade.css'
@@ -67,6 +67,10 @@ function CentralAtividade(){
   const [submitting,setSubmitting]=useState(false)
   const [error,setError]=useState('')
   const [result,setResult]=useState<Result|null>(null)
+  const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'>('idle')
+  const [elapsedSeconds,setElapsedSeconds]=useState(0)
+  const [startedAt,setStartedAt]=useState<number|null>(null)
+  const answersLoadedRef=useRef(false)
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
 
   useEffect(()=>{
@@ -82,14 +86,61 @@ function CentralAtividade(){
       const {data:activityData,error:activityError}=await supabase.from('central_atividades').select('id,idioma,nivel,categoria,tipo_exercicio,titulo,descricao,instrucoes,conteudo,explicacao,dificuldade,tempo_estimado').eq('id',activityId).eq('status','publicada').maybeSingle()
       if(activityError||!activityData){setError('Atividade não encontrada ou indisponível.');setLoading(false);return}
       setActivity({ ...(activityData as Activity), conteudo: normalizeContent((activityData as Activity).conteudo || {}) })
+      const storedStart=window.sessionStorage.getItem(`ab-academy-activity-start-${activityId}`)
+      const start=storedStart ? Number(storedStart) : Date.now()
+      if(!storedStart) window.sessionStorage.setItem(`ab-academy-activity-start-${activityId}`,String(start))
+      setStartedAt(start)
+      setElapsedSeconds(Math.max(0,Math.floor((Date.now()-start)/1000)))
       const {data:responseData}=await supabase.from('central_respostas').select('respostas,pontuacao,concluida').eq('atividade_id',activityId).eq('aluno_id',studentData.id).maybeSingle()
       if(responseData?.respostas)setAnswers(responseData.respostas as Record<string,unknown>)
+      answersLoadedRef.current=true
       if(responseData?.concluida&&typeof responseData.pontuacao==='number')setResult({correct:responseData.pontuacao>=100,score:responseData.pontuacao,message:responseData.pontuacao>=100?'Resposta correta!':'Atividade concluída. Revise a explicação.'})
       setLoading(false)
     }
     void load()
     return()=>{mounted=false}
   },[activityId])
+
+  useEffect(()=>{
+    if(!answersLoadedRef.current||!activity||!student||!user||result)return
+    const timer=window.setTimeout(async()=>{
+      setSaveState('saving')
+      const {error:saveError}=await supabase.from('central_respostas').upsert({
+        atividade_id:activity.id,
+        aluno_id:student.id,
+        respostas:answers,
+        pontuacao:null,
+        concluida:false,
+      },{onConflict:'atividade_id,aluno_id'})
+      if(saveError){
+        console.error(saveError)
+        setSaveState('idle')
+        return
+      }
+      setSaveState('saved')
+    },700)
+    return()=>window.clearTimeout(timer)
+  },[answers,activity,student,user,result])
+
+  useEffect(()=>{
+    if(!startedAt||result)return
+    const tick=window.setInterval(()=>{
+      setElapsedSeconds(Math.max(0,Math.floor((Date.now()-startedAt)/1000)))
+    },1000)
+    return()=>window.clearInterval(tick)
+  },[startedAt,result])
+
+  function formatTime(total:number){
+    const minutes=Math.floor(total/60).toString().padStart(2,'0')
+    const seconds=(total%60).toString().padStart(2,'0')
+    return `${minutes}:${seconds}`
+  }
+
+  function hasAnswer(){
+    const a=answers.answer
+    if(Array.isArray(a)) return a.some(value=>String(value||'').trim()!=='')
+    return String(a??'').trim()!==''
+  }
 
   function isCorrect(){
     if(!activity)return false
@@ -123,12 +174,13 @@ function CentralAtividade(){
 
   async function submit(){
     if(!activity||!student||!user)return
-    setSubmitting(true);setError('')
+    setSubmitting(true);setError('');setSaveState('saving')
     const auto=['multipla_escolha','multipla_resposta','verdadeiro_falso','resposta_curta','lacunas','ordenar','associar'].includes(activity.tipo_exercicio)
     const correct=auto&&isCorrect(),score=auto?(correct?100:0):0
     const {error:saveError}=await supabase.from('central_respostas').upsert({atividade_id:activity.id,aluno_id:student.id,respostas:answers,pontuacao:score,concluida:true},{onConflict:'atividade_id,aluno_id'})
     if(saveError){console.error(saveError);setError('Não foi possível salvar sua resposta. Tente novamente.');setSubmitting(false);return}
     setResult({correct,score,message:auto?(correct?'Muito bem! Você acertou a atividade.':'Resposta registrada. Revise a explicação e tente novamente.'): 'Resposta registrada para análise.'})
+    setSaveState('saved')
     setSubmitting(false)
   }
 
@@ -168,18 +220,50 @@ function CentralAtividade(){
   if(!activity)return <div className="central-activity-page"><div className="central-activity-error"><CircleHelp size={22}/><strong>{error||'Atividade indisponível.'}</strong><a href="/aluno/central">Voltar para a Central</a></div></div>
 
   return <div className="central-activity-page">
-    <header className="central-activity-header"><a href="/aluno/central" className="central-activity-back"><ArrowLeft size={18}/>Central de Atividades</a><img src={logo} alt="AB Academy"/></header>
+    <header className="central-activity-header">
+      <div className="central-activity-header-inner">
+        <a href="/aluno/central" className="central-activity-back"><ArrowLeft size={18}/><span>Central de Atividades</span></a>
+        <img src={logo} alt="AB Academy"/>
+      </div>
+    </header>
     <main className="central-activity-main">
-      <div className="central-activity-breadcrumb">{LANGUAGE_LABELS[activity.idioma]} · {activity.nivel} · {activity.categoria}</div>
-      <section className="central-activity-card">
-        <div className="central-activity-heading"><div><span>ATIVIDADE DE PRÁTICA</span><h1>{activity.titulo}</h1>{activity.descricao&&<p>{activity.descricao}</p>}</div><div className="central-activity-time">{activity.tempo_estimado} min · dificuldade {activity.dificuldade}/5</div></div>
-        {activity.instrucoes&&<div className="central-instructions"><strong>Instruções</strong><p>{activity.instrucoes}</p></div>}
-        {activity.conteudo.text&&<div className="central-exercise-text">{activity.conteudo.text}</div>}
-        {activity.conteudo.question&&<div className="central-question">{activity.conteudo.question}</div>}
-        {renderExercise()}
-        {error&&<div className="central-form-error">{error}</div>}
-        {result?<div className={result.correct?'central-result success':'central-result'}><div>{result.correct?<CheckCircle2 size={23}/>:<CircleHelp size={23}/>}<strong>{result.message}</strong></div><span>Resultado: {result.score}/100</span>{activity.explicacao&&<p>{activity.explicacao}</p>}<button type="button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer</button></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
-      </section>
+      <div className="central-activity-breadcrumb">
+        <a href="/aluno/central">Central</a><span>›</span><span>{LANGUAGE_LABELS[activity.idioma]}</span><span>›</span><span>{activity.nivel}</span>
+      </div>
+      <div className="central-activity-layout">
+        <aside className="central-activity-sidebar">
+          <div className="central-side-brand"><div className="central-side-icon"><CircleHelp size={20}/></div><div><strong>Prática</strong><span>AB Academy</span></div></div>
+          <div className="central-side-divider"/>
+          <div className="central-side-item"><span>Idioma</span><strong>{LANGUAGE_LABELS[activity.idioma]}</strong></div>
+          <div className="central-side-item"><span>Nível</span><strong>{activity.nivel}</strong></div>
+          <div className="central-side-item"><span>Categoria</span><strong>{activity.categoria}</strong></div>
+          <div className="central-side-item"><span>Tempo estimado</span><strong>{activity.tempo_estimado} min</strong></div>
+          <div className="central-side-item"><span>Dificuldade</span><strong>{activity.dificuldade}/5</strong></div>
+          <a href="/aluno/central" className="central-side-back"><ArrowLeft size={16}/>Voltar para a Central</a>
+        </aside>
+
+        <section className="central-activity-card">
+          <div className="central-activity-heading">
+            <div className="central-activity-heading-content">
+              <div className="central-activity-kicker"><span>ATIVIDADE DE PRÁTICA</span><i/><div className="central-live-time"><Clock3 size={14}/>{formatTime(elapsedSeconds)}</div></div>
+              <h1>{activity.titulo}</h1>
+              {activity.descricao&&<p>{activity.descricao}</p>}
+            </div>
+          </div>
+
+          {activity.instrucoes&&<div className="central-instructions"><div className="central-instructions-icon"><CircleHelp size={17}/></div><div><strong>Como fazer</strong><p>{activity.instrucoes}</p></div></div>}
+          {activity.conteudo.text&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{activity.conteudo.text}</p></div>}
+          {activity.conteudo.question&&<div className="central-question"><span>Pergunta</span><strong>{activity.conteudo.question}</strong></div>}
+          <div className="central-progress">
+            <div className="central-progress-top"><span>Progresso da atividade</span><strong>{result ? '100%' : hasAnswer() ? 'Em andamento' : 'Comece quando estiver pronto'}</strong></div>
+            <div className="central-progress-track"><div className={result ? 'central-progress-fill complete' : 'central-progress-fill'} style={{width:result?'100%':hasAnswer()?'55%':'0%'}}/></div>
+          </div>
+          <div className="central-exercise-area">{renderExercise()}</div>
+          {error&&<div className="central-form-error">{error}</div>}
+          {!result&&<div className="central-save-status">{saveState==='saving'?<><Loader2 size={14} className="central-activity-spin"/> Salvando seu progresso...</>:saveState==='saved'?<><CheckCircle2 size={14}/> Progresso salvo</>:<span>Seu progresso será salvo automaticamente.</span>}</div>}
+          {result?<div className={result.correct?'central-result success':'central-result'}><div className="central-result-title">{result.correct?<CheckCircle2 size={23}/>:<CircleHelp size={23}/>}<strong>{result.message}</strong></div><span>Resultado: {result.score}/100</span>{activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}<button type="button" onClick={()=>{setAnswers({});setResult(null)}}><RotateCcw size={17}/>Refazer atividade</button></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
+        </section>
+      </div>
     </main>
   </div>
 }
