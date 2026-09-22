@@ -196,13 +196,35 @@ function CentralAtividade(){
   async function submit(){
     if(!activity||!student||!user)return
     setSubmitting(true);setError('');setSaveState('saving')
+    try {
     const auto=['multipla_escolha','multipla_resposta','verdadeiro_falso','resposta_curta','lacunas','ordenar','associar'].includes(activity.tipo_exercicio)
     const correct=auto&&isCorrect(),score=auto?(correct?100:0):0
-    const {error:saveError}=await supabase.from('central_respostas').upsert({atividade_id:activity.id,aluno_id:student.id,respostas:answers,pontuacao:score,concluida:true},{onConflict:'atividade_id,aluno_id'})
-    if(saveError){console.error(saveError);setError('Não foi possível salvar sua resposta. Tente novamente.');setSubmitting(false);return}
+    const payload={atividade_id:activity.id,aluno_id:student.id,respostas:answers,pontuacao:score,concluida:true}
+    const {data:existingResponse,error:lookupError}=await supabase
+      .from('central_respostas')
+      .select('id')
+      .eq('atividade_id',activity.id)
+      .eq('aluno_id',student.id)
+      .maybeSingle()
+    if(lookupError){console.error('Central resposta lookup:',lookupError);setError(`Não foi possível verificar sua resposta. ${lookupError.message||''}`.trim());setSubmitting(false);return}
+    let saveError:null|{message:string}=null
+    if(existingResponse?.id){
+      const {error:updateError}=await supabase.from('central_respostas').update(payload).eq('id',existingResponse.id)
+      saveError=updateError
+    }else{
+      const {error:insertError}=await supabase.from('central_respostas').insert(payload)
+      saveError=insertError
+    }
+    if(saveError){console.error('Central resposta save:',saveError);setError(`Não foi possível salvar sua resposta. ${saveError.message||''}`.trim());setSubmitting(false);return}
     setResult({correct,score,message:auto?(correct?'Muito bem! Você acertou a atividade.':'Resposta registrada. Revise a explicação e tente novamente.'): 'Resposta registrada para análise.'})
     setSaveState('saved')
-    setSubmitting(false)
+    } catch (e) {
+      console.error(e)
+      setError('Não foi possível salvar sua resposta. Tente novamente.')
+      setSaveState('idle')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   function toggleMultiple(id:string){

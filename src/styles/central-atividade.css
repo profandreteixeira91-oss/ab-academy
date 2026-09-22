@@ -243,3 +243,53 @@
 }
 
 .central-translation-toolbar{display:flex;align-items:center;gap:10px;margin:22px 38px 0}.central-translation-toolbar button{display:inline-flex;align-items:center;gap:7px;border:1px solid #dbe4f0;border-radius:9px;background:#f8fafc;color:#475569;padding:8px 11px;font:inherit;font-size:11px;font-weight:800;cursor:pointer;transition:.18s}.central-translation-toolbar button:hover:not(:disabled){border-color:#93c5fd;background:#eff6ff;color:#2563eb}.central-translation-toolbar button:disabled{opacity:.65;cursor:wait}.central-translation-toolbar span{font-size:11px;color:#b91c1c;font-weight:650}@media(max-width:650px){.central-translation-toolbar{margin-left:20px;margin-right:20px;flex-wrap:wrap}}
+
+/* Refinamento de espaço e leitura */
+.central-activity-main{width:min(1280px,calc(100% - 48px))}
+.central-activity-layout{grid-template-columns:260px minmax(0,1fr);gap:28px}
+.central-activity-sidebar{padding:22px}
+.central-activity-heading{padding:38px 44px 30px}
+.central-activity-heading-content{max-width:none}
+.central-activity-heading h1{max-width:900px;font-size:32px}
+.central-activity-heading p{max-width:850px;font-size:15px}
+.central-instructions{margin:26px 44px 0;padding:17px 19px}
+.central-translation-toolbar{margin:20px 44px 0}
+.central-exercise-text,.central-question{margin-left:44px;margin-right:44px}
+.central-progress{margin-left:44px;margin-right:44px}
+.central-exercise-area{padding:0 44px 38px}
+.central-options{gap:13px;margin-top:20px}
+.central-option{min-height:64px;padding:16px 19px;gap:15px}
+.central-option span{font-size:15px;line-height:1.55}
+.central-answer-input,.central-answer-textarea{font-size:15px}
+.central-order-list,.central-pairs,.central-blanks{gap:13px;margin-top:20px}
+.central-order-item{padding:15px 16px;min-height:58px}
+.central-order-item strong{font-size:14px;line-height:1.55}
+.central-pair{grid-template-columns:minmax(0,1.15fr) minmax(240px,.85fr);padding:15px 16px;gap:18px}
+.central-pair>span{font-size:14px;line-height:1.6}
+.central-pair select{min-height:48px}
+.central-activity-actions{padding:24px 44px}
+.central-result{margin-left:44px;margin-right:44px}
+.central-save-status{margin-left:44px;margin-right:44px}
+
+@media(max-width:1000px){
+  .central-activity-main{width:min(100% - 32px,1180px)}
+  .central-activity-layout{grid-template-columns:220px minmax(0,1fr);gap:18px}
+  .central-activity-heading{padding:30px 30px 24px}
+  .central-instructions,.central-translation-toolbar,.central-exercise-text,.central-question,.central-progress{margin-left:30px;margin-right:30px}
+  .central-exercise-area{padding-left:30px;padding-right:30px}
+  .central-activity-actions{padding-left:30px;padding-right:30px}
+  .central-result,.central-save-status{margin-left:30px;margin-right:30px}
+  .central-pair{grid-template-columns:1fr 1fr}
+}
+
+@media(max-width:650px){
+  .central-activity-main{width:calc(100% - 20px)}
+  .central-activity-heading{padding:24px 20px 21px}
+  .central-activity-heading h1{font-size:24px}
+  .central-instructions,.central-translation-toolbar,.central-exercise-text,.central-question,.central-progress{margin-left:20px;margin-right:20px}
+  .central-exercise-area{padding-left:20px;padding-right:20px}
+  .central-activity-actions{padding-left:20px;padding-right:20px}
+  .central-result,.central-save-status{margin-left:20px;margin-right:20px}
+  .central-option{min-height:58px;padding:14px 15px}
+  .central-option span{font-size:14px}
+}
