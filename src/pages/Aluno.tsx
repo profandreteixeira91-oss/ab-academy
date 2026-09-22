@@ -377,6 +377,9 @@ function Aluno() {
   const [lessons, setLessons] =
     useState<Lesson[]>([])
 
+  const [completedLessons, setCompletedLessons] =
+    useState<Lesson[]>([])
+
   const [
     lessonsLoading,
     setLessonsLoading,
@@ -784,6 +787,58 @@ function Aluno() {
 }
 
 
+  function getPreviousLessonOccurrence(
+  dayOfWeek: number,
+  startTime: string,
+  endTime: string,
+) {
+  const now = new Date()
+
+  const [startHours, startMinutes] = startTime
+    .slice(0, 5)
+    .split(':')
+    .map(Number)
+  const [endHours, endMinutes] = endTime
+    .slice(0, 5)
+    .split(':')
+    .map(Number)
+
+  const currentDay = now.getDay()
+  let daysSince = currentDay - dayOfWeek
+
+  if (daysSince < 0) {
+    daysSince += 7
+  }
+
+  if (
+    daysSince === 0 &&
+    (now.getHours() < endHours ||
+      (now.getHours() === endHours &&
+        now.getMinutes() < endMinutes))
+  ) {
+    daysSince = 7
+  }
+
+  const startAt = new Date(now)
+  startAt.setDate(now.getDate() - daysSince)
+  startAt.setHours(
+    startHours,
+    startMinutes,
+    0,
+    0,
+  )
+
+  const endAt = new Date(startAt)
+  endAt.setHours(
+    endHours,
+    endMinutes,
+    0,
+    0,
+  )
+
+  return { startAt, endAt }
+}
+
   function canEnterLesson(startAt: string, endAt: string) {
   const start = new Date(startAt)
   const end = new Date(endAt)
@@ -987,14 +1042,55 @@ function Aluno() {
       }
     })
 
+    const normalizedCompletedLessons: Lesson[] = (horarios || [])
+      .map((horario) => {
+        const { startAt, endAt } =
+          getPreviousLessonOccurrence(
+            Number(horario.dia_semana),
+            horario.hora_inicio,
+            horario.hora_fim,
+          )
+
+        return {
+          id: horario.id,
+          language:
+            horario.idioma === 'ingles'
+              ? 'Inglês'
+              : 'Alemão',
+          date: startAt.toLocaleDateString('pt-BR'),
+          time: horario.hora_inicio.slice(0, 5),
+          teacher: 'Professor',
+          status: 'realizada' as LessonStatus,
+          meetUrl: horario.meet_url || undefined,
+          meetSpaceName:
+            horario.meet_space_name || undefined,
+          startAt: startAt.toISOString(),
+          endAt: endAt.toISOString(),
+        }
+      })
+      .filter(
+        (lesson) =>
+          new Date(lesson.endAt).getTime() <= Date.now(),
+      )
+      .sort(
+        (a, b) =>
+          new Date(b.startAt).getTime() -
+          new Date(a.startAt).getTime(),
+      )
+
     setLessons(normalizedLessons)
+    setCompletedLessons(
+      normalizedCompletedLessons,
+    )
   } catch (error) {
+    console.error(
     console.error(
       'Erro ao carregar aulas do aluno:',
       error,
     )
 
     setLessons([])
+    setCompletedLessons([])
   } finally {
     setLessonsLoading(false)
   }
@@ -2668,6 +2764,9 @@ function Aluno() {
               activities={
                 activities
               }
+              completedLessons={
+                completedLessons
+              }
             />
           )}
 
@@ -3833,26 +3932,30 @@ type ProgressoProps = {
 
 function Progresso({
   activities,
+  completedLessons,
 }: ProgressoProps) {
-  const completed =
+  const completedActivities =
     activities.filter(
       (activity) =>
-        activity.status ===
-          'corrigida' ||
-        activity.status ===
-          'respondida',
-    ).length
+        activity.status === 'corrigida',
+    )
 
-  const total =
-    activities.length
+  const averageGrade =
+    completedActivities.filter(
+      (activity) =>
+        activity.nota !== null,
+    )
 
-  const percentage =
-    total > 0
-      ? Math.round(
-          (completed / total) *
-            100,
-        )
-      : 0
+  const average =
+    averageGrade.length > 0
+      ? (
+          averageGrade.reduce(
+            (sum, activity) =>
+              sum + Number(activity.nota || 0),
+            0,
+          ) / averageGrade.length
+        ).toFixed(1)
+      : '—'
 
   return (
     <>
@@ -3863,81 +3966,200 @@ function Progresso({
           </span>
 
           <h2>
-            Meu progresso
+            Meu histórico
           </h2>
         </div>
       </div>
 
-      <div className="student-progress-main-card">
-        <div className="student-progress-main-value">
+      <div className="student-progress-summary">
+        <div className="student-progress-summary-card">
+          <span>AULAS REALIZADAS</span>
+
           <strong>
-            {percentage}%
+            {completedLessons.length}
           </strong>
 
-          <span>
-            progresso geral
-          </span>
-        </div>
-
-        <div className="student-progress-main-bar">
-          <div
-            className="student-progress-main-fill"
-            style={{
-              width: `${percentage}%`,
-            }}
-          />
-        </div>
-
-        <p>
-          Seu progresso será
-          atualizado conforme
-          suas aulas e
-          atividades forem
-          realizadas.
-        </p>
-      </div>
-
-      <div className="student-dashboard-grid">
-        <div className="student-dashboard-card">
-          <span>AULAS</span>
-
-          <strong>0</strong>
-
           <p>
-            Aulas realizadas.
+            Últimas aulas encerradas.
           </p>
         </div>
 
-        <div className="student-dashboard-card">
+        <div className="student-progress-summary-card">
+          <span>ATIVIDADES REALIZADAS</span>
+
+          <strong>
+            {completedActivities.length}
+          </strong>
+
+          <p>
+            Atividades já concluídas e corrigidas.
+          </p>
+        </div>
+
+        <div className="student-progress-summary-card">
+          <span>MÉDIA DAS NOTAS</span>
+
+          <strong>
+            {average}
+          </strong>
+
+          <p>
+            Média das atividades corrigidas.
+          </p>
+        </div>
+      </div>
+
+      <div className="student-section-title">
+        <div>
+          <span>
+            AULAS
+          </span>
+
+          <h2>
+            Aulas realizadas
+          </h2>
+        </div>
+      </div>
+
+      {completedLessons.length === 0 ? (
+        <div className="student-empty-state">
+          <CalendarDays
+            size={28}
+          />
+
+          <h3>
+            Nenhuma aula realizada
+          </h3>
+
+          <p>
+            Seu histórico de aulas aparecerá aqui conforme as aulas forem encerradas.
+          </p>
+        </div>
+      ) : (
+        <div className="student-history-list">
+          {completedLessons.map(
+            (lesson) => (
+              <div
+                className="student-history-card"
+                key={`${lesson.id}-${lesson.startAt}`}
+              >
+                <div className="student-history-icon">
+                  <Check
+                    size={19}
+                  />
+                </div>
+
+                <div className="student-history-main">
+                  <span>
+                    {lesson.language}
+                  </span>
+
+                  <h3>
+                    Aula particular
+                  </h3>
+
+                  <p>
+                    {lesson.teacher}
+                  </p>
+                </div>
+
+                <div className="student-history-meta">
+                  <strong>
+                    {lesson.date}
+                  </strong>
+
+                  <span>
+                    {lesson.time}
+                  </span>
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      )}
+
+      <div className="student-section-title">
+        <div>
           <span>
             ATIVIDADES
           </span>
 
-          <strong>
-            {completed}
-          </strong>
-
-          <p>
-            Atividades concluídas.
-          </p>
-        </div>
-
-        <div className="student-dashboard-card">
-          <span>
-            ATIVIDADES TOTAIS
-          </span>
-
-          <strong>
-            {total}
-          </strong>
-
-          <p>
-            Atividades recebidas.
-          </p>
+          <h2>
+            Atividades realizadas e notas
+          </h2>
         </div>
       </div>
+
+      {completedActivities.length === 0 ? (
+        <div className="student-empty-state">
+          <ClipboardList
+            size={28}
+          />
+
+          <h3>
+            Nenhuma atividade corrigida
+          </h3>
+
+          <p>
+            Suas atividades corrigidas e respectivas notas aparecerão aqui.
+          </p>
+        </div>
+      ) : (
+        <div className="student-history-list">
+          {completedActivities.map(
+            (activity) => (
+              <div
+                className="student-history-card"
+                key={activity.id}
+              >
+                <div className="student-history-icon">
+                  <CheckCircle2
+                    size={19}
+                  />
+                </div>
+
+                <div className="student-history-main">
+                  <span>
+                    {languageLabels[
+                      activity.language
+                    ]}
+                  </span>
+
+                  <h3>
+                    {activity.title}
+                  </h3>
+
+                  <p>
+                    Realizada em{' '}
+                    {formatDate(
+                      activity.createdAt,
+                    )}
+                  </p>
+                </div>
+
+                <div className="student-history-grade">
+                  <span>
+                    NOTA
+                  </span>
+
+                  <strong>
+                    {activity.nota !== null
+                      ? activity.nota
+                      : '—'}
+                  </strong>
+                </div>
+              </div>
+            ),
+          )}
+        </div>
+      )}
     </>
   )
+}
+
+type ProgressoProps = {
+  activities: Activity[]
+  completedLessons: Lesson[]
 }
 
 type PerfilProps = {
