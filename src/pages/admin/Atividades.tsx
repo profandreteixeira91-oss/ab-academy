@@ -496,14 +496,6 @@ async function loadProfessorContext(): Promise<ProfessorContext | null> {
     )
   }
 
-  if (adminUser) {
-    return {
-      userId: user.id,
-      professorId: null,
-      isAdmin: true,
-    }
-  }
-
   const { data: professor, error: professorError } = await supabase
     .from('professores')
     .select('id')
@@ -518,14 +510,14 @@ async function loadProfessorContext(): Promise<ProfessorContext | null> {
     )
   }
 
-  if (!professor) {
+  if (!adminUser && !professor) {
     return null
   }
 
   return {
     userId: user.id,
-    professorId: professor.id,
-    isAdmin: false,
+    professorId: professor?.id ?? null,
+    isAdmin: Boolean(adminUser),
   }
 }
 
@@ -570,7 +562,11 @@ async function fetchAtividades(professorId: string | null) {
   return (data || []) as unknown as AtividadeLista[]
 }
 
-export default function Atividades() {
+export default function Atividades({
+  professorMode = false,
+}: {
+  professorMode?: boolean
+}) {
   const [atividades, setAtividades] = useState<AtividadeLista[]>([])
   const [alunos, setAlunos] = useState<Aluno[]>([])
 
@@ -681,8 +677,15 @@ export default function Atividades() {
     setIsAdmin(professorContext.isAdmin)
 
     try {
+      const atividadesProfessorId =
+        professorMode
+          ? professorContext.professorId
+          : professorContext.isAdmin
+            ? null
+            : professorContext.professorId
+
       setAtividades(
-        await fetchAtividades(professorContext.professorId),
+        await fetchAtividades(atividadesProfessorId),
       )
     } catch (loadError) {
       console.error('Erro ao carregar atividades:', loadError)
@@ -730,9 +733,20 @@ export default function Atividades() {
         ascending: true,
       })
 
-    // Professores veem somente seus alunos.
-    // Administradores veem todos os alunos.
-    if (!professorContext.isAdmin && professorContext.professorId) {
+    // No portal do professor, mostrar somente os alunos
+    // vinculados ao professor autenticado.
+    // No painel administrativo, administradores continuam vendo todos.
+    if (professorMode) {
+      if (!professorContext.professorId) {
+        setAlunos([])
+        return
+      }
+
+      query = query.eq(
+        'professor_id',
+        professorContext.professorId,
+      )
+    } else if (!professorContext.isAdmin && professorContext.professorId) {
       query = query.eq(
         'professor_id',
         professorContext.professorId,
@@ -3104,7 +3118,7 @@ export default function Atividades() {
           </div>
         </div>
 
-        {!isAdmin && (
+        {(!isAdmin || professorMode) && (
           <button
             type="button"
             className="atividades-primary-button"
