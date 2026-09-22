@@ -311,30 +311,37 @@ function CentralAtividade(){
             </div>
           </div>
 
-          {activity.instrucoes&&<div className="central-instructions"><div className="central-instructions-icon"><CircleHelp size={17}/></div><div><strong>Como fazer</strong><p>{activity.instrucoes}</p></div></div>}
-          <div className="central-translation-toolbar">
-            <button type="button" onClick={()=>void translateActivity()} disabled={translating}>
-              {translating?<><Loader2 size={15} className="central-activity-spin"/>Traduzindo...</>:translation?<><ArrowLeft size={15}/>Voltar ao idioma original</>:<>Aa&nbsp; Traduzir para português</>}
-            </button>
-            {translationError&&<span>{translationError}</span>}
-          </div>
-          <div className={translation ? 'central-language-grid translated' : 'central-language-grid'}>
-            <div className="central-language-column">
-              <div className="central-language-label">Idioma original</div>
-              {(activity.conteudo.text)&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{activity.conteudo.text}</p></div>}
-              {(activity.conteudo.question)&&<div className="central-question"><span>Pergunta</span><strong>{activity.conteudo.question}</strong></div>}
+          <div className="central-activity-content-grid">
+            <div className="central-activity-content-main">
+              {activity.instrucoes&&<div className="central-instructions"><div className="central-instructions-icon"><CircleHelp size={17}/></div><div><strong>Como fazer</strong><p>{activity.instrucoes}</p></div></div>}
+              <div className="central-translation-toolbar">
+                <button type="button" onClick={()=>void translateActivity()} disabled={translating}>
+                  {translating?<><Loader2 size={15} className="central-activity-spin"/>Traduzindo...</>:translation?<><ArrowLeft size={15}/>Voltar ao idioma original</>:<>Aa&nbsp; Traduzir para português</>}
+                </button>
+                {translationError&&<span>{translationError}</span>}
+              </div>
+              <div className={translation ? 'central-language-grid translated' : 'central-language-grid'}>
+                <div className="central-language-column">
+                  <div className="central-language-label">Idioma original</div>
+                  {activity.conteudo.text&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{activity.conteudo.text}</p></div>}
+                  {activity.conteudo.question&&<div className="central-question"><span>Pergunta</span><strong>{activity.conteudo.question}</strong></div>}
+                </div>
+                {translation&&<div className="central-language-column translated-column">
+                  <div className="central-language-label">Português</div>
+                  {translation.text&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{translation.text}</p></div>}
+                  {translation.question&&<div className="central-question"><span>Pergunta</span><strong>{translation.question}</strong></div>}
+                </div>}
+              </div>
+              <div className="central-answers-section">
+                <div className="central-section-label">RESPOSTA</div>
+                <div className="central-exercise-area">{renderExercise(translation||undefined)}</div>
+              </div>
+              <div className="central-progress">
+                <div className="central-progress-top"><span>Progresso da atividade</span><strong>{result ? '100%' : hasAnswer() ? 'Em andamento' : 'Comece quando estiver pronto'}</strong></div>
+                <div className="central-progress-track"><div className={result ? 'central-progress-fill complete' : 'central-progress-fill'} style={{width:result?'100%':hasAnswer()?'55%':'0%'}}/></div>
+              </div>
             </div>
-            {translation&&<div className="central-language-column translated-column">
-              <div className="central-language-label">Português</div>
-              {translation.text&&<div className="central-exercise-text"><span>Texto de apoio</span><p>{translation.text}</p></div>}
-              {translation.question&&<div className="central-question"><span>Pergunta</span><strong>{translation.question}</strong></div>}
-            </div>}
           </div>
-          <div className="central-progress">
-            <div className="central-progress-top"><span>Progresso da atividade</span><strong>{result ? '100%' : hasAnswer() ? 'Em andamento' : 'Comece quando estiver pronto'}</strong></div>
-            <div className="central-progress-track"><div className={result ? 'central-progress-fill complete' : 'central-progress-fill'} style={{width:result?'100%':hasAnswer()?'55%':'0%'}}/></div>
-          </div>
-          <div className="central-exercise-area">{renderExercise(translation||undefined)}</div>
           {error&&<div className="central-form-error">{error}</div>}
           {!result&&<div className="central-save-status">{saveState==='saving'?<><Loader2 size={14} className="central-activity-spin"/> Salvando seu progresso...</>:saveState==='saved'?<><CheckCircle2 size={14}/> Progresso salvo</>:<span>Seu progresso será salvo automaticamente.</span>}</div>}
           {result?<div className={result.correct?'central-result success':'central-result'}>
