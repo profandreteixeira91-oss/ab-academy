@@ -163,7 +163,15 @@ function MainVideo() {
       }
     >
       {orderedTracks.map(
-        (trackRef) => (
+        (trackRef) => {
+          // useTracks(..., { withPlaceholder: true }) também pode
+          // retornar TrackReferencePlaceholder. O VideoTrack aceita
+          // apenas TrackReference com publication definida.
+          if (!trackRef.publication) {
+            return null
+          }
+
+          return (
           <div
             key={
               trackRef.participant
