@@ -13,6 +13,7 @@ import {
   ArrowRight,
   CheckCircle2,
   Circle,
+  XCircle,
 } from 'lucide-react'
 
 import { supabase } from '../lib/supabase'
@@ -42,6 +43,17 @@ type Horario = {
   hora_fim: string
   disponivel: boolean
   aluno_id: string | null
+}
+
+type RegistroAulaStatus = 'presente' | 'falta'
+
+type RegistroAula = {
+  id: string
+  horario_id: string
+  aluno_id: string
+  professor_id: string
+  data_aula: string
+  status: RegistroAulaStatus
 }
 
 type Aluno = {
@@ -98,6 +110,12 @@ function Professor() {
   const [atividades, setAtividades] =
     useState<Atividade[]>([])
 
+  const [registrosAulas, setRegistrosAulas] =
+    useState<RegistroAula[]>([])
+
+  const [savingAttendance, setSavingAttendance] =
+    useState('')
+
   const [activeSection, setActiveSection] =
     useState<PortalSection>('dashboard')
 
@@ -134,6 +152,7 @@ function Professor() {
         setHorarios([])
         setAlunos([])
         setAtividades([])
+        setRegistrosAulas([])
 
         return
       }
@@ -242,6 +261,7 @@ function Professor() {
         idiomasResult,
         horariosResult,
         alunosResult,
+        registrosResult,
       ] = await Promise.all([
         /*
          * IDIOMAS
@@ -276,6 +296,25 @@ function Professor() {
           })
           .order('hora_inicio', {
             ascending: true,
+          }),
+
+        /*
+         * REGISTROS DE AULAS
+         */
+
+        supabase
+          .from('registros_aulas')
+          .select(
+            `id,
+             horario_id,
+             aluno_id,
+             professor_id,
+             data_aula,
+             status`,
+          )
+          .eq('professor_id', professorId)
+          .order('data_aula', {
+            ascending: false,
           }),
 
         /*
@@ -329,6 +368,23 @@ function Professor() {
         setHorarios(
           (horariosResult.data ??
             []) as Horario[],
+        )
+      }
+
+      /*
+       * REGISTROS DE AULAS
+       */
+
+      if (registrosResult.error) {
+        console.error(
+          '[Professor] Erro ao carregar registros de aulas:',
+          registrosResult.error,
+        )
+
+        setRegistrosAulas([])
+      } else {
+        setRegistrosAulas(
+          (registrosResult.data ?? []) as RegistroAula[],
         )
       }
 
@@ -426,6 +482,7 @@ function Professor() {
       setHorarios([])
       setAlunos([])
       setAtividades([])
+      setRegistrosAulas([])
     }
   }
 
@@ -538,6 +595,7 @@ function Professor() {
       setHorarios([])
       setAlunos([])
       setAtividades([])
+      setRegistrosAulas([])
       setActiveSection('dashboard')
     } catch (err) {
       console.error(
@@ -602,6 +660,145 @@ function Professor() {
 
   function formatHour(value: string) {
     return value.slice(0, 5)
+  }
+
+  function formatDateKey(date: Date) {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+
+    return `${year}-${month}-${day}`
+  }
+
+  function getPastLessonOccurrences(
+    horario: Horario,
+    daysBack = 30,
+  ) {
+    const now = new Date()
+    const startDate = new Date(now)
+    startDate.setDate(now.getDate() - daysBack)
+    startDate.setHours(0, 0, 0, 0)
+
+    const occurrences: Array<{
+      horario: Horario
+      dataAula: string
+      startAt: Date
+      endAt: Date
+    }> = []
+
+    for (
+      const date = new Date(startDate);
+      date <= now;
+      date.setDate(date.getDate() + 1)
+    ) {
+      if (date.getDay() !== horario.dia_semana) {
+        continue
+      }
+
+      const [hours, minutes] =
+        horario.hora_inicio.slice(0, 5).split(':').map(Number)
+      const [endHours, endMinutes] =
+        horario.hora_fim.slice(0, 5).split(':').map(Number)
+
+      const startAt = new Date(date)
+      startAt.setHours(hours, minutes, 0, 0)
+
+      const endAt = new Date(date)
+      endAt.setHours(endHours, endMinutes, 0, 0)
+
+      if (endAt.getTime() <= now.getTime()) {
+        occurrences.push({
+          horario,
+          dataAula: formatDateKey(date),
+          startAt,
+          endAt,
+        })
+      }
+    }
+
+    return occurrences.reverse()
+  }
+
+  function getRegistroAula(
+    horarioId: string,
+    dataAula: string,
+  ) {
+    return registrosAulas.find(
+      (registro) =>
+        registro.horario_id === horarioId &&
+        registro.data_aula === dataAula,
+    )
+  }
+
+  async function registrarPresenca(
+    horario: Horario,
+    dataAula: string,
+    status: RegistroAulaStatus,
+  ) {
+    if (!professor || !horario.aluno_id) {
+      return
+    }
+
+    const key = `${horario.id}-${dataAula}`
+
+    try {
+      setSavingAttendance(key)
+
+      const { error } = await supabase
+        .from('registros_aulas')
+        .upsert(
+          {
+            horario_id: horario.id,
+            aluno_id: horario.aluno_id,
+            professor_id: professor.id,
+            data_aula: dataAula,
+            status,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'horario_id,data_aula',
+          },
+        )
+
+      if (error) {
+        throw error
+      }
+
+      const { data, error: reloadError } =
+        await supabase
+          .from('registros_aulas')
+          .select(
+            `id,
+             horario_id,
+             aluno_id,
+             professor_id,
+             data_aula,
+             status`,
+          )
+          .eq('professor_id', professor.id)
+          .order('data_aula', {
+            ascending: false,
+          })
+
+      if (reloadError) {
+        throw reloadError
+      }
+
+      setRegistrosAulas(
+        (data ?? []) as RegistroAula[],
+      )
+    } catch (error) {
+      console.error(
+        '[Professor] Erro ao registrar aula:',
+        error,
+      )
+
+      window.alert(
+        'Não foi possível registrar o status da aula.',
+      )
+    } finally {
+      setSavingAttendance('')
+    }
   }
 
   /*
@@ -1384,6 +1581,15 @@ function Professor() {
    */
 
   function renderAulas() {
+    const pastOccurrences = horariosOcupados
+      .flatMap((horario) =>
+        getPastLessonOccurrences(horario),
+      )
+      .sort(
+        (a, b) =>
+          b.startAt.getTime() - a.startAt.getTime(),
+      )
+
     return (
       <div className="professor-content">
         <div className="professor-page-header">
@@ -1523,6 +1729,115 @@ function Professor() {
                 receber um aluno, a
                 aula aparecerá aqui.
               </span>
+            </div>
+          )}
+        </section>
+
+        <section className="professor-panel professor-attendance-panel">
+          <div className="professor-panel-header">
+            <div>
+              <span className="professor-eyebrow">
+                Registro de aulas
+              </span>
+
+              <h2>
+                Presença e faltas
+              </h2>
+            </div>
+
+            <CheckCircle2 size={20} />
+          </div>
+
+          {pastOccurrences.length === 0 ? (
+            <div className="professor-empty-state">
+              <CalendarDays size={40} />
+
+              <strong>Nenhuma aula encerrada</strong>
+
+              <span>
+                Os registros das aulas encerradas aparecerão aqui.
+              </span>
+            </div>
+          ) : (
+            <div className="professor-attendance-list">
+              {pastOccurrences.map((occurrence) => {
+                const registro = getRegistroAula(
+                  occurrence.horario.id,
+                  occurrence.dataAula,
+                )
+                const key = `${occurrence.horario.id}-${occurrence.dataAula}`
+                const saving = savingAttendance === key
+
+                return (
+                  <div
+                    className="professor-attendance-card"
+                    key={key}
+                  >
+                    <div className="professor-attendance-date">
+                      <strong>
+                        {occurrence.startAt.toLocaleDateString('pt-BR')}
+                      </strong>
+                      <span>
+                        {formatHour(occurrence.horario.hora_inicio)}
+                        {' - '}
+                        {formatHour(occurrence.horario.hora_fim)}
+                      </span>
+                    </div>
+
+                    <div className="professor-attendance-info">
+                      <strong>
+                        {getAlunoNome(occurrence.horario.aluno_id)}
+                      </strong>
+                      <span>
+                        {getIdiomaLabel(occurrence.horario.idioma)}
+                      </span>
+                      <small>
+                        {registro
+                          ? registro.status === 'presente'
+                            ? 'Presença registrada'
+                            : 'Falta registrada'
+                          : 'Aguardando registro'}
+                      </small>
+                    </div>
+
+                    <div className="professor-attendance-actions">
+                      <button
+                        type="button"
+                        className={`professor-attendance-button presence $
+                          ${registro?.status === 'presente' ? 'active' : ''}`}
+                        onClick={() =>
+                          void registrarPresenca(
+                            occurrence.horario,
+                            occurrence.dataAula,
+                            'presente',
+                          )
+                        }
+                        disabled={saving}
+                      >
+                        <CheckCircle2 size={16} />
+                        Presente
+                      </button>
+
+                      <button
+                        type="button"
+                        className={`professor-attendance-button absence $
+                          ${registro?.status === 'falta' ? 'active' : ''}`}
+                        onClick={() =>
+                          void registrarPresenca(
+                            occurrence.horario,
+                            occurrence.dataAula,
+                            'falta',
+                          )
+                        }
+                        disabled={saving}
+                      >
+                        <XCircle size={16} />
+                        Falta
+                      </button>
+                    </div>
+                  </div>
+                )
+              })}
             </div>
           )}
         </section>
