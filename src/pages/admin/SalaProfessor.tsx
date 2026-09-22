@@ -193,7 +193,8 @@ function MainVideo() {
                   'Aluno'}
             </div>
           </div>
-        ),
+          )
+        },
       )}
     </div>
   )
