@@ -324,6 +324,26 @@ export default function Admin() {
           ))}
         </nav>
 
+        <div className="admin-sidebar-legal">
+          <div className="admin-sidebar-legal-copy">
+            <span>AB Academy® 2026 - Todos os direitos reservados</span>
+            <span>
+              Desenvolvido por{' '}
+              <a href="https://www.amtsistemas.com.br/">
+                AMT Sistemas &amp; Soluções
+              </a>{' '}-{' '}
+              <a href="https://www.amtsistemas.com.br/">
+                www.amtsistemas.com.br
+              </a>
+            </span>
+          </div>
+
+          <div className="admin-sidebar-legal-links">
+            <a href="/termos-de-servico">Termos de Serviço</a>
+            <a href="/politica-privacidade">Política de Privacidade</a>
+          </div>
+        </div>
+
         <div className="admin-sidebar-footer">
           <div className="admin-sidebar-user">
             <div className="admin-sidebar-user-avatar">
@@ -518,25 +538,6 @@ export default function Admin() {
 
         </section>
 
-        <footer className="admin-fixed-footer">
-          <div className="admin-fixed-footer-copy">
-            <span>AB Academy® 2026 - Todos os direitos reservados</span>
-            <span>
-              Desenvolvido por{' '}
-              <a href="https://www.amtsistemas.com.br/">
-                AMT Sistemas &amp; Soluções
-              </a>{' '}-{' '}
-              <a href="https://www.amtsistemas.com.br/">
-                www.amtsistemas.com.br
-              </a>
-            </span>
-          </div>
-
-          <div className="admin-fixed-footer-legal">
-            <a href="/termos-de-servico">Termos de Serviço</a>
-            <a href="/politica-privacidade">Política de Privacidade</a>
-          </div>
-        </footer>
       </main>
 
     </div>
