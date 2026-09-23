@@ -366,111 +366,56 @@ function Home() {
         {/* SOBRE */}
         <section className="section about-section" id="sobre">
           <div className="container">
-            <div className="about-grid">
-              <div className="about-content">
+            <div className="founder-grid">
+              <div className="founder-photo-wrap">
+                <div className="founder-photo-placeholder" aria-label="Espaço reservado para foto de Amy Borges">
+                  <span>Foto de Amy Borges</span>
+                  <small>Imagem será adicionada posteriormente</small>
+                </div>
+              </div>
+
+              <div className="founder-content">
                 <div className="section-label">
                   Sobre a AB Academy
                 </div>
 
                 <h2 className="section-title">
-                  Aprender um idioma é abrir novas possibilidades.
+                  Prazer, sou a Amy Borges.
                 </h2>
 
-                <p className="section-description">
-                  A AB Academy nasceu com o propósito de tornar o
-                  aprendizado de idiomas mais acessível, prático e
-                  conectado aos objetivos de cada aluno.
-                </p>
-
-                <p className="about-text">
-                  Oferecemos cursos de inglês e alemão para diferentes
-                  níveis e objetivos, combinando uma metodologia
-                  estruturada com prática de comunicação e
-                  acompanhamento da evolução.
-                </p>
-
-                <a href="#cursos" className="btn btn-primary">
-                  Conheça nossos cursos
-                  <ArrowRight size={18} />
-                </a>
-              </div>
-
-              <div className="about-highlight">
-                <div className="about-highlight-logo"><img src={logo} alt="AB Academy" /></div>
-
-                <div className="about-highlight-content">
-                  <span>NOSSA MISSÃO</span>
-
-                  <strong>
-                    Conhecimento que
-                    <br />
-                    conecta pessoas.
-                  </strong>
+                <div className="founder-text">
+                  <p>
+                    Sou médica veterinária por formação. Tenho mestrado e atuo na área de animais marinhos.
+                  </p>
 
                   <p>
-                    Inglês e alemão para estudos, carreira,
-                    viagens e novas oportunidades.
+                    Eu me formei no ensino básico na Alemanha, em Siegen. Parte da minha formação acadêmica foi na Universidade da Flórida, nos EUA. Tive a oportunidade de lecionar aulas particulares em grandes institutos, como a Wizard, nos idiomas inglês e alemão.
+                  </p>
+
+                  <p>
+                    A <strong>AB Academy</strong> começou em 2023, com um planejamento e desejo de muitos anos de trazer uma experiência de aprendizagem e colaborar no ensino e desenvolvimento do aluno, com uma metodologia prática e simples.
+                  </p>
+
+                  <p>
+                    As minhas premissas para o desenvolvimento dos alunos são:
+                  </p>
+
+                  <div className="founder-principles">
+                    <strong>Autonomia e Autoridade</strong>
+                    <span>
+                      sobre o idioma em que está aprendendo.
+                    </span>
+                  </div>
+
+                  <p>
+                    A metodologia da AB Academy permeia os detalhes mais cotidianos, quase invisíveis, em uma abordagem integrada à vida do aluno.
+                  </p>
+
+                  <p className="founder-closing">
+                    Quero descomplicar e destravar a sua capacidade de aprender um novo idioma!
                   </p>
                 </div>
-
-                <div className="about-stats">
-                  <div>
-                    <strong>02</strong>
-                    <span>Idiomas</span>
-                  </div>
-
-                  <div>
-                    <strong>01</strong>
-                    <span>Plataforma</span>
-                  </div>
-
-                  <div>
-                    <strong>∞</strong>
-                    <span>Possibilidades</span>
-                  </div>
-                </div>
               </div>
-            </div>
-
-            <div className="features-grid about-features">
-              <article className="feature-card">
-                <div className="feature-icon">
-                  <Languages size={26} />
-                </div>
-
-                <h3>Inglês e Alemão</h3>
-
-                <p>
-                  Desenvolva suas habilidades em dois dos principais
-                  idiomas para comunicação, estudos e carreira.
-                </p>
-              </article>
-
-              <article className="feature-card">
-                <div className="feature-icon">
-                  <Users size={26} />
-                </div>
-
-                <h3>Acompanhamento</h3>
-
-                <p>
-                  Tenha orientação durante sua jornada e acompanhe
-                  seu desenvolvimento ao longo do curso.
-                </p>
-              </article>
-
-              <article className="feature-card">
-                <div className="feature-icon">
-                  <Laptop size={26} />
-                </div>
-
-                <h3>Experiência digital</h3>
-
-                <p>
-                  Acesse conteúdos, atividades e informações da sua
-                  jornada através da plataforma da AB Academy.
-                </p>
-              </article>
             </div>
           </div>
         </section>
