@@ -30,6 +30,7 @@ import Professor from './pages/Professor'
 import ProfessorAccess from './pages/ProfessorAccess'
 
 import Error404 from './pages/Error404'
+import TrabalheConosco from './pages/TrabalheConosco'
 import SiteFooter from './components/SiteFooter'
 
 function App() {
@@ -45,6 +46,7 @@ function App() {
   const pageTitle =
     path === '/' ? 'Início' :
     path === '/matricula' ? 'Matrícula' :
+    path === '/trabalhe-conosco' ? 'Trabalhe conosco' :
     path.startsWith('/checkout/') ? 'Checkout' :
     path === '/aluno' ? 'Área do aluno' :
     path === '/aluno/central' ? 'Central de Atividades' :
@@ -76,6 +78,10 @@ function App() {
    * MATRÍCULA
    * =========================================================
    */
+
+  if (path === '/trabalhe-conosco') {
+    return <TrabalheConosco />
+  }
 
   if (path === '/matricula') {
     return withFooter(<Matricula />)
