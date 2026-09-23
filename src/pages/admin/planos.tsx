@@ -14,7 +14,7 @@ import '../../styles/admin/planos.css'
 import { supabase } from '../../lib/supabase'
 
 type Idioma = 'ingles' | 'alemao'
-type TipoPlano = 'mensal' | 'anual'
+type TipoPlano = 'mensal' | 'anual' | 'personalizado' | 'intensivo'
 
 type Plano = {
   id: string
@@ -68,7 +68,10 @@ function formatIdioma(idioma: Idioma) {
 }
 
 function formatTipo(tipo: TipoPlano) {
-  return tipo === 'mensal' ? 'Mensal' : 'Anual'
+  if (tipo === 'mensal') return 'Mensal'
+  if (tipo === 'anual') return 'Anual'
+  if (tipo === 'personalizado') return 'Personalizado'
+  return 'Intensivo'
 }
 
 function parseMoney(value: string) {
@@ -544,6 +547,8 @@ export default function Planos() {
             </option>
             <option value="mensal">Mensal</option>
             <option value="anual">Anual</option>
+            <option value="personalizado">Personalizado</option>
+            <option value="intensivo">Intensivo</option>
           </select>
 
           <ChevronDown size={15} />
