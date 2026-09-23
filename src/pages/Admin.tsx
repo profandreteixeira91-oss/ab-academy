@@ -17,7 +17,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import Dashboard from './admin/Dashboard'
 import Agenda from './admin/Agenda'
@@ -245,6 +245,16 @@ export default function Admin() {
 
   const [activeModule, setActiveModule] =
     useState('dashboard')
+
+  useEffect(() => {
+    const title =
+      activeModule === 'dashboard'
+        ? 'Dashboard'
+        : modules.find((module) => module.id === activeModule)?.title ||
+          'Administração'
+
+    document.title = title + ' - AB Academy Idiomas'
+  }, [activeModule])
 
   const handleNavigation = (id: string) => {
     setActiveModule(id)
