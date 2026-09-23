@@ -585,76 +585,68 @@ function Home() {
                 </a>
               </article>
 
-              {/* PERSONALIZADO */}
+              {/* AULA DIAGNÓSTICA */}
               <article className="course-card">
                 <div className="course-card-top">
                   <span className="course-number">03</span>
 
                   <div className="course-icon">
-                    <Globe2 size={30} />
+                    <GraduationCap size={30} />
                   </div>
 
                   <span className="course-tag">
-                    Personalizado
+                    Diagnóstica
                   </span>
                 </div>
 
-                <h3>Curso Personalizado</h3>
+                <h3>Aula Diagnóstica</h3>
 
                 <p>
-                  Um percurso de aprendizagem planejado de acordo
-                  com seus objetivos, necessidades, disponibilidade
-                  e nível atual.
+                  Uma aula individual de 60 minutos para avaliar seu nível,
+                  identificar seus objetivos e orientar o melhor caminho de estudo.
                 </p>
 
                 <div className="course-target">
-                  <span>Ideal para</span>
+                  <span>Inglês ou Alemão</span>
                   <strong>
-                    Quem precisa de uma jornada de aprendizagem específica.
+                    Comece sua jornada com uma avaliação personalizada.
                   </strong>
                 </div>
 
                 <ul>
                   <li>
                     <CheckCircle2 size={17} />
-                    Aula particular
+                    Aula individual de 60 minutos
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Escolha a quantidade de aulas por semana
-                  </li>
-                  <li>
-                    <CheckCircle2 size={17} />
-                    Objetivos específicos
+                    Avaliação do seu nível
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Conteúdo personalizado e direcionado
+                    Orientação personalizada
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Acompanhamento individual
-                  </li>
-
-                  <li>
-                    <CheckCircle2 size={17} />
-                    Flexibilidade
+                    Inglês ou Alemão
                   </li>
                 </ul>
 
                 <div className="course-custom-price">
-                  <span>Valor personalizado</span>
-                  <strong>Entre em contato</strong>
+                  <span>Investimento</span>
+                  <strong>R$ 50,00</strong>
+                  <small>Descontado da primeira mensalidade em caso de matrícula.</small>
                 </div>
 
-                <a href="/matricula">
-                  Saiba mais
+                <a href="/matricula?diagnostica=1">
+                  Agendar aula diagnóstica
                   <ArrowRight size={17} />
                 </a>
               </article>
+
             </div>
           </div>
         </section>
