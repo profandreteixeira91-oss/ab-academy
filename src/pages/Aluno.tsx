@@ -1426,7 +1426,7 @@ function Aluno() {
           solicitacao_id: created.id,
           remetente_tipo: 'aluno',
           remetente_id: user.id,
-          mensagem: requestMessage.trim() || (requestFiles.length ? 'Arquivo enviado.' : requestSubject.trim()),
+          mensagem: requestMessage.trim() || (files.length ? 'Arquivo enviado.' : requestSubject.trim()),
         })
         .select('id')
         .single()
@@ -3099,6 +3099,10 @@ function Aluno() {
               priority={requestPriority}
               message={requestMessage}
               sending={requestSending}
+              files={requestFiles}
+              openingFile={requestOpeningFile}
+              onFilesChange={setRequestFiles}
+              onOpenFile={openRequestAttachment}
               onSelect={openStudentRequest}
               onSubjectChange={setRequestSubject}
               onCategoryChange={setRequestCategory}
@@ -4652,6 +4656,10 @@ type SolicitacoesProps = {
   priority: RequestPriority
   message: string
   sending: boolean
+  files: File[]
+  openingFile: string
+  onFilesChange: (files: File[]) => void
+  onOpenFile: (file: RequestAttachment) => void
   onSelect: (request: StudentRequest) => void
   onSubjectChange: (value: string) => void
   onCategoryChange: (value: string) => void
@@ -4662,7 +4670,7 @@ type SolicitacoesProps = {
 }
 
 function Solicitacoes({
-  requests, loading, error, selectedRequest, messages, subject, category, priority, message, sending,
+  requests, loading, error, selectedRequest, messages, subject, category, priority, message, sending, files, openingFile, onFilesChange, onOpenFile,
   onSelect, onSubjectChange, onCategoryChange, onPriorityChange, onMessageChange, onCreate, onReply,
 }: SolicitacoesProps) {
   const labels: Record<RequestStatus, string> = { aberta: 'Aberta', em_andamento: 'Em andamento', respondida: 'Respondida', fechada: 'Fechada' }
@@ -4681,9 +4689,9 @@ function Solicitacoes({
               <select value={priority} onChange={e => onPriorityChange(e.target.value as RequestPriority)}><option value="baixa">Baixa</option><option value="normal">Normal</option><option value="alta">Alta</option></select>
             </div>
             <textarea value={message} onChange={e => onMessageChange(e.target.value)} placeholder="Descreva sua solicitação..." rows={3} />
-            {requestFiles.length > 0 && <div className="student-request-file-list">{requestFiles.map(file => <span key={file.name + file.size}><Paperclip size={12}/>{file.name}<button type="button" onClick={() => setRequestFiles(current => current.filter(item => item !== file))} aria-label={"Remover " + file.name}><X size={12}/></button></span>)}</div>}
+            {requestFiles.length > 0 && <div className="student-request-file-list">{files.map(file => <span key={file.name + file.size}><Paperclip size={12}/>{file.name}<button type="button" onClick={() => onFilesChange(files.filter(item => item !== file))} aria-label={"Remover " + file.name}><X size={12}/></button></span>)}</div>}
             <div className="student-request-compose-actions">
-              <label className="student-request-attach-button"><Paperclip size={16}/><span>Anexar arquivos</span><input type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip" disabled={sending} onChange={e => setRequestFiles(Array.from(e.target.files ?? []).slice(0, 5))}/></label>
+              <label className="student-request-attach-button"><Paperclip size={16}/><span>Anexar arquivos</span><input type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip" disabled={sending} onChange={e => onFilesChange(Array.from(e.target.files ?? []).slice(0, 5))}/></label>
               <button type="button" className="student-primary-button" onClick={onCreate} disabled={!subject.trim() || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar solicitação'}</button>
             </div>
           </div>
@@ -4699,8 +4707,7 @@ function Solicitacoes({
         <div className="student-request-thread">
           {!selectedRequest ? <div className="student-empty-state"><MessageSquare size={30}/><h3>Selecione uma solicitação</h3><p>As respostas da AB Academy aparecerão aqui.</p></div> : <>
             <header><div><span>{categories[selectedRequest.categoria] || selectedRequest.categoria}</span><h3>{selectedRequest.assunto}</h3></div><span className={`student-request-status ${selectedRequest.status}`}>{labels[selectedRequest.status]}</span></header>
-            <div className="student-request-messages">{messages.map(item => <div key={item.id} className={`student-request-message ${item.remetente_tipo}`}><strong>{item.remetente_tipo === 'admin' ? 'AB Academy' : 'Você'}</strong><p>{item.mensagem}</p><small>{new Date(item.created_at).toLocaleString('pt-BR')}</small></div>)}</div>
-            <div className="student-request-messages">{messages.map(item => <div key={item.id} className={`student-request-message ${item.remetente_tipo}`}><strong>{item.remetente_tipo === 'admin' ? 'AB Academy' : 'Você'}</strong><p>{item.mensagem}</p>{item.anexos?.length ? <div className="student-request-message-files">{item.anexos.map(file => <button type="button" key={file.id} onClick={() => void openRequestAttachment(file)} disabled={requestOpeningFile === file.id}><Paperclip size={13}/><span>{file.nome_arquivo}</span><Download size={13}/></button>)}</div> : null}<small>{new Date(item.created_at).toLocaleString('pt-BR')}</small></div>)}</div>
+            <div className="student-request-messages">{messages.map(item => <div key={item.id} className={`student-request-message ${item.remetente_tipo}`}><strong>{item.remetente_tipo === 'admin' ? 'AB Academy' : 'Você'}</strong><p>{item.mensagem}</p>{item.anexos?.length ? <div className="student-request-message-files">{item.anexos.map(file => <button type="button" key={file.id} onClick={() => void onOpenFile(file)} disabled={openingFile === file.id}><Paperclip size={13}/><span>{file.nome_arquivo}</span><Download size={13}/></button>)}</div> : null}<small>{new Date(item.created_at).toLocaleString('pt-BR')}</small></div>)}</div>
             {selectedRequest.status !== 'fechada' && <footer><div className="student-request-reply-main"><textarea value={message} onChange={e => onMessageChange(e.target.value)} placeholder="Responder à solicitação..." rows={3}/>{requestFiles.length > 0 && <div className="student-request-file-list">{requestFiles.map(file => <span key={file.name + file.size}><Paperclip size={12}/>{file.name}<button type="button" onClick={() => setRequestFiles(current => current.filter(item => item !== file))} aria-label={"Remover " + file.name}><X size={12}/></button></span>)}</div>}</div><div className="student-request-compose-actions"><label className="student-request-attach-button"><Paperclip size={16}/><span>Anexar arquivos</span><input type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip" disabled={sending} onChange={e => setRequestFiles(Array.from(e.target.files ?? []).slice(0, 5))}/></label><button type="button" className="student-primary-button" onClick={onReply} disabled={(!message.trim() && requestFiles.length === 0) || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar resposta'}</button></div></footer>}
           </>}
         </div>
