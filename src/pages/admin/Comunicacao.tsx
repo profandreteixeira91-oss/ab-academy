@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Check, ChevronDown, MessageSquare, Search, Send, X } from 'lucide-react'
+import { Check, ChevronDown, Download, MessageSquare, Paperclip, Search, Send, X } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import '../../styles/admin/Comunicacao.css'
 
@@ -25,6 +25,16 @@ type Mensagem = {
   remetente_id: string | null
   mensagem: string
   created_at: string
+  anexos?: Anexo[]
+}
+
+type Anexo = {
+  id: string
+  mensagem_id: string
+  nome_arquivo: string
+  caminho_storage: string
+  tipo_mime: string | null
+  tamanho: number
 }
 
 const statusLabels: Record<Status, string> = {
@@ -56,6 +66,8 @@ export default function Comunicacao() {
   const [messages, setMessages] = useState<Mensagem[]>([])
   const [selected, setSelected] = useState<Solicitacao | null>(null)
   const [reply, setReply] = useState('')
+  const [replyFiles, setReplyFiles] = useState<File[]>([])
+  const [openingFile, setOpeningFile] = useState('')
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<'todos' | Status>('todos')
   const [loading, setLoading] = useState(true)
@@ -85,10 +97,11 @@ export default function Comunicacao() {
   async function open(item: Solicitacao) {
     setSelected(item)
     setReply('')
+    setReplyFiles([])
     setError('')
     const { data, error: e } = await supabase
       .from('solicitacao_mensagens')
-      .select('id, solicitacao_id, remetente_tipo, remetente_id, mensagem, created_at')
+      .select('id, solicitacao_id, remetente_tipo, remetente_id, mensagem, created_at, anexos:solicitacao_anexos(id, mensagem_id, nome_arquivo, caminho_storage, tipo_mime, tamanho)')
       .eq('solicitacao_id', item.id)
       .order('created_at', { ascending: true })
     if (e) { setError(e.message); return }
@@ -96,39 +109,45 @@ export default function Comunicacao() {
   }
 
   async function sendReply() {
-    if (!selected || !reply.trim() || sending) return
+    if (!selected || (!reply.trim() && replyFiles.length === 0) || sending) return
     try {
       setSending(true); setError(''); setSuccess('')
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Sessão administrativa não encontrada.')
 
-      const { error: messageError } = await supabase
+      const { data: createdMessage, error: messageError } = await supabase
         .from('solicitacao_mensagens')
-        .insert({
-          solicitacao_id: selected.id,
-          remetente_tipo: 'admin',
-          remetente_id: user.id,
-          mensagem: reply.trim(),
-        })
+        .insert({ solicitacao_id: selected.id, remetente_tipo: 'admin', remetente_id: user.id, mensagem: reply.trim() || 'Arquivo enviado.' })
+        .select('id').single()
       if (messageError) throw messageError
 
-      const { error: statusError } = await supabase
-        .from('solicitacoes')
-        .update({ status: 'respondida' })
-        .eq('id', selected.id)
-      if (statusError) throw statusError
+      for (const file of replyFiles) {
+        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+        const path = selected.id + '/' + crypto.randomUUID() + '-' + safeName
+        const { error: uploadError } = await supabase.storage.from('solicitacoes-anexos').upload(path, file, { upsert: false })
+        if (uploadError) throw uploadError
+        const { error: attachmentError } = await supabase.from('solicitacao_anexos').insert({ mensagem_id: createdMessage.id, solicitacao_id: selected.id, nome_arquivo: file.name, caminho_storage: path, tipo_mime: file.type || null, tamanho: file.size, remetente_tipo: 'admin', remetente_id: user.id })
+        if (attachmentError) throw attachmentError
+      }
 
-      setReply('')
-      setSuccess('Resposta enviada ao aluno.')
-      await open({ ...selected, status: 'respondida' })
-      await load()
+      const { error: statusError } = await supabase.from('solicitacoes').update({ status: 'respondida' }).eq('id', selected.id)
+      if (statusError) throw statusError
+      setReply(''); setReplyFiles([]); setSuccess('Resposta enviada ao aluno.')
+      await open({ ...selected, status: 'respondida' }); await load()
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Não foi possível enviar a resposta.')
-    } finally {
-      setSending(false)
-    }
+    } finally { setSending(false) }
   }
 
+  async function openAttachment(file: Anexo) {
+    try {
+      setOpeningFile(file.id)
+      const { data, error: e } = await supabase.storage.from('solicitacoes-anexos').createSignedUrl(file.caminho_storage, 120)
+      if (e) throw e
+      if (data?.signedUrl) window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
+    } catch (e) { setError(e instanceof Error ? e.message : 'Não foi possível abrir o arquivo.') }
+    finally { setOpeningFile('') }
+  }
   async function changeStatus(status: Status) {
     if (!selected) return
     const { error: e } = await supabase.from('solicitacoes').update({ status }).eq('id', selected.id)
@@ -213,14 +232,24 @@ export default function Comunicacao() {
                   <div className={`comunicacao-message ${message.remetente_tipo}`} key={message.id}>
                     <span>{message.remetente_tipo === 'admin' ? 'AB Academy' : selected.aluno?.nome_completo || 'Aluno'}</span>
                     <p>{message.mensagem}</p>
+                    {message.anexos?.length ? <div className="comunicacao-message-files">{message.anexos.map(file => <button type="button" key={file.id} onClick={() => void openAttachment(file)} disabled={openingFile === file.id}><Paperclip size={13}/><span>{file.nome_arquivo}</span><Download size={13}/></button>)}</div> : null}
                     <small>{formatDate(message.created_at)}</small>
                   </div>
                 ))}
               </div>
 
               <footer className="comunicacao-reply">
-                <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Digite a resposta para o aluno..." rows={3} disabled={selected.status === 'fechada' || sending}/>
-                <button type="button" onClick={() => void sendReply()} disabled={!reply.trim() || selected.status === 'fechada' || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Responder'}</button>
+                <div className="comunicacao-reply-main">
+                  <textarea value={reply} onChange={e => setReply(e.target.value)} placeholder="Digite a resposta para o aluno..." rows={3} disabled={selected.status === 'fechada' || sending}/>
+                  {replyFiles.length > 0 && <div className="comunicacao-file-list">{replyFiles.map(file => <span key={file.name + file.size}><Paperclip size={12}/>{file.name}<button type="button" onClick={() => setReplyFiles(current => current.filter(item => item !== file))} aria-label={"Remover " + file.name}><X size={12}/></button></span>)}</div>}
+                </div>
+                <div className="comunicacao-reply-actions">
+                  <label className="comunicacao-attach-button" title="Anexar arquivos">
+                    <Paperclip size={17}/><span>Anexar</span>
+                    <input type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip" disabled={selected.status === 'fechada' || sending} onChange={e => setReplyFiles(Array.from(e.target.files ?? []).slice(0, 5))}/>
+                  </label>
+                  <button type="button" onClick={() => void sendReply()} disabled={(!reply.trim() && replyFiles.length === 0) || selected.status === 'fechada' || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Responder'}</button>
+                </div>
               </footer>
             </>
           )}
