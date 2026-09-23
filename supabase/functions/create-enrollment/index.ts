@@ -618,6 +618,19 @@ Deno.serve(async (req) => {
           400,
         )
       }
+
+      if (
+        plano.tipo !==
+        body.tipo_plano
+      ) {
+        return jsonResponse(
+          {
+            error:
+              'O tipo do plano selecionado não corresponde ao tipo informado.',
+          },
+          400,
+        )
+      }
     }
 
     /*
