@@ -27,6 +27,7 @@ import Planos from './admin/planos'
 import Equipe from './admin/Equipe'
 import Financeiro from './admin/Financeiro'
 import CentralAtividades from './admin/CentralAtividades'
+import Comunicacao from './admin/Comunicacao'
 
 import '../styles/Admin.css'
 import '../styles/central-admin.css'
@@ -492,6 +493,10 @@ export default function Admin() {
             <Equipe />
           )}
 
+          {activeModule === 'comunicacao' && (
+            <Comunicacao />
+          )}
+
           {/* =================================================
               DEMAIS MÓDULOS
           ================================================= */}
@@ -503,7 +508,8 @@ export default function Admin() {
             activeModule !== 'central' &&
             activeModule !== 'planos' &&
             activeModule !== 'financeiro' &&
-            activeModule !== 'equipe' && (
+            activeModule !== 'equipe' &&
+            activeModule !== 'comunicacao' && (
               <div className="admin-panel">
                 <div className="admin-panel-header">
                   <h2 className="admin-panel-title">
