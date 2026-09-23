@@ -181,6 +181,7 @@ export default function Financeiro() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
+  const [generatingRecurring, setGeneratingRecurring] = useState(false)
 
   async function loadFinanceiro() {
     try {
@@ -577,6 +578,133 @@ export default function Financeiro() {
     }
   }
 
+  async function generateRecurringEntries() {
+    if (generatingRecurring) return
+
+    const recurring = lancamentos.filter(
+      (item) =>
+        item.recorrente &&
+        item.tipo === 'receita' &&
+        item.status !== 'cancelado',
+    )
+
+    if (!recurring.length) {
+      setError('Não existem lançamentos recorrentes de receita para gerar.')
+      return
+    }
+
+    try {
+      setGeneratingRecurring(true)
+      setError('')
+      setSuccess('')
+
+      const existingKeys = new Set(
+        lancamentos
+          .filter(
+            (item) =>
+              monthKey(item.data_vencimento) === month &&
+              item.tipo === 'receita',
+          )
+          .map(
+            (item) =>
+              [
+                item.categoria,
+                item.descricao,
+                item.aluno_id ?? '',
+                item.data_vencimento ?? '',
+              ].join('|'),
+          ),
+      )
+
+      const targetDate = new Date(`${month}-01T12:00:00`)
+      const targetYear = targetDate.getFullYear()
+      const targetMonth = targetDate.getMonth()
+
+      const payloads = recurring
+        .map((item) => {
+          const sourceDate = item.data_vencimento
+            ? new Date(`${item.data_vencimento.slice(0, 10)}T12:00:00`)
+            : new Date()
+
+          const day = Math.min(
+            sourceDate.getDate(),
+            new Date(targetYear, targetMonth + 1, 0).getDate(),
+          )
+
+          const dueDate = new Date(
+            targetYear,
+            targetMonth,
+            day,
+            12,
+            0,
+            0,
+          )
+
+          const dueDateString = dueDate.toISOString().slice(0, 10)
+          const key = [
+            item.categoria,
+            item.descricao,
+            item.aluno_id ?? '',
+            dueDateString,
+          ].join('|')
+
+          if (existingKeys.has(key)) {
+            return null
+          }
+
+          existingKeys.add(key)
+
+          return {
+            tipo: item.tipo,
+            categoria: item.categoria,
+            descricao: item.descricao,
+            valor: Number(item.valor),
+            status: 'pendente' as StatusLancamento,
+            data_vencimento: dueDateString,
+            data_pagamento: null,
+            metodo_pagamento: item.metodo_pagamento,
+            aluno_id: item.aluno_id,
+            recorrente: true,
+            observacoes: item.observacoes,
+          }
+        })
+        .filter(Boolean)
+
+      if (!payloads.length) {
+        setSuccess('Os lançamentos recorrentes deste período já estão gerados.')
+        return
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+
+      const { error: insertError } = await supabase
+        .from('lancamentos_financeiros')
+        .insert(
+          payloads.map((payload) => ({
+            ...payload,
+            created_by: user?.id ?? null,
+          })),
+        )
+
+      if (insertError) throw insertError
+
+      setSuccess(
+        `${payloads.length} lançamento${payloads.length === 1 ? '' : 's'} recorrente${payloads.length === 1 ? '' : 's'} gerado${payloads.length === 1 ? '' : 's'} para ${monthLabel}.`,
+      )
+
+      await loadFinanceiro()
+    } catch (err) {
+      console.error('Erro ao gerar recorrentes:', err)
+      setError(
+        err instanceof Error
+          ? err.message
+          : 'Não foi possível gerar os lançamentos recorrentes.',
+      )
+    } finally {
+      setGeneratingRecurring(false)
+    }
+  }
+
   function exportCsv() {
     const rows = filteredLancamentos.map((item) => [
       item.tipo,
@@ -651,7 +779,7 @@ export default function Financeiro() {
           <span className="financeiro-eyebrow">GESTÃO FINANCEIRA</span>
           <h2>Financeiro</h2>
           <p>
-            Acompanhe receitas, despesas, pagamentos, pendências e fluxo de caixa da AB Academy.
+            Acompanhe receitas, despesas, pagamentos, pendências e fluxo de caixa da AB Academy. Gere automaticamente as receitas recorrentes do período.
           </p>
         </div>
 
@@ -664,6 +792,16 @@ export default function Financeiro() {
           >
             <RefreshCw size={16} className={loading ? 'financeiro-spin' : ''} />
             Atualizar
+          </button>
+          <button
+            type="button"
+            className="financeiro-secondary-button"
+            onClick={generateRecurringEntries}
+            disabled={generatingRecurring || loading}
+            title="Gerar receitas recorrentes para o mês selecionado"
+          >
+            <RefreshCw size={16} className={generatingRecurring ? 'financeiro-spin' : ''} />
+            Gerar recorrentes
           </button>
           <button
             type="button"
