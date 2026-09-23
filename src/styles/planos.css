@@ -124,7 +124,7 @@
 }
 
 .planos-language-title h2 {
-  margin: 7px 0 0;
+  margin: 2px 0 0;
   font-size: clamp(30px, 3.6vw, 42px);
   line-height: 1.08;
   letter-spacing: -.03em;
@@ -163,7 +163,7 @@
   width: 100%;
   min-width: 0;
   min-height: 100%;
-  padding: 30px;
+  padding: 26px;
   overflow: hidden;
   border: 1px solid var(--planos-line);
   border-radius: 24px;
@@ -226,14 +226,14 @@
   min-width: 0;
   margin: 22px 0 0;
   padding: 0;
-  font-size: 21px;
-  line-height: 1.28;
+  font-size: 20px;
+  line-height: 1.25;
   letter-spacing: -.02em;
   overflow-wrap: anywhere;
 }
 
 .planos-detail-card--anual h3 {
-  padding-right: 92px;
+  padding-right: 78px;
 }
 
 .planos-detail-price {
@@ -279,8 +279,8 @@
   min-width: 0;
   margin: 21px 0 0;
   color: #59677e;
-  font-size: 13.5px;
-  line-height: 1.72;
+  font-size: 13px;
+  line-height: 1.58;
   overflow-wrap: anywhere;
 }
 
@@ -289,8 +289,8 @@
   flex-direction: column;
   width: 100%;
   min-width: 0;
-  gap: 11px;
-  margin: 24px 0 0;
+  gap: 9px;
+  margin: 20px 0 0;
   padding: 0;
   list-style: none;
 }
@@ -300,10 +300,10 @@
   align-items: flex-start;
   width: 100%;
   min-width: 0;
-  gap: 9px;
+  gap: 7px;
   color: #4d5b72;
-  font-size: 12.5px;
-  line-height: 1.45;
+  font-size: 12px;
+  line-height: 1.4;
 }
 
 .planos-detail-features li svg {
@@ -321,7 +321,7 @@
   min-width: 0;
   min-height: 48px;
   margin-top: auto;
-  padding: 12px 15px;
+  padding: 11px 12px;
   border-radius: 12px;
   text-align: center;
   line-height: 1.25;
@@ -418,7 +418,7 @@
   }
 
   .planos-detail-card {
-    padding: 28px;
+    padding: 24px;
   }
 }
 
@@ -505,7 +505,7 @@
   }
 
   .planos-detail-card {
-    padding: 24px 21px 21px;
+    padding: 22px 18px 19px;
     border-radius: 20px;
   }
 
@@ -514,7 +514,7 @@
   }
 
   .planos-detail-card--anual h3 {
-    padding-right: 82px;
+    padding-right: 72px;
   }
 
   .planos-detail-badge {
@@ -527,7 +527,7 @@
 
   .planos-detail-card h3 {
     margin-top: 18px;
-    font-size: 20px;
+    font-size: 19px;
   }
 
   .planos-detail-price {
@@ -541,12 +541,12 @@
 
   .planos-detail-description {
     margin-top: 18px;
-    font-size: 13px;
+    font-size: 12.5px;
   }
 
   .planos-detail-features {
     margin-top: 20px;
-    gap: 10px;
+    gap: 8px;
   }
 
   .planos-detail-cta {
@@ -593,7 +593,7 @@
   }
 
   .planos-detail-card {
-    padding: 21px 17px 18px;
+    padding: 20px 15px 17px;
   }
 
   .planos-detail-card--anual h3 {
