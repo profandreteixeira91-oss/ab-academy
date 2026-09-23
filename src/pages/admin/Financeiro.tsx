@@ -584,12 +584,11 @@ export default function Financeiro() {
     const recurring = lancamentos.filter(
       (item) =>
         item.recorrente &&
-        item.tipo === 'receita' &&
         item.status !== 'cancelado',
     )
 
     if (!recurring.length) {
-      setError('Não existem lançamentos recorrentes de receita para gerar.')
+      setError('Não existem lançamentos recorrentes para gerar.')
       return
     }
 
@@ -603,7 +602,7 @@ export default function Financeiro() {
           .filter(
             (item) =>
               monthKey(item.data_vencimento) === month &&
-              item.tipo === 'receita',
+              item.tipo === 'receita' || item.tipo === 'despesa',
           )
           .map(
             (item) =>
@@ -779,7 +778,7 @@ export default function Financeiro() {
           <span className="financeiro-eyebrow">GESTÃO FINANCEIRA</span>
           <h2>Financeiro</h2>
           <p>
-            Acompanhe receitas, despesas, pagamentos, pendências e fluxo de caixa da AB Academy. Gere automaticamente as receitas recorrentes do período.
+            Acompanhe receitas, despesas, pagamentos, pendências e fluxo de caixa da AB Academy. Gere automaticamente receitas e despesas recorrentes do período.
           </p>
         </div>
 
