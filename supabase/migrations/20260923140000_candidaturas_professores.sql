@@ -1,0 +1,16 @@
+create table if not exists public.candidaturas_professores (id uuid primary key default gen_random_uuid(), nome text not null, email text not null, telefone text, cidade text, idiomas text not null, nivel text not null check (nivel in ('fluente','avancado','nativo')), experiencia text, linkedin_url text not null, portfolio_url text, motivacao text, curriculo_path text, status text not null default 'recebida' check (status in ('recebida','em_analise','contatada','aprovada','arquivada')), created_at timestamptz not null default now(), updated_at timestamptz not null default now());
+create index if not exists candidaturas_professores_created_at_idx on public.candidaturas_professores (created_at desc);
+alter table public.candidaturas_professores enable row level security;
+drop policy if exists "candidaturas professores insert publico" on public.candidaturas_professores;
+create policy "candidaturas professores insert publico" on public.candidaturas_professores for insert to anon, authenticated with check (true);
+drop policy if exists "candidaturas professores admin select" on public.candidaturas_professores;
+create policy "candidaturas professores admin select" on public.candidaturas_professores for select to authenticated using (exists (select 1 from public.equipe where equipe.user_id=auth.uid() and equipe.ativo=true and equipe.perfil in ('admin','gestor')));
+drop policy if exists "candidaturas professores admin update" on public.candidaturas_professores;
+create policy "candidaturas professores admin update" on public.candidaturas_professores for update to authenticated using (exists (select 1 from public.equipe where equipe.user_id=auth.uid() and equipe.ativo=true and equipe.perfil in ('admin','gestor'))) with check (exists (select 1 from public.equipe where equipe.user_id=auth.uid() and equipe.ativo=true and equipe.perfil in ('admin','gestor')));
+insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types) values ('curriculos-professores','curriculos-professores',false,10485760,array['application/pdf','application/msword','application/vnd.openxmlformats-officedocument.wordprocessingml.document']) on conflict(id) do update set public=false,file_size_limit=10485760,allowed_mime_types=excluded.allowed_mime_types;
+drop policy if exists "curriculos professores upload publico" on storage.objects;
+create policy "curriculos professores upload publico" on storage.objects for insert to anon, authenticated with check (bucket_id='curriculos-professores');
+drop policy if exists "curriculos professores admin read" on storage.objects;
+create policy "curriculos professores admin read" on storage.objects for select to authenticated using (bucket_id='curriculos-professores' and exists (select 1 from public.equipe where equipe.user_id=auth.uid() and equipe.ativo=true and equipe.perfil in ('admin','gestor')));
+drop policy if exists "curriculos professores admin delete" on storage.objects;
+create policy "curriculos professores admin delete" on storage.objects for delete to authenticated using (bucket_id='curriculos-professores' and exists (select 1 from public.equipe where equipe.user_id=auth.uid() and equipe.ativo=true and equipe.perfil in ('admin','gestor')));
