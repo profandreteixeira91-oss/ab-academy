@@ -25,6 +25,7 @@ import Alunos from './admin/Alunos'
 import Atividades from './admin/Atividades'
 import Planos from './admin/planos'
 import Equipe from './admin/Equipe'
+import Financeiro from './admin/Financeiro'
 import CentralAtividades from './admin/CentralAtividades'
 
 import '../styles/Admin.css'
@@ -476,6 +477,14 @@ export default function Admin() {
           )}
 
           {/* =================================================
+              FINANCEIRO
+          ================================================= */}
+
+          {activeModule === 'financeiro' && (
+            <Financeiro />
+          )}
+
+          {/* =================================================
               EQUIPE
           ================================================= */}
 
@@ -493,6 +502,7 @@ export default function Admin() {
             activeModule !== 'atividades' &&
             activeModule !== 'central' &&
             activeModule !== 'planos' &&
+            activeModule !== 'financeiro' &&
             activeModule !== 'equipe' && (
               <div className="admin-panel">
                 <div className="admin-panel-header">
