@@ -932,9 +932,6 @@
   color: rgba(255, 255, 255, 0.8);
 }
 
-.schedule-time.selected svg {
-  margin-left: 5px;
-}
 
 .schedule-time:disabled {
   cursor: not-allowed;
@@ -1393,13 +1390,6 @@
   .schedule-time {
     min-height: 58px;
     flex-direction: column;
-  }
-
-  .schedule-time.selected svg {
-    position: absolute;
-    top: 7px;
-    right: 7px;
-    margin: 0;
   }
 
   .enrollment-actions {
