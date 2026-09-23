@@ -803,3 +803,51 @@
     width: 100%;
   }
 }
+
+
+/* =========================================================
+   MOBILE UX/UI AUDIT
+========================================================= */
+
+@media (max-width: 900px) {
+  .comunicacao-list-card,
+  .comunicacao-thread-card {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .comunicacao-thread-card {
+    min-height: 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .comunicacao-page {
+    overflow-x: hidden;
+  }
+
+  .comunicacao-ticket,
+  .comunicacao-message {
+    min-width: 0;
+  }
+
+  .comunicacao-message {
+    overflow-wrap: anywhere;
+  }
+
+  .comunicacao-file-list {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .comunicacao-reply-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .comunicacao-reply-actions > * {
+    flex: 1;
+    min-width: 0;
+  }
+}
