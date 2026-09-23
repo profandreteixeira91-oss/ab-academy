@@ -66,18 +66,17 @@
 
 /* Cabeçalho do idioma: uma única faixa ocupando toda a largura */
 .planos-language-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  display: block;
   width: 100%;
   min-width: 0;
-  gap: 32px;
   margin: 0 0 28px;
+  padding: 0;
 }
 
 .planos-language-title {
   display: flex;
   align-items: center;
+  width: 100%;
   min-width: 0;
   gap: 15px;
 }
@@ -104,14 +103,15 @@
 }
 
 .planos-language-heading > p {
-  flex: 0 1 440px;
-  max-width: 440px;
+  display: block;
+  width: 100%;
+  max-width: 760px;
   min-width: 0;
-  margin: 0;
+  margin: 12px 0 0;
   color: var(--planos-muted);
   font-size: 15px;
   line-height: 1.6;
-  text-align: right;
+  text-align: left;
   overflow-wrap: anywhere;
 }
 
@@ -123,6 +123,7 @@
   min-width: 0;
   gap: 20px;
   margin: 0;
+  padding: 0;
   align-items: stretch;
 }
 
@@ -399,15 +400,14 @@
   }
 
   .planos-language-heading {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 12px;
+    display: block;
+    margin-bottom: 24px;
   }
 
   .planos-language-heading > p {
     width: 100%;
     max-width: 620px;
-    flex: none;
+    margin-top: 10px;
     text-align: left;
   }
 
