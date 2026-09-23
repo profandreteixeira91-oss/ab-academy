@@ -703,6 +703,20 @@ async function createRecurringPaymentRecord(
     )
   }
 
+  const matricula =
+    pagamentoBase.matricula_id
+      ? await getMatricula(pagamentoBase.matricula_id)
+      : null
+
+  if (matricula?.aluno_id) {
+    await createOrUpdateMensalidade(
+      matricula.aluno_id,
+      data as Pagamento,
+      payment,
+      getLocalPaymentStatus(payment.status ?? ''),
+    )
+  }
+
   return data as Pagamento
 }
 
@@ -1434,6 +1448,22 @@ async function finalizarMatricula(
   )
 
   /*
+   * Cria a primeira mensalidade do PIX mensal.
+   * A assinatura recorrente começa no mês seguinte.
+   */
+  if (
+    pagamento.metodo === 'pix' &&
+    pagamento.tipo_plano === 'mensal'
+  ) {
+    await createOrUpdateMensalidade(
+      alunoId,
+      pagamento,
+      payment,
+      'pago',
+    )
+  }
+
+  /*
    * Para PIX mensal, cria a assinatura
    * recorrente depois da primeira confirmação.
    */
@@ -1767,11 +1797,50 @@ Deno.serve(async (req) => {
 
     /*
      * =====================================================
-     * PAGAMENTO CONFIRMADO
+     * PAGAMENTO RECORRENTE DE ASSINATURA
      * =====================================================
+     *
+     * Cobranças geradas pela assinatura não devem
+     * passar novamente pelo fluxo de ativação da matrícula.
      */
+    if (payment.subscription) {
+      await atualizarPagamento(
+        pagamento.id,
+        localStatus,
+      )
+
+      if (
+        isPaymentConfirmedEvent(
+          body.event,
+          payment.status ?? '',
+        )
+      ) {
+        await updateMensalidadeStatus(
+          pagamento.id,
+          'pago',
+        )
+      }
+
+      return jsonResponse({
+        received: true,
+        event: body.event,
+        status: isPaymentConfirmedEvent(
+          body.event,
+          payment.status ?? '',
+        )
+          ? 'pago'
+          : localStatus,
+        pagamento_id: pagamento.id,
+        subscription_id: payment.subscription,
+      })
+    }
 
     /*
+     * =====================================================
+     * PAGAMENTO CONFIRMADO
+     * =====================================================
+
+/*
      * Se já está pago e possui matrícula ativa,
      * tratamos como reenvio do webhook.
      */
