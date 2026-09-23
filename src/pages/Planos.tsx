@@ -221,7 +221,7 @@ function Planos() {
 
           {!loading && !error && (
             <>
-              <div className="planos-language">
+              <div className="planos-language planos-language--stacked">
                 <div className="planos-language-heading">
                   <div className="planos-language-title">
                     <img src={usaFlag} alt="" className="planos-language-flag" />
@@ -239,7 +239,7 @@ function Planos() {
                 </div>
               </div>
 
-              <div className="planos-language">
+              <div className="planos-language planos-language--stacked">
                 <div className="planos-language-heading">
                   <div className="planos-language-title">
                     <img src={germanyFlag} alt="" className="planos-language-flag" />
