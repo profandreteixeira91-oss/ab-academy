@@ -729,8 +729,7 @@ export default function Matricula() {
             </h1>
 
             <p>
-              Preencha seus dados, escolha o
-              idioma, plano e horário das aulas.
+              Confira seu plano, preencha seus dados e escolha o horário das aulas.
             </p>
           </div>
 
@@ -837,7 +836,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {!user && step === 1 && (
+              {!user && step === 2 && (
                 <>
                   <button
                     type="button"
