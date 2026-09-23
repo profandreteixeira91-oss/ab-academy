@@ -852,13 +852,15 @@ export default function Checkout({
             </div>
 
             <h1>
-              Matrícula confirmada!
+              {pagamento?.tipo_plano === 'avulso'
+                ? 'Aula diagnóstica confirmada!'
+                : 'Matrícula confirmada!'}
             </h1>
 
             <p>
-              Seu pagamento foi confirmado e
-              sua matrícula foi realizada com
-              sucesso.
+              {pagamento?.tipo_plano === 'avulso'
+                ? 'Seu pagamento foi confirmado e sua aula diagnóstica foi agendada com sucesso.'
+                : 'Seu pagamento foi confirmado e sua matrícula foi realizada com sucesso.'}
             </p>
 
             <span>
@@ -934,7 +936,9 @@ export default function Checkout({
             </span>
 
             <h1>
-              Finalize sua matrícula
+              {pagamento?.tipo_plano === 'avulso'
+                ? 'Finalize sua aula diagnóstica'
+                : 'Finalize sua matrícula'}
             </h1>
 
             <p>
@@ -981,7 +985,9 @@ export default function Checkout({
 
               <strong>
                 {pagamento.plano_nome ??
-                  'Plano selecionado'}
+                  (pagamento.tipo_plano === 'avulso'
+                    ? 'Aula diagnóstica'
+                    : 'Plano selecionado')}
               </strong>
             </div>
 
@@ -1433,16 +1439,12 @@ export default function Checkout({
                   </strong>
 
                   <small>
-                    {parcelas}x de{' '}
-                    {valorParcela.toLocaleString(
-                      'pt-BR',
-                      {
-                        style:
-                          'currency',
-                        currency:
-                          'BRL',
-                      },
-                    )}
+                    {pagamento.tipo_plano === 'avulso'
+                      ? 'Pagamento único'
+                      : `${parcelas}x de ${valorParcela.toLocaleString('pt-BR', {
+                          style: 'currency',
+                          currency: 'BRL',
+                        })}`}
                   </small>
 
                 </div>
