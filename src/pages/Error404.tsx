@@ -27,10 +27,16 @@ export default function Error404() {
         </p>
 
         <div className="error404-actions">
-          <a href="/" className="error404-primary">
+          <button
+            type="button"
+            className="error404-primary"
+            onClick={() => {
+              window.location.assign('/')
+            }}
+          >
             <HomeIcon size={18} />
             Ir para o início
-          </a>
+          </button>
 
           <button
             type="button"
