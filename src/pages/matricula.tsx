@@ -201,6 +201,7 @@ export default function Matricula() {
   const [selectedPlanId, setSelectedPlanId] =
     useState<string | null>(null)
   const [plan, setPlan] = useState<Plan | null>(null)
+  const [diagnosticRequested, setDiagnosticRequested] = useState(false)
 
   const [availableSchedules, setAvailableSchedules] =
     useState<Horario[]>([])
@@ -303,6 +304,18 @@ export default function Matricula() {
   }, [])
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const requestedLanguage = params.get('idioma')
+    const requestedDiagnostic = params.get('diagnostica') === '1'
+
+    if (requestedLanguage === 'ingles' || requestedLanguage === 'alemao') {
+      setLanguage(requestedLanguage)
+    }
+
+    setDiagnosticRequested(requestedDiagnostic)
+  }, [])
+
+  useEffect(() => {
     if (!language) {
       setPlans([])
       setPlan(null)
@@ -358,7 +371,17 @@ export default function Matricula() {
 
       setPlans([])
     } else {
-      setPlans((data || []) as Plan[])
+      const loadedPlans = (data || []) as Plan[]
+      setPlans(loadedPlans)
+
+      const requestedPlanId = new URLSearchParams(window.location.search).get('plano')
+      if (requestedPlanId) {
+        const requestedPlan = loadedPlans.find((item) => item.id === requestedPlanId)
+        if (requestedPlan) {
+          setSelectedPlanId(requestedPlan.id)
+          setPlan(requestedPlan)
+        }
+      }
     }
 
     setLoadingPlans(false)
@@ -1387,7 +1410,25 @@ export default function Matricula() {
 
               {step === 3 && (
                 <div className="plan-selection">
-                  <div className="diagnostic-offer">
+                  {diagnosticRequested && (
+                    <div className="diagnostic-offer">
+                      <strong>Aula diagnóstica — R$ 50</strong>
+                      <p>
+                        Aula individual de 60 minutos em Inglês ou Alemão.
+                        O valor é descontado da primeira mensalidade caso você se matricule.
+                      </p>
+                    </div>
+                  )}
+
+                  {!diagnosticRequested && (
+                    <div className="diagnostic-offer">
+                      <strong>Aula diagnóstica — R$ 50</strong>
+                      <p>
+                        Faça uma aula individual de 60 minutos em Inglês ou Alemão.
+                        Em caso de matrícula, os R$ 50 são descontados da primeira mensalidade.
+                      </p>
+                    </div>
+                  )}
                     <strong>Aula diagnóstica — R$ 50</strong>
                     <p>
                       Aula individual de 60 minutos para Inglês ou Alemão.
