@@ -1410,29 +1410,11 @@ export default function Matricula() {
 
               {step === 3 && (
                 <div className="plan-selection">
-                  {diagnosticRequested && (
-                    <div className="diagnostic-offer">
-                      <strong>Aula diagnóstica — R$ 50</strong>
-                      <p>
-                        Aula individual de 60 minutos em Inglês ou Alemão.
-                        O valor é descontado da primeira mensalidade caso você se matricule.
-                      </p>
-                    </div>
-                  )}
-
-                  {!diagnosticRequested && (
-                    <div className="diagnostic-offer">
-                      <strong>Aula diagnóstica — R$ 50</strong>
-                      <p>
-                        Faça uma aula individual de 60 minutos em Inglês ou Alemão.
-                        Em caso de matrícula, os R$ 50 são descontados da primeira mensalidade.
-                      </p>
-                    </div>
-                  )}
+                  <div className="diagnostic-offer">
                     <strong>Aula diagnóstica — R$ 50</strong>
                     <p>
-                      Aula individual de 60 minutos para Inglês ou Alemão.
-                      Se você se matricular, os R$ 50 são descontados da primeira mensalidade.
+                      Aula individual de 60 minutos em Inglês ou Alemão.
+                      Em caso de matrícula, os R$ 50 são descontados da primeira mensalidade.
                     </p>
                   </div>
 
