@@ -1611,3 +1611,192 @@
     max-height: 72px;
   }
 }
+
+
+/* =========================================================
+   MOBILE UX/UI AUDIT — ADMIN
+========================================================= */
+
+.admin-mobile-overlay {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .admin-sidebar {
+    width: min(300px, 86vw);
+    min-width: min(300px, 86vw);
+    padding: 24px 16px;
+    box-shadow: 18px 0 42px rgba(15, 23, 42, 0.16);
+  }
+
+  .admin-sidebar-header {
+    flex: 0 0 76px;
+    height: 76px;
+    min-height: 76px;
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+
+  .admin-sidebar-logo {
+    max-width: 190px;
+    max-height: 68px;
+  }
+
+  .admin-mobile-overlay {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    padding: 0;
+    background: rgba(15, 23, 42, 0.38);
+    backdrop-filter: blur(1px);
+    -webkit-backdrop-filter: blur(1px);
+    cursor: pointer;
+  }
+
+  .admin-header {
+    z-index: 80;
+  }
+
+  .admin-content {
+    min-width: 0;
+    overflow-x: hidden;
+  }
+
+  .admin-header-left {
+    gap: 10px;
+  }
+
+  .admin-header-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-page {
+    overflow-x: hidden;
+  }
+
+  .admin-header {
+    height: 64px;
+    min-height: 64px;
+    padding: 0 12px;
+  }
+
+  .admin-menu-button,
+  .admin-header-action {
+    width: 38px;
+    height: 38px;
+    min-width: 38px;
+    border-radius: 10px;
+  }
+
+  .admin-header-title {
+    font-size: 16px;
+  }
+
+  .admin-header-left {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .admin-header-right {
+    flex-shrink: 0;
+  }
+
+  .admin-content {
+    padding: 16px 12px;
+  }
+
+  .admin-page-intro {
+    margin-bottom: 16px;
+  }
+
+  .admin-page-intro h1 {
+    font-size: 20px;
+    line-height: 1.25;
+  }
+
+  .admin-page-intro p {
+    font-size: 13px;
+  }
+
+  .admin-sidebar {
+    width: min(292px, 88vw);
+    min-width: min(292px, 88vw);
+    padding: 20px 14px;
+  }
+
+  .admin-sidebar-header {
+    flex-basis: 72px;
+    height: 72px;
+    min-height: 72px;
+    margin-bottom: 18px;
+  }
+
+  .admin-sidebar-logo {
+    max-width: 190px;
+    max-height: 66px;
+  }
+
+  .admin-sidebar-section {
+    margin-bottom: 18px;
+  }
+
+  .admin-sidebar-section-title {
+    padding: 0 12px;
+    margin-bottom: 6px;
+  }
+
+  .admin-nav-item {
+    min-height: 46px;
+    margin-bottom: 4px;
+    padding: 0 12px;
+  }
+
+  .admin-sidebar-legal {
+    display: none;
+  }
+
+  .admin-sidebar-user {
+    min-height: 50px;
+  }
+
+  .admin-sidebar-footer {
+    padding-top: 10px;
+  }
+}
+
+@media (max-width: 380px) {
+  .admin-header {
+    padding: 0 10px;
+  }
+
+  .admin-content {
+    padding: 14px 10px;
+  }
+
+  .admin-header-title {
+    font-size: 15px;
+  }
+
+  .admin-sidebar {
+    width: 90vw;
+    min-width: 90vw;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-sidebar,
+  .admin-nav-item,
+  .admin-header-action,
+  .admin-menu-button {
+    transition: none;
+  }
+}

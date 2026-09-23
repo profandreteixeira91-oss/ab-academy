@@ -1256,3 +1256,65 @@
     width: 100%;
   }
 }
+
+/* =========================================================
+   MOBILE UX/UI AUDIT
+========================================================= */
+
+@media (max-width: 700px) {
+  .alunos-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    margin-right: -1px;
+  }
+
+  .alunos-table {
+    min-width: 760px;
+  }
+
+  .alunos-actions {
+    flex-wrap: wrap;
+  }
+
+  .alunos-modal {
+    width: 100%;
+  }
+
+  .alunos-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+  }
+
+  .alunos-modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06);
+  }
+}
+
+@media (max-width: 520px) {
+  .alunos-table {
+    min-width: 700px;
+  }
+
+  .alunos-header h1 {
+    font-size: 20px;
+  }
+
+  .alunos-stat-card {
+    border-radius: 12px;
+  }
+
+  .alunos-modal-header {
+    gap: 10px;
+  }
+
+  .alunos-modal-close {
+    flex: 0 0 auto;
+  }
+}

@@ -754,3 +754,61 @@
     width: 100%;
   }
 }
+
+
+/* =========================================================
+   MOBILE UX/UI AUDIT
+========================================================= */
+
+@media (max-width: 700px) {
+  .equipe-page {
+    overflow-x: hidden;
+  }
+
+  .equipe-list {
+    width: 100%;
+  }
+
+  .equipe-card {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .equipe-modal {
+    width: 100%;
+  }
+
+  .equipe-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+  }
+
+  .equipe-modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06);
+  }
+
+  .equipe-action-button,
+  .equipe-access-button {
+    min-height: 40px;
+  }
+}
+
+@media (max-width: 480px) {
+  .equipe-page {
+    padding: 14px 12px;
+  }
+
+  .equipe-header h1 {
+    font-size: 21px;
+  }
+
+  .equipe-card {
+    padding: 12px;
+  }
+}

@@ -1011,3 +1011,66 @@
     padding-right: 16px;
   }
 }
+
+
+/* =========================================================
+   MOBILE UX/UI AUDIT
+========================================================= */
+
+@media (max-width: 700px) {
+  .financeiro-page {
+    overflow-x: hidden;
+  }
+
+  .financeiro-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .financeiro-table {
+    min-width: 720px;
+  }
+
+  .financeiro-modal {
+    width: 100%;
+  }
+
+  .financeiro-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+  }
+
+  .financeiro-modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06);
+  }
+
+  .financeiro-row-actions {
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 480px) {
+  .financeiro-heading h2 {
+    line-height: 1.25;
+  }
+
+  .financeiro-stat-card {
+    min-height: 84px;
+  }
+
+  .financeiro-modal-overlay {
+    padding: 0;
+  }
+
+  .financeiro-modal {
+    max-height: 100vh;
+    border-radius: 0;
+  }
+}
