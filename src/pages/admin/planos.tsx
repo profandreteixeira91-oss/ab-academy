@@ -335,13 +335,21 @@ export default function Planos() {
         valorParcela = null
       }
 
-      const { data: planoExistente, error: duplicateError } = await supabase
+      let duplicateQuery = supabase
         .from('planos')
         .select('id')
         .eq('idioma', form.idioma)
         .eq('tipo', form.tipo)
-        .neq('id', editingPlano?.id ?? '')
-        .maybeSingle()
+        .limit(1)
+
+      if (editingPlano) {
+        duplicateQuery = duplicateQuery.neq('id', editingPlano.id)
+      }
+
+      const { data: planosExistentes, error: duplicateError } =
+        await duplicateQuery
+
+      const planoExistente = planosExistentes?.[0] ?? null
 
       if (duplicateError) {
         throw duplicateError
