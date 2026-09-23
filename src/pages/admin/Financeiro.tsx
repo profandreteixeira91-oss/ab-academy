@@ -165,14 +165,6 @@ function isPaymentOpen(status: string) {
   return ['pendente', 'processando'].includes(status)
 }
 
-function isPaymentOverdue(status: string, createdAt: string) {
-  if (!isPaymentOpen(status)) return false
-  const created = new Date(createdAt)
-  const limit = new Date(created)
-  limit.setDate(limit.getDate() + 3)
-  return limit.getTime() < Date.now()
-}
-
 export default function Financeiro() {
   const [tab, setTab] = useState<FinanceTab>('visao-geral')
   const [month, setMonth] = useState(currentMonth())
