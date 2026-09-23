@@ -298,8 +298,7 @@ function Planos() {
                   <p>
                     Aula individual de 60 minutos em Inglês ou Alemão para
                     entender seu nível e orientar o melhor caminho de estudo.
-                    Em caso de matrícula, os R$ 50 são descontados da primeira
-                    mensalidade.
+                    Pagamento único, sem recorrência.
                   </p>
                 </div>
                 <a href="/diagnostica" className="btn btn-secondary">
