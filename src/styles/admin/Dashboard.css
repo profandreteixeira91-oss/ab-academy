@@ -82,21 +82,29 @@
 
   .dashboard-calendar-panel{
     width:100%;
+    max-width:100%;
     min-width:0;
     overflow:hidden;
     border-radius:14px;
   }
 
   .dashboard-calendar-header{
+    width:100%;
+    box-sizing:border-box;
     padding:14px;
     gap:12px;
   }
 
   .dashboard-calendar-header h2{font-size:16px}
-  .dashboard-calendar-header p{font-size:10px;line-height:1.4}
+  .dashboard-calendar-header p{
+    font-size:10px;
+    line-height:1.4;
+    max-width:100%;
+  }
 
   .dashboard-calendar-controls{
     width:100%;
+    max-width:100%;
     display:flex;
     flex-direction:column;
     align-items:stretch;
@@ -113,25 +121,28 @@
     display:grid;
     grid-template-columns:repeat(3,minmax(0,1fr));
     padding:3px;
+    box-sizing:border-box;
   }
 
   .dashboard-period-switcher button{
     min-height:34px;
-    padding:0 8px;
+    min-width:0;
+    padding:0 6px;
     font-size:10px;
   }
 
   .dashboard-calendar-nav{
     width:100%;
+    max-width:100%;
     display:grid;
-    grid-template-columns:40px minmax(0,1fr) 40px;
+    grid-template-columns:38px minmax(0,1fr) 38px;
     gap:8px;
     align-items:center;
   }
 
   .dashboard-calendar-nav button{
-    width:40px;
-    min-height:40px;
+    width:38px;
+    min-height:38px;
     padding:0;
     display:flex;
     align-items:center;
@@ -141,66 +152,92 @@
   .dashboard-calendar-nav strong{
     min-width:0;
     width:100%;
+    max-width:100%;
     font-size:10px;
     line-height:1.3;
     white-space:normal;
-    overflow:visible;
-    text-overflow:clip;
+    overflow-wrap:anywhere;
+    text-align:center;
   }
 
-  /* SEMANA — 7 colunas com largura fixa e rolagem horizontal.
-     O erro anterior era aplicar o seletor a uma classe inexistente.
-     A classe real é .dashboard-period-semana. */
+  /* SEMANA — sem rolagem horizontal.
+     Cada dia ocupa a largura total disponível. */
   .dashboard-period-semana{
-    display:grid;
-    grid-template-columns:repeat(7,150px);
+    display:flex;
+    flex-direction:column;
     width:100%;
-    min-width:0;
     max-width:100%;
-    overflow-x:auto;
-    overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;
-    overscroll-behavior-x:contain;
-    scrollbar-width:thin;
+    min-width:0;
+    overflow-x:hidden;
+    overflow-y:visible;
   }
 
   .dashboard-period-semana .dashboard-day-column{
-    width:150px;
-    min-width:150px;
-    border-right:1px solid #edf1f5;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    box-sizing:border-box;
+    border-right:0;
+    border-bottom:1px solid #edf1f5;
+  }
+
+  .dashboard-period-semana .dashboard-day-column:last-child{
+    border-bottom:0;
   }
 
   .dashboard-period-semana .dashboard-day-heading{
-    min-height:70px;
     width:100%;
-    padding:10px 8px;
-    display:flex;
-    flex-direction:column;
-    justify-content:center;
-    gap:2px;
+    min-height:56px;
+    box-sizing:border-box;
+    padding:10px 12px;
+    display:grid;
+    grid-template-columns:42px minmax(0,1fr) auto;
+    align-items:center;
+    justify-content:initial;
+    gap:8px;
+    text-align:left;
   }
 
-  .dashboard-period-semana .dashboard-day-heading span{font-size:9px}
-  .dashboard-period-semana .dashboard-day-heading strong{font-size:18px;line-height:1.1}
-  .dashboard-period-semana .dashboard-day-heading small{font-size:8px}
+  .dashboard-period-semana .dashboard-day-heading span{
+    font-size:9px;
+  }
+
+  .dashboard-period-semana .dashboard-day-heading strong{
+    font-size:18px;
+    line-height:1.1;
+  }
+
+  .dashboard-period-semana .dashboard-day-heading small{
+    font-size:9px;
+  }
 
   .dashboard-period-semana .dashboard-day-events{
-    min-height:280px;
-    padding:8px;
+    width:100%;
+    min-width:0;
+    min-height:0;
+    box-sizing:border-box;
+    padding:8px 10px 12px;
   }
 
   .dashboard-period-semana .dashboard-calendar-event{
     width:100%;
-    min-height:76px;
+    max-width:100%;
+    min-width:0;
+    min-height:0;
+    box-sizing:border-box;
     margin-bottom:7px;
-    padding:9px 8px;
-    border-radius:8px;
+    padding:10px;
+    border-radius:9px;
+  }
+
+  .dashboard-period-semana .dashboard-calendar-event:last-child{
+    margin-bottom:0;
   }
 
   .dashboard-period-semana .dashboard-calendar-event strong{
-    font-size:9px;
+    font-size:10px;
     line-height:1.35;
-    white-space:nowrap;
+    white-space:normal;
   }
 
   .dashboard-period-semana .dashboard-calendar-event span{
@@ -210,85 +247,105 @@
 
   .dashboard-period-semana .dashboard-calendar-event small{
     margin-top:5px;
-    font-size:8px;
+    font-size:9px;
     line-height:1.35;
     white-space:normal;
     overflow-wrap:anywhere;
+    word-break:break-word;
   }
 
   .dashboard-period-semana .dashboard-no-events{
-    padding:24px 5px;
+    width:100%;
+    box-sizing:border-box;
+    padding:7px 2px 3px;
+    text-align:left;
     font-size:9px;
-    text-align:center;
   }
 
-  /* DIA — uma única coluna ocupando toda a largura. */
+  /* DIA — uma única coluna, sem qualquer largura fixa. */
   .dashboard-period-dia{
     display:grid;
     grid-template-columns:minmax(0,1fr);
     width:100%;
+    max-width:100%;
     min-width:0;
+    overflow:hidden;
   }
 
   .dashboard-period-dia .dashboard-day-column{
     width:100%;
+    max-width:100%;
     min-width:0;
     border-right:0;
   }
 
   .dashboard-period-dia .dashboard-day-heading{
-    min-height:58px;
-    padding:11px 14px;
+    width:100%;
+    box-sizing:border-box;
+    min-height:56px;
+    padding:10px 12px;
   }
 
   .dashboard-period-dia .dashboard-day-events{
-    min-height:120px;
+    width:100%;
+    min-width:0;
+    min-height:0;
+    box-sizing:border-box;
     padding:10px;
   }
 
   .dashboard-period-dia .dashboard-calendar-event{
     width:100%;
     max-width:none;
-    min-height:76px;
+    min-width:0;
+    box-sizing:border-box;
     padding:10px;
   }
 
-  /* MÊS — grade real de 7 colunas com largura legível e rolagem. */
+  /* MÊS — sem rolagem horizontal.
+     As datas passam para duas colunas fluidas. */
   .dashboard-month-calendar{
     width:100%;
     max-width:100%;
+    min-width:0;
+    box-sizing:border-box;
     display:grid;
-    grid-template-columns:repeat(7,104px);
-    overflow-x:auto;
-    overflow-y:hidden;
-    -webkit-overflow-scrolling:touch;
-    overscroll-behavior-x:contain;
-    scrollbar-width:thin;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    overflow:hidden;
   }
 
   .dashboard-calendar-weekday{
-    width:104px;
-    min-width:104px;
-    padding:9px 5px;
-    font-size:8px;
+    display:none;
   }
 
   .dashboard-month-day{
-    width:104px;
-    min-width:104px;
-    min-height:96px;
-    padding:8px;
+    width:100%;
+    max-width:100%;
+    min-width:0;
+    min-height:88px;
+    box-sizing:border-box;
+    padding:9px;
   }
 
-  .dashboard-month-day strong{font-size:12px}
+  .dashboard-month-day strong{font-size:13px}
+
   .dashboard-month-day span{
     margin-top:7px;
-    font-size:8px;
-    white-space:nowrap;
+    font-size:9px;
+    white-space:normal;
+    overflow-wrap:anywhere;
   }
 
-  .dashboard-month-dots{margin-top:8px}
-  .dashboard-day-summary{padding:11px 14px;font-size:10px}
+  .dashboard-month-dots{
+    margin-top:8px;
+  }
+
+  .dashboard-day-summary{
+    width:100%;
+    box-sizing:border-box;
+    padding:11px 14px;
+    font-size:10px;
+  }
 }
 
 @media(max-width:500px){
@@ -301,33 +358,27 @@
 
   .dashboard-calendar-header{padding:13px}
 
-  .dashboard-period-semana{
-    grid-template-columns:repeat(7,132px);
+  .dashboard-period-semana .dashboard-day-heading{
+    grid-template-columns:38px minmax(0,1fr) auto;
+    padding-left:10px;
+    padding-right:10px;
   }
 
-  .dashboard-period-semana .dashboard-day-column{
-    width:132px;
-    min-width:132px;
+  .dashboard-period-semana .dashboard-day-events{
+    padding-left:8px;
+    padding-right:8px;
   }
-
-  .dashboard-period-semana .dashboard-day-events{padding:7px}
 
   .dashboard-period-semana .dashboard-calendar-event{
-    padding:8px 7px;
+    padding:9px 10px;
   }
 
   .dashboard-month-calendar{
-    grid-template-columns:repeat(7,96px);
-  }
-
-  .dashboard-calendar-weekday,
-  .dashboard-month-day{
-    width:96px;
-    min-width:96px;
+    grid-template-columns:1fr;
   }
 
   .dashboard-month-day{
-    min-height:90px;
-    padding:7px;
+    min-height:76px;
+    padding:9px 10px;
   }
 }
