@@ -1,6 +1,7 @@
 import {
   Activity,
   BarChart3,
+  BriefcaseBusiness,
   Bell,
   BookOpen,
   Sparkles,
@@ -28,6 +29,7 @@ import Equipe from './admin/Equipe'
 import Financeiro from './admin/Financeiro'
 import CentralAtividades from './admin/CentralAtividades'
 import Comunicacao from './admin/Comunicacao'
+import Candidaturas from './admin/Candidaturas'
 
 import '../styles/Admin.css'
 import '../styles/central-admin.css'
@@ -229,6 +231,11 @@ const navigation = [
         id: 'comunicacao',
         label: 'Comunicação',
         icon: MessageSquare,
+      },
+      {
+        id: 'candidaturas',
+        label: 'Candidaturas',
+        icon: BriefcaseBusiness,
       },
       {
         id: 'configuracoes',
@@ -538,6 +545,10 @@ export default function Admin() {
             <Comunicacao />
           )}
 
+          {activeModule === 'candidaturas' && (
+            <Candidaturas />
+          )}
+
           {/* =================================================
               DEMAIS MÓDULOS
           ================================================= */}
@@ -550,7 +561,8 @@ export default function Admin() {
             activeModule !== 'planos' &&
             activeModule !== 'financeiro' &&
             activeModule !== 'equipe' &&
-            activeModule !== 'comunicacao' && (
+            activeModule !== 'comunicacao' &&
+            activeModule !== 'candidaturas' && (
               <div className="admin-panel">
                 <div className="admin-panel-header">
                   <h2 className="admin-panel-title">
