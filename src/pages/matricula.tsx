@@ -201,6 +201,37 @@ export default function Matricula() {
     return plan?.preco ?? 0
   }, [plan])
 
+  useEffect(() => {
+    let mounted = true
+
+    const initializeAuth = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
+
+      if (!mounted) return
+
+      setUser(session?.user ?? null)
+      setLoadingUser(false)
+    }
+
+    initializeAuth()
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return
+      setUser(session?.user ?? null)
+      setLoadingUser(false)
+    })
+
+    return () => {
+      mounted = false
+      subscription.unsubscribe()
+    }
+  }, [])
+
+
   const visibleSchedules =
     selectedWeekday === null
       ? availableSchedules
@@ -329,7 +360,7 @@ export default function Matricula() {
         provider: 'google',
         options: {
           redirectTo:
-            `${window.location.origin}/matricula`,
+            `${window.location.origin}${window.location.pathname}${window.location.search}`,
         },
       })
 
