@@ -907,6 +907,40 @@ function Professor() {
       0,
     )
 
+    const [endHours, endMinutes] =
+      horario.hora_fim
+        .slice(0, 5)
+        .split(':')
+        .map(Number)
+
+    const lessonEnd = new Date(lessonDate)
+    lessonEnd.setHours(
+      endHours,
+      endMinutes,
+      0,
+      0,
+    )
+
+    const accessStart = new Date(
+      lessonDate.getTime() - 5 * 60 * 1000,
+    )
+
+    /*
+     * Se a aula está para começar nos próximos
+     * 5 minutos ou já começou, ela deve ser
+     * considerada a próxima aula do professor.
+     */
+    if (
+      now.getTime() >= accessStart.getTime() &&
+      now.getTime() <= lessonEnd.getTime()
+    ) {
+      return lessonDate
+    }
+
+    /*
+     * Se o horário de hoje já passou, procura
+     * a ocorrência da próxima semana.
+     */
     if (lessonDate <= now) {
       lessonDate.setDate(
         lessonDate.getDate() + 7,
