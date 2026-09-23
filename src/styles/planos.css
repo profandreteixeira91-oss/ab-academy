@@ -275,13 +275,19 @@
 }
 
 .planos-detail-description {
+  display: block;
   width: 100%;
+  max-width: 100%;
   min-width: 0;
   margin: 21px 0 0;
+  padding: 0;
   color: #59677e;
   font-size: 13px;
   line-height: 1.58;
+  white-space: normal;
   overflow-wrap: anywhere;
+  word-break: break-word;
+  hyphens: auto;
 }
 
 .planos-detail-features {
@@ -540,8 +546,16 @@
   }
 
   .planos-detail-description {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
     margin-top: 18px;
     font-size: 12.5px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    hyphens: auto;
   }
 
   .planos-detail-features {
