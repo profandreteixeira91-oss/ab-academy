@@ -145,7 +145,11 @@ function Home() {
       <header className="header">
         <div className="container header-container">
           <a href="#inicio" className="logo">
-            <img src={logo} alt="AB Academy" />
+            <img
+              src={logo}
+              alt="AB Academy"
+              className="academy-header-logo"
+            />
           </a>
 
           <nav className="navigation">
