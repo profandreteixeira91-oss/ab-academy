@@ -2723,8 +2723,10 @@ h1, h2, h3 { font-family: var(--font-display); }
   }
 
   .home .header {
-    position: sticky;
+    position: fixed;
     top: 0;
+    left: 0;
+    right: 0;
     z-index: 1000;
     background: rgba(255, 255, 255, 0.86);
     border-bottom: 1px solid rgba(16, 32, 68, 0.07);
