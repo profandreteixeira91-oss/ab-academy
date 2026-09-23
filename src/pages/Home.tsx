@@ -14,7 +14,7 @@ import {
 
 import '../styles/home.css'
 import logo from '../assets/logo_abacademy.png'
-import fotoAmy from '../assets/fotoamy.jpg'
+import fotoAmy from '../assets/fotoamy.jpeg'
 import usaFlag from '../assets/flag-usa.svg'
 import germanyFlag from '../assets/flag-germany.svg'
 import { supabase } from '../lib/supabase'
