@@ -12,6 +12,7 @@ type Plano = {
   tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo' | 'avulso'
   nome: string
   descricao: string | null
+  beneficios: string[] | null
   preco: number
   parcelas: number | null
   valor_parcela: number | null
@@ -81,13 +82,16 @@ function PlanoCard({ plano }: { plano: Plano }) {
         {plano.descricao || 'Plano com acompanhamento personalizado pela AB Academy.'}
       </p>
 
-      <ul className="planos-detail-features">
-        <li><CheckCircle2 size={17} />Conteúdo 100% personalizado para o seu nível, objetivos e necessidades</li>
-        <li><CheckCircle2 size={17} />Material e atividades de apoio personalizados para acelerar sua evolução</li>
-        <li><CheckCircle2 size={17} />Acesso ao app do aluno para acompanhar sua jornada de estudos</li>
-        <li><CheckCircle2 size={17} />Acesso à Central de Atividades com conteúdos e exercícios</li>
-        <li><CheckCircle2 size={17} />Plantão de dúvidas para receber suporte durante seus estudos</li>
-      </ul>
+      {plano.beneficios && plano.beneficios.length > 0 && (
+        <ul className="planos-detail-features">
+          {plano.beneficios.map((beneficio, index) => (
+            <li key={index}>
+              <CheckCircle2 size={17} />
+              {beneficio}
+            </li>
+          ))}
+        </ul>
+      )}
 
       <a
         href={'/matricula?idioma=' + plano.idioma + '&plano=' + plano.id}
@@ -115,7 +119,7 @@ function Planos() {
 
       const { data, error: queryError } = await supabase
         .from('planos')
-        .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at')
+        .select('id, idioma, tipo, nome, descricao, beneficios, preco, parcelas, valor_parcela, ativo, created_at')
         .eq('ativo', true)
 
       if (!active) return
