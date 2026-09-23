@@ -1351,8 +1351,8 @@
   display: block;
   width: auto;
   height: auto;
-  max-width: 155px;
-  max-height: 54px;
+  max-width: 210px;
+  max-height: 72px;
   margin: 0 auto;
   object-fit: contain;
 }
@@ -1607,7 +1607,7 @@
   }
 
   .admin-sidebar-logo {
-    max-width: 155px;
-    max-height: 54px;
+    max-width: 210px;
+    max-height: 72px;
   }
 }
