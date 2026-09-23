@@ -1564,13 +1564,16 @@ function Aluno() {
             loadStudentActivities(
               authenticatedUser.id,
             ),
-            loadStudentRequests(
-              authenticatedUser.id,
-            ),
             loadStudentFinance(
               authenticatedUser.id,
             ),
           ])
+
+          // Solicitações é um módulo independente: uma falha
+          // de RLS/tabela/anexo não pode derrubar o portal inteiro.
+          void loadStudentRequests(
+            authenticatedUser.id,
+          )
         } catch (error) {
           console.error(
             'Erro ao carregar acesso do aluno:',
@@ -4843,7 +4846,7 @@ function Solicitacoes({
           {!selectedRequest ? <div className="student-empty-state"><MessageSquare size={30}/><h3>Selecione uma solicitação</h3><p>As respostas da AB Academy aparecerão aqui.</p></div> : <>
             <header><div><span>{categories[selectedRequest.categoria] || selectedRequest.categoria}</span><h3>{selectedRequest.assunto}</h3></div><span className={`student-request-status ${selectedRequest.status}`}>{labels[selectedRequest.status]}</span></header>
             <div className="student-request-messages">{messages.map(item => <div key={item.id} className={`student-request-message ${item.remetente_tipo}`}><strong>{item.remetente_tipo === 'admin' ? 'AB Academy' : 'Você'}</strong><p>{item.mensagem}</p>{item.anexos?.length ? <div className="student-request-message-files">{item.anexos.map(file => <button type="button" key={file.id} onClick={() => void onOpenFile(file)} disabled={openingFile === file.id}><Paperclip size={13}/><span>{file.nome_arquivo}</span><Download size={13}/></button>)}</div> : null}<small>{new Date(item.created_at).toLocaleString('pt-BR')}</small></div>)}</div>
-            {selectedRequest.status !== 'fechada' && <footer><div className="student-request-reply-main"><textarea value={message} onChange={e => onMessageChange(e.target.value)} placeholder="Responder à solicitação..." rows={3}/>{requestFiles.length > 0 && <div className="student-request-file-list">{requestFiles.map(file => <span key={file.name + file.size}><Paperclip size={12}/>{file.name}<button type="button" onClick={() => onFilesChange(files.filter(item => item !== file))} aria-label={"Remover " + file.name}><X size={12}/></button></span>)}</div>}</div><div className="student-request-compose-actions"><label className="student-request-attach-button"><Paperclip size={16}/><span>Anexar arquivos</span><input type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip" disabled={sending} onChange={e => setRequestFiles(Array.from(e.target.files ?? []).slice(0, 5))}/></label><button type="button" className="student-primary-button" onClick={onReply} disabled={(!message.trim() && requestFiles.length === 0) || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar resposta'}</button></div></footer>}
+            {selectedRequest.status !== 'fechada' && <footer><div className="student-request-reply-main"><textarea value={message} onChange={e => onMessageChange(e.target.value)} placeholder="Responder à solicitação..." rows={3}/>{requestFiles.length > 0 && <div className="student-request-file-list">{requestFiles.map(file => <span key={file.name + file.size}><Paperclip size={12}/>{file.name}<button type="button" onClick={() => onFilesChange(files.filter(item => item !== file))} aria-label={"Remover " + file.name}><X size={12}/></button></span>)}</div>}</div><div className="student-request-compose-actions"><label className="student-request-attach-button"><Paperclip size={16}/><span>Anexar arquivos</span><input type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip" disabled={sending} onChange={e => onFilesChange(Array.from(e.target.files ?? []).slice(0, 5))}/></label><button type="button" className="student-primary-button" onClick={onReply} disabled={(!message.trim() && requestFiles.length === 0) || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar resposta'}</button></div></footer>}
           </>}
         </div>
       </div>
