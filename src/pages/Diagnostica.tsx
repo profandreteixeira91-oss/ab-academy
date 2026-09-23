@@ -178,4 +178,3 @@ export default function Diagnostica() {
     </div>
   )
 }
-export default Diagnostica
