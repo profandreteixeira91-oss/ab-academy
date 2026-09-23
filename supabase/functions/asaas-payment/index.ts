@@ -1346,10 +1346,12 @@ Deno.serve(
        */
 
       const parcelas =
-        Number(
-          body.parcelas ??
-            1,
-        )
+        pagamento.tipo_plano === 'avulso'
+          ? 1
+          : Number(
+              body.parcelas ??
+                1,
+            )
 
       if (
         !Number.isInteger(
@@ -1412,11 +1414,12 @@ Deno.serve(
                 description:
                   `Matrícula AB Academy - ${planoNome}`,
 
-                installmentCount:
-                  parcelas,
-
-                installmentValue:
-                  valorParcela,
+                ...(parcelas > 1
+                  ? {
+                      installmentCount: parcelas,
+                      installmentValue: valorParcela,
+                    }
+                  : {}),
 
                 creditCard: {
                   holderName:
