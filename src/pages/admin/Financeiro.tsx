@@ -602,7 +602,7 @@ export default function Financeiro() {
           .filter(
             (item) =>
               monthKey(item.data_vencimento) === month &&
-              item.tipo === 'receita' || item.tipo === 'despesa',
+              (item.tipo === 'receita' || item.tipo === 'despesa'),
           )
           .map(
             (item) =>
