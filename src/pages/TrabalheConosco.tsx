@@ -1,5 +1,6 @@
-import { ChangeEvent, FormEvent, useState } from 'react'
-import { ArrowLeft, CheckCircle2, FileText, Linkedin, Upload, UserRound } from 'lucide-react'
+import { useState } from 'react'
+import type { ChangeEvent, FormEvent } from 'react'
+import { ArrowLeft, CheckCircle2, FileText, Upload, UserRound } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import '../styles/trabalhe-conosco.css'
 
@@ -118,7 +119,7 @@ function TrabalheConosco() {
             <p>Buscamos professores que compartilhem nosso compromisso com uma experiência de aprendizagem prática, humana e transformadora.</p>
             <div className="careers-points">
               <div><UserRound size={20} /><span>Dados profissionais e experiência</span></div>
-              <div><Linkedin size={20} /><span>Perfil profissional no LinkedIn</span></div>
+              <div><span className="careers-linkedin-icon" aria-hidden="true">in</span><span>Perfil profissional no LinkedIn</span></div>
               <div><FileText size={20} /><span>Currículo para nosso banco de talentos</span></div>
             </div>
           </section>
@@ -135,7 +136,7 @@ function TrabalheConosco() {
                 <label>Nível de proficiência *<select name="nivel" value={form.nivel} onChange={handleChange} required><option value="">Selecione</option><option value="fluente">Fluente</option><option value="avancado">Avançado</option><option value="nativo">Nativo</option></select></label>
               </div>
               <label>Experiência como professor<textarea name="experiencia" value={form.experiencia} onChange={handleChange} rows={4} placeholder="Conte brevemente sobre sua experiência, formação e atuação." /></label>
-              <label className="careers-linkedin-field"><span>Perfil do LinkedIn *</span><div className="careers-input-icon"><Linkedin size={19} /><input type="url" name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="https://www.linkedin.com/in/seu-perfil" required /></div></label>
+              <label className="careers-linkedin-field"><span>Perfil do LinkedIn *</span><div className="careers-input-icon"><span className="careers-linkedin-icon" aria-hidden="true">in</span><input type="url" name="linkedin" value={form.linkedin} onChange={handleChange} placeholder="https://www.linkedin.com/in/seu-perfil" required /></div></label>
               <label>Portfólio ou outro perfil profissional<input type="url" name="portfolio" value={form.portfolio} onChange={handleChange} placeholder="https://..." /></label>
               <label>Por que gostaria de trabalhar na AB Academy?<textarea name="motivacao" value={form.motivacao} onChange={handleChange} rows={4} /></label>
               <label className="careers-upload">
