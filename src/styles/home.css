@@ -1012,9 +1012,14 @@ h1, h2, h3 { font-family: var(--font-display); }
 
 /* Header: navegação mais limpa e orientada à conversão */
 .home .header{
-  background:rgba(255,255,255,.88);
+  position:sticky;
+  top:0;
+  z-index:300;
+  background:rgba(255,255,255,.86);
   border-bottom:1px solid rgba(16,32,68,.07);
-  box-shadow:0 4px 24px rgba(16,32,68,.035);
+  box-shadow:0 4px 24px rgba(16,32,68,.05);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
 }
 
 .home .header-container{
