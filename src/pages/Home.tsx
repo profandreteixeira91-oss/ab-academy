@@ -127,13 +127,6 @@ function Home() {
             <small>/mês</small>
           </strong>
           <p>Consulte todas as opções de planos para {nomeIdioma}.</p>
-          <a
-            href={`/planos?idioma=${idioma}`}
-            className="course-plan-cta"
-          >
-            Saiba mais
-            <ArrowRight size={16} />
-          </a>
         </div>
       </div>
     )
@@ -469,8 +462,8 @@ function Home() {
 
                 {renderPlanos(planosIngles)}
 
-                <a href="/matricula">
-                  Quero me matricular
+                <a href="/planos">
+                  Saiba mais
                   <ArrowRight size={17} />
                 </a>
               </article>
