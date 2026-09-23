@@ -63,8 +63,25 @@
 }
 
 .planos-language {
+  display: block !important;
   width: 100%;
   min-width: 0;
+}
+
+.planos-language--stacked {
+  display: block !important;
+}
+
+.planos-language--stacked .planos-language-heading {
+  display: block !important;
+  width: 100% !important;
+  margin: 0 0 28px !important;
+}
+
+.planos-language--stacked .planos-grid {
+  display: grid !important;
+  width: 100% !important;
+  margin: 0 !important;
 }
 
 .planos-language + .planos-language {
