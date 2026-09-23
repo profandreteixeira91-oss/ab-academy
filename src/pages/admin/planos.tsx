@@ -7,6 +7,7 @@ import {
   Edit3,
   Plus,
   Search,
+  Trash2,
   X,
 } from 'lucide-react'
 
@@ -418,6 +419,49 @@ export default function Planos() {
     }
   }
 
+  async function deletePlano(plano: Plano) {
+    const confirmed = window.confirm(
+      `Excluir o plano "${plano.nome}"?
+
+Esta ação excluirá o plano e os registros vinculados a ele, incluindo matrículas, pagamentos e mensalidades.
+
+Esta ação não pode ser desfeita.`,
+    )
+
+    if (!confirmed) {
+      return
+    }
+
+    try {
+      setError('')
+      setSuccess('')
+
+      const { error: deleteError } = await supabase.rpc(
+        'admin_excluir_plano',
+        {
+          p_plano_id: plano.id,
+        },
+      )
+
+      if (deleteError) {
+        throw deleteError
+      }
+
+      setPlanos((current) =>
+        current.filter((item) => item.id !== plano.id),
+      )
+
+      setSuccess('Plano e registros vinculados excluídos com sucesso.')
+    } catch (err: any) {
+      console.error('Erro ao excluir plano:', err)
+
+      setError(
+        err?.message ||
+          'Não foi possível excluir o plano.',
+      )
+    }
+  }
+
   function handleTipoChange(value: TipoPlano) {
     setForm((current) => ({
       ...current,
@@ -761,6 +805,17 @@ export default function Planos() {
                           title="Editar plano"
                         >
                           <Edit3 size={16} />
+                        </button>
+
+                        <button
+                          type="button"
+                          className="planos-icon-button planos-delete-button"
+                          onClick={() =>
+                            deletePlano(plano)
+                          }
+                          title="Excluir plano e registros vinculados"
+                        >
+                          <Trash2 size={16} />
                         </button>
                       </div>
                     </td>
