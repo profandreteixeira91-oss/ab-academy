@@ -128,7 +128,7 @@ function Home() {
           </strong>
           <p>Consulte todas as opções de planos para {nomeIdioma}.</p>
           <a
-            href={`/matricula?idioma=${idioma}`}
+            href={`/planos?idioma=${idioma}`)
             className="course-plan-cta"
           >
             Saiba mais
