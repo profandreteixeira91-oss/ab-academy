@@ -512,3 +512,122 @@
     font-size: 12px;
   }
 }
+
+
+/* =========================================================
+   ESTRUTURA HORIZONTAL — PLANOS
+   ========================================================= */
+
+.planos-page-shell {
+  min-width: 0;
+}
+
+.planos-page-shell .planos-page {
+  min-width: 0;
+}
+
+.planos-language-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.planos-language-title {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: 16px;
+}
+
+.planos-language-flag {
+  display: block;
+  width: 54px;
+  height: 36px;
+  flex: 0 0 54px;
+  object-fit: cover;
+  border-radius: 7px;
+  box-shadow: 0 4px 12px rgba(19, 33, 58, .12);
+}
+
+.planos-language-title h2 {
+  margin-top: 8px;
+}
+
+.planos-language-heading > p {
+  flex: 0 1 440px;
+  margin-bottom: 2px;
+}
+
+.planos-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: stretch;
+}
+
+.planos-detail-card {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1120px) {
+  .planos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 820px) {
+  .planos-language-heading {
+    display: flex;
+    align-items: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .planos-language-title {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .planos-language-heading > p {
+    width: 100%;
+    max-width: 560px;
+    flex: none;
+    margin: 0;
+    text-align: left;
+  }
+
+  .planos-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .planos-page-shell .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+  }
+
+  .planos-page-shell .planos-page {
+    padding-top: 72px;
+  }
+}
+
+@media (max-width: 600px) {
+  .planos-language-title {
+    gap: 12px;
+  }
+
+  .planos-language-flag {
+    width: 46px;
+    height: 31px;
+    flex-basis: 46px;
+  }
+
+  .planos-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .planos-page-shell .planos-page {
+    padding-top: 68px;
+  }
+}
