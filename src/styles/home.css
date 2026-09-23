@@ -3179,3 +3179,20 @@ h1, h2, h3 { font-family: var(--font-display); }
 .course-price-summary .course-plan-cta {
   margin-top: 10px;
 }
+
+
+/* Logo do cabeçalho padronizado globalmente. */
+.header {
+  min-height: 88px;
+}
+
+.header-container {
+  min-height: 88px;
+}
+
+@media (max-width: 768px) {
+  .header,
+  .header-container {
+    min-height: 76px;
+  }
+}
