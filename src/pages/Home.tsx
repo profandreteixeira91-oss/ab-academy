@@ -116,7 +116,7 @@ function Home() {
     }
 
     const idioma = idiomaPlanos[0].idioma
-    const nomeIdioma = idiomaPlanosLabel(idioma)
+    const nomeIdioma = idioma === 'ingles' ? 'Inglês' : 'Alemão'
 
     return (
       <div className="course-pricing">
