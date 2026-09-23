@@ -1815,34 +1815,34 @@ export default function Atividades({
         }
       } else {
         const {
-          data: insertedActivity,
+          data: insertedActivityId,
           error: insertError,
-        } = await supabase
-          .from('atividades')
-          .insert({
-            professor_id:
-              professorId,
-            aluno_id:
-              form.aluno_id,
-            titulo:
-              form.titulo.trim(),
-            descricao:
+        } = await supabase.rpc(
+          'criar_atividade_professor',
+          {
+            p_professor_id: professorId,
+            p_aluno_id: form.aluno_id,
+            p_titulo: form.titulo.trim(),
+            p_descricao:
               form.descricao.trim() ||
               null,
-            idioma:
-              form.idioma,
-            status,
-            prazo,
-          })
-          .select('id')
-          .single()
+            p_idioma: form.idioma,
+            p_status: status,
+            p_prazo: prazo,
+          },
+        )
 
         if (insertError) {
           throw insertError
         }
 
-        atividadeId =
-          insertedActivity.id
+        if (!insertedActivityId) {
+          throw new Error(
+            'Não foi possível identificar a atividade criada.',
+          )
+        }
+
+        atividadeId = insertedActivityId
       }
 
       if (!atividadeId) {
