@@ -736,6 +736,7 @@ export default function Matricula() {
           <img
             src={logo}
             alt="AB Academy"
+            className="academy-header-logo"
           />
         </a>
 
