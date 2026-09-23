@@ -821,3 +821,57 @@
     flex: 1;
   }
 }
+
+/* =========================================================
+   MOBILE UX/UI AUDIT
+========================================================= */
+
+@media (max-width: 700px) {
+  .planos-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .planos-table {
+    min-width: 760px;
+  }
+
+  .planos-table-card {
+    overflow: hidden;
+  }
+
+  .planos-modal {
+    width: 100%;
+  }
+
+  .planos-modal-header {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    background: #fff;
+  }
+
+  .planos-modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #fff;
+    box-shadow: 0 -6px 18px rgba(15, 23, 42, 0.06);
+  }
+}
+
+@media (max-width: 480px) {
+  .planos-page {
+    padding: 14px 12px;
+  }
+
+  .planos-header h1 {
+    font-size: 21px;
+  }
+
+  .planos-modal-body {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+}
