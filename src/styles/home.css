@@ -3196,3 +3196,69 @@ h1, h2, h3 { font-family: var(--font-display); }
     min-height: 76px;
   }
 }
+
+
+/* =========================================================
+   BENEFÍCIOS DOS CURSOS — DESTAQUE E TEXTO RESPONSIVO
+========================================================= */
+
+.home .course-card > ul {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  margin: 22px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.home .course-card > ul > li {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+  gap: 8px;
+  padding: 10px 11px;
+  border: 1px solid var(--border);
+  border-radius: 11px;
+  background: linear-gradient(135deg, #f8faff 0%, #f1f5fc 100%);
+  color: var(--ink-soft);
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.48;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.home .course-card > ul > li svg {
+  flex: 0 0 17px;
+  margin-top: 2px;
+  color: var(--primary);
+}
+
+.home .course-card > ul > li:hover {
+  border-color: rgba(42, 92, 219, .28);
+  background: #eef4ff;
+}
+
+@media (max-width: 700px) {
+  .home .course-card > ul {
+    gap: 8px;
+    margin-top: 20px;
+  }
+
+  .home .course-card > ul > li {
+    padding: 10px;
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 380px) {
+  .home .course-card > ul > li {
+    padding: 9px;
+    font-size: 12px;
+  }
+}
