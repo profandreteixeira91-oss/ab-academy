@@ -1306,3 +1306,308 @@
     height: 82px;
   }
 }
+
+
+/* =========================================================
+   SIDEBAR ADMIN — MESMO PADRÃO VISUAL DO PORTAL DO ALUNO
+========================================================= */
+
+.admin-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 100;
+  width: 250px;
+  min-width: 250px;
+  height: 100vh;
+
+  display: flex;
+  flex-direction: column;
+
+  background: #ffffff;
+  border-right: 1px solid var(--student-border, #e5eaf1);
+
+  padding: 24px 16px;
+
+  box-shadow: none;
+}
+
+.admin-sidebar-header {
+  height: 54px;
+  min-height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 0;
+  margin-top: 10px;
+  margin-bottom: 28px;
+
+  background: transparent;
+  border-bottom: 0;
+}
+
+.admin-sidebar-logo {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 155px;
+  max-height: 54px;
+  margin: 0 auto;
+  object-fit: contain;
+}
+
+/* =========================================================
+   NAVEGAÇÃO
+========================================================= */
+
+.admin-sidebar-nav {
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 0;
+
+  padding: 0;
+
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #d8e0ec transparent;
+}
+
+.admin-sidebar-section {
+  margin-bottom: 22px;
+}
+
+.admin-sidebar-section-title {
+  padding: 0 13px;
+  margin: 0 0 8px;
+
+  color: #94a3b8;
+
+  font-size: 10px;
+  font-weight: 800;
+  line-height: 1.4;
+
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.admin-nav-item {
+  width: 100%;
+  min-height: 46px;
+
+  display: flex;
+  align-items: center;
+
+  position: relative;
+
+  gap: 12px;
+
+  padding: 0 13px;
+  margin-bottom: 5px;
+
+  border: 0;
+  border-radius: 10px;
+
+  background: transparent;
+  color: #64748b;
+
+  cursor: pointer;
+  text-align: left;
+
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+
+  transition:
+    background 0.18s ease,
+    color 0.18s ease;
+}
+
+.admin-nav-item::before {
+  display: none;
+}
+
+.admin-nav-item:hover {
+  background: #f5f8fd;
+  color: #1649a0;
+  transform: none;
+}
+
+.admin-nav-item.active {
+  background: #edf4ff;
+  color: #1649a0;
+  font-weight: 600;
+  box-shadow: none;
+}
+
+.admin-nav-item-icon {
+  width: auto;
+  height: auto;
+
+  flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 0;
+
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+
+  transition: none;
+}
+
+.admin-nav-item:hover .admin-nav-item-icon,
+.admin-nav-item.active .admin-nav-item-icon {
+  color: inherit;
+  background: transparent;
+  box-shadow: none;
+}
+
+.admin-nav-item-label {
+  flex: 1;
+  min-width: 0;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* =========================================================
+   RODAPÉ / ADMINISTRADOR
+========================================================= */
+
+.admin-sidebar-footer {
+  padding: 0;
+
+  border-top: 0;
+  background: transparent;
+}
+
+.admin-sidebar-user {
+  min-height: 52px;
+
+  display: flex;
+  align-items: center;
+  gap: 11px;
+
+  padding: 5px 7px;
+
+  border: 0;
+  border-radius: 0;
+
+  background: transparent;
+}
+
+.admin-sidebar-user-avatar {
+  width: 40px;
+  height: 40px;
+
+  border-radius: 50%;
+
+  background: #edf4ff;
+  color: #1649a0;
+
+  box-shadow: none;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-shrink: 0;
+
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.admin-sidebar-user-name {
+  margin: 0;
+
+  color: #172033;
+
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.admin-sidebar-user-role {
+  margin: 2px 0 0;
+
+  color: #94a3b8;
+
+  font-size: 11px;
+}
+
+.admin-sidebar-legal {
+  margin-top: auto;
+
+  padding: 14px 0 14px;
+
+  background: transparent;
+  border-top: 1px solid #e5eaf1;
+  border-bottom: 0;
+
+  color: #94a3b8;
+
+  font-size: 9px;
+  line-height: 1.45;
+}
+
+.admin-sidebar-legal-copy > span:first-child {
+  color: #64748b;
+}
+
+.admin-sidebar-legal a {
+  color: #64748b;
+}
+
+.admin-sidebar-legal a:hover {
+  color: #1649a0;
+}
+
+/* =========================================================
+   ÁREA PRINCIPAL — MESMA LARGURA DO PORTAL DO ALUNO
+========================================================= */
+
+.admin-main {
+  width: calc(100% - 250px);
+  margin-left: 250px;
+}
+
+@media (max-width: 900px) {
+  .admin-sidebar {
+    width: 250px;
+    min-width: 250px;
+
+    padding: 24px 16px;
+
+    transform: translateX(-100%);
+
+    box-shadow: 18px 0 42px rgba(15, 23, 42, 0.14);
+  }
+
+  .admin-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .admin-main {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .admin-sidebar-header {
+    height: 54px;
+    min-height: 54px;
+  }
+
+  .admin-sidebar-logo {
+    max-width: 155px;
+    max-height: 54px;
+  }
+}
