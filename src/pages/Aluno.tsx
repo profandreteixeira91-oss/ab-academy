@@ -20,6 +20,8 @@ import {
   Download,
   MessageSquare,
   Paperclip,
+  Wallet,
+  ReceiptText,
   Send,
   Video,
   X,
@@ -35,6 +37,7 @@ type StudentSection =
   | 'materiais'
   | 'atividades'
   | 'progresso'
+  | 'financeiro'
   | 'perfil'
   | 'solicitacoes'
 
@@ -133,6 +136,19 @@ type StudentAnswer = {
 
 type RequestStatus = 'aberta' | 'em_andamento' | 'respondida' | 'fechada'
 type RequestPriority = 'baixa' | 'normal' | 'alta'
+
+type StudentFinanceEntry = {
+  id: string
+  competencia: string
+  dataVencimento: string
+  dataPagamento: string | null
+  valor: number
+  status: 'pendente' | 'pago' | 'vencido' | 'cancelado'
+  metodoPagamento: string | null
+  numeroParcela: number | null
+  totalParcelas: number | null
+  observacoes: string | null
+}
 
 type StudentRequest = {
   id: string
@@ -468,6 +484,10 @@ function Aluno() {
     submittingActivity,
     setSubmittingActivity,
   ] = useState(false)
+
+  const [financeEntries, setFinanceEntries] = useState<StudentFinanceEntry[]>([])
+  const [financeLoading, setFinanceLoading] = useState(false)
+  const [financeError, setFinanceError] = useState('')
 
   const [requests, setRequests] = useState<StudentRequest[]>([])
   const [requestsLoading, setRequestsLoading] = useState(false)
@@ -1321,6 +1341,37 @@ function Aluno() {
     }
   }
 
+  async function loadStudentFinance(userId: string) {
+    try {
+      setFinanceLoading(true)
+      setFinanceError('')
+      const studentId = await getStudentId(userId)
+      const { data, error } = await supabase
+        .from('mensalidades')
+        .select('id, competencia, data_vencimento, data_pagamento, valor, status, metodo_pagamento, numero_parcela, total_parcelas, observacoes')
+        .eq('aluno_id', studentId)
+        .order('data_vencimento', { ascending: false })
+      if (error) throw error
+      setFinanceEntries((data ?? []).map((entry) => ({
+        id: entry.id,
+        competencia: entry.competencia,
+        dataVencimento: entry.data_vencimento,
+        dataPagamento: entry.data_pagamento,
+        valor: Number(entry.valor) || 0,
+        status: entry.status as StudentFinanceEntry['status'],
+        metodoPagamento: entry.metodo_pagamento,
+        numeroParcela: entry.numero_parcela,
+        totalParcelas: entry.total_parcelas,
+        observacoes: entry.observacoes,
+      })))
+    } catch (error) {
+      console.error('Erro ao carregar financeiro do aluno:', error)
+      setFinanceError(error instanceof Error ? error.message : 'Não foi possível carregar seu histórico financeiro.')
+    } finally {
+      setFinanceLoading(false)
+    }
+  }
+
   async function loadStudentRequests(userId: string) {
     try {
       setRequestsLoading(true)
@@ -1514,6 +1565,9 @@ function Aluno() {
               authenticatedUser.id,
             ),
             loadStudentRequests(
+              authenticatedUser.id,
+            ),
+            loadStudentFinance(
               authenticatedUser.id,
             ),
           ])
@@ -2248,6 +2302,7 @@ function Aluno() {
     materiais: 'Materiais',
     atividades: 'Atividades',
     progresso: 'Meu progresso',
+    financeiro: 'Meu financeiro',
     perfil: 'Meu perfil',
     solicitacoes: 'Minhas solicitações',
   }
@@ -2889,6 +2944,15 @@ function Aluno() {
 
           <button
             type="button"
+            className={`student-nav-item ${section === 'financeiro' ? 'active' : ''}`}
+            onClick={() => navigateTo('financeiro')}
+          >
+            <Wallet size={19} />
+            <span>Financeiro</span>
+          </button>
+
+          <button
+            type="button"
             className={`student-nav-item ${
               section ===
               'perfil'
@@ -3087,6 +3151,14 @@ function Aluno() {
             />
           )}
 
+          {section === 'financeiro' && (
+            <Financeiro
+              entries={financeEntries}
+              loading={financeLoading}
+              error={financeError}
+            />
+          )}
+
           {section === 'solicitacoes' && (
             <Solicitacoes
               requests={requests}
@@ -3156,6 +3228,68 @@ function Aluno() {
           }
         />
       )}
+    </div>
+  )
+}
+
+type FinanceiroProps = {
+  entries: StudentFinanceEntry[]
+  loading: boolean
+  error: string
+}
+
+function Financeiro({ entries, loading, error }: FinanceiroProps) {
+  const paid = entries.filter((entry) => entry.status === 'pago')
+  const open = entries.filter((entry) => entry.status === 'pendente')
+  const overdue = entries.filter((entry) => entry.status === 'vencido')
+  const totalPaid = paid.reduce((sum, entry) => sum + entry.valor, 0)
+  const totalOpen = open.reduce((sum, entry) => sum + entry.valor, 0)
+  const totalOverdue = overdue.reduce((sum, entry) => sum + entry.valor, 0)
+  const money = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+  const date = (value: string | null) => value ? new Date(value + 'T00:00:00').toLocaleDateString('pt-BR') : '—'
+  const competence = (value: string) => new Date(value.slice(0, 7) + '-01T00:00:00').toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+
+  return (
+    <div className="student-finance">
+      <div className="student-section-title">
+        <div>
+          <span>FINANCEIRO</span>
+          <h2>Histórico de pagamentos</h2>
+          <p>Acompanhe suas mensalidades, vencimentos e pagamentos.</p>
+        </div>
+      </div>
+      {error && <div className="student-finance-alert">{error}</div>}
+      <div className="student-finance-summary">
+        <div className="student-finance-card paid"><span>Total pago</span><strong>{money(totalPaid)}</strong><small>{paid.length} {paid.length === 1 ? 'pagamento' : 'pagamentos'}</small></div>
+        <div className="student-finance-card open"><span>Em aberto</span><strong>{money(totalOpen)}</strong><small>{open.length} {open.length === 1 ? 'mensalidade' : 'mensalidades'}</small></div>
+        <div className="student-finance-card overdue"><span>Vencido</span><strong>{money(totalOverdue)}</strong><small>{overdue.length} {overdue.length === 1 ? 'mensalidade' : 'mensalidades'}</small></div>
+      </div>
+      <div className="student-finance-history">
+        <div className="student-finance-history-header">
+          <div><h3>Mensalidades</h3><span>{entries.length} registro{entries.length === 1 ? '' : 's'}</span></div>
+          <ReceiptText size={20} />
+        </div>
+        {loading ? (
+          <div className="student-finance-empty">Carregando histórico financeiro...</div>
+        ) : entries.length === 0 ? (
+          <div className="student-finance-empty"><Wallet size={28} /><strong>Nenhum pagamento registrado</strong><span>Quando houver mensalidades, elas aparecerão aqui.</span></div>
+        ) : (
+          <div className="student-finance-table-wrap">
+            <table className="student-finance-table">
+              <thead><tr><th>Competência</th><th>Vencimento</th><th>Valor</th><th>Pagamento</th><th>Status</th></tr></thead>
+              <tbody>{entries.map((entry) => (
+                <tr key={entry.id}>
+                  <td><strong>{competence(entry.competencia)}</strong>{entry.numeroParcela && entry.totalParcelas && <small>Parcela {entry.numeroParcela}/{entry.totalParcelas}</small>}</td>
+                  <td>{date(entry.dataVencimento)}</td>
+                  <td><strong>{money(entry.valor)}</strong></td>
+                  <td><span>{date(entry.dataPagamento)}</span>{entry.metodoPagamento && <small>{entry.metodoPagamento}</small>}</td>
+                  <td><span className={\`student-finance-status \${entry.status}\`}>{entry.status === 'pago' ? 'Pago' : entry.status === 'pendente' ? 'Pendente' : entry.status === 'vencido' ? 'Vencido' : 'Cancelado'}</span></td>
+                </tr>
+              ))}</tbody>
+            </table>
+          </div>
+        )}
+      </div>
     </div>
   )
 }
