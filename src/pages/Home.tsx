@@ -924,6 +924,28 @@ function Home() {
           </div>
         </section>
 
+        {/* TRABALHE CONOSCO */}
+        <section className="careers-section" id="trabalhe-conosco">
+          <div className="container">
+            <div className="careers-container">
+              <div className="careers-content">
+                <span className="careers-label">Trabalhe conosco</span>
+                <h2>Faça parte da AB Academy.</h2>
+                <p>
+                  Estamos sempre em busca de professores apaixonados por idiomas,
+                  educação e desenvolvimento de pessoas. Envie suas informações,
+                  currículo e perfil do LinkedIn para entrar em nosso banco de talentos.
+                </p>
+              </div>
+
+              <a href="/trabalhe-conosco" className="btn btn-primary">
+                Quero fazer parte da equipe
+                <ArrowRight size={18} />
+              </a>
+            </div>
+          </div>
+        </section>
+
         {/* CONTATO / CTA */}
         <section className="cta-section" id="contato">
           <div className="container">
