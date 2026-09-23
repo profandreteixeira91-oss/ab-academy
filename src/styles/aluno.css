@@ -2609,3 +2609,39 @@
     font-size: 8px;
   }
 }
+/* =========================================================
+   SOLICITAÇÕES / COMUNICAÇÃO
+   ========================================================= */
+.student-requests{width:100%}
+.student-request-alert{margin-bottom:16px;padding:12px 14px;border-radius:10px;background:#fff1f2;color:#be123c;border:1px solid #fecdd3;font-size:13px}
+.student-request-grid{display:grid;grid-template-columns:minmax(280px,.85fr) minmax(400px,1.35fr);gap:16px;min-height:560px}
+.student-request-list,.student-request-thread{background:#fff;border:1px solid var(--student-border);border-radius:var(--student-radius);overflow:hidden;box-shadow:var(--student-shadow-sm)}
+.student-request-new{padding:18px;border-bottom:1px solid var(--student-border)}
+.student-request-new h3{margin:0 0 13px;font-size:15px;color:var(--student-text)}
+.student-request-new input,.student-request-new select,.student-request-new textarea{width:100%;box-sizing:border-box;border:1px solid var(--student-border);border-radius:9px;padding:10px 11px;background:#fff;color:var(--student-text);font:inherit;outline:none}
+.student-request-new textarea{resize:vertical;margin-top:10px;min-height:80px}
+.student-request-new input:focus,.student-request-new select:focus,.student-request-new textarea:focus{border-color:var(--student-primary);box-shadow:0 0 0 3px rgba(22,73,160,.08)}
+.student-request-fields{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px}
+.student-request-new .student-primary-button{margin-top:10px;width:100%;justify-content:center}
+.student-request-items{max-height:440px;overflow:auto}
+.student-request-item{width:100%;border:0;border-bottom:1px solid var(--student-border);background:#fff;text-align:left;padding:14px 16px;cursor:pointer}
+.student-request-item:hover,.student-request-item.active{background:#f8fafc}
+.student-request-item>div{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.student-request-item strong{font-size:13px;color:var(--student-text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.student-request-item small{display:block;margin-top:6px;color:var(--student-text-muted);font-size:10px}
+.student-request-status{display:inline-flex;flex:0 0 auto;padding:4px 8px;border-radius:999px;font-size:9px;font-weight:800}
+.student-request-status.aberta{background:#fff7ed;color:#c2410c}.student-request-status.em_andamento{background:#eff6ff;color:#1d4ed8}.student-request-status.respondida{background:#ecfdf5;color:#047857}.student-request-status.fechada{background:#f1f5f9;color:#64748b}
+.student-request-thread{display:flex;flex-direction:column}
+.student-request-thread>header{padding:18px 20px;border-bottom:1px solid var(--student-border);display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.student-request-thread>header span:first-child{font-size:10px;font-weight:800;color:var(--student-text-muted);text-transform:uppercase}
+.student-request-thread>header h3{margin:5px 0 0;font-size:17px;color:var(--student-text)}
+.student-request-messages{flex:1;overflow:auto;padding:20px;background:#f8fafc;display:flex;flex-direction:column;gap:12px}
+.student-request-message{max-width:78%;padding:11px 13px;border-radius:12px;background:#fff;border:1px solid var(--student-border)}
+.student-request-message.admin{align-self:flex-start}
+.student-request-message.aluno{align-self:flex-end;background:var(--student-primary);color:#fff;border-color:var(--student-primary)}
+.student-request-message strong{font-size:9px;opacity:.75}.student-request-message p{margin:5px 0;font-size:13px;line-height:1.55;white-space:pre-wrap}.student-request-message small{font-size:9px;opacity:.65}
+.student-request-thread>footer{padding:13px;border-top:1px solid var(--student-border);display:flex;gap:9px}
+.student-request-thread>footer textarea{flex:1;resize:none;border:1px solid var(--student-border);border-radius:9px;padding:10px;font:inherit;outline:none}
+.student-request-thread>footer .student-primary-button{align-self:flex-end}
+@media(max-width:900px){.student-request-grid{grid-template-columns:1fr}.student-request-thread{min-height:500px}}
+@media(max-width:600px){.student-request-fields{grid-template-columns:1fr}.student-request-thread>header{flex-direction:column}.student-request-message{max-width:90%}.student-request-thread>footer{flex-direction:column}.student-request-thread>footer .student-primary-button{width:100%;justify-content:center}}
