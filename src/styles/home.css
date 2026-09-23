@@ -2649,3 +2649,86 @@ h1, h2, h3 { font-family: var(--font-display); }
     text-align: left;
   }
 }
+
+
+/* =========================================================
+   MENU SANDUÍCHE — MOBILE
+   ========================================================= */
+
+.home .mobile-menu-button,
+.home .mobile-navigation {
+  display: none;
+}
+
+@media (max-width: 700px) {
+  .home .mobile-menu-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    flex: 0 0 40px;
+    padding: 0;
+    border: 1px solid #dce4f0;
+    border-radius: 10px;
+    background: #fff;
+    color: #14213d;
+    cursor: pointer;
+  }
+
+  .home .mobile-menu-button:hover {
+    background: #f6f8fc;
+  }
+
+  .home .mobile-navigation {
+    position: absolute;
+    top: 100%;
+    left: 16px;
+    right: 16px;
+    z-index: 200;
+    display: none;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px;
+    border: 1px solid #e3e9f2;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 18px 40px rgba(16,32,68,.12);
+  }
+
+  .home .mobile-navigation.open {
+    display: flex;
+  }
+
+  .home .mobile-navigation a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 14px;
+    border-radius: 9px;
+    color: #14213d;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .home .mobile-navigation a:hover {
+    background: #f2f6fc;
+    color: #2457d6;
+  }
+
+  .home .header {
+    position: relative;
+  }
+
+  .home .header-container {
+    position: relative;
+  }
+}
+
+@media (min-width: 701px) {
+  .home .mobile-menu-button,
+  .home .mobile-navigation {
+    display: none !important;
+  }
+}
