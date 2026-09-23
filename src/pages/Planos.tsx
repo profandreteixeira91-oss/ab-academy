@@ -9,7 +9,7 @@ import germanyFlag from '../assets/flag-germany.svg'
 type Plano = {
   id: string
   idioma: 'ingles' | 'alemao'
-  tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo'
+  tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo' | 'avulso'
   nome: string
   descricao: string | null
   preco: number
@@ -171,8 +171,8 @@ function Planos() {
       )
 
     return {
-      ingles: ordenar(planos.filter((plano) => plano.idioma === 'ingles')),
-      alemao: ordenar(planos.filter((plano) => plano.idioma === 'alemao')),
+      ingles: ordenar(planos.filter((plano) => plano.idioma === 'ingles' && plano.tipo !== 'avulso')),
+      alemao: ordenar(planos.filter((plano) => plano.idioma === 'alemao' && plano.tipo !== 'avulso')),
     }
   }, [planos])
 
@@ -302,7 +302,7 @@ function Planos() {
                     mensalidade.
                   </p>
                 </div>
-                <a href="/matricula?diagnostica=1" className="btn btn-secondary">
+                <a href="/diagnostica" className="btn btn-secondary">
                   Quero fazer a aula diagnóstica
                   <ArrowRight size={17} />
                 </a>
