@@ -28,6 +28,8 @@ import SalaProfessor from './pages/admin/SalaProfessor'
 import Professor from './pages/Professor'
 
 import ProfessorAccess from './pages/ProfessorAccess'
+
+import Error404 from './pages/Error404'
 import SiteFooter from './components/SiteFooter'
 
 function App() {
@@ -55,7 +57,7 @@ function App() {
     path.startsWith('/admin/aula/') ? 'Sala do professor' :
     path === '/politica-privacidade' ? 'Política de Privacidade' :
     path === '/termos-de-servico' ? 'Termos de Serviço' :
-    'AB Academy'
+    'Página não encontrada'
 
   document.title = pageTitle + ' - AB Academy Idiomas'
 
@@ -262,7 +264,7 @@ function App() {
    * =========================================================
    */
 
-  return withFooter(<Home />)
+  return <Error404 />
 }
 
 export default App
