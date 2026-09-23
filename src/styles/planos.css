@@ -320,9 +320,7 @@
 }
 
 .planos-detail-features li svg {
-  flex: 0 0 auto;
-  margin-top: 1px;
-  color: var(--planos-success);
+  display: none;
 }
 
 .planos-detail-cta {
