@@ -16,6 +16,7 @@ type Plano = {
   parcelas: number | null
   valor_parcela: number | null
   ativo: boolean
+  created_at?: string | null
 }
 
 const ordemTipos: Plano['tipo'][] = ['mensal', 'anual', 'personalizado', 'intensivo']
@@ -112,7 +113,7 @@ function Planos() {
 
       const { data, error: queryError } = await supabase
         .from('planos')
-        .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo')
+        .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at')
         .eq('ativo', true)
 
       if (!active) return
@@ -136,8 +137,36 @@ function Planos() {
   }, [])
 
   const planosPorIdioma = useMemo(() => {
+    /*
+     * Um idioma pode ter apenas um card por tipo de plano.
+     * Se existirem registros duplicados no banco, mantemos apenas um
+     * registro de forma determinística, evitando cards repetidos na página.
+     * Quando houver data de criação, o registro mais recente é mantido.
+     */
+    const semDuplicados = (items: Plano[]) => {
+      const unicos = new Map<Plano['tipo'], Plano>()
+
+      for (const plano of items) {
+        const atual = unicos.get(plano.tipo)
+
+        if (!atual) {
+          unicos.set(plano.tipo, plano)
+          continue
+        }
+
+        const dataAtual = atual.created_at ? Date.parse(atual.created_at) : 0
+        const dataNovo = plano.created_at ? Date.parse(plano.created_at) : 0
+
+        if (dataNovo >= dataAtual) {
+          unicos.set(plano.tipo, plano)
+        }
+      }
+
+      return Array.from(unicos.values())
+    }
+
     const ordenar = (items: Plano[]) =>
-      [...items].sort(
+      semDuplicados(items).sort(
         (a, b) => ordemTipos.indexOf(a.tipo) - ordemTipos.indexOf(b.tipo),
       )
 
