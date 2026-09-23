@@ -30,6 +30,7 @@ import CentralAtividades from './admin/CentralAtividades'
 import '../styles/Admin.css'
 import '../styles/central-admin.css'
 import logo from '../assets/logo_abacademy.png'
+import SiteFooter from '../components/SiteFooter'
 
 type AdminModule = {
   id: string
@@ -518,6 +519,7 @@ export default function Admin() {
 
         </section>
 
+        <SiteFooter />
       </main>
 
     </div>
