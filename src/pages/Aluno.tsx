@@ -17,6 +17,8 @@ import {
   Play,
   Sparkles,
   UserCircle,
+  MessageSquare,
+  Send,
   Video,
   X,
 } from 'lucide-react'
@@ -32,6 +34,7 @@ type StudentSection =
   | 'atividades'
   | 'progresso'
   | 'perfil'
+  | 'solicitacoes'
 
 type AuthStep =
   | 'email'
@@ -124,6 +127,27 @@ type StudentAnswer = {
   exerciseId: string
   respostaTexto: string
   alternativaIds: string[]
+}
+
+type RequestStatus = 'aberta' | 'em_andamento' | 'respondida' | 'fechada'
+type RequestPriority = 'baixa' | 'normal' | 'alta'
+
+type StudentRequest = {
+  id: string
+  assunto: string
+  categoria: string
+  prioridade: RequestPriority
+  status: RequestStatus
+  created_at: string
+  updated_at: string
+}
+
+type RequestMessage = {
+  id: string
+  solicitacao_id: string
+  remetente_tipo: 'aluno' | 'admin'
+  mensagem: string
+  created_at: string
 }
 
 const activityStatusLabels: Record<
@@ -432,6 +456,17 @@ function Aluno() {
     submittingActivity,
     setSubmittingActivity,
   ] = useState(false)
+
+  const [requests, setRequests] = useState<StudentRequest[]>([])
+  const [requestsLoading, setRequestsLoading] = useState(false)
+  const [requestsError, setRequestsError] = useState('')
+  const [selectedRequest, setSelectedRequest] = useState<StudentRequest | null>(null)
+  const [requestMessages, setRequestMessages] = useState<RequestMessage[]>([])
+  const [requestMessage, setRequestMessage] = useState('')
+  const [requestSubject, setRequestSubject] = useState('')
+  const [requestCategory, setRequestCategory] = useState('suporte')
+  const [requestPriority, setRequestPriority] = useState<RequestPriority>('normal')
+  const [requestSending, setRequestSending] = useState(false)
 
   const passwordRules = {
   minLength: authPassword.length >= 8,
@@ -1272,6 +1307,108 @@ function Aluno() {
     }
   }
 
+  async function loadStudentRequests(userId: string) {
+    try {
+      setRequestsLoading(true)
+      setRequestsError('')
+      const studentId = await getStudentId(userId)
+      const { data, error } = await supabase
+        .from('solicitacoes')
+        .select('id, assunto, categoria, prioridade, status, created_at, updated_at')
+        .eq('aluno_id', studentId)
+        .order('updated_at', { ascending: false })
+      if (error) throw error
+      setRequests((data ?? []) as StudentRequest[])
+    } catch (error) {
+      console.error('Erro ao carregar solicitações:', error)
+      setRequestsError(error instanceof Error ? error.message : 'Não foi possível carregar suas solicitações.')
+    } finally {
+      setRequestsLoading(false)
+    }
+  }
+
+  async function openStudentRequest(request: StudentRequest) {
+    setSelectedRequest(request)
+    setRequestMessage('')
+    const { data, error } = await supabase
+      .from('solicitacao_mensagens')
+      .select('id, solicitacao_id, remetente_tipo, mensagem, created_at')
+      .eq('solicitacao_id', request.id)
+      .order('created_at', { ascending: true })
+    if (error) {
+      setRequestsError(error.message)
+      return
+    }
+    setRequestMessages((data ?? []) as RequestMessage[])
+  }
+
+  async function createStudentRequest() {
+    if (!user || !requestSubject.trim() || requestSending) return
+    try {
+      setRequestSending(true)
+      setRequestsError('')
+      const studentId = await getStudentId(user.id)
+      const { data: created, error } = await supabase
+        .from('solicitacoes')
+        .insert({
+          aluno_id: studentId,
+          assunto: requestSubject.trim(),
+          categoria: requestCategory,
+          prioridade: requestPriority,
+          status: 'aberta',
+        })
+        .select('id, assunto, categoria, prioridade, status, created_at, updated_at')
+        .single()
+      if (error) throw error
+      const { error: messageError } = await supabase
+        .from('solicitacao_mensagens')
+        .insert({
+          solicitacao_id: created.id,
+          remetente_tipo: 'aluno',
+          remetente_id: user.id,
+          mensagem: requestMessage.trim() || requestSubject.trim(),
+        })
+      if (messageError) throw messageError
+      setRequestSubject('')
+      setRequestMessage('')
+      setRequestPriority('normal')
+      setRequestCategory('suporte')
+      await loadStudentRequests(user.id)
+      await openStudentRequest(created as StudentRequest)
+    } catch (error) {
+      setRequestsError(error instanceof Error ? error.message : 'Não foi possível enviar a solicitação.')
+    } finally {
+      setRequestSending(false)
+    }
+  }
+
+  async function replyStudentRequest() {
+    if (!user || !selectedRequest || !requestMessage.trim() || requestSending || selectedRequest.status === 'fechada') return
+    try {
+      setRequestSending(true)
+      setRequestsError('')
+      const { error } = await supabase
+        .from('solicitacao_mensagens')
+        .insert({
+          solicitacao_id: selectedRequest.id,
+          remetente_tipo: 'aluno',
+          remetente_id: user.id,
+          mensagem: requestMessage.trim(),
+        })
+      if (error) throw error
+      await supabase.from('solicitacoes').update({ status: 'aberta' }).eq('id', selectedRequest.id)
+      setRequestMessage('')
+      const updated = { ...selectedRequest, status: 'aberta' as RequestStatus, updated_at: new Date().toISOString() }
+      setSelectedRequest(updated)
+      await openStudentRequest(updated)
+      await loadStudentRequests(user.id)
+    } catch (error) {
+      setRequestsError(error instanceof Error ? error.message : 'Não foi possível enviar sua mensagem.')
+    } finally {
+      setRequestSending(false)
+    }
+  }
+
   /*
    * =========================================================
    * AUTENTICAÇÃO / SESSÃO SUPABASE
@@ -1306,6 +1443,9 @@ function Aluno() {
               authenticatedUser.id,
             ),
             loadStudentActivities(
+              authenticatedUser.id,
+            ),
+            loadStudentRequests(
               authenticatedUser.id,
             ),
           ])
@@ -1386,6 +1526,8 @@ function Aluno() {
           setLoading(false)
           setLessons([])
           setActivities([])
+          setRequests([])
+          setSelectedRequest(null)
           return
         }
 
@@ -2039,6 +2181,7 @@ function Aluno() {
     atividades: 'Atividades',
     progresso: 'Meu progresso',
     perfil: 'Meu perfil',
+    solicitacoes: 'Minhas solicitações',
   }
 
   /*
@@ -2664,6 +2807,20 @@ function Aluno() {
 
           <button
             type="button"
+            className={`student-nav-item ${section === 'solicitacoes' ? 'active' : ''}`}
+            onClick={() => navigateTo('solicitacoes')}
+          >
+            <MessageSquare size={19} />
+            <span>Solicitações</span>
+            {requests.filter(request => request.status === 'respondida').length > 0 && (
+              <span className="student-nav-badge">
+                {requests.filter(request => request.status === 'respondida').length}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
             className={`student-nav-item ${
               section ===
               'perfil'
@@ -2859,6 +3016,28 @@ function Aluno() {
               lessonHistory={
                 lessonHistory
               }
+            />
+          )}
+
+          {section === 'solicitacoes' && (
+            <Solicitacoes
+              requests={requests}
+              loading={requestsLoading}
+              error={requestsError}
+              selectedRequest={selectedRequest}
+              messages={requestMessages}
+              subject={requestSubject}
+              category={requestCategory}
+              priority={requestPriority}
+              message={requestMessage}
+              sending={requestSending}
+              onSelect={openStudentRequest}
+              onSubjectChange={setRequestSubject}
+              onCategoryChange={setRequestCategory}
+              onPriorityChange={setRequestPriority}
+              onMessageChange={setRequestMessage}
+              onCreate={createStudentRequest}
+              onReply={replyStudentRequest}
             />
           )}
 
@@ -4393,3 +4572,66 @@ function Perfil({
 }
 
 export default Aluno
+
+type SolicitacoesProps = {
+  requests: StudentRequest[]
+  loading: boolean
+  error: string
+  selectedRequest: StudentRequest | null
+  messages: RequestMessage[]
+  subject: string
+  category: string
+  priority: RequestPriority
+  message: string
+  sending: boolean
+  onSelect: (request: StudentRequest) => void
+  onSubjectChange: (value: string) => void
+  onCategoryChange: (value: string) => void
+  onPriorityChange: (value: RequestPriority) => void
+  onMessageChange: (value: string) => void
+  onCreate: () => void
+  onReply: () => void
+}
+
+function Solicitacoes({
+  requests, loading, error, selectedRequest, messages, subject, category, priority, message, sending,
+  onSelect, onSubjectChange, onCategoryChange, onPriorityChange, onMessageChange, onCreate, onReply,
+}: SolicitacoesProps) {
+  const labels: Record<RequestStatus, string> = { aberta: 'Aberta', em_andamento: 'Em andamento', respondida: 'Respondida', fechada: 'Fechada' }
+  const categories: Record<string, string> = { financeiro: 'Financeiro', aulas: 'Aulas', atividades: 'Atividades', materiais: 'Materiais', cadastro: 'Cadastro', suporte: 'Suporte', outros: 'Outros' }
+  return (
+    <div className="student-requests">
+      <div className="student-section-title"><div><span>ATENDIMENTO</span><h2>Minhas solicitações</h2></div></div>
+      {error && <div className="student-request-alert">{error}</div>}
+      <div className="student-request-grid">
+        <div className="student-request-list">
+          <div className="student-request-new">
+            <h3>Nova solicitação</h3>
+            <input value={subject} onChange={e => onSubjectChange(e.target.value)} placeholder="Assunto" />
+            <div className="student-request-fields">
+              <select value={category} onChange={e => onCategoryChange(e.target.value)}><option value="suporte">Suporte</option><option value="financeiro">Financeiro</option><option value="aulas">Aulas</option><option value="atividades">Atividades</option><option value="materiais">Materiais</option><option value="cadastro">Cadastro</option><option value="outros">Outros</option></select>
+              <select value={priority} onChange={e => onPriorityChange(e.target.value as RequestPriority)}><option value="baixa">Baixa</option><option value="normal">Normal</option><option value="alta">Alta</option></select>
+            </div>
+            <textarea value={message} onChange={e => onMessageChange(e.target.value)} placeholder="Descreva sua solicitação..." rows={3} />
+            <button type="button" className="student-primary-button" onClick={onCreate} disabled={!subject.trim() || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar solicitação'}</button>
+          </div>
+          <div className="student-request-items">
+            {loading ? <div className="student-empty-state">Carregando...</div> : requests.length === 0 ? <div className="student-empty-state"><MessageSquare size={28}/><h3>Nenhuma solicitação</h3><p>Envie uma solicitação quando precisar de ajuda.</p></div> : requests.map(request => (
+              <button type="button" key={request.id} className={`student-request-item ${selectedRequest?.id === request.id ? 'active' : ''}`} onClick={() => onSelect(request)}>
+                <div><strong>{request.assunto}</strong><span className={`student-request-status ${request.status}`}>{labels[request.status]}</span></div>
+                <small>{categories[request.categoria] || request.categoria} · {new Date(request.updated_at).toLocaleDateString('pt-BR')}</small>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="student-request-thread">
+          {!selectedRequest ? <div className="student-empty-state"><MessageSquare size={30}/><h3>Selecione uma solicitação</h3><p>As respostas da AB Academy aparecerão aqui.</p></div> : <>
+            <header><div><span>{categories[selectedRequest.categoria] || selectedRequest.categoria}</span><h3>{selectedRequest.assunto}</h3></div><span className={`student-request-status ${selectedRequest.status}`}>{labels[selectedRequest.status]}</span></header>
+            <div className="student-request-messages">{messages.map(item => <div key={item.id} className={`student-request-message ${item.remetente_tipo}`}><strong>{item.remetente_tipo === 'admin' ? 'AB Academy' : 'Você'}</strong><p>{item.mensagem}</p><small>{new Date(item.created_at).toLocaleString('pt-BR')}</small></div>)}</div>
+            {selectedRequest.status !== 'fechada' && <footer><textarea value={message} onChange={e => onMessageChange(e.target.value)} placeholder="Responder à solicitação..." rows={3}/><button type="button" className="student-primary-button" onClick={onReply} disabled={!message.trim() || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar resposta'}</button></footer>}
+          </>}
+        </div>
+      </div>
+    </div>
+  )
+}
