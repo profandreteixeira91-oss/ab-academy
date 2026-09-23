@@ -375,6 +375,15 @@ export default function Admin() {
         </div>
       </aside>
 
+      {sidebarOpen && (
+        <button
+          type="button"
+          className="admin-mobile-overlay"
+          aria-label="Fechar menu"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* =====================================================
           MAIN
       ===================================================== */}
