@@ -330,18 +330,15 @@ export default function Financeiro() {
       expenses: paidExpenses,
       balance: paidRevenue - paidExpenses,
       receivable: asaasReceivable + manualReceivable,
-      overdue: monthPayments
-        .filter((payment) => isPaymentOverdue(payment.status, payment.created_at))
-        .reduce((sum, payment) => sum + Number(payment.valor), 0) +
-        filteredLancamentos
-          .filter(
-            (item) =>
-              item.tipo === 'receita' &&
-              item.status === 'pendente' &&
-              item.data_vencimento &&
-              item.data_vencimento < new Date().toISOString().slice(0, 10),
-          )
-          .reduce((sum, item) => sum + Number(item.valor), 0),
+      overdue: filteredLancamentos
+        .filter(
+          (item) =>
+            item.tipo === 'receita' &&
+            item.status === 'pendente' &&
+            item.data_vencimento &&
+            item.data_vencimento < new Date().toISOString().slice(0, 10),
+        )
+        .reduce((sum, item) => sum + Number(item.valor), 0),
     }
   }, [filteredLancamentos, monthPayments])
 
@@ -387,7 +384,7 @@ export default function Financeiro() {
 
     const max = Math.max(
       1,
-      ...chartValues(revenue).flatMap((item) => [item.revenue, item.expenses]),
+      ...revenue.flatMap((item) => [item.revenue, item.expenses]),
     )
 
     return revenue.map((item) => ({
@@ -542,7 +539,9 @@ export default function Financeiro() {
         setSuccess('Lançamento criado com sucesso.')
       }
 
-      closeModal()
+      setModalOpen(false)
+      setEditingId(null)
+      setForm(emptyForm)
       await loadFinanceiro()
     } catch (err) {
       console.error('Erro ao salvar lançamento:', err)
@@ -642,8 +641,6 @@ export default function Financeiro() {
     }
     return labels[status] ?? status
   }
-
-  const chartValues = (values: { revenue: number; expenses: number }[]) => values
 
   const categories =
     form.tipo === 'receita'
