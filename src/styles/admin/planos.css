@@ -886,3 +886,149 @@
   border-color: #fecaca;
   color: #b91c1c;
 }
+
+
+/* =========================================================
+   BENEFÍCIOS EDITÁVEIS
+========================================================= */
+
+.planos-beneficios-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.planos-beneficios-header label {
+  margin-bottom: 3px;
+}
+
+.planos-beneficios-header small {
+  display: block;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.planos-add-beneficio-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #2563eb;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.planos-add-beneficio-button:hover {
+  background: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.planos-beneficios-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.planos-beneficio-row {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) 36px;
+  align-items: center;
+  gap: 8px;
+}
+
+.planos-beneficio-number {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  background: #eff6ff;
+  color: #2563eb;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.planos-beneficio-row input {
+  width: 100%;
+  height: 40px;
+  padding: 0 11px;
+  border: 1px solid #dfe3ea;
+  border-radius: 8px;
+  background: #fff;
+  color: #1f2937;
+  font-family: inherit;
+  font-size: 13px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.planos-beneficio-row input:focus {
+  border-color: var(--primary-color, #2563eb);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08);
+}
+
+.planos-remove-beneficio-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 1px solid #fecaca;
+  border-radius: 8px;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.planos-remove-beneficio-button:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.planos-beneficios-empty {
+  padding: 14px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 9px;
+  background: #f8fafc;
+  color: #6b7280;
+  font-size: 12px;
+  text-align: center;
+}
+
+@media (max-width: 640px) {
+  .planos-beneficios-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .planos-add-beneficio-button {
+    align-self: flex-start;
+  }
+
+  .planos-beneficio-row {
+    grid-template-columns: 26px minmax(0, 1fr) 34px;
+  }
+
+  .planos-beneficio-number {
+    width: 26px;
+    height: 26px;
+  }
+
+  .planos-remove-beneficio-button {
+    width: 34px;
+    height: 34px;
+  }
+}
