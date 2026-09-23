@@ -3221,3 +3221,52 @@
     width: 100%;
   }
 }
+
+/* =========================================================
+   MOBILE UX/UI AUDIT
+========================================================= */
+
+@media (max-width: 760px) {
+  .atividades-table-wrapper {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .atividades-table {
+    min-width: 820px;
+  }
+
+  .atividades-toolbar {
+    gap: 10px;
+  }
+
+  .atividades-exercise-actions,
+  .atividades-content-buttons,
+  .atividades-footer-actions {
+    gap: 8px;
+  }
+
+  .atividades-builder-header,
+  .atividades-correcao-header,
+  .atividades-preview-header {
+    position: sticky;
+    top: 0;
+    z-index: 3;
+    background: #fff;
+  }
+}
+
+@media (max-width: 520px) {
+  .atividades-table {
+    min-width: 760px;
+  }
+
+  .atividades-page {
+    padding: 14px 12px;
+  }
+
+  .atividades-stat-card {
+    min-height: 76px;
+  }
+}
