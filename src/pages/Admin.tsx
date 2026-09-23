@@ -256,6 +256,28 @@ export default function Admin() {
     document.title = title + ' - AB Academy Idiomas'
   }, [activeModule])
 
+  useEffect(() => {
+    if (!sidebarOpen) {
+      document.body.style.overflow = ''
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSidebarOpen(false)
+      }
+    }
+
+    document.addEventListener('keydown', handleKeyDown)
+    document.body.style.overflow =
+      window.innerWidth <= 900 ? 'hidden' : ''
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown)
+      document.body.style.overflow = ''
+    }
+  }, [sidebarOpen])
+
   const handleNavigation = (id: string) => {
     setActiveModule(id)
     setSidebarOpen(false)
