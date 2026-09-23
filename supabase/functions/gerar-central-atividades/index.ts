@@ -113,28 +113,30 @@ As respostas corretas devem ficar dentro de conteudo para permitir correção au
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
-          responseMimeType: 'application/json',
+          response_mime_type: 'application/json',
         },
       }),
     })
 
     if (!response.ok) {
       const errorText = await response.text()
-      return json({ error: 'A API Gemini recusou a geração.', details: errorText.slice(0, 1000) }, 502)
+      return json({ error: 'A API Gemini recusou a geração.', stage: 'gemini_request', status: response.status, details: errorText.slice(0, 3000) }, 502)
     }
 
     const result = await response.json()
+    const finishReason = result?.candidates?.[0]?.finishReason || null
+    const blockReason = result?.promptFeedback?.blockReason || null
     const raw = result?.candidates?.[0]?.content?.parts?.map((part: { text?: string }) => part.text || '').join('') || ''
     let parsed: { atividades?: unknown[] }
 
     try {
       parsed = JSON.parse(raw)
     } catch {
-      return json({ error: 'A IA retornou um JSON inválido.', raw: raw.slice(0, 2000) }, 502)
+      return json({ error: 'A IA retornou um JSON inválido.', stage: 'gemini_response_parse', finishReason, blockReason, raw: raw.slice(0, 3000) }, 502)
     }
 
     if (!Array.isArray(parsed.atividades) || parsed.atividades.length === 0) {
-      return json({ error: 'A IA não retornou atividades válidas.' }, 502)
+      return json({ error: 'A IA não retornou atividades válidas.', stage: 'gemini_empty_response', finishReason, blockReason, raw: raw.slice(0, 3000) }, 502)
     }
 
     const rows = parsed.atividades.slice(0, quantidade).map((item: any) => ({
@@ -155,14 +157,14 @@ As respostas corretas devem ficar dentro de conteudo para permitir correção au
       versao: 1,
     })).filter((item: any) => item.titulo)
 
-    if (!rows.length) return json({ error: 'Nenhuma atividade utilizável foi gerada.' }, 502)
+    if (!rows.length) return json({ error: 'Nenhuma atividade utilizável foi gerada.', stage: 'activity_validation', generatedItems: parsed.atividades.length }, 502)
 
     const { data: inserted, error: insertError } = await admin
       .from('central_atividades')
       .insert(rows)
       .select('id,titulo,idioma,nivel,categoria,status,origem')
 
-    if (insertError) return json({ error: 'A IA gerou conteúdo, mas não foi possível salvar.', details: insertError.message }, 500)
+    if (insertError) return json({ error: 'A IA gerou conteúdo, mas não foi possível salvar.', stage: 'database_insert', details: insertError.message, code: insertError.code || null, hint: insertError.hint || null, details_extra: insertError.details || null }, 500)
 
     return json({ generated: inserted?.length || 0, activities: inserted || [] })
   } catch (error) {
