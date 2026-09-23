@@ -90,26 +90,6 @@ function Home() {
     })
   }
 
-  function getPlanoValor(plano: Plano) {
-    if (
-      plano.tipo === 'anual' &&
-      plano.valor_parcela !== null &&
-      plano.valor_parcela !== undefined
-    ) {
-      return formatCurrency(plano.valor_parcela)
-    }
-
-    if (
-      plano.tipo === 'mensal' &&
-      plano.valor_parcela !== null &&
-      plano.valor_parcela !== undefined
-    ) {
-      return formatCurrency(plano.valor_parcela)
-    }
-
-    return formatCurrency(plano.preco)
-  }
-
   function getPlanCta(plano: Plano) {
     if (plano.tipo === 'mensal') return 'Quero começar'
     if (plano.tipo === 'anual') return 'Quero garantir minha vaga'
