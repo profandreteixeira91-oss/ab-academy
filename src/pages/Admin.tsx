@@ -30,7 +30,6 @@ import CentralAtividades from './admin/CentralAtividades'
 import '../styles/Admin.css'
 import '../styles/central-admin.css'
 import logo from '../assets/logo_abacademy.png'
-import SiteFooter from '../components/SiteFooter'
 
 type AdminModule = {
   id: string
@@ -519,7 +518,25 @@ export default function Admin() {
 
         </section>
 
-        <SiteFooter />
+        <footer className="admin-fixed-footer">
+          <div className="admin-fixed-footer-copy">
+            <span>AB Academy® 2026 - Todos os direitos reservados</span>
+            <span>
+              Desenvolvido por{' '}
+              <a href="https://www.amtsistemas.com.br/">
+                AMT Sistemas &amp; Soluções
+              </a>{' '}-{' '}
+              <a href="https://www.amtsistemas.com.br/">
+                www.amtsistemas.com.br
+              </a>
+            </span>
+          </div>
+
+          <div className="admin-fixed-footer-legal">
+            <a href="/termos-de-servico">Termos de Serviço</a>
+            <a href="/politica-privacidade">Política de Privacidade</a>
+          </div>
+        </footer>
       </main>
 
     </div>
