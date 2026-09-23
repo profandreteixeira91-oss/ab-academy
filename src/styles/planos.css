@@ -716,3 +716,31 @@
     margin-right: 7px;
   }
 }
+
+
+/* =========================================================
+   PLANOS — APRESENTAÇÃO EM BLOCO
+========================================================= */
+
+.planos-grid,
+.planos-language--stacked .planos-grid {
+  display: block !important;
+  width: 100% !important;
+}
+
+.planos-detail-card {
+  display: block;
+  width: 100%;
+  min-height: 0;
+  margin: 0 0 24px;
+}
+
+.planos-detail-card:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 600px) {
+  .planos-detail-card {
+    margin-bottom: 18px;
+  }
+}
