@@ -90,26 +90,20 @@ function Home() {
     })
   }
 
-  function getPlanCta(plano: Plano) {
-    if (plano.tipo === 'mensal') return 'Quero começar'
-    if (plano.tipo === 'anual') return 'Quero garantir minha vaga'
-    if (plano.tipo === 'personalizado') {
-      return idiomaPlanosLabel(plano.idioma) === 'Inglês'
-        ? 'Quero acelerar meu inglês'
-        : 'Quero acelerar meu alemão'
-    }
-    return 'Quero alcançar meu objetivo'
-  }
+  function getPlanoValorMinimo(idiomaPlanos: Plano[]) {
+    const valores = idiomaPlanos
+      .map((plano) =>
+        plano.tipo === 'anual' && plano.valor_parcela !== null
+          ? Number(plano.valor_parcela)
+          : Number(plano.preco),
+      )
+      .filter((valor) => Number.isFinite(valor) && valor > 0)
 
-  function idiomaPlanosLabel(idioma: Plano['idioma']) {
-    return idioma === 'ingles' ? 'Inglês' : 'Alemão'
-  }
-
-  function getPlanoValor(plano: Plano) {
-    if (plano.tipo === 'anual' && plano.valor_parcela !== null) {
-      return formatCurrency(plano.valor_parcela)
+    if (valores.length === 0) {
+      return 'Consulte'
     }
-    return formatCurrency(plano.preco)
+
+    return formatCurrency(Math.min(...valores))
   }
 
   function renderPlanos(idiomaPlanos: Plano[]) {
@@ -121,42 +115,26 @@ function Home() {
       return <div className="course-pricing-empty">Planos disponíveis em breve.</div>
     }
 
-    const order: Plano['tipo'][] = ['mensal', 'anual', 'personalizado', 'intensivo']
-    const ordered = [...idiomaPlanos].sort(
-      (a, b) => order.indexOf(a.tipo) - order.indexOf(b.tipo),
-    )
+    const idioma = idiomaPlanos[0].idioma
+    const nomeIdioma = idiomaPlanosLabel(idioma)
 
     return (
       <div className="course-pricing">
-        {ordered.map((plano) => (
-          <div
-            className={`course-price-option ${plano.tipo === 'anual' ? 'course-price-option-featured' : ''}`}
-            key={plano.id}
+        <div className="course-price-summary">
+          <span>A partir de</span>
+          <strong>
+            {getPlanoValorMinimo(idiomaPlanos)}
+            <small>/mês</small>
+          </strong>
+          <p>Consulte todas as opções de planos para {nomeIdioma}.</p>
+          <a
+            href={`/matricula?idioma=${idioma}`}
+            className="course-plan-cta"
           >
-            <div className="course-price-option-header">
-              <span>{plano.nome}</span>
-              <strong>
-                {getPlanoValor(plano)}
-                <small>/mês</small>
-              </strong>
-            </div>
-
-            <div className="course-price-option-info">
-              <span>{plano.descricao || 'Aulas individuais de 60 minutos.'}</span>
-              {plano.tipo === 'anual' && plano.parcelas && (
-                <small>{plano.parcelas}x de {formatCurrency(plano.valor_parcela)}</small>
-              )}
-            </div>
-
-            <a
-              href={`/matricula?idioma=${plano.idioma}&plano=${plano.id}`}
-              className="course-plan-cta"
-            >
-              {getPlanCta(plano)}
-              <ArrowRight size={16} />
-            </a>
-          </div>
-        ))}
+            Saiba mais
+            <ArrowRight size={16} />
+          </a>
+        </div>
       </div>
     )
   }
