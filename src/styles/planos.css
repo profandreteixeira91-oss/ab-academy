@@ -645,3 +645,74 @@
     font-size: 12px;
   }
 }
+
+/* =========================================================
+   BENEFÍCIOS — DESTAQUE E CONTROLE DE TEXTO
+========================================================= */
+
+.planos-detail-features {
+  gap: 10px;
+  margin-top: 22px;
+}
+
+.planos-detail-features li {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid #e3eaf5;
+  border-radius: 11px;
+  background: linear-gradient(135deg, #f8faff 0%, #f1f5fc 100%);
+  color: #34445f;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 1.48;
+  overflow-wrap: anywhere;
+  word-break: normal;
+  hyphens: auto;
+}
+
+.planos-detail-features li::before {
+  content: '✓';
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  margin: 1px 8px 0 0;
+  border-radius: 50%;
+  background: #e4edff;
+  color: var(--planos-primary);
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 18px;
+  text-align: center;
+}
+
+.planos-detail-features li:hover {
+  border-color: rgba(36, 88, 216, .28);
+  background: #eef4ff;
+}
+
+@media (max-width: 600px) {
+  .planos-detail-features {
+    gap: 8px;
+    margin-top: 19px;
+  }
+
+  .planos-detail-features li {
+    padding: 10px;
+    font-size: 12.5px;
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 380px) {
+  .planos-detail-features li {
+    font-size: 12px;
+    padding: 9px;
+  }
+
+  .planos-detail-features li::before {
+    margin-right: 7px;
+  }
+}
