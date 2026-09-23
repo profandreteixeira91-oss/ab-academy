@@ -40,6 +40,25 @@ function App() {
 
   const path = window.location.pathname
 
+  const pageTitle =
+    path === '/' ? 'Início' :
+    path === '/matricula' ? 'Matrícula' :
+    path.startsWith('/checkout/') ? 'Checkout' :
+    path === '/aluno' ? 'Área do aluno' :
+    path === '/aluno/central' ? 'Central de Atividades' :
+    path.startsWith('/aluno/central/atividade/') ? 'Atividade' :
+    path.startsWith('/aluno/aula/') ? 'Sala de Aula' :
+    path === '/professor' ? 'Portal do professor' :
+    path.startsWith('/professor/aula/') ? 'Sala do professor' :
+    path === '/admin' ? 'Dashboard' :
+    path === '/admin/equipe' ? 'Equipe' :
+    path.startsWith('/admin/aula/') ? 'Sala do professor' :
+    path === '/politica-privacidade' ? 'Política de Privacidade' :
+    path === '/termos-de-servico' ? 'Termos de Serviço' :
+    'AB Academy'
+
+  document.title = pageTitle + ' - AB Academy Idiomas'
+
   /*
    * =========================================================
    * MATRÍCULA
