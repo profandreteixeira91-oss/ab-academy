@@ -102,16 +102,17 @@
   align-items: center;
   width: 100%;
   min-width: 0;
-  gap: 15px;
+  gap: 9px;
 }
 
 .planos-language-title > div {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   min-width: 0;
 }
 
-.planos-language-title > div {
-  min-width: 0;
-}
+
 
 .planos-language-flag {
   display: block;
@@ -484,25 +485,35 @@
   }
 
   .planos-section {
-    padding: 44px 0 68px;
+    padding: 38px 0 60px;
   }
 
   .planos-language + .planos-language {
-    margin-top: 58px;
+    margin-top: 48px;
   }
 
   .planos-language-title {
-    gap: 11px;
+    align-items: center;
+    gap: 7px;
   }
 
   .planos-language-flag {
-    width: 46px;
-    height: 31px;
-    flex-basis: 46px;
+    width: 42px;
+    height: 28px;
+    flex-basis: 42px;
+    border-radius: 6px;
   }
 
   .planos-language-title h2 {
-    font-size: 31px;
+    margin-top: 1px;
+    font-size: 29px;
+    line-height: 1.05;
+  }
+
+  .planos-language-heading > p {
+    margin-top: 8px;
+    font-size: 13.5px;
+    line-height: 1.5;
   }
 
   .planos-grid {
@@ -511,8 +522,8 @@
   }
 
   .planos-detail-card {
-    padding: 22px 18px 19px;
-    border-radius: 20px;
+    padding: 21px 17px 18px;
+    border-radius: 18px;
   }
 
   .planos-detail-card:hover {
@@ -532,13 +543,13 @@
   }
 
   .planos-detail-card h3 {
-    margin-top: 18px;
-    font-size: 19px;
+    margin-top: 16px;
+    font-size: 18px;
   }
 
   .planos-detail-price {
-    margin-top: 20px;
-    padding-top: 18px;
+    margin-top: 18px;
+    padding-top: 17px;
   }
 
   .planos-detail-price strong {
@@ -559,14 +570,15 @@
   }
 
   .planos-detail-features {
-    margin-top: 20px;
-    gap: 8px;
+    margin-top: 18px;
+    gap: 7px;
   }
 
   .planos-detail-cta {
-    min-height: 50px;
-    margin-top: 24px;
-    font-size: 13px;
+    min-height: 48px;
+    margin-top: 20px;
+    padding: 10px 11px;
+    font-size: 12.5px;
   }
 
   .planos-diagnostic {
@@ -607,7 +619,7 @@
   }
 
   .planos-detail-card {
-    padding: 20px 15px 17px;
+    padding: 19px 14px 16px;
   }
 
   .planos-detail-card--anual h3 {
