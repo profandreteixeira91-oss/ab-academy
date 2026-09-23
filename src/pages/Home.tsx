@@ -22,7 +22,7 @@ import { supabase } from '../lib/supabase'
 type Plano = {
   id: string
   idioma: 'ingles' | 'alemao'
-  tipo: 'mensal' | 'anual'
+  tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo'
   nome: string
   descricao: string | null
   preco: number
@@ -111,69 +111,71 @@ function Home() {
     return formatCurrency(plano.preco)
   }
 
+  function getPlanCta(plano: Plano) {
+    if (plano.tipo === 'mensal') return 'Quero começar'
+    if (plano.tipo === 'anual') return 'Quero garantir minha vaga'
+    if (plano.tipo === 'personalizado') {
+      return idiomaPlanosLabel(plano.idioma) === 'Inglês'
+        ? 'Quero acelerar meu inglês'
+        : 'Quero acelerar meu alemão'
+    }
+    return 'Quero alcançar meu objetivo'
+  }
+
+  function idiomaPlanosLabel(idioma: Plano['idioma']) {
+    return idioma === 'ingles' ? 'Inglês' : 'Alemão'
+  }
+
+  function getPlanoValor(plano: Plano) {
+    if (plano.tipo === 'anual' && plano.valor_parcela !== null) {
+      return formatCurrency(plano.valor_parcela)
+    }
+    return formatCurrency(plano.preco)
+  }
+
   function renderPlanos(idiomaPlanos: Plano[]) {
     if (loadingPlanos) {
-      return (
-        <div className="course-pricing-loading">
-          Carregando planos...
-        </div>
-      )
+      return <div className="course-pricing-loading">Carregando planos...</div>
     }
 
     if (idiomaPlanos.length === 0) {
-      return (
-        <div className="course-pricing-empty">
-          Planos disponíveis em breve.
-        </div>
-      )
+      return <div className="course-pricing-empty">Planos disponíveis em breve.</div>
     }
 
-    const planosMensais = idiomaPlanos.filter(
-      (plano) => plano.nome === 'Plano Mensal',
-    )
-
-    const planosAnuais = idiomaPlanos.filter(
-      (plano) => plano.nome === 'Plano Anual',
+    const order: Plano['tipo'][] = ['mensal', 'anual', 'personalizado', 'intensivo']
+    const ordered = [...idiomaPlanos].sort(
+      (a, b) => order.indexOf(a.tipo) - order.indexOf(b.tipo),
     )
 
     return (
       <div className="course-pricing">
-        {planosMensais.map((plano) => (
-          <div className="course-price-option" key={plano.id}>
-            <div className="course-price-option-header">
-              <span>Plano Mensal</span>
-              <strong>{getPlanoValor(plano)}</strong>
-            </div>
-
-            <div className="course-price-option-info">
-              <span>
-                {plano.descricao || 'Pagamento mensal'}
-              </span>
-            </div>
-          </div>
-        ))}
-
-        {planosAnuais.map((plano) => (
+        {ordered.map((plano) => (
           <div
-            className="course-price-option course-price-option-featured"
+            className={`course-price-option ${plano.tipo === 'anual' ? 'course-price-option-featured' : ''}`}
             key={plano.id}
           >
             <div className="course-price-option-header">
-              <span>Plano Anual</span>
-              <strong>{getPlanoValor(plano)}</strong>
+              <span>{plano.nome}</span>
+              <strong>
+                {getPlanoValor(plano)}
+                <small>/mês</small>
+              </strong>
             </div>
 
             <div className="course-price-option-info">
-              <span>
-                {plano.parcelas && plano.parcelas > 1
-                  ? `em ${plano.parcelas} parcelas`
-                  : 'Pagamento anual'}
-              </span>
-
-              {plano.descricao && (
-                <small>{plano.descricao}</small>
+              <span>{plano.descricao || 'Aulas individuais de 60 minutos.'}</span>
+              {plano.tipo === 'anual' && plano.parcelas && (
+                <small>{plano.parcelas}x de {formatCurrency(plano.valor_parcela)}</small>
               )}
             </div>
+
+            <a
+              href={`/matricula?idioma=${plano.idioma}&plano=${plano.id}`}
+              className="course-plan-cta"
+            >
+              {getPlanCta(plano)}
+              <ArrowRight size={16} />
+            </a>
           </div>
         ))}
       </div>
@@ -653,6 +655,32 @@ function Home() {
                   <ArrowRight size={17} />
                 </a>
               </article>
+            </div>
+          </div>
+        </section>
+
+        {/* AULA DIAGNÓSTICA */}
+        <section className="section diagnostic-section" id="aula-diagnostica">
+          <div className="container">
+            <div className="diagnostic-container">
+              <div className="diagnostic-content">
+                <span className="section-label">Aula diagnóstica</span>
+                <h2>Descubra seu nível e comece pelo caminho certo.</h2>
+                <p>
+                  Faça uma aula diagnóstica individual de 60 minutos em Inglês ou Alemão
+                  por <strong>R$ 50,00</strong>. O valor é descontado da sua primeira
+                  mensalidade caso você se matricule na AB Academy.
+                </p>
+                <a href="/matricula?diagnostica=1" className="btn btn-primary">
+                  Agendar aula diagnóstica
+                  <ArrowRight size={18} />
+                </a>
+              </div>
+              <div className="diagnostic-price">
+                <span>Investimento</span>
+                <strong>R$ 50</strong>
+                <small>Descontado da 1ª mensalidade</small>
+              </div>
             </div>
           </div>
         </section>
