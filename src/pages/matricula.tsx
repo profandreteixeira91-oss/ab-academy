@@ -171,46 +171,24 @@ export default function Matricula() {
 
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
-  const [loadingPlans, setLoadingPlans] = useState(false)
-  const [loadingSchedules, setLoadingSchedules] =
-    useState(false)
-
+  const [loadingSchedules, setLoadingSchedules] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-
   const [name, setName] = useState('')
   const [cpf, setCpf] = useState('')
   const [email, setEmail] = useState('')
   const [birthDate, setBirthDate] = useState('')
   const [phone, setPhone] = useState('')
-  const [responsibleName, setResponsibleName] =
-    useState('')
-  const [responsiblePhone, setResponsiblePhone] =
-    useState('')
-
-  const [language, setLanguage] =
-    useState<Language | ''>('')
-
-  const [conversationLevel, setConversationLevel] =
-    useState('')
+  const [responsibleName, setResponsibleName] = useState('')
+  const [responsiblePhone, setResponsiblePhone] = useState('')
+  const [language, setLanguage] = useState<Language | ''>('')
+  const [conversationLevel, setConversationLevel] = useState('')
   const [writingLevel, setWritingLevel] = useState('')
-  const [comprehensionLevel, setComprehensionLevel] =
-    useState('')
-
-  const [plans, setPlans] = useState<Plan[]>([])
-  const [selectedPlanId, setSelectedPlanId] =
-    useState<string | null>(null)
+  const [comprehensionLevel, setComprehensionLevel] = useState('')
   const [plan, setPlan] = useState<Plan | null>(null)
-  const [diagnosticRequested, setDiagnosticRequested] = useState(false)
-
-  const [availableSchedules, setAvailableSchedules] =
-    useState<Horario[]>([])
-
-  const [selectedSchedule, setSelectedSchedule] =
-    useState<SelectedSchedule | null>(null)
-
-  const [selectedWeekday, setSelectedWeekday] =
-    useState<number | null>(null)
+  const [availableSchedules, setAvailableSchedules] = useState<Horario[]>([])
+  const [selectedSchedule, setSelectedSchedule] = useState<SelectedSchedule | null>(null)
+  const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
 
   const selectedLanguageLabel =
     language === 'ingles'
@@ -245,146 +223,49 @@ export default function Matricula() {
   )
 
   useEffect(() => {
-    const loadUser = async () => {
-      try {
-        const {
-          data: { session },
-        } = await supabase.auth.getSession()
-
-        setUser(session?.user ?? null)
-
-        if (session?.user) {
-          const metadata =
-            session.user.user_metadata || {}
-
-          setName(
-            metadata.full_name ||
-              metadata.name ||
-              '',
-          )
-
-          setEmail(
-            session.user.email || '',
-          )
-        }
-      } finally {
-        setLoadingUser(false)
-      }
-    }
-
-    loadUser()
-
-    const {
-      data: { subscription },
-    } =
-      supabase.auth.onAuthStateChange(
-        (_event, session) => {
-          setUser(session?.user ?? null)
-
-          if (session?.user) {
-            const metadata =
-              session.user.user_metadata || {}
-
-            setName(
-              metadata.full_name ||
-                metadata.name ||
-                '',
-            )
-
-            setEmail(
-              session.user.email || '',
-            )
-          }
-        },
-      )
-
-    return () => {
-      subscription.unsubscribe()
-    }
-  }, [])
-
-  useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const requestedLanguage = params.get('idioma')
-    const requestedDiagnostic = params.get('diagnostica') === '1'
+    const requestedPlanId = params.get('plano')
 
-    if (requestedLanguage === 'ingles' || requestedLanguage === 'alemao') {
-      setLanguage(requestedLanguage)
-    }
-
-    setDiagnosticRequested(requestedDiagnostic)
-  }, [])
-
-  useEffect(() => {
-    if (!language) {
-      setPlans([])
-      setPlan(null)
-      setSelectedPlanId(null)
-      setAvailableSchedules([])
-      setSelectedSchedule(null)
+    if (requestedLanguage !== 'ingles' && requestedLanguage !== 'alemao') {
+      setError('Selecione um plano na página de planos para iniciar sua matrícula.')
       return
     }
 
-    loadPlans(language)
-    loadSchedules(language)
-  }, [language])
-
-  const loadPlans = async (
-    selectedLanguage: Language,
-  ) => {
-    setLoadingPlans(true)
-    setError('')
-
-    const { data, error: plansError } =
-      await supabase
-        .from('planos')
-        .select(
-          `
-            id,
-            idioma,
-            tipo,
-            nome,
-            descricao,
-            preco,
-            parcelas,
-            valor_parcela,
-            ativo,
-            created_at,
-            updated_at
-          `,
-        )
-        .eq('idioma', selectedLanguage)
-        .eq('ativo', true)
-        .order('preco', {
-          ascending: true,
-        })
-
-    if (plansError) {
-      console.error(
-        'Erro ao carregar planos:',
-        plansError,
-      )
-
-      setError(
-        'Não foi possível carregar os planos disponíveis.',
-      )
-
-      setPlans([])
-    } else {
-      const loadedPlans = (data || []) as Plan[]
-      setPlans(loadedPlans)
-
-      const requestedPlanId = new URLSearchParams(window.location.search).get('plano')
-      if (requestedPlanId) {
-        const requestedPlan = loadedPlans.find((item) => item.id === requestedPlanId)
-        if (requestedPlan) {
-          setSelectedPlanId(requestedPlan.id)
-          setPlan(requestedPlan)
-        }
-      }
+    if (!requestedPlanId) {
+      setError('Nenhum plano foi selecionado. Volte à página de planos e escolha uma opção.')
+      return
     }
 
-    setLoadingPlans(false)
+    setLanguage(requestedLanguage)
+    loadSelectedPlan(requestedLanguage, requestedPlanId)
+  }, [])
+
+  useEffect(() => {
+    if (language) loadSchedules(language)
+  }, [language])
+
+  const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
+    const { data, error: planError } = await supabase
+      .from('planos')
+      .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at')
+      .eq('id', selectedPlanId)
+      .eq('idioma', selectedLanguage)
+      .eq('ativo', true)
+      .maybeSingle()
+
+    if (planError) {
+      console.error('Erro ao carregar plano selecionado:', planError)
+      setError('Não foi possível carregar o plano selecionado.')
+      return
+    }
+
+    if (!data) {
+      setError('O plano selecionado não está mais disponível. Volte à página de planos e escolha outro.')
+      return
+    }
+
+    setPlan(data as Plan)
   }
 
   const loadSchedules = async (
@@ -522,60 +403,6 @@ export default function Matricula() {
     return true
   }
 
-  const validateLanguage = () => {
-    if (!language) {
-      setError(
-        'Selecione um idioma.',
-      )
-      return false
-    }
-
-    if (
-      !conversationLevel ||
-      !writingLevel ||
-      !comprehensionLevel
-    ) {
-      setError(
-        'Informe seus níveis no idioma.',
-      )
-      return false
-    }
-
-    return true
-  }
-
-  const validatePlan = () => {
-    if (!selectedPlanId || !plan) {
-      setError(
-        'Selecione um plano.',
-      )
-      return false
-    }
-
-    if (plan.id !== selectedPlanId) {
-      setError(
-        'O plano selecionado é inválido.',
-      )
-      return false
-    }
-
-    if (plan.idioma !== language) {
-      setError(
-        'O plano selecionado não corresponde ao idioma escolhido.',
-      )
-      return false
-    }
-
-    if (!plan.ativo) {
-      setError(
-        'Este plano não está mais disponível.',
-      )
-      return false
-    }
-
-    return true
-  }
-
   const validateSchedule = () => {
     if (!selectedSchedule) {
       setError(
@@ -592,31 +419,23 @@ export default function Matricula() {
     setSuccess('')
 
     if (step === 1) {
-      if (!validatePersonalData()) return
-
+      if (!plan) {
+        setError('O plano selecionado não está disponível.')
+        return
+      }
       setStep(2)
       return
     }
 
     if (step === 2) {
-      if (!validateLanguage()) return
-
+      if (!validatePersonalData()) return
       setStep(3)
       return
     }
 
     if (step === 3) {
-      if (!validatePlan()) return
-
-      setSelectedWeekday(null)
-      setStep(4)
-      return
-    }
-
-    if (step === 4) {
       if (!validateSchedule()) return
-
-      setStep(5)
+      setStep(4)
     }
   }
 
@@ -627,15 +446,6 @@ export default function Matricula() {
     if (step > 1) {
       setStep(step - 1)
     }
-  }
-
-  const handleSelectPlan = (
-    selected: Plan,
-  ) => {
-    setError('')
-
-    setSelectedPlanId(selected.id)
-    setPlan(selected)
   }
 
   const handleSelectSchedule = (
@@ -926,10 +736,9 @@ export default function Matricula() {
 
           <div className="enrollment-progress">
             {[
+              'Plano selecionado',
               'Dados pessoais',
-              'Idioma',
-              'Plano',
-              'Horários',
+              'Horário',
               'Confirmação',
             ].map(
               (label, index) => {
@@ -963,7 +772,7 @@ export default function Matricula() {
                       {label}
                     </span>
 
-                    {number < 5 && (
+                    {number < 4 && (
                       <div className="enrollment-progress-line" />
                     )}
                   </div>
@@ -982,35 +791,29 @@ export default function Matricula() {
                 <div>
                   <h2>
                     {step === 1 &&
-                      'Seus dados pessoais'}
+                      'Plano selecionado'}
 
                     {step === 2 &&
-                      'Escolha seu idioma'}
+                      'Seus dados pessoais'}
 
                     {step === 3 &&
-                      'Escolha seu plano'}
-
-                    {step === 4 &&
                       'Escolha seu horário'}
 
-                    {step === 5 &&
+                    {step === 4 &&
                       'Confirme sua matrícula'}
                   </h2>
 
                   <p>
                     {step === 1 &&
-                      'Informe os dados necessários para sua matrícula.'}
+                      'Confira o plano escolhido na página de planos.'}
 
                     {step === 2 &&
-                      'Selecione o idioma e informe seu nível atual.'}
+                      'Informe os dados necessários para sua matrícula.'}
 
                     {step === 3 &&
-                      'Escolha o plano que deseja contratar.'}
-
-                    {step === 4 &&
                       'Selecione um horário disponível para sua aula.'}
 
-                    {step === 5 &&
+                    {step === 4 &&
                       'Revise todas as informações antes de continuar para o pagamento.'}
                   </p>
                 </div>
@@ -1059,6 +862,41 @@ export default function Matricula() {
               )}
 
               {step === 1 && (
+                <div className="plan-selection">
+                  <div className="selection-heading">
+                    <div>
+                      <h3>Plano selecionado</h3>
+                      <p>Confira o idioma e o plano escolhido antes de continuar.</p>
+                    </div>
+                  </div>
+
+                  {plan ? (
+                    <div className="plan-card selected">
+                      <div className="plan-card-top">
+                        <div>
+                          <span className="enrollment-plan-language">{selectedLanguageLabel}</span>
+                          <h3>{plan.nome}</h3>
+                          {plan.descricao && <p>{plan.descricao}</p>}
+                        </div>
+                        <span className="selection-radio"><CheckCircle2 size={20} /></span>
+                      </div>
+                      <div className="plan-price">
+                        {formatCurrency(plan.preco)}
+                        <span> / mês</span>
+                      </div>
+                      {getPlanPaymentDescription(plan) && (
+                        <div className="plan-installment">{getPlanPaymentDescription(plan)}</div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="enrollment-empty">Carregando plano selecionado...</div>
+                  )}
+
+                  <a href="/planos" className="enrollment-change-plan">Alterar plano</a>
+                </div>
+              )}
+
+              {step === 2 && (
                 <div className="enrollment-fields">
                   <div className="enrollment-field">
                     <label>
@@ -1198,310 +1036,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {step === 2 && (
-                <>
-                  <div className="language-selection">
-                    <button
-                      type="button"
-                      className={`language-selection-card ${
-                        language === 'ingles'
-                          ? 'selected'
-                          : ''
-                      }`}
-                      onClick={() =>
-                        setLanguage(
-                          'ingles',
-                        )
-                      }
-                    >
-                      <img
-                        src={usaFlag}
-                        alt="Inglês"
-                      />
-
-                      <div>
-                        <strong>
-                          Inglês
-                        </strong>
-
-                        <span>
-                          Aulas de inglês
-                        </span>
-                      </div>
-
-                      <span className="selection-radio">
-                        {language ===
-                          'ingles' && (
-                          <CheckCircle2
-                            size={20}
-                          />
-                        )}
-                      </span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`language-selection-card ${
-                        language === 'alemao'
-                          ? 'selected'
-                          : ''
-                      }`}
-                      onClick={() =>
-                        setLanguage(
-                          'alemao',
-                        )
-                      }
-                    >
-                      <img
-                        src={germanyFlag}
-                        alt="Alemão"
-                      />
-
-                      <div>
-                        <strong>
-                          Alemão
-                        </strong>
-
-                        <span>
-                          Aulas de alemão
-                        </span>
-                      </div>
-
-                      <span className="selection-radio">
-                        {language ===
-                          'alemao' && (
-                          <CheckCircle2
-                            size={20}
-                          />
-                        )}
-                      </span>
-                    </button>
-                  </div>
-
-                  {language && (
-                    <div className="language-levels">
-                      <div className="selection-heading">
-                        <Languages
-                          size={20}
-                        />
-
-                        <div>
-                          <h3>
-                            Seu nível atual
-                          </h3>
-
-                          <p>
-                            Essas informações ajudam a direcionar suas aulas.
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="enrollment-field">
-                        <label>
-                          Conversação *
-                        </label>
-
-                        <select
-                          value={
-                            conversationLevel
-                          }
-                          onChange={(event) =>
-                            setConversationLevel(
-                              event.target.value,
-                            )
-                          }
-                        >
-                          <option value="">
-                            Selecione
-                          </option>
-                          <option value="iniciante">
-                            Iniciante
-                          </option>
-                          <option value="basico">
-                            Básico
-                          </option>
-                          <option value="intermediario">
-                            Intermediário
-                          </option>
-                          <option value="avancado">
-                            Avançado
-                          </option>
-                          <option value="fluente">
-                            Fluente
-                          </option>
-                        </select>
-                      </div>
-
-                      <div className="enrollment-field">
-                        <label>
-                          Escrita *
-                        </label>
-
-                        <select
-                          value={
-                            writingLevel
-                          }
-                          onChange={(event) =>
-                            setWritingLevel(
-                              event.target.value,
-                            )
-                          }
-                        >
-                          <option value="">
-                            Selecione
-                          </option>
-                          <option value="iniciante">
-                            Iniciante
-                          </option>
-                          <option value="basico">
-                            Básico
-                          </option>
-                          <option value="intermediario">
-                            Intermediário
-                          </option>
-                          <option value="avancado">
-                            Avançado
-                          </option>
-                          <option value="fluente">
-                            Fluente
-                          </option>
-                        </select>
-                      </div>
-
-                      <div className="enrollment-field">
-                        <label>
-                          Compreensão *
-                        </label>
-
-                        <select
-                          value={
-                            comprehensionLevel
-                          }
-                          onChange={(event) =>
-                            setComprehensionLevel(
-                              event.target.value,
-                            )
-                          }
-                        >
-                          <option value="">
-                            Selecione
-                          </option>
-                          <option value="iniciante">
-                            Iniciante
-                          </option>
-                          <option value="basico">
-                            Básico
-                          </option>
-                          <option value="intermediario">
-                            Intermediário
-                          </option>
-                          <option value="avancado">
-                            Avançado
-                          </option>
-                          <option value="fluente">
-                            Fluente
-                          </option>
-                        </select>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-
               {step === 3 && (
-                <div className="plan-selection">
-                  <div className="diagnostic-offer">
-                    <strong>Aula diagnóstica — R$ 50</strong>
-                    <p>
-                      Aula individual de 60 minutos em Inglês ou Alemão.
-                      Em caso de matrícula, os R$ 50 são descontados da primeira mensalidade.
-                    </p>
-                  </div>
-
-                  {loadingPlans ? (
-                    <div className="enrollment-loading">
-                      Carregando planos...
-                    </div>
-                  ) : plans.length === 0 ? (
-                    <div className="enrollment-empty">
-                      Nenhum plano disponível para{' '}
-                      {selectedLanguageLabel}.
-                    </div>
-                  ) : (
-                    plans.map((item) => {
-                      const selected =
-                        selectedPlanId ===
-                        item.id
-
-                      const installment =
-                        getPlanPaymentDescription(
-                          item,
-                        )
-
-                      return (
-                        <button
-                          type="button"
-                          key={item.id}
-                          className={`plan-card ${
-                            selected
-                              ? 'selected'
-                              : ''
-                          }`}
-                          onClick={() =>
-                            handleSelectPlan(
-                              item,
-                            )
-                          }
-                        >
-                          <div className="plan-card-top">
-                            <div>
-                              <h3>
-                                {item.nome}
-                              </h3>
-
-                              {item.descricao && (
-                                <p>
-                                  {
-                                    item.descricao
-                                  }
-                                </p>
-                              )}
-                            </div>
-
-                            <span className="selection-radio">
-                              {selected && (
-                                <CheckCircle2
-                                  size={20}
-                                />
-                              )}
-                            </span>
-                          </div>
-
-                          <div className="plan-price">
-                            {formatCurrency(
-                              item.preco,
-                            )}
-
-                            <span>
-                              {item.tipo === 'anual'
-                                ? ' / mês'
-                                : ' / mês'}
-                            </span>
-                          </div>
-
-                          {installment && (
-                            <div className="plan-installment">
-                              {installment}
-                            </div>
-                          )}
-                        </button>
-                      )
-                    })
-                  )}
-                </div>
-              )}
-
-              {step === 4 && (
                 <div className="schedule-section">
                   <div className="selection-heading">
                     <div>
@@ -1687,7 +1222,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {step === 5 && (
+              {step === 4 && (
                 <div className="schedule-confirmation">
                   <div className="selection-heading">
                     <ShieldCheck
@@ -1862,63 +1397,21 @@ export default function Matricula() {
 
               <div className="enrollment-actions">
                 {step > 1 && (
-                  <button
-                    type="button"
-                    className="enrollment-back-button"
-                    onClick={
-                      previousStep
-                    }
-                    disabled={loading}
-                  >
-                    <ChevronLeft
-                      size={18}
-                    />
-
+                  <button type="button" className="enrollment-back-button" onClick={previousStep} disabled={loading}>
+                    <ChevronLeft size={18} />
                     Voltar
                   </button>
                 )}
-
                 <div />
-
-                {step < 5 ? (
-                  <button
-                    type="button"
-                    className="enrollment-submit"
-                    onClick={nextStep}
-                    disabled={
-                      loading ||
-                      (step === 1 &&
-                        !user)
-                    }
-                  >
+                {step < 4 ? (
+                  <button type="button" className="enrollment-submit" onClick={nextStep} disabled={loading || (step === 1 && !plan)}>
                     Continuar
-
-                    <ArrowRight
-                      size={18}
-                    />
+                    <ArrowRight size={18} />
                   </button>
                 ) : (
-                  <button
-                    type="button"
-                    className="enrollment-submit"
-                    onClick={
-                      createEnrollment
-                    }
-                    disabled={
-                      loading ||
-                      !plan ||
-                      !selectedSchedule
-                    }
-                  >
-                    {loading
-                      ? 'Criando matrícula...'
-                      : 'Continuar para pagamento'}
-
-                    {!loading && (
-                      <ArrowRight
-                        size={18}
-                      />
-                    )}
+                  <button type="button" className="enrollment-submit" onClick={createEnrollment} disabled={loading || !plan || !selectedSchedule}>
+                    {loading ? 'Criando matrícula...' : 'Continuar para pagamento'}
+                    {!loading && <ArrowRight size={18} />}
                   </button>
                 )}
               </div>
