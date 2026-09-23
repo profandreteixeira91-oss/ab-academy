@@ -18,7 +18,7 @@ type Language = 'ingles' | 'alemao'
 type Plan = {
   id: string
   idioma: Language
-  tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo'
+  tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo' | 'avulso'
   nome: string
   descricao: string | null
   preco: number
@@ -151,6 +151,7 @@ const getPlanTypeLabel = (tipo: string) => {
   if (tipo === 'mensal') return 'Mensal'
   if (tipo === 'personalizado') return 'Personalizado'
   if (tipo === 'intensivo') return 'Intensivo'
+  if (tipo === 'avulso') return 'Avulso'
   return tipo
 }
 
@@ -256,6 +257,7 @@ export default function Matricula() {
     const params = new URLSearchParams(window.location.search)
     const requestedLanguage = params.get('idioma')
     const requestedPlanId = params.get('plano')
+    const diagnosticRequested = params.get('diagnostica') === '1'
 
     if (requestedLanguage !== 'ingles' && requestedLanguage !== 'alemao') {
       setError('Selecione um plano na página de planos para iniciar sua matrícula.')
@@ -269,6 +271,10 @@ export default function Matricula() {
 
     setLanguage(requestedLanguage)
     loadSelectedPlan(requestedLanguage, requestedPlanId)
+
+    if (diagnosticRequested) {
+      setSuccess('Você está agendando uma aula diagnóstica avulsa.')
+    }
   }, [])
 
   useEffect(() => {
@@ -621,20 +627,24 @@ export default function Matricula() {
         objetivos: null,
 
         aulas_semana:
-          plan.tipo === 'intensivo'
-            ? 3
-            : plan.tipo === 'personalizado'
-              ? 2
-              : 1,
+          plan.tipo === 'avulso'
+            ? null
+            : plan.tipo === 'intensivo'
+              ? 3
+              : plan.tipo === 'personalizado'
+                ? 2
+                : 1,
 
         valor_aula:
-          plan.tipo === 'anual'
-            ? null
-            : Number(plan.preco) /
-              (plan.tipo === 'intensivo' ? 12 : plan.tipo === 'personalizado' ? 8 : 4),
+          plan.tipo === 'avulso'
+            ? Number(plan.preco)
+            : plan.tipo === 'anual'
+              ? null
+              : Number(plan.preco) /
+                (plan.tipo === 'intensivo' ? 12 : plan.tipo === 'personalizado' ? 8 : 4),
 
         valor_mensal:
-          plan.tipo === 'anual'
+          plan.tipo === 'avulso' || plan.tipo === 'anual'
             ? null
             : Number(plan.preco),
 
@@ -904,7 +914,7 @@ export default function Matricula() {
                       </div>
                       <div className="plan-price">
                         {formatCurrency(plan.preco)}
-                        <span> / mês</span>
+                        <span>{plan.tipo === 'avulso' ? ' pagamento único' : ' / mês'}</span>
                       </div>
                       {getPlanPaymentDescription(plan) && (
                         <div className="plan-installment">{getPlanPaymentDescription(plan)}</div>
@@ -1289,7 +1299,7 @@ export default function Matricula() {
 
                     <div>
                       <span>
-                        Plano: {' '}
+                        {plan?.tipo === 'avulso' ? 'Serviço: ' : 'Plano: '}
                       </span>
 
                       <strong>
@@ -1304,11 +1314,11 @@ export default function Matricula() {
                       </span>
 
                       <strong>
-                        {plan
-                          ? getPlanTypeLabel(
-                              plan.tipo,
-                            )
-                          : '—'}
+                        {plan?.tipo === 'avulso'
+                          ? 'Pagamento único'
+                          : plan
+                            ? getPlanTypeLabel(plan.tipo)
+                            : '—'}
                       </strong>
                     </div>
 
@@ -1401,11 +1411,9 @@ export default function Matricula() {
                     />
 
                     <p>
-                      Sua matrícula será criada
-                      como <strong>pendente</strong>.
-                      O cadastro do aluno somente
-                      será criado após a confirmação
-                      do pagamento.
+                      {plan?.tipo === 'avulso'
+                        ? <>Seu agendamento será criado como <strong>pendente</strong>. A aula diagnóstica será confirmada após o pagamento.</>
+                        : <>Sua matrícula será criada como <strong>pendente</strong>. O cadastro do aluno somente será criado após a confirmação do pagamento.</>}
                     </p>
                   </div>
                 </div>
@@ -1468,11 +1476,11 @@ export default function Matricula() {
                 </span>
 
                 <strong>
-                  {plan
-                    ? getPlanTypeLabel(
-                        plan.tipo,
-                      )
-                    : '—'}
+                  {plan?.tipo === 'avulso'
+                    ? 'Pagamento único'
+                    : plan
+                      ? getPlanTypeLabel(plan.tipo)
+                      : '—'}
                 </strong>
               </div>
 
@@ -1499,9 +1507,7 @@ export default function Matricula() {
 
                 <strong>
                   {plan
-                    ? formatCurrency(
-                        selectedPlanPrice,
-                      )
+                    ? formatCurrency(selectedPlanPrice) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
                     : '—'}
                 </strong>
               </div>
