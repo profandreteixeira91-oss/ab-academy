@@ -200,10 +200,10 @@ function App() {
    */
 
   if (path === '/admin') {
-    return withFooter(
+    return (
       <AdminAccess>
         <Admin />
-      </AdminAccess>,
+      </AdminAccess>
     )
   }
 
