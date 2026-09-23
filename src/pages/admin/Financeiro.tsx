@@ -22,11 +22,12 @@ import {
 } from 'lucide-react'
 
 import { supabase } from '../../lib/supabase'
+import Mensalidades from './Mensalidades'
 import '../../styles/admin/Financeiro.css'
 
 type TipoLancamento = 'receita' | 'despesa'
 type StatusLancamento = 'pendente' | 'pago' | 'cancelado'
-type FinanceTab = 'visao-geral' | 'lancamentos' | 'recebimentos'
+type FinanceTab = 'visao-geral' | 'mensalidades' | 'lancamentos' | 'recebimentos'
 
 type Lancamento = {
   id: string
@@ -852,6 +853,13 @@ export default function Financeiro() {
           </button>
           <button
             type="button"
+            className={tab === 'mensalidades' ? 'active' : ''}
+            onClick={() => setTab('mensalidades')}
+          >
+            Mensalidades
+          </button>
+          <button
+            type="button"
             className={tab === 'lancamentos' ? 'active' : ''}
             onClick={() => setTab('lancamentos')}
           >
@@ -1058,6 +1066,10 @@ export default function Financeiro() {
             </div>
           </section>
         </>
+      )}
+
+      {tab === 'mensalidades' && (
+        <Mensalidades />
       )}
 
       {tab === 'lancamentos' && (
