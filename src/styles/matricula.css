@@ -1433,3 +1433,17 @@
   margin: 0;
   line-height: 1.6;
 }
+
+
+/* Logo do cabeçalho padronizado globalmente. */
+.enrollment-header {
+  height: 88px;
+  min-height: 88px;
+}
+
+@media (max-width: 768px) {
+  .enrollment-header {
+    height: 76px;
+    min-height: 76px;
+  }
+}
