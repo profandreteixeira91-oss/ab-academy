@@ -12,3 +12,63 @@
 .mensalidades-empty{padding:55px 24px;text-align:center;color:#64748b}.mensalidades-empty h3{margin:12px 0 6px;color:#1f2937}.mensalidades-empty p{margin:0 0 18px}
 .mensalidades-modal-overlay{position:fixed;inset:0;background:rgba(15,23,42,.48);z-index:1200;display:flex;align-items:center;justify-content:center;padding:24px}.mensalidades-modal{width:min(760px,100%);max-height:90vh;overflow:auto;background:#fff;border-radius:16px;box-shadow:0 24px 70px rgba(15,23,42,.2)}.mensalidades-modal>header{display:flex;justify-content:space-between;padding:22px;border-bottom:1px solid #eef2f7}.mensalidades-modal>header h2{margin:4px 0 0}.mensalidades-modal>header button{border:0;background:none;cursor:pointer}.mensalidades-form{padding:22px;display:grid;grid-template-columns:1fr 1fr;gap:16px}.mensalidades-form label{display:flex;flex-direction:column;gap:7px}.mensalidades-form label.full{grid-column:1/-1}.mensalidades-form span{font-size:12px;font-weight:700;color:#475569}.mensalidades-form input,.mensalidades-form select,.mensalidades-form textarea{border:1px solid #dbe3ed;border-radius:9px;padding:10px 11px;font:inherit;outline:0}.mensalidades-modal>footer{display:flex;justify-content:flex-end;gap:10px;padding:18px 22px;border-top:1px solid #eef2f7}
 @media(max-width:800px){.mensalidades-page{padding:18px}.mensalidades-header{flex-direction:column}.mensalidades-actions{width:100%}.mensalidades-actions button{flex:1;justify-content:center}.mensalidades-stats{grid-template-columns:1fr 1fr}.mensalidades-toolbar{flex-wrap:wrap}.mensalidades-toolbar label,.mensalidades-toolbar select{flex:1;min-width:180px}.mensalidades-form{grid-template-columns:1fr}.mensalidades-form label.full{grid-column:auto}}
+
+
+/* =========================================================
+   MOBILE UX/UI AUDIT
+========================================================= */
+
+@media (max-width: 800px) {
+  .mensalidades-table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+  }
+
+  .mensalidades-table {
+    min-width: 720px;
+  }
+
+  .mensalidades-page {
+    overflow-x: hidden;
+  }
+
+  .mensalidades-modal-overlay {
+    padding: 0;
+  }
+
+  .mensalidades-modal {
+    width: 100%;
+    max-height: 100vh;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .mensalidades-modal-footer {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    background: #fff;
+  }
+}
+
+@media (max-width: 520px) {
+  .mensalidades-page {
+    padding: 14px 12px;
+  }
+
+  .mensalidades-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .mensalidades-toolbar {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 9px;
+  }
+
+  .mensalidades-toolbar label,
+  .mensalidades-toolbar select {
+    min-width: 0;
+    width: 100%;
+  }
+}
