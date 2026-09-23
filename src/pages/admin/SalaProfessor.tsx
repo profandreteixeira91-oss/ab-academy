@@ -1,6 +1,7 @@
 import {
   useEffect,
   useState,
+  type ChangeEvent,
   type KeyboardEvent,
 } from 'react'
 
@@ -551,7 +552,7 @@ function ClassroomControls({
   }
 
   function handleBackgroundImage(
-    event: React.ChangeEvent<HTMLInputElement>,
+    event: ChangeEvent<HTMLInputElement>,
   ) {
     const file = event.target.files?.[0]
 
