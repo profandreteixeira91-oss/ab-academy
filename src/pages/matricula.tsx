@@ -19,7 +19,7 @@ type Language = 'ingles' | 'alemao'
 type Plan = {
   id: string
   idioma: Language
-  tipo: string
+  tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo'
   nome: string
   descricao: string | null
   preco: number
@@ -149,18 +149,14 @@ const formatDate = (date: string) => {
 
 const getPlanTypeLabel = (tipo: string) => {
   if (tipo === 'anual') return 'Anual'
-
   if (tipo === 'mensal') return 'Mensal'
-
+  if (tipo === 'personalizado') return 'Personalizado'
+  if (tipo === 'intensivo') return 'Intensivo'
   return tipo
 }
 
 const getPlanPaymentDescription = (plan: Plan) => {
-  if (
-    plan.tipo === 'anual' &&
-    plan.parcelas &&
-    plan.valor_parcela
-  ) {
+  if (plan.tipo === 'anual' && plan.parcelas && plan.valor_parcela) {
     return `${plan.parcelas}x de ${formatCurrency(
       plan.valor_parcela,
     )}`
@@ -761,17 +757,23 @@ export default function Matricula() {
 
         objetivos: null,
 
-        aulas_semana: 1,
+        aulas_semana:
+          plan.tipo === 'intensivo'
+            ? 3
+            : plan.tipo === 'personalizado'
+              ? 2
+              : 1,
 
         valor_aula:
-          plan.tipo === 'mensal'
-            ? Number(plan.preco) / 4
-            : null,
+          plan.tipo === 'anual'
+            ? null
+            : Number(plan.preco) /
+              (plan.tipo === 'intensivo' ? 12 : plan.tipo === 'personalizado' ? 8 : 4),
 
         valor_mensal:
-          plan.tipo === 'mensal'
-            ? Number(plan.preco)
-            : null,
+          plan.tipo === 'anual'
+            ? null
+            : Number(plan.preco),
 
         valor_anual:
           plan.tipo === 'anual'
@@ -1385,6 +1387,14 @@ export default function Matricula() {
 
               {step === 3 && (
                 <div className="plan-selection">
+                  <div className="diagnostic-offer">
+                    <strong>Aula diagnóstica — R$ 50</strong>
+                    <p>
+                      Aula individual de 60 minutos para Inglês ou Alemão.
+                      Se você se matricular, os R$ 50 são descontados da primeira mensalidade.
+                    </p>
+                  </div>
+
                   {loadingPlans ? (
                     <div className="enrollment-loading">
                       Carregando planos...
@@ -1450,9 +1460,8 @@ export default function Matricula() {
                             )}
 
                             <span>
-                              {item.tipo ===
-                              'anual'
-                                ? ' / ano'
+                              {item.tipo === 'anual'
+                                ? ' / mês'
                                 : ' / mês'}
                             </span>
                           </div>
