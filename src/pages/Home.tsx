@@ -7,7 +7,9 @@ import {
   GraduationCap,
   Languages,
   Laptop,
+  Menu,
   Users,
+  X,
 } from 'lucide-react'
 
 import '../styles/home.css'
@@ -31,6 +33,7 @@ type Plano = {
 function Home() {
   const [planos, setPlanos] = useState<Plano[]>([])
   const [loadingPlanos, setLoadingPlanos] = useState(true)
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     async function loadPlanos() {
@@ -214,6 +217,27 @@ function Home() {
             >
               Portal do professor
             </a>
+
+            <button
+              type="button"
+              className="mobile-menu-button"
+              aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+
+          <div className={`mobile-navigation ${mobileMenuOpen ? 'open' : ''}`}>
+            <a href="#inicio" onClick={() => setMobileMenuOpen(false)}>Início</a>
+            <a href="#sobre" onClick={() => setMobileMenuOpen(false)}>Sobre</a>
+            <a href="#cursos" onClick={() => setMobileMenuOpen(false)}>Cursos</a>
+            <a href="#metodologia" onClick={() => setMobileMenuOpen(false)}>Metodologia</a>
+            <a href="#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>
+            <a href="/matricula" onClick={() => setMobileMenuOpen(false)}>Matricule-se</a>
+            <a href="/aluno" onClick={() => setMobileMenuOpen(false)}>Área do aluno</a>
+            <a href="/professor" onClick={() => setMobileMenuOpen(false)}>Portal do professor</a>
           </div>
         </div>
       </header>
