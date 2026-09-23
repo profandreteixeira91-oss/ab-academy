@@ -82,9 +82,11 @@ function PlanoCard({ plano }: { plano: Plano }) {
       </p>
 
       <ul className="planos-detail-features">
-        <li><CheckCircle2 size={17} />Aula individual de 60 minutos</li>
-        <li><CheckCircle2 size={17} />Acompanhamento personalizado</li>
-        <li><CheckCircle2 size={17} />Material e atividades de apoio</li>
+        <li><CheckCircle2 size={17} />Conteúdo 100% personalizado para o seu nível, objetivos e necessidades</li>
+        <li><CheckCircle2 size={17} />Material e atividades de apoio personalizados para acelerar sua evolução</li>
+        <li><CheckCircle2 size={17} />Acesso ao app do aluno para acompanhar sua jornada de estudos</li>
+        <li><CheckCircle2 size={17} />Acesso à Central de Atividades com conteúdos e exercícios</li>
+        <li><CheckCircle2 size={17} />Plantão de dúvidas para receber suporte durante seus estudos</li>
       </ul>
 
       <a
