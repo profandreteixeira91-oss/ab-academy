@@ -17,7 +17,9 @@ import {
   Play,
   Sparkles,
   UserCircle,
+  Download,
   MessageSquare,
+  Paperclip,
   Send,
   Video,
   X,
@@ -148,6 +150,16 @@ type RequestMessage = {
   remetente_tipo: 'aluno' | 'admin'
   mensagem: string
   created_at: string
+  anexos?: RequestAttachment[]
+}
+
+type RequestAttachment = {
+  id: string
+  mensagem_id: string
+  nome_arquivo: string
+  caminho_storage: string
+  tipo_mime: string | null
+  tamanho: number
 }
 
 const activityStatusLabels: Record<
@@ -467,6 +479,8 @@ function Aluno() {
   const [requestCategory, setRequestCategory] = useState('suporte')
   const [requestPriority, setRequestPriority] = useState<RequestPriority>('normal')
   const [requestSending, setRequestSending] = useState(false)
+  const [requestFiles, setRequestFiles] = useState<File[]>([])
+  const [requestOpeningFile, setRequestOpeningFile] = useState('')
 
   const passwordRules = {
   minLength: authPassword.length >= 8,
@@ -1330,9 +1344,10 @@ function Aluno() {
   async function openStudentRequest(request: StudentRequest) {
     setSelectedRequest(request)
     setRequestMessage('')
+    setRequestFiles([])
     const { data, error } = await supabase
       .from('solicitacao_mensagens')
-      .select('id, solicitacao_id, remetente_tipo, mensagem, created_at')
+      .select('id, solicitacao_id, remetente_tipo, mensagem, created_at, anexos:solicitacao_anexos(id, mensagem_id, nome_arquivo, caminho_storage, tipo_mime, tamanho)')
       .eq('solicitacao_id', request.id)
       .order('created_at', { ascending: true })
     if (error) {
@@ -1340,6 +1355,51 @@ function Aluno() {
       return
     }
     setRequestMessages((data ?? []) as RequestMessage[])
+  }
+
+  async function uploadRequestFiles(
+    messageId: string,
+    solicitationId: string,
+    files: File[],
+    userId: string,
+    senderType: 'aluno' | 'admin',
+  ) {
+    for (const file of files) {
+      const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
+      const path = solicitationId + '/' + crypto.randomUUID() + '-' + safeName
+      const { error: uploadError } = await supabase.storage
+        .from('solicitacoes-anexos')
+        .upload(path, file, { upsert: false })
+      if (uploadError) throw uploadError
+      const { error: attachmentError } = await supabase
+        .from('solicitacao_anexos')
+        .insert({
+          mensagem_id: messageId,
+          solicitacao_id: solicitationId,
+          nome_arquivo: file.name,
+          caminho_storage: path,
+          tipo_mime: file.type || null,
+          tamanho: file.size,
+          remetente_tipo: senderType,
+          remetente_id: userId,
+        })
+      if (attachmentError) throw attachmentError
+    }
+  }
+
+  async function openRequestAttachment(file: RequestAttachment) {
+    try {
+      setRequestOpeningFile(file.id)
+      const { data, error } = await supabase.storage
+        .from('solicitacoes-anexos')
+        .createSignedUrl(file.caminho_storage, 120)
+      if (error) throw error
+      if (data?.signedUrl) window.open(data.signedUrl, '_blank', 'noopener,noreferrer')
+    } catch (error) {
+      setRequestsError(error instanceof Error ? error.message : 'Não foi possível abrir o arquivo.')
+    } finally {
+      setRequestOpeningFile('')
+    }
   }
 
   async function createStudentRequest() {
@@ -1360,17 +1420,21 @@ function Aluno() {
         .select('id, assunto, categoria, prioridade, status, created_at, updated_at')
         .single()
       if (error) throw error
-      const { error: messageError } = await supabase
+      const { data: createdMessage, error: messageError } = await supabase
         .from('solicitacao_mensagens')
         .insert({
           solicitacao_id: created.id,
           remetente_tipo: 'aluno',
           remetente_id: user.id,
-          mensagem: requestMessage.trim() || requestSubject.trim(),
+          mensagem: requestMessage.trim() || (requestFiles.length ? 'Arquivo enviado.' : requestSubject.trim()),
         })
+        .select('id')
+        .single()
       if (messageError) throw messageError
+      await uploadRequestFiles(createdMessage.id, created.id, requestFiles, user.id, 'aluno')
       setRequestSubject('')
       setRequestMessage('')
+      setRequestFiles([])
       setRequestPriority('normal')
       setRequestCategory('suporte')
       await loadStudentRequests(user.id)
@@ -1383,21 +1447,25 @@ function Aluno() {
   }
 
   async function replyStudentRequest() {
-    if (!user || !selectedRequest || !requestMessage.trim() || requestSending || selectedRequest.status === 'fechada') return
+    if (!user || !selectedRequest || (!requestMessage.trim() && requestFiles.length === 0) || requestSending || selectedRequest.status === 'fechada') return
     try {
       setRequestSending(true)
       setRequestsError('')
-      const { error } = await supabase
+      const { data: createdMessage, error } = await supabase
         .from('solicitacao_mensagens')
         .insert({
           solicitacao_id: selectedRequest.id,
           remetente_tipo: 'aluno',
           remetente_id: user.id,
-          mensagem: requestMessage.trim(),
+          mensagem: requestMessage.trim() || 'Arquivo enviado.',
         })
+        .select('id')
+        .single()
       if (error) throw error
+      await uploadRequestFiles(createdMessage.id, selectedRequest.id, requestFiles, user.id, 'aluno')
       await supabase.from('solicitacoes').update({ status: 'aberta' }).eq('id', selectedRequest.id)
       setRequestMessage('')
+      setRequestFiles([])
       const updated = { ...selectedRequest, status: 'aberta' as RequestStatus, updated_at: new Date().toISOString() }
       setSelectedRequest(updated)
       await openStudentRequest(updated)
@@ -4613,7 +4681,11 @@ function Solicitacoes({
               <select value={priority} onChange={e => onPriorityChange(e.target.value as RequestPriority)}><option value="baixa">Baixa</option><option value="normal">Normal</option><option value="alta">Alta</option></select>
             </div>
             <textarea value={message} onChange={e => onMessageChange(e.target.value)} placeholder="Descreva sua solicitação..." rows={3} />
-            <button type="button" className="student-primary-button" onClick={onCreate} disabled={!subject.trim() || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar solicitação'}</button>
+            {requestFiles.length > 0 && <div className="student-request-file-list">{requestFiles.map(file => <span key={file.name + file.size}><Paperclip size={12}/>{file.name}<button type="button" onClick={() => setRequestFiles(current => current.filter(item => item !== file))} aria-label={"Remover " + file.name}><X size={12}/></button></span>)}</div>}
+            <div className="student-request-compose-actions">
+              <label className="student-request-attach-button"><Paperclip size={16}/><span>Anexar arquivos</span><input type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip" disabled={sending} onChange={e => setRequestFiles(Array.from(e.target.files ?? []).slice(0, 5))}/></label>
+              <button type="button" className="student-primary-button" onClick={onCreate} disabled={!subject.trim() || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar solicitação'}</button>
+            </div>
           </div>
           <div className="student-request-items">
             {loading ? <div className="student-empty-state">Carregando...</div> : requests.length === 0 ? <div className="student-empty-state"><MessageSquare size={28}/><h3>Nenhuma solicitação</h3><p>Envie uma solicitação quando precisar de ajuda.</p></div> : requests.map(request => (
@@ -4628,7 +4700,8 @@ function Solicitacoes({
           {!selectedRequest ? <div className="student-empty-state"><MessageSquare size={30}/><h3>Selecione uma solicitação</h3><p>As respostas da AB Academy aparecerão aqui.</p></div> : <>
             <header><div><span>{categories[selectedRequest.categoria] || selectedRequest.categoria}</span><h3>{selectedRequest.assunto}</h3></div><span className={`student-request-status ${selectedRequest.status}`}>{labels[selectedRequest.status]}</span></header>
             <div className="student-request-messages">{messages.map(item => <div key={item.id} className={`student-request-message ${item.remetente_tipo}`}><strong>{item.remetente_tipo === 'admin' ? 'AB Academy' : 'Você'}</strong><p>{item.mensagem}</p><small>{new Date(item.created_at).toLocaleString('pt-BR')}</small></div>)}</div>
-            {selectedRequest.status !== 'fechada' && <footer><textarea value={message} onChange={e => onMessageChange(e.target.value)} placeholder="Responder à solicitação..." rows={3}/><button type="button" className="student-primary-button" onClick={onReply} disabled={!message.trim() || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar resposta'}</button></footer>}
+            <div className="student-request-messages">{messages.map(item => <div key={item.id} className={`student-request-message ${item.remetente_tipo}`}><strong>{item.remetente_tipo === 'admin' ? 'AB Academy' : 'Você'}</strong><p>{item.mensagem}</p>{item.anexos?.length ? <div className="student-request-message-files">{item.anexos.map(file => <button type="button" key={file.id} onClick={() => void openRequestAttachment(file)} disabled={requestOpeningFile === file.id}><Paperclip size={13}/><span>{file.nome_arquivo}</span><Download size={13}/></button>)}</div> : null}<small>{new Date(item.created_at).toLocaleString('pt-BR')}</small></div>)}</div>
+            {selectedRequest.status !== 'fechada' && <footer><div className="student-request-reply-main"><textarea value={message} onChange={e => onMessageChange(e.target.value)} placeholder="Responder à solicitação..." rows={3}/>{requestFiles.length > 0 && <div className="student-request-file-list">{requestFiles.map(file => <span key={file.name + file.size}><Paperclip size={12}/>{file.name}<button type="button" onClick={() => setRequestFiles(current => current.filter(item => item !== file))} aria-label={"Remover " + file.name}><X size={12}/></button></span>)}</div>}</div><div className="student-request-compose-actions"><label className="student-request-attach-button"><Paperclip size={16}/><span>Anexar arquivos</span><input type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.doc,.docx,.xls,.xlsx,.zip" disabled={sending} onChange={e => setRequestFiles(Array.from(e.target.files ?? []).slice(0, 5))}/></label><button type="button" className="student-primary-button" onClick={onReply} disabled={(!message.trim() && requestFiles.length === 0) || sending}><Send size={16}/>{sending ? 'Enviando...' : 'Enviar resposta'}</button></div></footer>}
           </>}
         </div>
       </div>
