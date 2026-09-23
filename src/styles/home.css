@@ -3134,3 +3134,48 @@ h1, h2, h3 { font-family: var(--font-display); }
     min-width: 0;
   }
 }
+
+
+/* RESUMO DE PREÇOS NA HOME */
+.course-price-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin: 22px 0 18px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--background-light);
+}
+
+.course-price-summary > span {
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.course-price-summary > strong {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.course-price-summary > strong small {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.course-price-summary p {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.course-price-summary .course-plan-cta {
+  margin-top: 10px;
+}
