@@ -113,7 +113,6 @@ As respostas corretas devem ficar dentro de conteudo para permitir correção au
       body: JSON.stringify({
         contents: [{ role: 'user', parts: [{ text: prompt }] }],
         generationConfig: {
-          temperature: 0.75,
           responseMimeType: 'application/json',
         },
       }),
