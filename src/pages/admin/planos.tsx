@@ -29,6 +29,7 @@ type Plano = {
   ativo: boolean
   created_at: string
   updated_at: string
+  beneficios: string[] | null
 }
 
 type PlanoForm = {
@@ -39,6 +40,8 @@ type PlanoForm = {
   preco: string
   parcelas: string
   valor_parcela: string
+  descricao: string
+  beneficios: string[]
   ativo: boolean
 }
 
@@ -50,6 +53,14 @@ const emptyForm: PlanoForm = {
   preco: '',
   parcelas: '',
   valor_parcela: '',
+  descricao: '',
+  beneficios: [
+    'Conteúdo 100% personalizado para o seu nível, objetivos e necessidades',
+    'Material e atividades de apoio personalizados para acelerar sua evolução',
+    'Acesso ao app do aluno para acompanhar sua jornada de estudos',
+    'Acesso à Central de Atividades com conteúdos e exercícios',
+    'Plantão de dúvidas para receber suporte durante seus estudos',
+  ],
   ativo: true,
 }
 
@@ -204,6 +215,10 @@ export default function Planos() {
         plano.valor_parcela !== null
           ? String(plano.valor_parcela)
           : '',
+      descricao: plano.descricao ?? '',
+      beneficios: plano.beneficios?.length
+        ? [...plano.beneficios]
+        : [...emptyForm.beneficios],
       ativo: plano.ativo,
     })
 
@@ -369,6 +384,10 @@ export default function Planos() {
         preco,
         parcelas,
         valor_parcela: valorParcela,
+        descricao: form.descricao.trim() || null,
+        beneficios: form.beneficios
+          .map((item) => item.trim())
+          .filter(Boolean),
         ativo: form.ativo,
         updated_at: new Date().toISOString(),
       }
@@ -460,6 +479,31 @@ Esta ação não pode ser desfeita.`,
           'Não foi possível excluir o plano.',
       )
     }
+  }
+
+  function updateBeneficio(index: number, value: string) {
+    setForm((current) => ({
+      ...current,
+      beneficios: current.beneficios.map((item, itemIndex) =>
+        itemIndex === index ? value : item,
+      ),
+    }))
+  }
+
+  function addBeneficio() {
+    setForm((current) => ({
+      ...current,
+      beneficios: [...current.beneficios, ''],
+    }))
+  }
+
+  function removeBeneficio(index: number) {
+    setForm((current) => ({
+      ...current,
+      beneficios: current.beneficios.filter(
+        (_, itemIndex) => itemIndex !== index,
+      ),
+    }))
   }
 
   function handleTipoChange(value: TipoPlano) {
@@ -953,7 +997,7 @@ Esta ação não pode ser desfeita.`,
 
                 <div className="planos-field planos-field-full">
                   <label htmlFor="plano-descricao">
-                    Descrição
+                    Descrição do plano
                   </label>
 
                   <textarea
@@ -965,10 +1009,68 @@ Esta ação não pode ser desfeita.`,
                         event.target.value,
                       )
                     }
-                    placeholder="Descreva os principais benefícios do plano..."
+                    placeholder="Ex.: Aulas individuais de 60 minutos, 1 vez por semana, com acompanhamento personalizado..."
                     rows={4}
                     disabled={saving}
                   />
+                </div>
+
+                <div className="planos-field planos-field-full">
+                  <div className="planos-beneficios-header">
+                    <div>
+                      <label>Benefícios do plano</label>
+                      <small>
+                        Adicione, edite ou exclua os benefícios exibidos no plano.
+                      </small>
+                    </div>
+
+                    <button
+                      type="button"
+                      className="planos-add-beneficio-button"
+                      onClick={addBeneficio}
+                      disabled={saving}
+                    >
+                      <Plus size={15} />
+                      Adicionar benefício
+                    </button>
+                  </div>
+
+                  <div className="planos-beneficios-list">
+                    {form.beneficios.map((beneficio, index) => (
+                      <div className="planos-beneficio-row" key={index}>
+                        <span className="planos-beneficio-number">
+                          {index + 1}
+                        </span>
+
+                        <input
+                          type="text"
+                          value={beneficio}
+                          onChange={(event) =>
+                            updateBeneficio(index, event.target.value)
+                          }
+                          placeholder="Digite o benefício..."
+                          disabled={saving}
+                        />
+
+                        <button
+                          type="button"
+                          className="planos-remove-beneficio-button"
+                          onClick={() => removeBeneficio(index)}
+                          disabled={saving}
+                          title="Excluir benefício"
+                          aria-label="Excluir benefício"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ))}
+
+                    {form.beneficios.length === 0 && (
+                      <div className="planos-beneficios-empty">
+                        Nenhum benefício cadastrado. Clique em "Adicionar benefício".
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 <div className="planos-field">
