@@ -431,32 +431,27 @@ function Home() {
                 <ul>
                   <li>
                     <CheckCircle2 size={17} />
-                    Aula particular
+                    Conteúdo 100% personalizado para o seu nível, objetivos e necessidades
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Uma aula por semana
+                    Material e atividades de apoio personalizados para acelerar sua evolução
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Conteúdos personalizados
+                    Acesso ao app do aluno para acompanhar sua jornada de estudos
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Comunicação
+                    Acesso à Central de Atividades com conteúdos e exercícios
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Inglês para carreira
-                  </li>
-
-                  <li>
-                    <CheckCircle2 size={17} />
-                    Desenvolvimento contínuo
+                    Plantão de dúvidas para receber suporte durante seus estudos
                   </li>
                 </ul>
 
@@ -503,31 +498,27 @@ function Home() {
                 <ul>
                   <li>
                     <CheckCircle2 size={17} />
-                    Aula particular
+                    Conteúdo 100% personalizado para o seu nível, objetivos e necessidades
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Uma aula por semana
-                  </li>   
-                  <li>
-                    <CheckCircle2 size={17} />
-                    Alemão geral
+                    Material e atividades de apoio personalizados para acelerar sua evolução
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Comunicação
+                    Acesso ao app do aluno para acompanhar sua jornada de estudos
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Alemão para carreira
+                    Acesso à Central de Atividades com conteúdos e exercícios
                   </li>
 
                   <li>
                     <CheckCircle2 size={17} />
-                    Desenvolvimento contínuo
+                    Plantão de dúvidas para receber suporte durante seus estudos
                   </li>
                 </ul>
 
