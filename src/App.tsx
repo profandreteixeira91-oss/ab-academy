@@ -32,6 +32,7 @@ import ProfessorAccess from './pages/ProfessorAccess'
 import Error404 from './pages/Error404'
 import TrabalheConosco from './pages/TrabalheConosco'
 import Planos from './pages/Planos'
+import Diagnostica from './pages/Diagnostica'
 import SiteFooter from './components/SiteFooter'
 
 function App() {
@@ -49,6 +50,7 @@ function App() {
     path === '/matricula' ? 'Matrícula' :
     path === '/trabalhe-conosco' ? 'Trabalhe conosco' :
     path === '/planos' ? 'Planos' :
+    path === '/diagnostica' ? 'Aula diagnóstica' :
     path.startsWith('/checkout/') ? 'Checkout' :
     path === '/aluno' ? 'Área do aluno' :
     path === '/aluno/central' ? 'Central de Atividades' :
@@ -87,6 +89,10 @@ function App() {
 
   if (path === '/planos') {
     return withFooter(<Planos />)
+  }
+
+  if (path === '/diagnostica') {
+    return withFooter(<Diagnostica />)
   }
 
   if (path === '/matricula') {
