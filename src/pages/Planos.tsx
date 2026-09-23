@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { ArrowRight, CheckCircle2, Clock3 } from 'lucide-react'
+import { ArrowRight, CheckCircle2, Clock3, Menu, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import '../styles/planos.css'
+import logo from '../assets/logo_abacademy.png'
+import usaFlag from '../assets/flag-usa.svg'
+import germanyFlag from '../assets/flag-germany.svg'
 
 type Plano = {
   id: string
@@ -96,6 +99,7 @@ function PlanoCard({ plano }: { plano: Plano }) {
 
 function Planos() {
   const [planos, setPlanos] = useState<Plano[]>([])
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -144,7 +148,57 @@ function Planos() {
   }, [planos])
 
   return (
-    <main className="planos-page">
+    <div className="home planos-page-shell">
+      <header className="header">
+        <div className="container header-container">
+          <a href="/" className="logo">
+            <img src={logo} alt="AB Academy" />
+          </a>
+
+          <nav className="navigation">
+            <a href="/">Início</a>
+            <a href="/#sobre">Sobre</a>
+            <a href="/#cursos">Cursos</a>
+            <a href="/#metodologia">Metodologia</a>
+            <a href="/#contato">Contato</a>
+          </nav>
+
+          <div className="header-actions">
+            <a href="/matricula" className="btn btn-primary header-button">
+              Matricule-se
+            </a>
+            <a href="/aluno" className="btn btn-primary header-button">
+              Área do aluno
+            </a>
+            <a href="/professor" className="btn btn-outline header-button teacher-access-button">
+              Portal do professor
+            </a>
+
+            <button
+              type="button"
+              className="mobile-menu-button"
+              aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+            >
+              {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          </div>
+
+          <div className={`mobile-navigation ${mobileMenuOpen ? 'open' : ''}`}>
+            <a href="/" onClick={() => setMobileMenuOpen(false)}>Início</a>
+            <a href="/#sobre" onClick={() => setMobileMenuOpen(false)}>Sobre</a>
+            <a href="/#cursos" onClick={() => setMobileMenuOpen(false)}>Cursos</a>
+            <a href="/#metodologia" onClick={() => setMobileMenuOpen(false)}>Metodologia</a>
+            <a href="/#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>
+            <a href="/matricula" onClick={() => setMobileMenuOpen(false)}>Matricule-se</a>
+            <a href="/aluno" onClick={() => setMobileMenuOpen(false)}>Área do aluno</a>
+            <a href="/professor" onClick={() => setMobileMenuOpen(false)}>Portal do professor</a>
+          </div>
+        </div>
+      </header>
+
+      <main className="planos-page">
       <section className="planos-hero">
         <div className="planos-container">
           <span className="section-label">Planos AB Academy</span>
@@ -169,8 +223,13 @@ function Planos() {
             <>
               <div className="planos-language">
                 <div className="planos-language-heading">
-                  <span className="section-label">Idioma</span>
-                  <h2>Inglês</h2>
+                  <div className="planos-language-title">
+                    <img src={usaFlag} alt="" className="planos-language-flag" />
+                    <div>
+                      <span className="section-label">Idioma</span>
+                      <h2>Inglês</h2>
+                    </div>
+                  </div>
                   <p>Planos para diferentes ritmos de aprendizado.</p>
                 </div>
                 <div className="planos-grid">
@@ -182,8 +241,13 @@ function Planos() {
 
               <div className="planos-language">
                 <div className="planos-language-heading">
-                  <span className="section-label">Idioma</span>
-                  <h2>Alemão</h2>
+                  <div className="planos-language-title">
+                    <img src={germanyFlag} alt="" className="planos-language-flag" />
+                    <div>
+                      <span className="section-label">Idioma</span>
+                      <h2>Alemão</h2>
+                    </div>
+                  </div>
                   <p>Escolha a frequência que melhor atende ao seu objetivo.</p>
                 </div>
                 <div className="planos-grid">
@@ -215,6 +279,7 @@ function Planos() {
         </div>
       </section>
     </main>
+    </div>
   )
 }
 
