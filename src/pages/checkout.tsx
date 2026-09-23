@@ -1221,58 +1221,30 @@ export default function Checkout({
 
                 </div>
 
-                <div className="checkout-field">
-                  <label>
-                    Número de parcelas
-                  </label>
+                {pagamento.tipo_plano !== 'avulso' && (
+                  <div className="checkout-field">
+                    <label>
+                      Número de parcelas
+                    </label>
 
-                  <select
-                    value={
-                      parcelas
-                    }
-                    onChange={event =>
-                      setParcelas(
-                        event.target.value,
-                      )
-                    }
-                  >
-                    {Array.from(
-                      {
-                        length: 12,
-                      },
-                      (
-                        _,
-                        index,
-                      ) =>
-                        index + 1,
-                    ).map(
-                      item => (
-                        <option
-                          key={
-                            item
-                          }
-                          value={
-                            item
-                          }
-                        >
+                    <select
+                      value={parcelas}
+                      onChange={event =>
+                        setParcelas(event.target.value)
+                      }
+                    >
+                      {Array.from({ length: 12 }, (_, index) => index + 1).map(item => (
+                        <option key={item} value={item}>
                           {item}x de{' '}
-                          {(
-                            valor /
-                            item
-                          ).toLocaleString(
-                            'pt-BR',
-                            {
-                              style:
-                                'currency',
-                              currency:
-                                'BRL',
-                            },
-                          )}
+                          {(valor / item).toLocaleString('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL',
+                          })}
                         </option>
-                      ),
-                    )}
-                  </select>
-                </div>
+                      ))}
+                    </select>
+                  </div>
+                )}
 
                 <div className="checkout-holder-title">
                   Dados do titular
