@@ -3283,7 +3283,7 @@ function Financeiro({ entries, loading, error }: FinanceiroProps) {
                   <td>{date(entry.dataVencimento)}</td>
                   <td><strong>{money(entry.valor)}</strong></td>
                   <td><span>{date(entry.dataPagamento)}</span>{entry.metodoPagamento && <small>{entry.metodoPagamento}</small>}</td>
-                  <td><span className={\`student-finance-status \${entry.status}\`}>{entry.status === 'pago' ? 'Pago' : entry.status === 'pendente' ? 'Pendente' : entry.status === 'vencido' ? 'Vencido' : 'Cancelado'}</span></td>
+                  <td><span className={`student-finance-status ${entry.status}`}>{entry.status === 'pago' ? 'Pago' : entry.status === 'pendente' ? 'Pendente' : entry.status === 'vencido' ? 'Vencido' : 'Cancelado'}</span></td>
                 </tr>
               ))}</tbody>
             </table>
