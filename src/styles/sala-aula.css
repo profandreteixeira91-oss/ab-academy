@@ -1657,3 +1657,27 @@
     width:min(320px,calc(100vw - 28px));
   }
 }
+
+
+/* Logos dos cabeçalhos padronizados globalmente. */
+.virtual-classroom-header {
+  height: 88px !important;
+  min-height: 88px !important;
+}
+
+.academy-live-header {
+  height: 88px !important;
+  min-height: 88px !important;
+}
+
+@media (max-width: 768px) {
+  .virtual-classroom-header {
+    height: 76px !important;
+    min-height: 76px !important;
+  }
+
+  .academy-live-header {
+    height: 76px !important;
+    min-height: 76px !important;
+  }
+}
