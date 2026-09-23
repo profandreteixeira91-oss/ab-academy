@@ -3,7 +3,6 @@ import {
   ArrowRight,
   BookOpen,
   CheckCircle2,
-  Globe2,
   GraduationCap,
   Languages,
   Laptop,
