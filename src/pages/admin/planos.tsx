@@ -14,7 +14,7 @@ import '../../styles/admin/planos.css'
 import { supabase } from '../../lib/supabase'
 
 type Idioma = 'ingles' | 'alemao'
-type TipoPlano = 'mensal' | 'anual' | 'personalizado' | 'intensivo'
+type TipoPlano = 'mensal' | 'anual' | 'personalizado' | 'intensivo' | 'avulso'
 
 type Plano = {
   id: string
@@ -71,7 +71,8 @@ function formatTipo(tipo: TipoPlano) {
   if (tipo === 'mensal') return 'Mensal'
   if (tipo === 'anual') return 'Anual'
   if (tipo === 'personalizado') return 'Personalizado'
-  return 'Intensivo'
+  if (tipo === 'intensivo') return 'Intensivo'
+  return 'Avulso'
 }
 
 function parseMoney(value: string) {
@@ -329,6 +330,28 @@ export default function Planos() {
         }
       }
 
+      if (form.tipo === 'avulso') {
+        parcelas = null
+        valorParcela = null
+      }
+
+      const { data: planoExistente, error: duplicateError } = await supabase
+        .from('planos')
+        .select('id')
+        .eq('idioma', form.idioma)
+        .eq('tipo', form.tipo)
+        .neq('id', editingPlano?.id ?? '')
+        .maybeSingle()
+
+      if (duplicateError) {
+        throw duplicateError
+      }
+
+      if (planoExistente) {
+        setError('Já existe um plano para este idioma e tipo. Edite o plano existente.')
+        return
+      }
+
       const payload = {
         idioma: form.idioma,
         tipo: form.tipo,
@@ -385,6 +408,16 @@ export default function Planos() {
     } finally {
       setSaving(false)
     }
+  }
+
+  function handleTipoChange(value: TipoPlano) {
+    setForm((current) => ({
+      ...current,
+      tipo: value,
+      ...(value === 'avulso'
+        ? { parcelas: '', valor_parcela: '' }
+        : {}),
+    }))
   }
 
   async function toggleStatus(plano: Plano) {
@@ -549,6 +582,7 @@ export default function Planos() {
             <option value="anual">Anual</option>
             <option value="personalizado">Personalizado</option>
             <option value="intensivo">Intensivo</option>
+            <option value="avulso">Avulso / Aula diagnóstica</option>
           </select>
 
           <ChevronDown size={15} />
@@ -810,8 +844,7 @@ export default function Planos() {
                     id="plano-tipo"
                     value={form.tipo}
                     onChange={(event) =>
-                      updateForm(
-                        'tipo',
+                      handleTipoChange(
                         event.target.value as TipoPlano,
                       )
                     }
@@ -822,6 +855,15 @@ export default function Planos() {
                     </option>
                     <option value="anual">
                       Anual
+                    </option>
+                    <option value="personalizado">
+                      Personalizado
+                    </option>
+                    <option value="intensivo">
+                      Intensivo
+                    </option>
+                    <option value="avulso">
+                      Avulso / Aula diagnóstica
                     </option>
                   </select>
                 </div>
