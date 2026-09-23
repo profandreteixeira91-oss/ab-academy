@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   ArrowRight,
-  CheckCircle2,
   ChevronLeft,
   Languages,
   ShieldCheck,
@@ -788,15 +787,7 @@ export default function Matricula() {
                         : ''
                     }`}
                   >
-                    <div className="enrollment-progress-number">
-                      {step > number ? (
-                        <CheckCircle2
-                          size={18}
-                        />
-                      ) : (
-                        number
-                      )}
-                    </div>
+                    <div className="enrollment-progress-number">{number}</div>
 
                     <span>
                       {label}
@@ -908,7 +899,7 @@ export default function Matricula() {
                           <h3>{plan.nome}</h3>
                           {plan.descricao && <p>{plan.descricao}</p>}
                         </div>
-                        <span className="selection-radio"><CheckCircle2 size={20} /></span>
+                        <span className="selection-radio" />
                       </div>
                       <div className="plan-price">
                         {formatCurrency(plan.preco)}
@@ -1200,12 +1191,6 @@ export default function Matricula() {
                                     horario.hora_fim,
                                   )}
                                 </span>
-
-                                {selected && (
-                                  <CheckCircle2
-                                    size={18}
-                                  />
-                                )}
                               </button>
                             )
                           },
