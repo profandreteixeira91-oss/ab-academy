@@ -21,7 +21,7 @@ import { supabase } from '../lib/supabase'
 type Plano = {
   id: string
   idioma: 'ingles' | 'alemao'
-  tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo'
+  tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo' | 'avulso'
   nome: string
   descricao: string | null
   preco: number
@@ -92,6 +92,7 @@ function Home() {
 
   function getPlanoValorMinimo(idiomaPlanos: Plano[]) {
     const valores = idiomaPlanos
+      .filter((plano) => plano.tipo !== 'avulso')
       .map((plano) =>
         plano.tipo === 'anual' && plano.valor_parcela !== null
           ? Number(plano.valor_parcela)
