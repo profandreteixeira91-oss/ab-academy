@@ -162,10 +162,10 @@ function App() {
    */
 
   if (path.startsWith('/admin/aula/')) {
-    return withFooter(
+    return (
       <AdminAccess>
         <SalaProfessor />
-      </AdminAccess>,
+      </AdminAccess>
     )
   }
 
@@ -186,10 +186,10 @@ function App() {
    */
 
   if (path === '/admin/equipe') {
-    return withFooter(
+    return (
       <AdminAccess>
         <Equipe />
-      </AdminAccess>,
+      </AdminAccess>
     )
   }
 
