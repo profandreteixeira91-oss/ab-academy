@@ -1,0 +1,194 @@
+.error404-page {
+  min-height: 100vh;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 20px;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(79, 141, 253, 0.16), transparent 30%),
+    radial-gradient(circle at 88% 82%, rgba(42, 92, 219, 0.12), transparent 32%),
+    #f6f9ff;
+  color: #14213D;
+}
+
+.error404-card {
+  position: relative;
+  z-index: 2;
+  width: min(100%, 680px);
+  padding: 52px 48px 44px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.94);
+  border: 1px solid rgba(20, 33, 61, 0.08);
+  border-radius: 28px;
+  box-shadow: 0 28px 70px rgba(20, 33, 61, 0.12);
+  backdrop-filter: blur(14px);
+}
+
+.error404-logo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.error404-logo img {
+  display: block;
+  width: auto;
+  height: 66px;
+  max-width: 250px;
+  object-fit: contain;
+}
+
+.error404-icon {
+  width: 68px;
+  height: 68px;
+  margin: 0 auto 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  color: #2A5CDB;
+  background: #EAF2FF;
+  border: 1px solid rgba(42, 92, 219, 0.12);
+}
+
+.error404-code {
+  margin: 0;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: clamp(88px, 15vw, 132px);
+  line-height: 0.92;
+  font-weight: 800;
+  letter-spacing: -0.07em;
+  color: #2A5CDB;
+}
+
+.error404-card h1 {
+  margin: 18px 0 12px;
+  font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+  font-size: clamp(28px, 5vw, 42px);
+  line-height: 1.1;
+  letter-spacing: -0.035em;
+  color: #14213D;
+}
+
+.error404-description {
+  width: min(100%, 500px);
+  margin: 0 auto;
+  color: #57647C;
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.error404-actions {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 30px;
+}
+
+.error404-primary,
+.error404-secondary {
+  min-height: 48px;
+  padding: 0 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  border-radius: 12px;
+  font: 600 14px/1 'Inter', -apple-system, sans-serif;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.error404-primary {
+  color: #fff;
+  background: #2A5CDB;
+  border: 1px solid #2A5CDB;
+  box-shadow: 0 10px 24px rgba(42, 92, 219, 0.22);
+}
+
+.error404-secondary {
+  color: #14213D;
+  background: #fff;
+  border: 1px solid rgba(20, 33, 61, 0.12);
+}
+
+.error404-primary:hover,
+.error404-secondary:hover {
+  transform: translateY(-2px);
+}
+
+.error404-primary:hover {
+  background: #1D3FA0;
+  box-shadow: 0 14px 28px rgba(42, 92, 219, 0.28);
+}
+
+.error404-secondary:hover {
+  background: #f3f7fd;
+}
+
+.error404-help {
+  margin: 28px auto 0;
+  color: #8a95a8;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.error404-glow {
+  position: absolute;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  filter: blur(20px);
+  pointer-events: none;
+}
+
+.error404-glow-one {
+  top: -150px;
+  left: -120px;
+  background: rgba(79, 141, 253, 0.14);
+}
+
+.error404-glow-two {
+  right: -140px;
+  bottom: -170px;
+  background: rgba(42, 92, 219, 0.12);
+}
+
+@media (max-width: 600px) {
+  .error404-page {
+    padding: 20px 14px;
+  }
+
+  .error404-card {
+    padding: 36px 22px 30px;
+    border-radius: 22px;
+  }
+
+  .error404-logo img {
+    height: 54px;
+    max-width: 210px;
+  }
+
+  .error404-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 17px;
+  }
+
+  .error404-actions {
+    flex-direction: column;
+  }
+
+  .error404-primary,
+  .error404-secondary {
+    width: 100%;
+  }
+
+  .error404-help {
+    margin-top: 24px;
+  }
+}
