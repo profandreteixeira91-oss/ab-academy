@@ -1,7 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ChangeEvent } from 'react'
 import {
   ArrowLeft,
   Loader2,
+  Image,
+  Sparkles,
 } from 'lucide-react'
 
 import {
@@ -16,8 +18,11 @@ import {
 } from '@livekit/components-react'
 
 import {
+  LocalVideoTrack,
   Track,
 } from 'livekit-client'
+
+import { BackgroundProcessor } from '@livekit/track-processors'
 
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
@@ -525,40 +530,91 @@ function ClassroomControls({
 }: {
   onLeave: () => void
 }) {
-  const {
-    localParticipant,
-  } =
-    useLocalParticipant()
+  const { localParticipant } = useLocalParticipant()
+  const [backgroundOpen, setBackgroundOpen] = useState(false)
+  const [backgroundMode, setBackgroundMode] = useState<'disabled' | 'blur' | 'image'>('disabled')
+  const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
+  const [backgroundError, setBackgroundError] = useState<string | null>(null)
 
-  const toggleMicrophone =
-    async () => {
-      await localParticipant.setMicrophoneEnabled(
-        !localParticipant.isMicrophoneEnabled,
-      )
+  const toggleMicrophone = async () => {
+    await localParticipant.setMicrophoneEnabled(
+      !localParticipant.isMicrophoneEnabled,
+    )
+  }
+
+  const toggleCamera = async () => {
+    await localParticipant.setCameraEnabled(
+      !localParticipant.isCameraEnabled,
+    )
+  }
+
+  const toggleScreenShare = async () => {
+    await localParticipant.setScreenShareEnabled(
+      !localParticipant.isScreenShareEnabled,
+    )
+  }
+
+  const applyBackground = async (
+    mode: 'disabled' | 'blur' | 'image',
+    imagePath?: string,
+  ) => {
+    setBackgroundError(null)
+
+    const publication = localParticipant.getTrackPublication(
+      Track.Source.Camera,
+    )
+    const track = publication?.track
+
+    if (!track || !(track instanceof LocalVideoTrack)) {
+      setBackgroundError('Ative a câmera para aplicar o plano de fundo.')
+      return
     }
 
-  const toggleCamera =
-    async () => {
-      await localParticipant.setCameraEnabled(
-        !localParticipant.isCameraEnabled,
+    try {
+      if (mode === 'disabled') {
+        await track.stopProcessor()
+      } else if (mode === 'blur') {
+        const processor = BackgroundProcessor({
+          mode: 'background-blur',
+          blurRadius: 10,
+        })
+
+        await track.setProcessor(processor, true)
+      } else if (imagePath) {
+        const processor = BackgroundProcessor({
+          mode: 'virtual-background',
+          imagePath,
+        })
+
+        await track.setProcessor(processor, true)
+      }
+
+      setBackgroundMode(mode)
+    } catch (error) {
+      console.error('Erro ao aplicar plano de fundo:', error)
+      setBackgroundError(
+        'Não foi possível aplicar este plano de fundo neste dispositivo.',
       )
     }
+  }
 
-  const toggleScreenShare =
-    async () => {
-      await localParticipant.setScreenShareEnabled(
-        !localParticipant.isScreenShareEnabled,
-      )
+  const handleBackgroundImage = (
+    event: ChangeEvent<HTMLInputElement>,
+  ) => {
+    const file = event.target.files?.[0]
+
+    if (!file) {
+      return
     }
 
-  const microphoneOn =
-    localParticipant.isMicrophoneEnabled
+    const imageUrl = URL.createObjectURL(file)
+    setBackgroundImage(imageUrl)
+    void applyBackground('image', imageUrl)
+  }
 
-  const cameraOn =
-    localParticipant.isCameraEnabled
-
-  const screenOn =
-    localParticipant.isScreenShareEnabled
+  const microphoneOn = localParticipant.isMicrophoneEnabled
+  const cameraOn = localParticipant.isCameraEnabled
+  const screenOn = localParticipant.isScreenShareEnabled
 
   return (
     <div className="academy-controls">
@@ -569,20 +625,10 @@ function ClassroomControls({
             ? 'academy-control-button'
             : 'academy-control-button is-off'
         }
-        onClick={() =>
-          void toggleMicrophone()
-        }
-        title={
-          microphoneOn
-            ? 'Desligar microfone'
-            : 'Ligar microfone'
-        }
+        onClick={() => void toggleMicrophone()}
+        title={microphoneOn ? 'Desligar microfone' : 'Ligar microfone'}
       >
-        <span>
-          {microphoneOn
-            ? '🎤'
-            : '🔇'}
-        </span>
+        <span>{microphoneOn ? '🎤' : '🔇'}</span>
       </button>
 
       <button
@@ -592,21 +638,96 @@ function ClassroomControls({
             ? 'academy-control-button'
             : 'academy-control-button is-off'
         }
-        onClick={() =>
-          void toggleCamera()
-        }
-        title={
-          cameraOn
-            ? 'Desligar câmera'
-            : 'Ligar câmera'
-        }
+        onClick={() => void toggleCamera()}
+        title={cameraOn ? 'Desligar câmera' : 'Ligar câmera'}
       >
-        <span>
-          {cameraOn
-            ? '📹'
-            : '🚫'}
-        </span>
+        <span>{cameraOn ? '📹' : '🚫'}</span>
       </button>
+
+      <div className="academy-background-control">
+        <button
+          type="button"
+          className={
+            backgroundMode !== 'disabled'
+              ? 'academy-control-button is-active'
+              : 'academy-control-button'
+          }
+          onClick={() => setBackgroundOpen((open) => !open)}
+          title="Plano de fundo"
+          aria-label="Plano de fundo"
+        >
+          <Image size={20} />
+        </button>
+
+        {backgroundOpen && (
+          <div className="academy-background-menu">
+            <div className="academy-background-menu-header">
+              <div>
+                <strong>Plano de fundo</strong>
+                <span>Escolha como sua câmera será exibida.</span>
+              </div>
+              <Sparkles size={18} />
+            </div>
+
+            <button
+              type="button"
+              className={
+                backgroundMode === 'disabled'
+                  ? 'academy-background-option is-selected'
+                  : 'academy-background-option'
+              }
+              onClick={() => void applyBackground('disabled')}
+            >
+              <span className="academy-background-preview academy-background-original" />
+              <span>
+                <strong>Original</strong>
+                <small>Sem efeito</small>
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={
+                backgroundMode === 'blur'
+                  ? 'academy-background-option is-selected'
+                  : 'academy-background-option'
+              }
+              onClick={() => void applyBackground('blur')}
+            >
+              <span className="academy-background-preview academy-background-blur" />
+              <span>
+                <strong>Desfoque</strong>
+                <small>Desfoca o ambiente</small>
+              </span>
+            </button>
+
+            <label className="academy-background-option academy-background-upload">
+              <span className="academy-background-preview academy-background-image">
+                {backgroundImage ? (
+                  <img src={backgroundImage} alt="" />
+                ) : (
+                  <Image size={18} />
+                )}
+              </span>
+              <span>
+                <strong>Imagem personalizada</strong>
+                <small>Escolha uma imagem do computador</small>
+              </span>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={handleBackgroundImage}
+              />
+            </label>
+
+            {backgroundError && (
+              <p className="academy-background-error">
+                {backgroundError}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
 
       <button
         type="button"
@@ -615,9 +736,7 @@ function ClassroomControls({
             ? 'academy-control-button is-active'
             : 'academy-control-button'
         }
-        onClick={() =>
-          void toggleScreenShare()
-        }
+        onClick={() => void toggleScreenShare()}
         title="Compartilhar tela"
       >
         <span>🖥️</span>
