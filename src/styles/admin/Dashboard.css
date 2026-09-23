@@ -358,3 +358,268 @@
     padding: 7px;
   }
 }
+
+
+/* =========================================================
+   CALENDÁRIO ACADÊMICO — MOBILE V2
+   Corrige a estrutura real das classes do Dashboard.
+   No mobile, a semana vira uma agenda vertical legível.
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .dashboard-calendar-panel {
+    overflow: hidden;
+  }
+
+  .dashboard-calendar-header {
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .dashboard-calendar-header h2 {
+    font-size: 16px;
+  }
+
+  .dashboard-calendar-header p {
+    font-size: 10px;
+    line-height: 1.4;
+  }
+
+  .dashboard-calendar-controls {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .dashboard-calendar-controls > button {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .dashboard-period-switcher {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .dashboard-period-switcher button {
+    min-height: 34px;
+    font-size: 10px;
+  }
+
+  .dashboard-calendar-nav {
+    width: 100%;
+    display: grid;
+    grid-template-columns: 40px minmax(0, 1fr) 40px;
+    gap: 8px;
+  }
+
+  .dashboard-calendar-nav button {
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .dashboard-calendar-nav strong {
+    min-width: 0;
+    font-size: 10px;
+    line-height: 1.3;
+    white-space: normal;
+  }
+
+  /* SEMANA MOBILE:
+     Não comprime 7 colunas.
+     Cada dia ocupa toda a largura e vira um bloco de agenda. */
+  .dashboard-period-semana {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    min-width: 0;
+    gap: 0;
+  }
+
+  .dashboard-period-semana .dashboard-day-column {
+    width: 100%;
+    min-width: 0;
+    border-right: 0;
+    border-bottom: 1px solid #edf1f5;
+  }
+
+  .dashboard-period-semana .dashboard-day-column:last-child {
+    border-bottom: 0;
+  }
+
+  .dashboard-period-semana .dashboard-day-heading {
+    width: 100%;
+    min-height: 56px;
+    padding: 10px 14px;
+    display: grid;
+    grid-template-columns: 42px 1fr auto;
+    justify-content: initial;
+    gap: 8px;
+    text-align: left;
+  }
+
+  .dashboard-period-semana .dashboard-day-heading span {
+    font-size: 9px;
+    align-self: center;
+  }
+
+  .dashboard-period-semana .dashboard-day-heading strong {
+    font-size: 18px;
+    align-self: center;
+  }
+
+  .dashboard-period-semana .dashboard-day-heading small {
+    font-size: 9px;
+    align-self: center;
+  }
+
+  .dashboard-period-semana .dashboard-day-column.today .dashboard-day-heading {
+    background: #f8fbff;
+  }
+
+  .dashboard-period-semana .dashboard-day-events {
+    min-height: 0;
+    padding: 8px 10px 12px;
+  }
+
+  .dashboard-period-semana .dashboard-calendar-event {
+    width: 100%;
+    min-height: 0;
+    margin-bottom: 7px;
+    padding: 10px 11px;
+    border-radius: 9px;
+  }
+
+  .dashboard-period-semana .dashboard-calendar-event:last-child {
+    margin-bottom: 0;
+  }
+
+  .dashboard-period-semana .dashboard-calendar-event strong {
+    font-size: 10px;
+    line-height: 1.35;
+  }
+
+  .dashboard-period-semana .dashboard-calendar-event span {
+    margin-top: 4px;
+    font-size: 9px;
+  }
+
+  .dashboard-period-semana .dashboard-calendar-event small {
+    margin-top: 5px;
+    font-size: 9px;
+    line-height: 1.35;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  .dashboard-period-semana .dashboard-no-events {
+    padding: 7px 2px 3px;
+    text-align: left;
+    font-size: 9px;
+  }
+
+  /* DIA MOBILE */
+  .dashboard-period-dia {
+    display: block;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .dashboard-period-dia .dashboard-day-column {
+    width: 100%;
+    min-width: 0;
+    border-right: 0;
+  }
+
+  .dashboard-period-dia .dashboard-day-heading {
+    min-height: 56px;
+    padding: 10px 14px;
+  }
+
+  .dashboard-period-dia .dashboard-day-events {
+    min-height: 0;
+    padding: 10px;
+  }
+
+  .dashboard-period-dia .dashboard-calendar-event {
+    width: 100%;
+    max-width: none;
+    padding: 11px;
+  }
+
+  /* MÊS MOBILE:
+     transforma a grade microscópica de 7 colunas em uma agenda de dias.
+     Cada célula continua representando uma data, mas ganha espaço real. */
+  .dashboard-month-calendar {
+    width: 100%;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .dashboard-calendar-weekday {
+    display: none;
+  }
+
+  .dashboard-month-day {
+    width: 100%;
+    min-width: 0;
+    min-height: 92px;
+    padding: 10px;
+  }
+
+  .dashboard-month-day strong {
+    font-size: 14px;
+  }
+
+  .dashboard-month-day span {
+    margin-top: 8px;
+    font-size: 9px;
+  }
+
+  .dashboard-month-dots {
+    margin-top: 9px;
+  }
+
+  .dashboard-day-summary {
+    padding: 11px 14px;
+    font-size: 10px;
+  }
+}
+
+@media (max-width: 500px) {
+  .dashboard-calendar-header {
+    padding: 13px;
+  }
+
+  .dashboard-period-semana .dashboard-day-heading {
+    grid-template-columns: 40px 1fr auto;
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .dashboard-period-semana .dashboard-day-events {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .dashboard-period-semana .dashboard-calendar-event {
+    padding: 9px 10px;
+  }
+
+  .dashboard-month-calendar {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-month-day {
+    min-height: 78px;
+  }
+}
