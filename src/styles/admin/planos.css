@@ -875,3 +875,14 @@
     padding-right: 14px;
   }
 }
+
+
+.planos-delete-button {
+  color: #dc2626;
+}
+
+.planos-delete-button:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
