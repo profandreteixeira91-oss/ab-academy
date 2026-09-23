@@ -1077,7 +1077,9 @@ export default function Checkout({
                   </strong>
 
                   <span>
-                    Parcele sua matrícula
+                    {pagamento.tipo_plano === 'avulso'
+                      ? 'Pagamento único'
+                      : 'Parcele sua matrícula'}
                   </span>
                 </div>
               </button>
