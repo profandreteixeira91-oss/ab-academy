@@ -669,3 +669,137 @@
     padding-left: 14px;
   }
 }
+
+
+.comunicacao-reply {
+  align-items: flex-end;
+}
+
+.comunicacao-reply-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.comunicacao-reply-actions {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.comunicacao-attach-button {
+  min-height: 42px;
+  padding: 0 12px;
+  border: 1px solid #d8e0e9;
+  border-radius: 10px;
+  background: #fff;
+  color: #475569;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.comunicacao-attach-button:hover {
+  border-color: #aeb9c8;
+  background: #f8fafc;
+}
+
+.comunicacao-attach-button input {
+  display: none;
+}
+
+.comunicacao-file-list,
+.comunicacao-message-files {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.comunicacao-file-list > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+  padding: 5px 7px;
+  border: 1px solid #dbe2ea;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 10px;
+}
+
+.comunicacao-file-list > span > span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.comunicacao-file-list button {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #64748b;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
+.comunicacao-file-list button:hover {
+  background: #e2e8f0;
+}
+
+.comunicacao-message-files {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.comunicacao-message-files button {
+  max-width: 100%;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid #dbe2ea;
+  border-radius: 7px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  font: inherit;
+  font-size: 10px;
+}
+
+.comunicacao-message.admin .comunicacao-message-files button {
+  border-color: rgba(255,255,255,.18);
+  background: rgba(255,255,255,.1);
+  color: #fff;
+}
+
+.comunicacao-message-files button span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .comunicacao-reply {
+    align-items: stretch;
+  }
+
+  .comunicacao-reply-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .comunicacao-attach-button,
+  .comunicacao-reply-actions > button {
+    width: 100%;
+  }
+}
