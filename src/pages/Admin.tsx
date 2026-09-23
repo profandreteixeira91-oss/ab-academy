@@ -128,6 +128,13 @@ const modules: AdminModule[] = [
     icon: BarChart3,
   },
   {
+    id: 'candidaturas',
+    title: 'Candidaturas',
+    description:
+      'Receba e acompanhe candidaturas de professores.',
+    icon: BriefcaseBusiness,
+  },
+  {
     id: 'equipe',
     title: 'Equipe',
     description:
