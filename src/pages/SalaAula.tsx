@@ -795,6 +795,7 @@ function LiveClassroom({
             <img
               src={logo}
               alt="AB Academy"
+              className="academy-header-logo"
             />
 
             <div className="academy-live-course">
