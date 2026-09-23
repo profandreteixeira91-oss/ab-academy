@@ -97,8 +97,19 @@ export default function CentralAtividadesAdmin() {
       body: payload,
       headers: { Authorization: 'Bearer ' + session.access_token },
     })
-    if (error) throw error
-    if (data?.error) throw new Error(data.error)
+    if (error) {
+      const context = (error as { context?: { error?: string; details?: string; stage?: string; status?: number } }).context
+      const details = context?.details || context?.error || ''
+      throw new Error(
+        details
+          ? `Falha na geração (${context?.stage || 'edge-function'}): ${details}`
+          : error.message,
+      )
+    }
+    if (data?.error) {
+      const details = data.details ? ` — ${data.details}` : ''
+      throw new Error(`${data.error}${details}`)
+    }
     return Number(data?.generated || 0)
   }
 
