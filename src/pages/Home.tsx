@@ -14,6 +14,7 @@ import {
 
 import '../styles/home.css'
 import logo from '../assets/logo_abacademy.png'
+import fotoAmy from '../assets/fotoamy.jpg'
 import usaFlag from '../assets/flag-usa.svg'
 import germanyFlag from '../assets/flag-germany.svg'
 import { supabase } from '../lib/supabase'
@@ -368,9 +369,8 @@ function Home() {
           <div className="container">
             <div className="founder-grid">
               <div className="founder-photo-wrap">
-                <div className="founder-photo-placeholder" aria-label="Espaço reservado para foto de Amy Borges">
-                  <span>Foto de Amy Borges</span>
-                  <small>Imagem será adicionada posteriormente</small>
+                <div className="founder-photo-placeholder">
+                  <img src={fotoAmy} alt="Amy Borges, fundadora da AB Academy" />
                 </div>
               </div>
 
