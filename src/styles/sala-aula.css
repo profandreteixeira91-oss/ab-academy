@@ -1681,3 +1681,91 @@
     min-height: 76px !important;
   }
 }
+
+
+/* =========================================================
+   STATUS DE MICROFONE / CÂMERA
+   ========================================================= */
+
+.academy-media-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-right: 4px;
+  padding: 7px 9px;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  background: #ffffff;
+  color: #475569;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.academy-media-status span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.academy-media-status .is-ready {
+  color: #15803d;
+}
+
+.academy-media-status .is-off {
+  color: #b91c1c;
+}
+
+.academy-media-warning {
+  position: absolute;
+  top: 102px;
+  left: 50%;
+  z-index: 30;
+  width: min(520px, calc(100% - 32px));
+  transform: translateX(-50%);
+  padding: 12px 15px;
+  border: 1px solid #fecaca;
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: #fff7f7;
+  color: #991b1b;
+  box-shadow: 0 10px 30px rgba(127, 29, 29, 0.12);
+}
+
+.academy-media-warning strong {
+  font-size: 12px;
+}
+
+.academy-media-warning span {
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (max-width: 760px) {
+  .academy-media-status {
+    order: 10;
+    width: 100%;
+    justify-content: center;
+    margin: 0;
+  }
+
+  .academy-controls {
+    flex-wrap: wrap;
+  }
+
+  .academy-media-warning {
+    top: 88px;
+  }
+}
+
+@media (max-width: 480px) {
+  .academy-media-status {
+    font-size: 9px;
+  }
+
+  .academy-media-status span {
+    gap: 3px;
+  }
+}
