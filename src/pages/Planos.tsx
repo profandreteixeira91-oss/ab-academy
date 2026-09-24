@@ -106,6 +106,7 @@ function PlanoCard({ plano }: { plano: Plano }) {
 
 function Planos() {
   const [planos, setPlanos] = useState<Plano[]>([])
+  const [idiomaSelecionado, setIdiomaSelecionado] = useState<'ingles' | 'alemao'>('ingles')
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -260,35 +261,71 @@ function Planos() {
 
           {!loading && !error && (
             <>
-              <div className="planos-language planos-language--stacked">
-                <div className="planos-language-heading">
-                  <div className="planos-language-title">
-                    <img src={usaFlag} alt="" className="planos-language-flag" />
-                    <h2>Inglês</h2>
-                  </div>
-                  <p>Planos para diferentes ritmos de aprendizado.</p>
-                </div>
-                <div className="planos-grid">
-                  {planosPorIdioma.ingles.map((plano) => (
-                    <PlanoCard key={plano.id} plano={plano} />
-                  ))}
+              <div className="planos-language-switch">
+                <p className="planos-language-switch-label">Selecione o curso desejado</p>
+
+                <div className="planos-language-switch-buttons" role="tablist" aria-label="Selecione o curso">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={idiomaSelecionado === 'ingles'}
+                    className={'planos-language-switch-button' + (idiomaSelecionado === 'ingles' ? ' active' : '')}
+                    onClick={() => setIdiomaSelecionado('ingles')}
+                  >
+                    <img src={usaFlag} alt="" className="planos-language-switch-flag" />
+                    <span className="planos-language-switch-text">
+                      <strong>Inglês</strong>
+                      <small>Planos de Inglês</small>
+                    </span>
+                  </button>
+
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={idiomaSelecionado === 'alemao'}
+                    className={'planos-language-switch-button' + (idiomaSelecionado === 'alemao' ? ' active' : '')}
+                    onClick={() => setIdiomaSelecionado('alemao')}
+                  >
+                    <img src={germanyFlag} alt="" className="planos-language-switch-flag" />
+                    <span className="planos-language-switch-text">
+                      <strong>Alemão</strong>
+                      <small>Planos de Alemão</small>
+                    </span>
+                  </button>
                 </div>
               </div>
 
-              <div className="planos-language planos-language--stacked">
-                <div className="planos-language-heading">
-                  <div className="planos-language-title">
-                    <img src={germanyFlag} alt="" className="planos-language-flag" />
-                    <h2>Alemão</h2>
+              {idiomaSelecionado === 'ingles' ? (
+                <div className="planos-language planos-language--stacked">
+                  <div className="planos-language-heading">
+                    <div className="planos-language-title">
+                      <img src={usaFlag} alt="" className="planos-language-flag" />
+                      <h2>Planos de Inglês</h2>
+                    </div>
+                    <p>Planos para diferentes ritmos de aprendizado.</p>
                   </div>
-                  <p>Escolha a frequência que melhor atende ao seu objetivo.</p>
+                  <div className="planos-grid">
+                    {planosPorIdioma.ingles.map((plano) => (
+                      <PlanoCard key={plano.id} plano={plano} />
+                    ))}
+                  </div>
                 </div>
-                <div className="planos-grid">
-                  {planosPorIdioma.alemao.map((plano) => (
-                    <PlanoCard key={plano.id} plano={plano} />
-                  ))}
+              ) : (
+                <div className="planos-language planos-language--stacked">
+                  <div className="planos-language-heading">
+                    <div className="planos-language-title">
+                      <img src={germanyFlag} alt="" className="planos-language-flag" />
+                      <h2>Planos de Alemão</h2>
+                    </div>
+                    <p>Escolha a frequência que melhor atende ao seu objetivo.</p>
+                  </div>
+                  <div className="planos-grid">
+                    {planosPorIdioma.alemao.map((plano) => (
+                      <PlanoCard key={plano.id} plano={plano} />
+                    ))}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div className="planos-diagnostic">
                 <div className="planos-diagnostic-icon"><Clock3 size={24} /></div>
