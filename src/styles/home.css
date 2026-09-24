@@ -3262,3 +3262,38 @@ h1, h2, h3 { font-family: var(--font-display); }
     font-size: 12px;
   }
 }
+
+
+/* =========================================================
+   HOME — RESUMO DE PREÇO CENTRALIZADO NO MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+  .course-price-summary {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .course-price-summary > span,
+  .course-price-summary > strong,
+  .course-price-summary > p {
+    width: 100%;
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .course-price-summary > strong {
+    display: flex;
+    align-items: baseline;
+    justify-content: center;
+  }
+
+  .course-price-summary > p {
+    max-width: 100%;
+  }
+}
