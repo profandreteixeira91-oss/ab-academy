@@ -31,7 +31,7 @@ import CentralAtividades from './admin/CentralAtividades'
 import Comunicacao from './admin/Comunicacao'
 import Candidaturas from './admin/Candidaturas'
 
-import '../styles/Admin.css'
+import '../styles/admin.css'
 import '../styles/central-admin.css'
 import logo from '../assets/logo_abacademy.png'
 
