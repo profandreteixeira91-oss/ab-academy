@@ -400,8 +400,7 @@ function Home() {
               {/* INGLÊS */}
               <article className="course-card">
                 <div className="course-card-top">
-                  <span className="course-number">01</span>
-
+      
                   <div className="course-icon course-flag">
                     <img
                       src={usaFlag}
@@ -467,7 +466,6 @@ function Home() {
               {/* ALEMÃO */}
               <article className="course-card course-card-featured">
                 <div className="course-card-top">
-                  <span className="course-number">02</span>
 
                   <div className="course-icon course-flag">
                     <img
@@ -534,8 +532,7 @@ function Home() {
               {/* AULA DIAGNÓSTICA */}
               <article className="course-card">
                 <div className="course-card-top">
-                  <span className="course-number">03</span>
-
+                  
                   <div className="course-icon">
                     <GraduationCap size={30} />
                   </div>
