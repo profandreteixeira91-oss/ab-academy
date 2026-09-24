@@ -566,11 +566,12 @@
   max-width: 88%;
   padding: 9px 11px;
   border-radius: 10px 10px 10px 3px;
-  background: #0456fb;
-  color: #e5e7eb;
+  background: #ffffff;
+  color: #111827;
   font-size: 12px;
   line-height: 1.45;
   overflow-wrap: anywhere;
+  border: 1px solid #e5e7eb;
 }
 
 .academy-chat-message-own
