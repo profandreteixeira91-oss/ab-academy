@@ -8,6 +8,9 @@ import {
   MicOff,
   Video,
   VideoOff,
+  MessageSquare,
+  MonitorUp,
+  PhoneOff,
 } from 'lucide-react'
 
 import {
@@ -662,7 +665,11 @@ function ClassroomControls({
         onClick={() => void toggleMicrophone()}
         title={microphoneOn ? 'Desligar microfone' : 'Ligar microfone'}
       >
-        <span>{microphoneOn ? '🎤' : '🔇'}</span>
+        {microphoneOn ? (
+          <Mic size={20} />
+        ) : (
+          <MicOff size={20} />
+        )}
       </button>
 
       <button
@@ -675,7 +682,11 @@ function ClassroomControls({
         onClick={() => void toggleCamera()}
         title={cameraOn ? 'Desligar câmera' : 'Ligar câmera'}
       >
-        <span>{cameraOn ? '📹' : '🚫'}</span>
+        {cameraOn ? (
+          <Video size={20} />
+        ) : (
+          <VideoOff size={20} />
+        )}
       </button>
 
       <div className="academy-background-control">
@@ -775,7 +786,7 @@ function ClassroomControls({
         aria-label="Abrir chat da aula"
         aria-expanded={chatOpen}
       >
-        <span>💬</span>
+        <MessageSquare size={20} />
       </button>
 
       <button
@@ -788,15 +799,17 @@ function ClassroomControls({
         onClick={() => void toggleScreenShare()}
         title="Compartilhar tela"
       >
-        <span>🖥️</span>
+        <MonitorUp size={20} />
       </button>
 
       <button
         type="button"
         className="academy-leave-button"
         onClick={onLeave}
+        title="Sair da aula"
       >
-        Sair da aula
+        <PhoneOff size={18} />
+        <span>Sair da aula</span>
       </button>
     </div>
   )
