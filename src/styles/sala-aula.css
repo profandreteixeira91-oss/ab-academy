@@ -3390,3 +3390,21 @@
     font-size: 9px;
   }
 }
+
+
+/* =========================================================
+   CORREÇÃO — BOTÃO SAIR DA AULA
+   Mantém somente o ícone Lucide PhoneOff.
+   ========================================================= */
+@media (max-width: 760px) {
+  .academy-leave-button::before {
+    content: none !important;
+    display: none !important;
+  }
+
+  .academy-leave-button svg {
+    display: block;
+    width: 18px;
+    height: 18px;
+  }
+}
