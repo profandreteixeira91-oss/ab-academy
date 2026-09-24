@@ -148,11 +148,12 @@ function isPaymentConfirmedEvent(
    PIX MENSAL
    ========================================================= */
 
-function isMonthlyPixPayment(
+function isMonthlyRecurringPayment(
   pagamento: Pagamento,
 ) {
   return (
-    pagamento.metodo === 'pix' &&
+    (pagamento.metodo === 'pix' ||
+      pagamento.metodo === 'cartao') &&
     pagamento.tipo_plano === 'mensal'
   )
 }
@@ -318,7 +319,7 @@ async function createMonthlyPixSubscription(
   customerId: string,
 ) {
   if (
-    !isMonthlyPixPayment(
+    !isMonthlyRecurringPayment(
       pagamento,
     )
   ) {
@@ -570,6 +571,75 @@ async function getPagamentoBySubscription(
    REGISTRA MENSALIDADE RECORRENTE
    ========================================================= */
 
+function mapMensalidadeStatus(paymentStatus: string) {
+  if (paymentStatus === 'CONFIRMED' || paymentStatus === 'RECEIVED') return 'pago'
+  if (paymentStatus === 'OVERDUE') return 'vencido'
+  if (paymentStatus === 'REFUNDED' || paymentStatus === 'REFUND_REQUESTED' || paymentStatus === 'DELETED') return 'cancelado'
+  return 'pendente'
+}
+
+async function createOrUpdateMensalidade(
+  alunoId: string,
+  pagamento: Pagamento,
+  payment: NonNullable<AsaasWebhookPayload['payment']>,
+  statusOverride?: string,
+) {
+  const dueDate = payment.dueDate ?? new Date().toISOString().slice(0, 10)
+  const status = ['pago', 'vencido', 'cancelado', 'pendente'].includes(statusOverride ?? '')
+    ? statusOverride!
+    : mapMensalidadeStatus(payment.status ?? '')
+  const dataPagamento = status === 'pago' ? new Date().toISOString().slice(0, 10) : null
+  const metodoPagamento = payment.billingType === 'CREDIT_CARD' ? 'Cartão' : 'PIX'
+
+  const { data: existente, error: buscaError } = await supabaseAdmin
+    .from('mensalidades')
+    .select('id')
+    .eq('pagamento_id', pagamento.id)
+    .maybeSingle()
+
+  if (buscaError) throw new Error('Não foi possível verificar a mensalidade recorrente.')
+
+  const payload = {
+    aluno_id: alunoId,
+    plano_id: pagamento.plano_id,
+    competencia: dueDate.slice(0, 7) + '-01',
+    numero_parcela: null,
+    total_parcelas: null,
+    valor: Number(payment.value ?? pagamento.valor),
+    data_vencimento: dueDate,
+    data_pagamento: dataPagamento,
+    status,
+    metodo_pagamento: metodoPagamento,
+    pagamento_id: pagamento.id,
+    observacoes: 'Mensalidade recorrente gerada automaticamente pelo Asaas.',
+    updated_at: new Date().toISOString(),
+  }
+
+  if (existente) {
+    const { error } = await supabaseAdmin.from('mensalidades').update(payload).eq('id', existente.id)
+    if (error) throw new Error('Não foi possível atualizar a mensalidade recorrente.')
+    return existente.id
+  }
+
+  const { data, error } = await supabaseAdmin.from('mensalidades')
+    .insert({ ...payload, created_at: new Date().toISOString() })
+    .select('id')
+    .single()
+
+  if (error || !data) throw new Error('Não foi possível criar a mensalidade recorrente.')
+  return data.id
+}
+
+async function updateMensalidadeStatus(
+  pagamento: Pagamento,
+  payment: NonNullable<AsaasWebhookPayload['payment']>,
+) {
+  if (!pagamento.matricula_id) return
+  const matricula = await getMatricula(pagamento.matricula_id)
+  if (!matricula?.aluno_id) return
+  await createOrUpdateMensalidade(matricula.aluno_id, pagamento, payment)
+}
+
 async function createRecurringPaymentRecord(
   payment: NonNullable<
     AsaasWebhookPayload['payment']
@@ -582,10 +652,34 @@ async function createRecurringPaymentRecord(
     return null
   }
 
-  const pagamentoBase =
+  let pagamentoBase =
     await getPagamentoBySubscription(
       subscriptionId,
     )
+
+  if (
+    !pagamentoBase &&
+    payment.externalReference
+  ) {
+    const {
+      data: pagamentoPorReferencia,
+      error: referenciaError,
+    } = await supabaseAdmin
+      .from('pagamentos')
+      .select(`
+        id, user_id, plano_id, idioma, tipo_plano, valor, parcelas,
+        status, metodo, asaas_payment_id, asaas_customer_id,
+        asaas_subscription_id, matricula_id, dados_matricula, horario_ids
+      `)
+      .eq('id', payment.externalReference)
+      .maybeSingle()
+
+    if (referenciaError) {
+      console.error('Erro ao localizar pagamento pela externalReference:', referenciaError)
+    } else {
+      pagamentoBase = pagamentoPorReferencia as Pagamento | null
+    }
+  }
 
   if (!pagamentoBase) {
     console.log(
@@ -597,7 +691,7 @@ async function createRecurringPaymentRecord(
   }
 
   if (
-    !isMonthlyPixPayment(
+    !isMonthlyRecurringPayment(
       pagamentoBase,
     )
   ) {
@@ -632,7 +726,9 @@ async function createRecurringPaymentRecord(
         pagamentoBase.tipo_plano,
 
       metodo:
-        'pix',
+        payment.billingType === 'CREDIT_CARD'
+          ? 'cartao'
+          : 'pix',
 
       status:
         getLocalPaymentStatus(
@@ -700,20 +796,6 @@ async function createRecurringPaymentRecord(
 
     throw new Error(
       'Não foi possível registrar a nova mensalidade.',
-    )
-  }
-
-  const matricula =
-    pagamentoBase.matricula_id
-      ? await getMatricula(pagamentoBase.matricula_id)
-      : null
-
-  if (matricula?.aluno_id) {
-    await createOrUpdateMensalidade(
-      matricula.aluno_id,
-      data as Pagamento,
-      payment,
-      getLocalPaymentStatus(payment.status ?? ''),
     )
   }
 
@@ -1448,22 +1530,6 @@ async function finalizarMatricula(
   )
 
   /*
-   * Cria a primeira mensalidade do PIX mensal.
-   * A assinatura recorrente começa no mês seguinte.
-   */
-  if (
-    pagamento.metodo === 'pix' &&
-    pagamento.tipo_plano === 'mensal'
-  ) {
-    await createOrUpdateMensalidade(
-      alunoId,
-      pagamento,
-      payment,
-      'pago',
-    )
-  }
-
-  /*
    * Para PIX mensal, cria a assinatura
    * recorrente depois da primeira confirmação.
    */
@@ -1766,6 +1832,29 @@ Deno.serve(async (req) => {
 
     /*
      * =====================================================
+     * COBRANÇA DE ASSINATURA
+     * =====================================================
+     */
+    if (payment.subscription) {
+      await atualizarPagamento(
+        pagamento.id,
+        localStatus,
+      )
+      await updateMensalidadeStatus(
+        pagamento,
+        payment,
+      )
+      return jsonResponse({
+        received: true,
+        event: body.event,
+        status: localStatus,
+        pagamento_id: pagamento.id,
+        subscription_id: payment.subscription,
+      })
+    }
+
+    /*
+     * =====================================================
      * PAGAMENTO AINDA NÃO CONFIRMADO
      * =====================================================
      */
@@ -1797,50 +1886,11 @@ Deno.serve(async (req) => {
 
     /*
      * =====================================================
-     * PAGAMENTO RECORRENTE DE ASSINATURA
-     * =====================================================
-     *
-     * Cobranças geradas pela assinatura não devem
-     * passar novamente pelo fluxo de ativação da matrícula.
-     */
-    if (payment.subscription) {
-      await atualizarPagamento(
-        pagamento.id,
-        localStatus,
-      )
-
-      if (
-        isPaymentConfirmedEvent(
-          body.event,
-          payment.status ?? '',
-        )
-      ) {
-        await updateMensalidadeStatus(
-          pagamento.id,
-          'pago',
-        )
-      }
-
-      return jsonResponse({
-        received: true,
-        event: body.event,
-        status: isPaymentConfirmedEvent(
-          body.event,
-          payment.status ?? '',
-        )
-          ? 'pago'
-          : localStatus,
-        pagamento_id: pagamento.id,
-        subscription_id: payment.subscription,
-      })
-    }
-
-    /*
-     * =====================================================
      * PAGAMENTO CONFIRMADO
      * =====================================================
+     */
 
-/*
+    /*
      * Se já está pago e possui matrícula ativa,
      * tratamos como reenvio do webhook.
      */
