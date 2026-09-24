@@ -920,6 +920,7 @@ function LiveClassroom({
 
           <aside className="academy-sidebar">
             <ParticipantsPanel />
+            <ChatPanel />
           </aside>
 
           {chatOpen && (
