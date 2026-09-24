@@ -174,6 +174,9 @@ export default function Matricula() {
   const [loadingSchedules, setLoadingSchedules] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [authPassword, setAuthPassword] = useState('')
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup')
+  const [authLoading, setAuthLoading] = useState(false)
   const [name, setName] = useState('')
   const [cpf, setCpf] = useState('')
   const [email, setEmail] = useState('')
@@ -395,24 +398,75 @@ export default function Matricula() {
     setLoadingSchedules(false)
   }
 
-  const handleGoogleLogin = async () => {
+  const handleNativeAuth = async () => {
+    const normalizedEmail = email.trim().toLowerCase()
+
+    if (!normalizedEmail) {
+      setError('Informe seu e-mail.')
+      return
+    }
+
+    if (!authPassword || authPassword.length < 8) {
+      setError('Informe uma senha com pelo menos 8 caracteres.')
+      return
+    }
+
+    setAuthLoading(true)
     setError('')
+    setSuccess('')
 
-    const { error: authError } =
-      await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo:
-            `${window.location.origin}${window.location.pathname}${window.location.search}`,
-        },
-      })
+    try {
+      if (authMode === 'signup') {
+        const { data, error: signUpError } =
+          await supabase.auth.signUp({
+            email: normalizedEmail,
+            password: authPassword,
+            options: {
+              data: {
+                nome_completo: name.trim(),
+              },
+              emailRedirectTo:
+                `${window.location.origin}/matricula`,
+            },
+          })
 
-    if (authError) {
-      console.error(authError)
+        if (signUpError) {
+          throw signUpError
+        }
 
+        if (!data.session) {
+          setSuccess(
+            'Conta criada. Verifique seu e-mail para confirmar a conta e depois entre novamente.',
+          )
+          return
+        }
+
+        setUser(data.user)
+        setSuccess('Conta criada com sucesso. Continue sua matrícula.')
+        return
+      }
+
+      const { data, error: loginError } =
+        await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password: authPassword,
+        })
+
+      if (loginError) {
+        throw loginError
+      }
+
+      setUser(data.user)
+      setSuccess('Login realizado. Continue sua matrícula.')
+    } catch (authError) {
+      console.error('Erro no Auth nativo:', authError)
       setError(
-        'Não foi possível iniciar o login com Google.',
+        authError instanceof Error
+          ? authError.message
+          : 'Não foi possível autenticar sua conta.',
       )
+    } finally {
+      setAuthLoading(false)
     }
   }
 
@@ -424,7 +478,7 @@ export default function Matricula() {
 
     if (!user) {
       setError(
-        'Faça login com sua conta Google para continuar.',
+        'Entre ou crie sua conta para continuar.',
       )
       return false
     }
@@ -908,27 +962,81 @@ export default function Matricula() {
               )}
 
               {!user && step === 2 && (
-                <>
+                <div className="enrollment-auth-box">
+                  <div className="selection-heading">
+                    <div>
+                      <h3>
+                        {authMode === 'signup'
+                          ? 'Crie sua conta'
+                          : 'Entre na sua conta'}
+                      </h3>
+                      <p>
+                        Use seu e-mail e uma senha para acessar o Portal do Aluno.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="enrollment-fields">
+                    <div className="enrollment-field">
+                      <label>E-mail *</label>
+                      <input
+                        type="email"
+                        value={email}
+                        onChange={(event) => setEmail(event.target.value)}
+                        placeholder="seu@email.com"
+                        autoComplete="email"
+                        disabled={authLoading}
+                      />
+                    </div>
+
+                    <div className="enrollment-field">
+                      <label>Senha *</label>
+                      <input
+                        type="password"
+                        value={authPassword}
+                        onChange={(event) => setAuthPassword(event.target.value)}
+                        placeholder="Mínimo de 8 caracteres"
+                        autoComplete={
+                          authMode === 'signup'
+                            ? 'new-password'
+                            : 'current-password'
+                        }
+                        disabled={authLoading}
+                      />
+                    </div>
+                  </div>
+
                   <button
                     type="button"
-                    className="google-login-button"
-                    onClick={
-                      handleGoogleLogin
-                    }
+                    className="enrollment-primary-button"
+                    onClick={handleNativeAuth}
+                    disabled={authLoading}
                   >
-                    <span className="google-icon">
-                      G
-                    </span>
-
-                    Entrar com Google
+                    {authLoading
+                      ? 'Processando...'
+                      : authMode === 'signup'
+                        ? 'Criar conta e continuar'
+                        : 'Entrar e continuar'}
                   </button>
 
-                  <div className="enrollment-divider">
-                    <span>
-                      Depois do login, continue sua matrícula abaixo.
-                    </span>
-                  </div>
-                </>
+                  <button
+                    type="button"
+                    className="enrollment-change-plan"
+                    onClick={() => {
+                      setAuthMode(
+                        authMode === 'signup' ? 'login' : 'signup',
+                      )
+                      setAuthPassword('')
+                      setError('')
+                      setSuccess('')
+                    }}
+                    disabled={authLoading}
+                  >
+                    {authMode === 'signup'
+                      ? 'Já tenho uma conta'
+                      : 'Ainda não tenho uma conta'}
+                  </button>
+                </div>
               )}
 
               {step === 1 && (
