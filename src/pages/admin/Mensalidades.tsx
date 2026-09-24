@@ -62,7 +62,7 @@ function date(value: string | null) {
   const [y, m, d] = value.slice(0, 10).split('-')
   return y && m && d ? `${d}/${m}/${y}` : '—'
 }
-function month(value: string) {
+function monthKey(value: string) {
   return value.slice(0, 7)
 }
 function monthLabel(value: string) {
@@ -114,7 +114,7 @@ export default function Mensalidades() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase()
     return items.filter((item) => {
-      const matchesMonth = month(item.competencia) === month
+      const matchesMonth = monthKey(item.competencia) === month
       const matchesStatus = status === 'todos' || item.status === status
       const text = [item.aluno?.nome_completo ?? '', item.plano?.nome ?? '', item.observacoes ?? ''].join(' ').toLowerCase()
       return matchesMonth && matchesStatus && (!q || text.includes(q))
