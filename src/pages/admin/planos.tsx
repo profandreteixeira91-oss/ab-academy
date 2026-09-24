@@ -40,7 +40,6 @@ type PlanoForm = {
   preco: string
   parcelas: string
   valor_parcela: string
-  descricao: string
   beneficios: string[]
   ativo: boolean
 }
@@ -53,7 +52,6 @@ const emptyForm: PlanoForm = {
   preco: '',
   parcelas: '',
   valor_parcela: '',
-  descricao: '',
   beneficios: [
     'Conteúdo 100% personalizado para o seu nível, objetivos e necessidades',
     'Material e atividades de apoio personalizados para acelerar sua evolução',
@@ -215,7 +213,6 @@ export default function Planos() {
         plano.valor_parcela !== null
           ? String(plano.valor_parcela)
           : '',
-      descricao: plano.descricao ?? '',
       beneficios: plano.beneficios?.length
         ? [...plano.beneficios]
         : [...emptyForm.beneficios],
@@ -328,7 +325,7 @@ export default function Planos() {
 
       const preco = parseMoney(form.preco)
 
-      const parcelas = form.parcelas.trim()
+      let parcelas = form.parcelas.trim()
         ? Number(form.parcelas)
         : null
 
@@ -384,7 +381,6 @@ export default function Planos() {
         preco,
         parcelas,
         valor_parcela: valorParcela,
-        descricao: form.descricao.trim() || null,
         beneficios: form.beneficios
           .map((item) => item.trim())
           .filter(Boolean),
