@@ -3345,3 +3345,34 @@ h1, h2, h3 { font-family: var(--font-display); }
     white-space: normal;
   }
 }
+
+
+/* =========================================================
+   HOME — COURSE TARGET: BLOQUEIO TOTAL DE HIFENIZAÇÃO
+========================================================= */
+
+.home .course-target,
+.home .course-target span,
+.home .course-target strong {
+  -webkit-hyphens: none !important;
+  -moz-hyphens: none !important;
+  -ms-hyphens: none !important;
+  hyphens: none !important;
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+  white-space: normal !important;
+}
+
+@media (max-width: 600px) {
+  .home .course-target strong {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    word-break: normal !important;
+    overflow-wrap: normal !important;
+    hyphens: none !important;
+    -webkit-hyphens: none !important;
+    white-space: normal !important;
+  }
+}
