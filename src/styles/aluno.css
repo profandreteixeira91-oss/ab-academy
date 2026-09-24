@@ -987,6 +987,102 @@
 }
 
 /* =========================================================
+   AULAS — PWA MOBILE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .student-lessons-list {
+    gap: 10px;
+  }
+
+  .student-lesson-card {
+    grid-template-columns: 1fr auto;
+    gap: 13px;
+    padding: 15px;
+    border-radius: 15px;
+    box-shadow: 0 5px 16px rgba(15, 23, 42, .045);
+  }
+
+  .student-lesson-date {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 9px;
+    row-gap: 2px;
+    align-items: center;
+    padding-bottom: 11px;
+    border-bottom: 1px solid var(--student-border-light);
+  }
+
+  .student-lesson-date svg {
+    grid-row: 1 / 3;
+  }
+
+  .student-lesson-date strong {
+    font-size: 13px;
+  }
+
+  .student-lesson-date span {
+    font-size: 10px;
+  }
+
+  .student-lesson-details {
+    min-width: 0;
+  }
+
+  .student-lesson-details > span {
+    font-size: 9px;
+  }
+
+  .student-lesson-details h3 {
+    margin: 3px 0;
+    font-size: 14px;
+  }
+
+  .student-lesson-details p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 10px;
+  }
+
+  .student-lesson-status {
+    align-self: start;
+    padding: 5px 8px;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .student-lesson-card > .student-primary-button {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 1px;
+    border-radius: 10px;
+    font-size: 11px;
+  }
+
+  .student-lessons-list + .student-empty-state {
+    margin-top: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .student-lesson-card {
+    padding: 13px;
+  }
+
+  .student-lesson-status {
+    font-size: 7px;
+  }
+
+  .student-lesson-card > .student-primary-button {
+    min-height: 42px;
+    font-size: 10px;
+  }
+}
+
+/* =========================================================
    MATERIAIS
    ========================================================= */
 
