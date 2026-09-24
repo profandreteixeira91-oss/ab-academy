@@ -19,6 +19,7 @@ import {
   Save,
   Send,
   Trash2,
+  Tags,
   UserRound,
   Video,
   X,
@@ -48,6 +49,13 @@ type TipoExercicio =
   | 'associar'
 
 type TipoConteudo = 'texto' | 'youtube' | 'imagem'
+
+type AtividadeCategoria = {
+  id: string
+  nome: string
+  created_at: string
+  updated_at: string
+}
 
 type Aluno = {
   id: string
@@ -86,6 +94,7 @@ type ExercicioForm = {
 
 type AtividadeForm = {
   aluno_id: string
+  categoria_id: string
   titulo: string
   descricao: string
   idioma: Idioma
@@ -96,6 +105,10 @@ type AtividadeForm = {
 type AtividadeLista = {
   id: string
   aluno_id: string
+  categoria_id: string | null
+  categoria?: {
+    nome: string
+  } | null
   titulo: string
   descricao: string | null
   idioma: Idioma
@@ -206,6 +219,7 @@ function createEmptyExercicio(ordem = 0): ExercicioForm {
 function createEmptyForm(): AtividadeForm {
   return {
     aluno_id: '',
+    categoria_id: '',
     titulo: '',
     descricao: '',
     idioma: 'ingles',
@@ -306,6 +320,7 @@ function formatScore(value: number) {
 type ActivityEditData = {
   id: string
   aluno_id: string
+  categoria_id: string | null
   titulo: string
   descricao: string | null
   idioma: Idioma
@@ -357,6 +372,7 @@ async function fetchActivityEditData(id: string) {
     .select(`
       id,
       aluno_id,
+      categoria_id,
       titulo,
       descricao,
       idioma,
@@ -461,6 +477,7 @@ function createEditActivityForm(
 
   return {
     aluno_id: atividade.aluno_id,
+    categoria_id: atividade.categoria_id || '',
     titulo: atividade.titulo,
     descricao: atividade.descricao || '',
     idioma: atividade.idioma,
@@ -527,6 +544,10 @@ async function fetchAtividades(professorId: string | null) {
     .select(`
       id,
       aluno_id,
+      categoria_id,
+      categoria:atividade_categorias (
+        nome
+      ),
       titulo,
       descricao,
       idioma,
@@ -569,6 +590,11 @@ export default function Atividades({
 }) {
   const [atividades, setAtividades] = useState<AtividadeLista[]>([])
   const [alunos, setAlunos] = useState<Aluno[]>([])
+  const [categorias, setCategorias] = useState<AtividadeCategoria[]>([])
+  const [loadingCategorias, setLoadingCategorias] = useState(true)
+  const [showCategoryManager, setShowCategoryManager] = useState(false)
+  const [categoryName, setCategoryName] = useState('')
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [loadingAlunos, setLoadingAlunos] = useState(true)
@@ -646,6 +672,7 @@ export default function Atividades({
     const results = await Promise.allSettled([
       loadAtividades(),
       loadAlunos(),
+      loadCategorias(),
     ])
 
     const rejected = results.find(
@@ -780,6 +807,131 @@ export default function Atividades({
     setLoadingAlunos(false)
   }
 }
+
+  async function loadCategorias() {
+    try {
+      setLoadingCategorias(true)
+
+      const { data, error: loadError } = await supabase
+        .from('atividade_categorias')
+        .select('id, nome, created_at, updated_at')
+        .order('nome', { ascending: true })
+
+      if (loadError) throw loadError
+
+      setCategorias((data || []) as AtividadeCategoria[])
+    } catch (err) {
+      console.error('Erro ao carregar categorias:', err)
+      setError(
+        err instanceof Error
+          ? `Não foi possível carregar as categorias: ${err.message}`
+          : 'Não foi possível carregar as categorias.',
+      )
+    } finally {
+      setLoadingCategorias(false)
+    }
+  }
+
+  function resetCategoryForm() {
+    setCategoryName('')
+    setEditingCategoryId(null)
+  }
+
+  function openCategoryManager() {
+    resetCategoryForm()
+    setShowCategoryManager(true)
+  }
+
+  function startEditCategory(category: AtividadeCategoria) {
+    setEditingCategoryId(category.id)
+    setCategoryName(category.nome)
+  }
+
+  async function saveCategory() {
+    const nome = categoryName.trim()
+
+    if (!nome) {
+      setError('Informe o nome da categoria.')
+      return
+    }
+
+    try {
+      setSaving(true)
+      setError('')
+
+      if (editingCategoryId) {
+        const { error: updateError } = await supabase
+          .from('atividade_categorias')
+          .update({
+            nome,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', editingCategoryId)
+
+        if (updateError) throw updateError
+      } else {
+        const { error: insertError } = await supabase
+          .from('atividade_categorias')
+          .insert({ nome })
+
+        if (insertError) throw insertError
+      }
+
+      await loadCategorias()
+      resetCategoryForm()
+      setSuccess(
+        editingCategoryId
+          ? 'Categoria atualizada com sucesso.'
+          : 'Categoria criada com sucesso.',
+      )
+    } catch (err: any) {
+      console.error('Erro ao salvar categoria:', err)
+      setError(
+        err?.code === '23505'
+          ? 'Já existe uma categoria com esse nome.'
+          : err?.message || 'Não foi possível salvar a categoria.',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function deleteCategory(category: AtividadeCategoria) {
+    const confirmed = window.confirm(
+      `Excluir a categoria "${category.nome}"? Categorias usadas por atividades não podem ser excluídas.`,
+    )
+
+    if (!confirmed) return
+
+    try {
+      setSaving(true)
+      setError('')
+
+      const { error: deleteError } = await supabase
+        .from('atividade_categorias')
+        .delete()
+        .eq('id', category.id)
+
+      if (deleteError) throw deleteError
+
+      await loadCategorias()
+
+      if (form.categoria_id === category.id) {
+        updateForm('categoria_id', '')
+      }
+
+      setSuccess('Categoria excluída com sucesso.')
+    } catch (err: any) {
+      console.error('Erro ao excluir categoria:', err)
+      setError(
+        err?.code === '23503'
+          ? 'Não é possível excluir uma categoria que já está vinculada a atividades.'
+          : err?.message || 'Não foi possível excluir a categoria.',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
 
   /* =========================================================
      BUILDER
@@ -1434,6 +1586,11 @@ export default function Atividades({
       return false
     }
 
+    if (!form.categoria_id) {
+      setError('Selecione a categoria da atividade.')
+      return false
+    }
+
     if (!form.titulo.trim()) {
       setError(
         'Informe o título da atividade.',
@@ -1736,6 +1893,7 @@ export default function Atividades({
           .update({
             professor_id: professorId,
             aluno_id: form.aluno_id,
+            categoria_id: form.categoria_id,
             titulo:
               form.titulo.trim(),
             descricao:
@@ -1829,6 +1987,7 @@ export default function Atividades({
             p_idioma: form.idioma,
             p_status: status,
             p_prazo: prazo,
+            p_categoria_id: form.categoria_id,
           },
         )
 
@@ -1995,6 +2154,7 @@ export default function Atividades({
         .from('atividades')
         .select(`
           aluno_id,
+          categoria_id,
           titulo,
           descricao,
           idioma,
@@ -2025,6 +2185,8 @@ export default function Atividades({
             professorId,
           aluno_id:
             activity.aluno_id,
+          categoria_id:
+            activity.categoria_id,
           titulo: `${activity.titulo} (cópia)`,
           descricao:
             activity.descricao,
@@ -3118,6 +3280,17 @@ export default function Atividades({
           </div>
         </div>
 
+        {isAdmin && !professorMode && (
+          <button
+            type="button"
+            className="atividades-secondary-button"
+            onClick={openCategoryManager}
+          >
+            <Tags size={17} />
+            Categorias
+          </button>
+        )}
+
         {(!isAdmin || professorMode) && (
           <button
             type="button"
@@ -3325,6 +3498,8 @@ export default function Atividades({
 
                   <th>Aluno</th>
 
+                  <th>Categoria</th>
+
                   <th>Idioma</th>
 
                   <th>Status</th>
@@ -3378,6 +3553,13 @@ export default function Atividades({
                               'Aluno não encontrado'}
                           </span>
                         </div>
+                      </td>
+
+                      <td>
+                        <span className="atividades-category-badge">
+                          <Tags size={14} />
+                          {atividade.categoria?.nome || 'Sem categoria'}
+                        </span>
                       </td>
 
                       <td>
@@ -3509,6 +3691,148 @@ export default function Atividades({
         )}
       </section>
 
+      {showCategoryManager && (
+        <div className="atividades-category-overlay">
+          <div className="atividades-category-modal">
+            <header className="atividades-category-header">
+              <div>
+                <div className="atividades-category-title">
+                  <Tags size={20} />
+                  <div>
+                    <h2>Categorias de atividades</h2>
+                    <p>Crie, edite ou exclua as categorias usadas nas atividades.</p>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                className="atividades-close-button"
+                onClick={() => {
+                  if (!saving) {
+                    setShowCategoryManager(false)
+                    resetCategoryForm()
+                  }
+                }}
+                disabled={saving}
+              >
+                <X size={20} />
+              </button>
+            </header>
+
+            {error && (
+              <div className="atividades-alert atividades-alert-error">
+                <AlertCircle size={18} />
+                <span>{error}</span>
+              </div>
+            )}
+
+            {success && (
+              <div className="atividades-alert atividades-alert-success">
+                <Check size={18} />
+                <span>{success}</span>
+              </div>
+            )}
+
+            <div className="atividades-category-body">
+              <div className="atividades-category-form">
+                <label className="atividades-field">
+                  <span>{editingCategoryId ? 'Editar categoria' : 'Nova categoria'}</span>
+                  <input
+                    type="text"
+                    value={categoryName}
+                    placeholder="Ex.: Vocabulário"
+                    onChange={(event) => setCategoryName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        saveCategory()
+                      }
+                    }}
+                    disabled={saving}
+                  />
+                </label>
+
+                <div className="atividades-category-form-actions">
+                  <button
+                    type="button"
+                    className="atividades-primary-button"
+                    onClick={saveCategory}
+                    disabled={saving || !categoryName.trim()}
+                  >
+                    {saving ? (
+                      <Loader2 size={16} className="atividades-spin" />
+                    ) : (
+                      <Save size={16} />
+                    )}
+                    {editingCategoryId ? 'Salvar alteração' : 'Criar categoria'}
+                  </button>
+
+                  {editingCategoryId && (
+                    <button
+                      type="button"
+                      className="atividades-secondary-button"
+                      onClick={resetCategoryForm}
+                      disabled={saving}
+                    >
+                      <X size={16} />
+                      Cancelar
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <div className="atividades-category-list">
+                {loadingCategorias ? (
+                  <div className="atividades-category-empty">
+                    <Loader2 size={22} className="atividades-spin" />
+                    <span>Carregando categorias...</span>
+                  </div>
+                ) : categorias.length === 0 ? (
+                  <div className="atividades-category-empty">
+                    <Tags size={22} />
+                    <span>Nenhuma categoria cadastrada.</span>
+                  </div>
+                ) : (
+                  categorias.map((categoria) => (
+                    <div className="atividades-category-item" key={categoria.id}>
+                      <div>
+                        <strong>{categoria.nome}</strong>
+                        <span>
+                          {form.categoria_id === categoria.id
+                            ? 'Selecionada na atividade atual'
+                            : 'Categoria disponível para novas atividades'}
+                        </span>
+                      </div>
+
+                      <div className="atividades-category-item-actions">
+                        <button
+                          type="button"
+                          title="Editar categoria"
+                          onClick={() => startEditCategory(categoria)}
+                          disabled={saving}
+                        >
+                          <FileText size={16} />
+                        </button>
+
+                        <button
+                          type="button"
+                          title="Excluir categoria"
+                          onClick={() => deleteCategory(categoria)}
+                          disabled={saving}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* =====================================================
           BUILDER
       ===================================================== */}
@@ -3634,6 +3958,42 @@ export default function Atividades({
                             </option>
                           ),
                         )}
+                      </select>
+                    </div>
+                  </label>
+
+                  <label className="atividades-field">
+                    <span>
+                      Categoria *
+                    </span>
+
+                    <div className="atividades-input-wrapper">
+                      <Tags size={17} />
+
+                      <select
+                        value={form.categoria_id}
+                        onChange={(event) =>
+                          updateForm(
+                            'categoria_id',
+                            event.target.value,
+                          )
+                        }
+                        disabled={loadingCategorias || saving}
+                      >
+                        <option value="">
+                          {loadingCategorias
+                            ? 'Carregando categorias...'
+                            : 'Selecione a categoria'}
+                        </option>
+
+                        {categorias.map((categoria) => (
+                          <option
+                            key={categoria.id}
+                            value={categoria.id}
+                          >
+                            {categoria.nome}
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </label>
