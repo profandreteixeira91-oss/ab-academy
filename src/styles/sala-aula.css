@@ -2427,6 +2427,24 @@
   line-height: 1;
 }
 
+/* Desktop: mantém o layout anterior, com chat dentro da lateral. */
+@media (min-width: 761px) {
+  .academy-chat-backdrop {
+    display: none;
+  }
+
+  .academy-chat-drawer {
+    display: none;
+  }
+
+  .academy-chat-toggle {
+    display: none;
+  }
+}
+
+/* =========================================================
+   UX/UI MOBILE — FOCO NO VÍDEO
+   ========================================================= */
 @media (max-width: 760px) {
   .academy-chat-backdrop {
     display: block;
@@ -2443,15 +2461,173 @@
 
   .academy-chat-toggle {
     flex: 0 0 38px;
+    display: flex;
   }
-}
 
-@media (min-width: 761px) {
-  .academy-chat-backdrop {
+  /* O chat continua disponível pelo botão, mas não ocupa
+     espaço permanente na tela mobile. */
+  .academy-sidebar > .academy-chat {
     display: none;
   }
 
-  .academy-chat-drawer {
-    width: 390px;
+  .academy-live-main {
+    height: calc(100dvh - 54px);
+  }
+
+  .academy-video-area {
+    flex: 0 0 68dvh;
+    height: 68dvh;
+    min-height: 0;
+  }
+
+  .academy-video-single,
+  .academy-video-grid {
+    padding: 4px;
+  }
+
+  .academy-video-grid {
+    gap: 4px;
+  }
+
+  .academy-video-tile,
+  .academy-video-element {
+    border-radius: 10px;
+  }
+
+  .academy-controls {
+    left: 6px;
+    right: 6px;
+    bottom: 6px;
+    height: 48px;
+    min-height: 48px;
+    padding: 4px 6px;
+    gap: 6px;
+    border-radius: 14px;
+  }
+
+  .academy-control-button {
+    flex-basis: 36px;
+    width: 36px;
+    height: 36px;
+    min-width: 36px;
+  }
+
+  .academy-media-status {
+    height: 34px;
+    padding: 0 7px;
+    font-size: 8px;
+  }
+
+  .academy-leave-button {
+    height: 36px;
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 9px;
+  }
+
+  .academy-sidebar {
+    flex: 0 0 calc(100dvh - 54px - 68dvh);
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: auto;
+    border-left: 0;
+    border-top: 1px solid rgba(255,255,255,.08);
+  }
+
+  .academy-participants {
+    max-height: 76px;
+  }
+
+  .academy-panel-title {
+    min-height: 34px;
+    padding: 7px 11px;
+  }
+
+  .academy-participants-list {
+    padding: 5px 9px 7px;
+  }
+
+  .academy-participant {
+    width: 132px;
+    min-width: 132px;
+    min-height: 38px;
+    padding: 5px 6px;
+  }
+
+  .academy-participant-avatar {
+    width: 25px;
+    height: 25px;
+    min-width: 25px;
+  }
+
+  .academy-participant-info strong {
+    font-size: 9px;
+  }
+
+  .academy-participant-info span {
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 420px) {
+  .academy-live-header {
+    height: 54px !important;
+    min-height: 54px !important;
+  }
+
+  .academy-live-main {
+    height: calc(100dvh - 54px);
+  }
+
+  .academy-live-brand img {
+    width: 100px;
+    height: 40px;
+    max-height: 40px;
+  }
+
+  .academy-live-course {
+    display: none;
+  }
+
+  .academy-video-area {
+    flex-basis: 70dvh;
+    height: 70dvh;
+  }
+
+  .academy-controls {
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    height: 46px;
+    min-height: 46px;
+    padding: 4px 5px;
+  }
+
+  .academy-control-button {
+    flex-basis: 34px;
+    width: 34px;
+    height: 34px;
+    min-width: 34px;
+  }
+
+  .academy-media-status {
+    padding: 0 6px;
+    font-size: 7px;
+  }
+
+  .academy-leave-button {
+    height: 34px;
+    min-height: 34px;
+    padding: 0 8px;
+    font-size: 8px;
+  }
+
+  .academy-sidebar {
+    flex-basis: calc(100dvh - 54px - 70dvh);
+  }
+
+  .academy-participants {
+    max-height: 70px;
   }
 }
