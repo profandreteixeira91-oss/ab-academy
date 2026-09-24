@@ -1027,3 +1027,29 @@
     grid-template-columns: 18px minmax(0, 1fr);
   }
 }
+
+
+/* =========================================================
+   MOBILE — NÃO SEPARAR PALAVRAS
+========================================================= */
+
+@media (max-width: 600px) {
+  .planos-detail-features li {
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+    white-space: normal;
+  }
+
+  .planos-detail-features li::before {
+    flex-shrink: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .planos-detail-features li {
+    overflow-wrap: normal;
+    word-break: normal;
+    hyphens: none;
+  }
+}
