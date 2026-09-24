@@ -3635,11 +3635,6 @@ function MinhasAulas({
         <div className="student-lessons-list">
           {lessons.map(
             (lesson) => {
-              const hasMeet =
-                Boolean(
-                  lesson.meetUrl,
-                )
-
               const canEnter =
                 canEnterLesson(
                   lesson.startAt,
@@ -3708,18 +3703,15 @@ function MinhasAulas({
                       }
                       disabled={
                         lesson.status === 'falta' ||
-                        !hasMeet ||
                         !canEnter
                       }
                       title={
                         lesson.status === 'falta'
                           ? 'A falta foi registrada pelo professor para esta aula'
-                          : !hasMeet
-                            ? 'A sala ainda não foi criada pelo professor'
-                            : getLessonAccessMessage(
-                                lesson.startAt,
-                                lesson.endAt,
-                              )
+                          : getLessonAccessMessage(
+                              lesson.startAt,
+                              lesson.endAt,
+                            )
                       }
                     >
                       <Play
@@ -3728,12 +3720,10 @@ function MinhasAulas({
 
                       {lesson.status === 'falta'
                         ? 'Falta registrada'
-                        : !hasMeet
-                          ? 'Sala não criada'
-                          : getLessonAccessMessage(
-                              lesson.startAt,
-                              lesson.endAt,
-                            )}
+                        : getLessonAccessMessage(
+                            lesson.startAt,
+                            lesson.endAt,
+                          )}
                     </button>
                   )}
                 </div>
