@@ -147,6 +147,8 @@
    ========================================================= */
 
 .diagnostic-content {
+  width: min(980px, 100%);
+  margin: 0 auto;
   padding: 36px;
   border: 1px solid #e0e6ef;
   border-radius: 26px;
@@ -377,6 +379,7 @@
   }
 
   .diagnostic-content {
+    width: 100%;
     padding: 22px;
     border-radius: 21px;
   }
