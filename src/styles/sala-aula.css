@@ -2631,3 +2631,450 @@
     max-height: 70px;
   }
 }
+
+/* =========================================================
+   MOBILE — EXPERIÊNCIA DE CHAMADA / VIDEOCHAMADA
+   Referência visual: chamadas modernas (estilo Google Meet)
+   Desktop não é alterado por estas regras.
+   ========================================================= */
+@media (max-width: 760px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    height: 100%;
+    margin: 0;
+    overflow: hidden !important;
+  }
+
+  .academy-live-room {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100dvh;
+    min-height: 0;
+    max-width: 100vw;
+    overflow: hidden !important;
+    background: #050b14;
+  }
+
+  .academy-live-room > * {
+    max-width: 100%;
+  }
+
+  .academy-live-header {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 45;
+    width: 100%;
+    height: 62px !important;
+    min-height: 62px !important;
+    padding: 0 14px;
+    background: linear-gradient(
+      to bottom,
+      rgba(5, 11, 20, .82),
+      rgba(5, 11, 20, 0)
+    ) !important;
+    border: 0;
+    box-shadow: none;
+    color: #fff;
+  }
+
+  .academy-live-brand {
+    min-width: 0;
+    flex: 1;
+    gap: 8px;
+  }
+
+  .academy-live-brand img {
+    width: 104px;
+    height: 38px;
+    max-height: 38px;
+    object-fit: contain;
+  }
+
+  .academy-live-course {
+    min-width: 0;
+  }
+
+  .academy-live-course strong {
+    max-width: 145px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #fff;
+    font-size: 11px;
+    text-shadow: 0 1px 5px rgba(0,0,0,.5);
+  }
+
+  .academy-live-course span {
+    display: none;
+  }
+
+  .academy-live-status {
+    gap: 5px;
+    color: #fff;
+    font-size: 9px;
+    text-shadow: 0 1px 5px rgba(0,0,0,.5);
+  }
+
+  .academy-live-status > span {
+    width: 7px;
+    height: 7px;
+  }
+
+  .academy-live-main {
+    position: relative;
+    width: 100%;
+    height: 100dvh !important;
+    min-height: 0;
+    display: block;
+    overflow: hidden !important;
+    background: #050b14;
+  }
+
+  .academy-video-area {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: block;
+    overflow: hidden !important;
+    background: #050b14;
+  }
+
+  .academy-video-single {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+    display: block;
+    overflow: hidden;
+  }
+
+  .academy-video-single .academy-video-tile {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .academy-video-single .academy-video-tile video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .academy-video-grid {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: minmax(0, 1fr);
+    gap: 3px;
+    overflow: hidden !important;
+    background: #050b14;
+  }
+
+  .academy-video-grid .academy-video-tile {
+    min-width: 0;
+    min-height: 0;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  /* Com dois participantes: professor ocupa a maior área e
+     o vídeo local fica como preview compacto, como em chamadas. */
+  .academy-video-grid .academy-video-tile:first-child {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .academy-video-grid .academy-video-tile:nth-child(n + 2) {
+    position: absolute;
+    right: 12px;
+    bottom: 92px;
+    width: 112px;
+    height: 158px;
+    z-index: 20;
+    border: 2px solid rgba(255,255,255,.92);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0,0,0,.35);
+    background: #111827;
+  }
+
+  .academy-video-grid .academy-video-tile:nth-child(n + 3) {
+    right: 132px;
+  }
+
+  .academy-video-grid .academy-video-tile:nth-child(n + 4) {
+    right: 252px;
+  }
+
+  .academy-video-grid .academy-video-tile video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .academy-video-name {
+    left: 9px;
+    right: auto;
+    bottom: 9px;
+    max-width: calc(100% - 18px);
+    padding: 5px 8px;
+    border-radius: 7px;
+    background: rgba(0,0,0,.48);
+    color: #fff;
+    font-size: 9px;
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+
+  .academy-video-grid .academy-video-tile:nth-child(n + 2) .academy-video-name {
+    left: 5px;
+    bottom: 5px;
+    padding: 3px 5px;
+    font-size: 7px;
+  }
+
+  .academy-empty-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    padding: 80px 24px 120px;
+    border-radius: 0;
+  }
+
+  /* Participantes deixam de ocupar uma área abaixo do vídeo.
+     Os participantes já são representados pelos tiles de vídeo. */
+  .academy-sidebar {
+    display: none !important;
+  }
+
+  /* Barra inferior no padrão de chamada: flutuante sobre o vídeo. */
+  .academy-controls {
+    position: absolute;
+    left: 50%;
+    bottom: max(14px, env(safe-area-inset-bottom));
+    z-index: 50;
+    width: auto;
+    max-width: calc(100% - 24px);
+    min-height: 58px;
+    height: 58px;
+    padding: 8px 10px;
+    transform: translateX(-50%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    flex-wrap: nowrap;
+    overflow: hidden;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 30px;
+    background: rgba(8,18,32,.86);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 12px 35px rgba(0,0,0,.38);
+  }
+
+  .academy-control-button {
+    flex: 0 0 40px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    border: 1px solid rgba(255,255,255,.14);
+    border-radius: 50%;
+    background: rgba(255,255,255,.12);
+    color: #fff;
+  }
+
+  .academy-control-button:hover {
+    transform: none;
+    background: rgba(255,255,255,.18);
+  }
+
+  .academy-control-button.is-active {
+    background: rgba(37,99,235,.72);
+    border-color: rgba(147,197,253,.45);
+    color: #fff;
+  }
+
+  .academy-control-button.is-off {
+    background: rgba(127,29,29,.82);
+    border-color: rgba(248,113,113,.35);
+    color: #fff;
+  }
+
+  .academy-background-control {
+    flex: 0 0 auto;
+  }
+
+  .academy-media-status {
+    display: none !important;
+  }
+
+  .academy-leave-button {
+    flex: 0 0 40px;
+    width: 40px;
+    min-width: 40px;
+    height: 40px;
+    min-height: 40px;
+    margin-left: 1px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 0;
+    background: #dc2626;
+    box-shadow: 0 3px 12px rgba(220,38,38,.25);
+  }
+
+  .academy-leave-button::before {
+    content: '×';
+    font-size: 24px;
+    font-weight: 400;
+    line-height: 1;
+  }
+
+  .academy-chat-toggle::after {
+    content: none;
+  }
+
+  /* Drawer de chat continua sendo o único painel lateral no mobile. */
+  .academy-chat-drawer {
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: min(390px, 92vw);
+    height: 100dvh;
+    max-width: 92vw;
+    overflow: hidden;
+    z-index: 100;
+    border-radius: 18px 0 0 18px;
+  }
+
+  .academy-chat-backdrop {
+    z-index: 95;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .academy-chat-drawer .academy-chat {
+    min-width: 0;
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .academy-chat-drawer .academy-chat-messages {
+    min-width: 0;
+    width: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .academy-chat-input {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .academy-chat-input input {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .academy-background-menu {
+    z-index: 110;
+    max-width: calc(100vw - 20px);
+    overflow-x: hidden;
+  }
+
+  .academy-media-warning {
+    top: 68px;
+    z-index: 70;
+    max-width: calc(100vw - 20px);
+  }
+}
+
+@media (max-width: 420px) {
+  .academy-live-header {
+    height: 58px !important;
+    min-height: 58px !important;
+    padding: 0 10px;
+  }
+
+  .academy-live-brand img {
+    width: 92px;
+    height: 34px;
+    max-height: 34px;
+  }
+
+  .academy-live-course strong {
+    max-width: 120px;
+    font-size: 10px;
+  }
+
+  .academy-controls {
+    bottom: max(10px, env(safe-area-inset-bottom));
+    max-width: calc(100% - 14px);
+    min-height: 54px;
+    height: 54px;
+    gap: 6px;
+    padding: 7px 8px;
+  }
+
+  .academy-control-button {
+    flex-basis: 37px;
+    width: 37px;
+    height: 37px;
+    min-width: 37px;
+  }
+
+  .academy-leave-button {
+    flex-basis: 37px;
+    width: 37px;
+    min-width: 37px;
+    height: 37px;
+    min-height: 37px;
+  }
+
+  .academy-video-grid .academy-video-tile:nth-child(n + 2) {
+    right: 9px;
+    bottom: 78px;
+    width: 94px;
+    height: 132px;
+    border-radius: 10px;
+  }
+
+  .academy-video-grid .academy-video-tile:nth-child(n + 3) {
+    right: 109px;
+  }
+
+  .academy-video-grid .academy-video-tile:nth-child(n + 4) {
+    right: 209px;
+  }
+}
