@@ -264,10 +264,7 @@ function Planos() {
                 <div className="planos-language-heading">
                   <div className="planos-language-title">
                     <img src={usaFlag} alt="" className="planos-language-flag" />
-                    <div>
-                      <span className="section-label">Idioma</span>
-                      <h2>Inglês</h2>
-                    </div>
+                    <h2>Inglês</h2>
                   </div>
                   <p>Planos para diferentes ritmos de aprendizado.</p>
                 </div>
@@ -282,10 +279,7 @@ function Planos() {
                 <div className="planos-language-heading">
                   <div className="planos-language-title">
                     <img src={germanyFlag} alt="" className="planos-language-flag" />
-                    <div>
-                      <span className="section-label">Idioma</span>
-                      <h2>Alemão</h2>
-                    </div>
+                    <h2>Alemão</h2>
                   </div>
                   <p>Escolha a frequência que melhor atende ao seu objetivo.</p>
                 </div>
