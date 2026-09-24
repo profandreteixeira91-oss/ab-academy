@@ -870,3 +870,120 @@
     justify-content: flex-start;
   }
 }
+
+
+/* Ajuste do seletor: a bandeira + título do idioma são o próprio botão */
+.planos-language-switch {
+  width: min(100%, 900px);
+  margin: 0 auto clamp(52px, 6vw, 72px);
+}
+
+.planos-language-switch-label {
+  margin: 0 0 24px;
+  text-align: center;
+}
+
+.planos-language-switch-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 24px;
+}
+
+.planos-language-switch-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 86px;
+  padding: 16px 24px;
+  border: 1px solid var(--planos-line);
+  border-radius: 18px;
+  background: #fff;
+  color: var(--planos-ink);
+  box-shadow: 0 8px 24px rgba(19, 33, 58, .055);
+  cursor: pointer;
+  font: inherit;
+  text-align: center;
+  transition: border-color .2s ease, background .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.planos-language-switch-button:hover {
+  border-color: #b9c9e5;
+  box-shadow: 0 14px 32px rgba(19, 33, 58, .09);
+  transform: translateY(-2px);
+}
+
+.planos-language-switch-button.active {
+  border-color: var(--planos-primary);
+  background: #f4f7ff;
+  box-shadow: 0 14px 34px rgba(36, 88, 216, .13);
+}
+
+.planos-language-switch-button .planos-language-flag {
+  width: 54px;
+  height: 36px;
+  flex: 0 0 54px;
+  margin: 0;
+}
+
+.planos-language-switch-button h2 {
+  margin: 0;
+  font-size: clamp(25px, 3vw, 34px);
+  line-height: 1;
+  letter-spacing: -.03em;
+}
+
+.planos-language-switch-button.active h2 {
+  color: var(--planos-primary);
+}
+
+/* Os títulos não aparecem novamente acima dos cards */
+.planos-language--stacked {
+  margin-top: 0 !important;
+}
+
+.planos-language--stacked .planos-grid {
+  margin-top: 0 !important;
+}
+
+@media (max-width: 600px) {
+  .planos-language-switch {
+    margin-bottom: 42px;
+  }
+
+  .planos-language-switch-label {
+    margin-bottom: 18px;
+  }
+
+  .planos-language-switch-buttons {
+    gap: 12px;
+  }
+
+  .planos-language-switch-button {
+    min-height: 72px;
+    padding: 12px 14px;
+    gap: 9px;
+    border-radius: 15px;
+  }
+
+  .planos-language-switch-button .planos-language-flag {
+    width: 42px;
+    height: 28px;
+    flex-basis: 42px;
+  }
+
+  .planos-language-switch-button h2 {
+    font-size: 22px;
+  }
+}
+
+@media (max-width: 380px) {
+  .planos-language-switch-buttons {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .planos-language-switch-button {
+    justify-content: flex-start;
+  }
+}
