@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc -b && vite build",
+    "build": "npm install @livekit/track-processors@0.8.1 --no-save && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
   },
