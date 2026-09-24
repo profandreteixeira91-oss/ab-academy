@@ -987,3 +987,43 @@
     justify-content: flex-start;
   }
 }
+
+
+/* =========================================================
+   MOBILE — QUEBRA DE TEXTO DOS BENEFÍCIOS
+========================================================= */
+
+.planos-detail-features li {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  white-space: normal;
+}
+
+.planos-detail-features li::before {
+  grid-column: 1;
+  grid-row: 1;
+  margin: 1px 8px 0 0;
+}
+
+@media (max-width: 600px) {
+  .planos-detail-features li {
+    grid-template-columns: 18px minmax(0, 1fr);
+    width: 100%;
+    max-width: 100%;
+    overflow-wrap: anywhere;
+    word-break: break-word;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 380px) {
+  .planos-detail-features li {
+    grid-template-columns: 18px minmax(0, 1fr);
+  }
+}
