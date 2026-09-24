@@ -272,11 +272,8 @@ function Planos() {
                     className={'planos-language-switch-button' + (idiomaSelecionado === 'ingles' ? ' active' : '')}
                     onClick={() => setIdiomaSelecionado('ingles')}
                   >
-                    <img src={usaFlag} alt="" className="planos-language-switch-flag" />
-                    <span className="planos-language-switch-text">
-                      <strong>Inglês</strong>
-                      <small>Planos de Inglês</small>
-                    </span>
+                    <img src={usaFlag} alt="" className="planos-language-flag" />
+                    <h2>Inglês</h2>
                   </button>
 
                   <button
@@ -286,24 +283,14 @@ function Planos() {
                     className={'planos-language-switch-button' + (idiomaSelecionado === 'alemao' ? ' active' : '')}
                     onClick={() => setIdiomaSelecionado('alemao')}
                   >
-                    <img src={germanyFlag} alt="" className="planos-language-switch-flag" />
-                    <span className="planos-language-switch-text">
-                      <strong>Alemão</strong>
-                      <small>Planos de Alemão</small>
-                    </span>
+                    <img src={germanyFlag} alt="" className="planos-language-flag" />
+                    <h2>Alemão</h2>
                   </button>
                 </div>
               </div>
 
               {idiomaSelecionado === 'ingles' ? (
                 <div className="planos-language planos-language--stacked">
-                  <div className="planos-language-heading">
-                    <div className="planos-language-title">
-                      <img src={usaFlag} alt="" className="planos-language-flag" />
-                      <h2>Planos de Inglês</h2>
-                    </div>
-                    <p>Planos para diferentes ritmos de aprendizado.</p>
-                  </div>
                   <div className="planos-grid">
                     {planosPorIdioma.ingles.map((plano) => (
                       <PlanoCard key={plano.id} plano={plano} />
@@ -312,13 +299,6 @@ function Planos() {
                 </div>
               ) : (
                 <div className="planos-language planos-language--stacked">
-                  <div className="planos-language-heading">
-                    <div className="planos-language-title">
-                      <img src={germanyFlag} alt="" className="planos-language-flag" />
-                      <h2>Planos de Alemão</h2>
-                    </div>
-                    <p>Escolha a frequência que melhor atende ao seu objetivo.</p>
-                  </div>
                   <div className="planos-grid">
                     {planosPorIdioma.alemao.map((plano) => (
                       <PlanoCard key={plano.id} plano={plano} />
