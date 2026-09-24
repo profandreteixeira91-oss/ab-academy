@@ -3324,3 +3324,24 @@ h1, h2, h3 { font-family: var(--font-display); }
     hyphens: none;
   }
 }
+
+
+/* =========================================================
+   HOME — COURSE TARGET: NÃO SEPARAR PALAVRAS NO MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+  .home .course-target {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .home .course-target strong {
+    min-width: 0;
+    max-width: 100%;
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+    white-space: normal;
+  }
+}
