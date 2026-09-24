@@ -331,7 +331,7 @@
   width: 100%;
   min-width: 0;
   min-height: 48px;
-  margin-top: auto;
+  margin-top: 32px;
   padding: 11px 12px;
   border-radius: 12px;
   text-align: center;
@@ -586,7 +586,7 @@
 
   .planos-detail-cta {
     min-height: 48px;
-    margin-top: 20px;
+    margin-top: 28px;
     padding: 10px 11px;
     font-size: 12.5px;
   }
