@@ -63,6 +63,7 @@ type Pagamento = {
   parcelas: number | null
   asaas_customer_id: string | null
   asaas_payment_id: string | null
+  asaas_subscription_id: string | null
   pix_qr_code: string | null
   pix_copia_cola: string | null
   dados_matricula: Record<string, unknown> | null
@@ -254,6 +255,7 @@ async function getPagamento(
         parcelas,
         asaas_customer_id,
         asaas_payment_id,
+        asaas_subscription_id,
         pix_qr_code,
         pix_copia_cola,
         dados_matricula
@@ -1019,6 +1021,17 @@ Deno.serve(
        */
 
       if (
+        pagamento.asaas_subscription_id &&
+        pagamento.tipo_plano === 'mensal' &&
+        body.metodo === 'cartao'
+      ) {
+        return jsonResponse(
+          { error: 'Já existe uma assinatura mensal de cartão associada a esta intenção.' },
+          409,
+        )
+      }
+
+      if (
         pagamento.asaas_payment_id
       ) {
         if (
@@ -1315,290 +1328,82 @@ Deno.serve(
        * =====================================================
        * CARTÃO
        * =====================================================
+       * Plano mensal = assinatura recorrente.
+       * Outros planos = cobrança parcelada tradicional.
        */
+      if (!body.credit_card) return jsonResponse({ error: 'Dados do cartão são obrigatórios.' }, 400)
+      if (!body.credit_card_holder_info) return jsonResponse({ error: 'Dados do titular do cartão são obrigatórios.' }, 400)
 
-      if (
-        !body.credit_card
-      ) {
-        return jsonResponse(
-          {
-            error:
-              'Dados do cartão são obrigatórios.',
-          },
-          400,
-        )
-      }
-
-      if (
-        !body.credit_card_holder_info
-      ) {
-        return jsonResponse(
-          {
-            error:
-              'Dados do titular do cartão são obrigatórios.',
-          },
-          400,
-        )
-      }
-
-      /*
-       * Número de parcelas
-       */
-
-      const parcelas =
-        pagamento.tipo_plano === 'avulso'
-          ? 1
-          : Number(
-              body.parcelas ??
-                1,
-            )
-
-      if (
-        !Number.isInteger(
-          parcelas,
-        ) ||
-        parcelas < 1 ||
-        parcelas > 12
-      ) {
-        return jsonResponse(
-          {
-            error:
-              'O número de parcelas deve estar entre 1 e 12.',
-          },
-          400,
-        )
-      }
-
-      /*
-       * Valor da parcela
-       */
-
-      const valorParcela =
-        Number(
-          (
-            valor /
-            parcelas
-          ).toFixed(2),
-        )
-
-      /*
-       * Criar pagamento Asaas
-       */
-
-      const asaasPayment =
-        await asaasRequest(
-          '/payments',
-          {
-            method:
-              'POST',
-
-            body:
-              JSON.stringify({
-                customer:
-                  customer.id,
-
-                billingType:
-                  'CREDIT_CARD',
-
-                value:
-                  valor,
-
-                dueDate:
-                  new Date()
-                    .toISOString()
-                    .slice(
-                      0,
-                      10,
-                    ),
-
-                description:
-                  `Matrícula AB Academy - ${planoNome}`,
-
-                ...(parcelas > 1
-                  ? {
-                      installmentCount: parcelas,
-                      installmentValue: valorParcela,
-                    }
-                  : {}),
-
-                creditCard: {
-                  holderName:
-                    body
-                      .credit_card
-                      .holder_name,
-
-                  number:
-                    body
-                      .credit_card
-                      .number,
-
-                  expiryMonth:
-                    body
-                      .credit_card
-                      .expiry_month,
-
-                  expiryYear:
-                    body
-                      .credit_card
-                      .expiry_year,
-
-                  ccv:
-                    body
-                      .credit_card
-                      .ccv,
-                },
-
-                creditCardHolderInfo:
-                  body
-                    .credit_card_holder_info,
-              }),
-          },
-        ) as {
-          id: string
-          status: string
-          value: number
-        }
-
-      /*
-       * =====================================================
-       * STATUS INICIAL
-       * =====================================================
-       */
-
-      let localStatus =
-        'processando'
-
-      if (
-        asaasPayment.status ===
-        'CONFIRMED'
-      ) {
-        localStatus =
-          'pago'
-      }
-
-      if (
-        asaasPayment.status ===
-        'OVERDUE'
-      ) {
-        localStatus =
-          'recusado'
-      }
-
-      /*
-       * =====================================================
-       * ATUALIZAR PAGAMENTO
-       * =====================================================
-       */
-
-      const localUpdated =
-        await updateLocalPayment(
-          pagamento.id,
-          {
-            asaas_payment_id:
-              asaasPayment.id,
-
-            status:
-              localStatus,
-
-            valor,
-
-            parcelas,
-
-            updated_at:
-              new Date().toISOString(),
-          },
-        )
-
-      /*
-       * =====================================================
-       * PAGAMENTO CONFIRMADO IMEDIATAMENTE
-       *
-       * CARTÃO
-       *
-       * Se o Asaas já devolver CONFIRMED,
-       * finalizamos a matrícula imediatamente.
-       * =====================================================
-       */
-
-      let enrollmentResult:
-        | {
-            aluno_id: string | null
-            matricula_id: string
-            status: string
-          }
-        | null =
-        null
-
-      if (
-        localStatus ===
-        'pago'
-      ) {
-        /*
-         * Atualizamos o objeto local para garantir
-         * que finalizeEnrollment tenha os dados
-         * mais recentes.
-         */
-
-        const pagamentoAtualizado:
-          Pagamento = {
-          ...pagamento,
-
-          status:
-            'pago',
-
-          asaas_payment_id:
-            asaasPayment.id,
-
-          parcelas,
-
+      if (pagamento.tipo_plano === 'mensal') {
+        const nextDueDate = new Date().toISOString().slice(0, 10)
+        const subscription = await asaasRequest('/subscriptions', {
+          method: 'POST',
+          body: JSON.stringify({
+            customer: customer.id,
+            billingType: 'CREDIT_CARD',
+            value: valor,
+            nextDueDate,
+            cycle: 'MONTHLY',
+            description: 'Mensalidade AB Academy - ' + planoNome,
+            externalReference: pagamento.id,
+            creditCard: {
+              holderName: body.credit_card.holder_name,
+              number: body.credit_card.number,
+              expiryMonth: body.credit_card.expiry_month,
+              expiryYear: body.credit_card.expiry_year,
+              ccv: body.credit_card.ccv,
+            },
+            creditCardHolderInfo: body.credit_card_holder_info,
+          }),
+        }) as { id?: string }
+        const subscriptionId = subscription.id ? String(subscription.id) : null
+        if (!subscriptionId) throw new Error('O Asaas criou a assinatura, mas não retornou o ID.')
+        const localUpdated = await updateLocalPayment(pagamento.id, {
+          asaas_subscription_id: subscriptionId,
+          asaas_customer_id: customer.id,
+          status: 'processando',
           valor,
-        }
-
-        enrollmentResult =
-          await finalizeEnrollment(
-            pagamentoAtualizado,
-            user.id,
-          )
+          parcelas: null,
+        })
+        return jsonResponse({
+          success: true, metodo: 'cartao', pagamento_id: localUpdated.id,
+          asaas_payment_id: null, asaas_subscription_id: subscriptionId,
+          status: 'processando', valor, recorrente: true, ciclo: 'MONTHLY',
+        })
       }
 
+      const parcelas = Number(body.parcelas ?? 1)
+      if (!Number.isInteger(parcelas) || parcelas < 1 || parcelas > 12) return jsonResponse({ error: 'O número de parcelas deve estar entre 1 e 12.' }, 400)
+      const valorParcela = Number((valor / parcelas).toFixed(2))
+      const asaasPayment = await asaasRequest('/payments', {
+        method: 'POST',
+        body: JSON.stringify({
+          customer: customer.id, billingType: 'CREDIT_CARD', value: valor,
+          dueDate: new Date().toISOString().slice(0, 10),
+          description: 'Matrícula AB Academy - ' + planoNome,
+          installmentCount: parcelas, installmentValue: valorParcela,
+          creditCard: {
+            holderName: body.credit_card.holder_name, number: body.credit_card.number,
+            expiryMonth: body.credit_card.expiry_month, expiryYear: body.credit_card.expiry_year, ccv: body.credit_card.ccv,
+          },
+          creditCardHolderInfo: body.credit_card_holder_info,
+        }),
+      }) as { id: string; status: string; value: number }
+      let localStatus = 'processando'
+      if (asaasPayment.status === 'CONFIRMED') localStatus = 'pago'
+      if (asaasPayment.status === 'OVERDUE') localStatus = 'recusado'
+      const localUpdated = await updateLocalPayment(pagamento.id, {
+        asaas_payment_id: asaasPayment.id, status: localStatus, valor, parcelas,
+      })
+      let enrollmentResult: { aluno_id: string | null; matricula_id: string; status: string } | null = null
+      if (localStatus === 'pago') {
+        enrollmentResult = await finalizeEnrollment({ ...pagamento, status: 'pago', asaas_payment_id: asaasPayment.id, asaas_subscription_id: null, parcelas, valor }, user.id)
+      }
       return jsonResponse({
-        success:
-          true,
-
-        metodo:
-          'cartao',
-
-        pagamento_id:
-          localUpdated.id,
-
-        asaas_payment_id:
-          asaasPayment.id,
-
-        status:
-          localStatus,
-
-        asaas_status:
-          asaasPayment.status,
-
-        valor,
-
-        parcelas,
-
-        valor_parcela:
-          valorParcela,
-
-        matricula_id:
-          enrollmentResult?.matricula_id ??
-          pagamento.matricula_id ??
-          null,
-
-        aluno_id:
-          enrollmentResult?.aluno_id ??
-          null,
-
-        matricula_status:
-          enrollmentResult?.status ??
-          null,
+        success: true, metodo: 'cartao', pagamento_id: localUpdated.id, asaas_payment_id: asaasPayment.id,
+        status: localStatus, asaas_status: asaasPayment.status, valor, parcelas, valor_parcela: valorParcela,
+        matricula_id: enrollmentResult?.matricula_id ?? pagamento.matricula_id ?? null,
+        aluno_id: enrollmentResult?.aluno_id ?? null, matricula_status: enrollmentResult?.status ?? null,
       })
     } catch (
       error
