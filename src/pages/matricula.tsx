@@ -255,26 +255,64 @@ export default function Matricula() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
+    const diagnosticRequested = params.get('diagnostica') === '1'
     const requestedLanguage = params.get('idioma')
     const requestedPlanId = params.get('plano')
-    const diagnosticRequested = params.get('diagnostica') === '1'
 
-    if (requestedLanguage !== 'ingles' && requestedLanguage !== 'alemao') {
-      setError('Selecione um plano na página de planos para iniciar sua matrícula.')
-      return
+    const initializeEnrollment = async () => {
+      const selectedLanguage: Language =
+        requestedLanguage === 'alemao' ? 'alemao' : 'ingles'
+
+      if (diagnosticRequested) {
+        setLanguage(selectedLanguage)
+
+        if (requestedPlanId) {
+          await loadSelectedPlan(selectedLanguage, requestedPlanId)
+        } else {
+          const { data, error: diagnosticError } = await supabase
+            .from('planos')
+            .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at')
+            .eq('idioma', selectedLanguage)
+            .eq('tipo', 'avulso')
+            .eq('ativo', true)
+            .ilike('nome', '%diagn%')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle()
+
+          if (diagnosticError) {
+            console.error('Erro ao carregar plano da aula diagnóstica:', diagnosticError)
+            setError('Não foi possível carregar o plano da aula diagnóstica.')
+            return
+          }
+
+          if (!data) {
+            setError('O plano da aula diagnóstica não está disponível para este idioma.')
+            return
+          }
+
+          setPlan(data as Plan)
+        }
+
+        setSuccess('Você está agendando uma aula diagnóstica avulsa.')
+        return
+      }
+
+      if (requestedLanguage !== 'ingles' && requestedLanguage !== 'alemao') {
+        setError('Selecione um plano na página de planos para iniciar sua matrícula.')
+        return
+      }
+
+      if (!requestedPlanId) {
+        setError('Nenhum plano foi selecionado. Volte à página de planos e escolha uma opção.')
+        return
+      }
+
+      setLanguage(requestedLanguage)
+      await loadSelectedPlan(requestedLanguage, requestedPlanId)
     }
 
-    if (!requestedPlanId) {
-      setError('Nenhum plano foi selecionado. Volte à página de planos e escolha uma opção.')
-      return
-    }
-
-    setLanguage(requestedLanguage)
-    loadSelectedPlan(requestedLanguage, requestedPlanId)
-
-    if (diagnosticRequested) {
-      setSuccess('Você está agendando uma aula diagnóstica avulsa.')
-    }
+    void initializeEnrollment()
   }, [])
 
   useEffect(() => {
