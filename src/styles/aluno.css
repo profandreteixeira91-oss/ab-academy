@@ -392,6 +392,164 @@
 }
 
 /* =========================================================
+   INÍCIO — PWA MOBILE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .student-content {
+    padding: 18px 14px calc(92px + env(safe-area-inset-bottom));
+  }
+
+  .student-welcome-card {
+    min-height: 164px;
+    padding: 25px 22px;
+    border-radius: 20px;
+    align-items: flex-end;
+    background:
+      radial-gradient(circle at 100% 0%, rgba(255,255,255,.14), transparent 38%),
+      linear-gradient(145deg, #1649a0 0%, #2463c3 100%);
+    box-shadow: 0 12px 28px rgba(22,73,160,.15);
+  }
+
+  .student-welcome-card h2 {
+    max-width: 290px;
+    font-size: 24px;
+  }
+
+  .student-welcome-card p {
+    max-width: 310px;
+    margin-top: 8px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .student-card-label {
+    margin-bottom: 7px;
+    font-size: 9px;
+  }
+
+  .student-section-title {
+    margin: 27px 2px 13px;
+  }
+
+  .student-section-title span {
+    margin-bottom: 4px;
+    font-size: 9px;
+  }
+
+  .student-section-title h2 {
+    font-size: 18px;
+  }
+
+  .student-next-lesson {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 15px;
+    padding: 16px;
+    border-radius: 16px;
+  }
+
+  .student-next-lesson-info {
+    gap: 12px;
+  }
+
+  .student-lesson-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 12px;
+  }
+
+  .student-next-lesson-info h3 {
+    font-size: 15px;
+  }
+
+  .student-next-lesson-info p {
+    font-size: 11px;
+  }
+
+  .student-next-lesson-info small {
+    font-size: 10px;
+  }
+
+  .student-next-lesson > .student-primary-button {
+    width: 100%;
+    min-height: 46px;
+  }
+
+  .student-dashboard-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .student-dashboard-card {
+    min-height: 100px;
+    padding: 16px 17px;
+    border-radius: 15px;
+  }
+
+  .student-dashboard-card strong {
+    font-size: 15px;
+  }
+
+  .student-dashboard-card p {
+    max-width: calc(100% - 32px);
+    font-size: 11px;
+  }
+
+  .student-dashboard-card svg {
+    right: 16px;
+  }
+}
+
+/* =========================================================
+   HEADER — PWA MOBILE
+   ========================================================= */
+
+@media (max-width: 760px) {
+  .student-header {
+    min-height: 68px;
+    padding: 10px 14px;
+  }
+
+  .student-header-label {
+    font-size: 8px;
+    letter-spacing: .13em;
+  }
+
+  .student-header h1 {
+    font-size: 17px;
+  }
+
+  .student-header p {
+    display: none;
+  }
+
+  .student-mobile-menu {
+    display: none;
+  }
+
+  .student-user {
+    padding: 2px;
+  }
+
+  .student-user img,
+  .student-avatar-placeholder {
+    width: 38px;
+    height: 38px;
+    flex-basis: 38px;
+  }
+
+  .student-user > div {
+    display: none;
+  }
+
+  .student-header-left {
+    gap: 0;
+  }
+}
+
+/* =========================================================
    WELCOME
    ========================================================= */
 
