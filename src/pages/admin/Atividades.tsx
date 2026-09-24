@@ -3291,17 +3291,15 @@ export default function Atividades({
           </button>
         )}
 
-        {(!isAdmin || professorMode) && (
-          <button
-            type="button"
-            className="atividades-primary-button"
-            onClick={openNewActivity}
-            disabled={loadingAlunos}
-          >
-            <Plus size={18} />
-            Nova atividade
-          </button>
-        )}
+        <button
+          type="button"
+          className="atividades-primary-button"
+          onClick={openNewActivity}
+          disabled={loadingAlunos}
+        >
+          <Plus size={18} />
+          Nova atividade
+        </button>
       </header>
 
       {error && !showBuilder && (
