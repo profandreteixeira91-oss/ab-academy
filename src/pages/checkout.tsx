@@ -1079,7 +1079,9 @@ export default function Checkout({
                   <span>
                     {pagamento.tipo_plano === 'avulso'
                       ? 'Pagamento único'
-                      : 'Parcele sua matrícula'}
+                      : pagamento.tipo_plano === 'mensal'
+                        ? 'Cobrança mensal recorrente'
+                        : 'Parcele sua matrícula'}
                   </span>
                 </div>
               </button>
@@ -1223,7 +1225,8 @@ export default function Checkout({
 
                 </div>
 
-                {pagamento.tipo_plano !== 'avulso' && (
+                {pagamento.tipo_plano !== 'avulso' &&
+                  pagamento.tipo_plano !== 'mensal' && (
                   <div className="checkout-field">
                     <label>
                       Número de parcelas
