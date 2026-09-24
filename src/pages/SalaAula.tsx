@@ -4,6 +4,10 @@ import {
   Loader2,
   Image,
   Sparkles,
+  Mic,
+  MicOff,
+  Video,
+  VideoOff,
 } from 'lucide-react'
 
 import {
@@ -536,16 +540,26 @@ function ClassroomControls({
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
 
-  const toggleMicrophone = async () => {
-    await localParticipant.setMicrophoneEnabled(
-      !localParticipant.isMicrophoneEnabled,
-    )
+  async function toggleMicrophone() {
+    try {
+      await localParticipant.setMicrophoneEnabled(
+        !localParticipant.isMicrophoneEnabled,
+      )
+    } catch (error) {
+      console.error('Erro ao alterar microfone:', error)
+      window.alert('Não foi possível acessar o microfone. Verifique a permissão do navegador.')
+    }
   }
 
-  const toggleCamera = async () => {
-    await localParticipant.setCameraEnabled(
-      !localParticipant.isCameraEnabled,
-    )
+  async function toggleCamera() {
+    try {
+      await localParticipant.setCameraEnabled(
+        !localParticipant.isCameraEnabled,
+      )
+    } catch (error) {
+      console.error('Erro ao alterar câmera:', error)
+      window.alert('Não foi possível acessar a câmera. Verifique a permissão do navegador.')
+    }
   }
 
   const toggleScreenShare = async () => {
@@ -613,11 +627,26 @@ function ClassroomControls({
   }
 
   const microphoneOn = localParticipant.isMicrophoneEnabled
+  const microphonePublication = localParticipant.getTrackPublication(Track.Source.Microphone)
+  const cameraPublication = localParticipant.getTrackPublication(Track.Source.Camera)
+  const microphoneReady = microphoneOn && !!microphonePublication?.track
   const cameraOn = localParticipant.isCameraEnabled
+  const cameraReady = cameraOn && !!cameraPublication?.track
   const screenOn = localParticipant.isScreenShareEnabled
 
   return (
     <div className="academy-controls">
+      <div className="academy-media-status" role="status" aria-live="polite">
+        <span className={microphoneReady ? 'is-ready' : 'is-off'}>
+          {microphoneReady ? <Mic size={14} /> : <MicOff size={14} />}
+          {microphoneReady ? 'Microfone ativo' : 'Microfone desligado'}
+        </span>
+        <span className={cameraReady ? 'is-ready' : 'is-off'}>
+          {cameraReady ? <Video size={14} /> : <VideoOff size={14} />}
+          {cameraReady ? 'Câmera ativa' : 'Câmera desligada'}
+        </span>
+      </div>
+
       <button
         type="button"
         className={
@@ -769,6 +798,27 @@ function LiveClassroom({
   const [connected, setConnected] =
     useState(false)
 
+  const [mediaWarning, setMediaWarning] = useState('')
+
+  useEffect(() => {
+    const handleDeviceChange = () => {
+      const microphone = navigator.mediaDevices?.getUserMedia
+      if (!microphone) return
+      void navigator.mediaDevices.enumerateDevices().then((devices) => {
+        const hasMicrophone = devices.some((device) => device.kind === 'audioinput')
+        if (!hasMicrophone) {
+          setMediaWarning('Nenhum microfone foi detectado. Verifique se o dispositivo está conectado e permitido no navegador.')
+        } else {
+          setMediaWarning('')
+        }
+      })
+    }
+
+    void handleDeviceChange()
+    navigator.mediaDevices?.addEventListener?.('devicechange', handleDeviceChange)
+    return () => navigator.mediaDevices?.removeEventListener?.('devicechange', handleDeviceChange)
+  }, [])
+
   return (
     <div className="academy-live-room">
       <LiveKitRoom
@@ -789,6 +839,13 @@ function LiveClassroom({
         }}
       >
         <RoomAudioRenderer />
+
+        {mediaWarning && (
+          <div className="academy-media-warning" role="alert">
+            <strong>Problema com o áudio</strong>
+            <span>{mediaWarning}</span>
+          </div>
+        )}
 
         <header className="academy-live-header">
           <div className="academy-live-brand">
@@ -1096,6 +1153,22 @@ export default function SalaAula() {
     async () => {
       if (!data) {
         return
+      }
+
+      // Testa microfone e câmera antes de solicitar o token LiveKit.
+      // Assim o usuário recebe imediatamente o aviso de permissão do navegador.
+      if (!navigator.mediaDevices?.getUserMedia) {
+        throw new Error('Este navegador não oferece suporte ao acesso ao microfone e à câmera.')
+      }
+
+      let mediaStream: MediaStream | null = null
+      try {
+        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+      } catch (mediaError) {
+        console.error('Permissão de mídia recusada:', mediaError)
+        throw new Error('Não foi possível acessar o microfone e a câmera. Permita o acesso no navegador e tente novamente.')
+      } finally {
+        mediaStream?.getTracks().forEach((track) => track.stop())
       }
 
       try {
