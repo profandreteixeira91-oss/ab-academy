@@ -525,8 +525,8 @@ function Home() {
 
                 {renderPlanos(planosAlemao)}
 
-                <a href="/matricula">
-                  Quero me matricular
+                <a href="/planos">
+                  Saiba mais
                   <ArrowRight size={17} />
                 </a>
               </article>
