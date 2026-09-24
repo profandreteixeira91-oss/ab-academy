@@ -3204,3 +3204,90 @@
     height: calc(100% - 58px);
   }
 }
+
+
+/* =========================================================
+   CORREÇÃO FINAL — CONTROLES MOBILE
+   Todos os botões devem permanecer visíveis e sem corte.
+   ========================================================= */
+@media (max-width: 760px) {
+  .academy-controls {
+    left: 50%;
+    right: auto;
+    width: max-content;
+    max-width: calc(100vw - 12px);
+    min-width: 0;
+    height: 58px;
+    min-height: 58px;
+    padding: 8px 9px;
+    gap: 7px;
+    flex-wrap: nowrap;
+    justify-content: center;
+    overflow: visible;
+    box-sizing: border-box;
+  }
+
+  .academy-control-button {
+    flex: 0 0 38px;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+  }
+
+  .academy-background-control {
+    flex: 0 0 38px;
+    width: 38px;
+    min-width: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .academy-background-control .academy-control-button {
+    flex: 0 0 38px;
+  }
+
+  .academy-leave-button {
+    flex: 0 0 38px;
+    width: 38px;
+    min-width: 38px;
+    height: 38px;
+    min-height: 38px;
+    margin-left: 0;
+    padding: 0;
+  }
+
+  .academy-leave-button span {
+    display: none;
+  }
+}
+
+@media (max-width: 360px) {
+  .academy-controls {
+    height: 52px;
+    min-height: 52px;
+    padding: 6px 7px;
+    gap: 5px;
+  }
+
+  .academy-control-button,
+  .academy-background-control,
+  .academy-background-control .academy-control-button,
+  .academy-leave-button {
+    flex-basis: 34px;
+    width: 34px;
+    min-width: 34px;
+    height: 34px;
+    min-height: 34px;
+  }
+
+  .academy-control-button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .academy-leave-button::before {
+    font-size: 22px;
+  }
+}
