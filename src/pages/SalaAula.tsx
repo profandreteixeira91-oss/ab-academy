@@ -532,8 +532,12 @@ function ChatPanel() {
 
 function ClassroomControls({
   onLeave,
+  onChatOpen,
+  chatOpen,
 }: {
   onLeave: () => void
+  onChatOpen: () => void
+  chatOpen: boolean
 }) {
   const { localParticipant } = useLocalParticipant()
   const [backgroundOpen, setBackgroundOpen] = useState(false)
@@ -762,6 +766,21 @@ function ClassroomControls({
       <button
         type="button"
         className={
+          chatOpen
+            ? 'academy-control-button is-active academy-chat-toggle'
+            : 'academy-control-button academy-chat-toggle'
+        }
+        onClick={onChatOpen}
+        title="Chat da aula"
+        aria-label="Abrir chat da aula"
+        aria-expanded={chatOpen}
+      >
+        <span>💬</span>
+      </button>
+
+      <button
+        type="button"
+        className={
           screenOn
             ? 'academy-control-button is-active'
             : 'academy-control-button'
@@ -800,6 +819,7 @@ function LiveClassroom({
     useState(false)
 
   const [mediaWarning, setMediaWarning] = useState('')
+  const [chatOpen, setChatOpen] = useState(false)
 
   useEffect(() => {
     const handleDeviceChange = () => {
@@ -893,14 +913,41 @@ function LiveClassroom({
 
             <ClassroomControls
               onLeave={onLeave}
+              onChatOpen={() => setChatOpen(true)}
+              chatOpen={chatOpen}
             />
           </section>
 
           <aside className="academy-sidebar">
             <ParticipantsPanel />
-
-            <ChatPanel />
           </aside>
+
+          {chatOpen && (
+            <>
+              <button
+                type="button"
+                className="academy-chat-backdrop"
+                aria-label="Fechar chat"
+                onClick={() => setChatOpen(false)}
+              />
+              <aside className="academy-chat-drawer" aria-label="Chat da aula">
+                <div className="academy-chat-drawer-header">
+                  <div>
+                    <strong>Chat da aula</strong>
+                    <span>Mensagens da sala</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setChatOpen(false)}
+                    aria-label="Fechar chat"
+                  >
+                    ×
+                  </button>
+                </div>
+                <ChatPanel />
+              </aside>
+            </>
+          )
         </main>
       </LiveKitRoom>
     </div>
