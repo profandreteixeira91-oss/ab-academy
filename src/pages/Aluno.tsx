@@ -3201,36 +3201,42 @@ function Aluno() {
 
       {selectedActivity && (
         <ActivityModal
-          activity={
-            selectedActivity
-          }
-          exercises={
-            selectedExercises
-          }
+          activity={selectedActivity}
+          exercises={selectedExercises}
           answers={answers}
-          loading={
-            activityLoading
-          }
-          error={
-            activityError
-          }
-          submitting={
-            submittingActivity
-          }
-          onClose={
-            closeActivity
-          }
-          onTextChange={
-            updateTextAnswer
-          }
-          onAlternativeChange={
-            toggleAlternative
-          }
-          onSubmit={
-            submitActivity
-          }
+          loading={activityLoading}
+          error={activityError}
+          submitting={submittingActivity}
+          onClose={closeActivity}
+          onTextChange={updateTextAnswer}
+          onAlternativeChange={toggleAlternative}
+          onSubmit={submitActivity}
         />
       )}
+
+      <nav className="student-bottom-navigation" aria-label="Navegação principal">
+        <button type="button" className={`student-bottom-nav-item ${section === 'inicio' ? 'active' : ''}`} onClick={() => navigateTo('inicio')}>
+          <Home size={20} />
+          <span>Início</span>
+        </button>
+        <button type="button" className={`student-bottom-nav-item ${section === 'aulas' ? 'active' : ''}`} onClick={() => navigateTo('aulas')}>
+          <CalendarDays size={20} />
+          <span>Aulas</span>
+        </button>
+        <button type="button" className={`student-bottom-nav-item ${section === 'atividades' ? 'active' : ''}`} onClick={() => navigateTo('atividades')}>
+          <ClipboardList size={20} />
+          <span>Atividades</span>
+          {pendingActivities.length > 0 && <span className="student-bottom-nav-badge">{pendingActivities.length}</span>}
+        </button>
+        <button type="button" className={`student-bottom-nav-item ${section === 'progresso' ? 'active' : ''}`} onClick={() => navigateTo('progresso')}>
+          <CheckCircle2 size={20} />
+          <span>Progresso</span>
+        </button>
+        <button type="button" className={`student-bottom-nav-item ${section === 'perfil' ? 'active' : ''}`} onClick={() => navigateTo('perfil')}>
+          <UserCircle size={20} />
+          <span>Perfil</span>
+        </button>
+      </nav>
     </div>
   )
 }
