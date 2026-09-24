@@ -553,6 +553,22 @@ function ClassroomControls({
     }
   }
 
+  const microphoneOn = localParticipant.isMicrophoneEnabled
+  const microphonePublication = localParticipant.getTrackPublication(
+    Track.Source.Microphone,
+  )
+  const microphoneReady =
+    microphoneOn && !!microphonePublication?.track
+
+  const cameraOn = localParticipant.isCameraEnabled
+  const cameraPublication = localParticipant.getTrackPublication(
+    Track.Source.Camera,
+  )
+  const cameraReady =
+    cameraOn && !!cameraPublication?.track
+
+  const screenOn = localParticipant.isScreenShareEnabled
+
   function handleBackgroundImage(
     event: ChangeEvent<HTMLInputElement>,
   ) {
@@ -1004,6 +1020,32 @@ export default function SalaProfessor() {
     setConnecting(true)
     setError(null)
 
+    // Verifica os dispositivos antes de solicitar o token.
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error('Este navegador não oferece suporte ao acesso ao microfone.')
+    }
+
+    let microphoneStream: MediaStream | null = null
+    try {
+      microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true })
+    } catch (mediaError) {
+      console.error('Permissão do microfone recusada:', mediaError)
+      throw new Error(
+        'Não foi possível acessar o microfone. Permita o uso do microfone no navegador e tente novamente.',
+      )
+    } finally {
+      microphoneStream?.getTracks().forEach((track) => track.stop())
+    }
+
+    let cameraStream: MediaStream | null = null
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: true })
+    } catch (cameraError) {
+      console.warn('Câmera não disponível ou sem permissão:', cameraError)
+    } finally {
+      cameraStream?.getTracks().forEach((track) => track.stop())
+    }
+
     console.log('=== LIVEKIT PROFESSOR ===')
     console.log('lesson.id:', lesson.id)
 
@@ -1019,15 +1061,8 @@ export default function SalaProfessor() {
       },
     )
 
-    console.log(
-      'LiveKit response:',
-      response,
-    )
-
-    console.log(
-      'LiveKit functionError:',
-      functionError,
-    )
+    console.log('LiveKit response:', response)
+    console.log('LiveKit functionError:', functionError)
 
     if (functionError) {
       let detailedError =
