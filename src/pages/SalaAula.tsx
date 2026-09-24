@@ -947,7 +947,7 @@ function LiveClassroom({
                 <ChatPanel />
               </aside>
             </>
-          )
+          )}
         </main>
       </LiveKitRoom>
     </div>
