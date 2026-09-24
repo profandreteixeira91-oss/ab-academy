@@ -3078,3 +3078,129 @@
     right: 209px;
   }
 }
+
+
+/* =========================================================
+   MOBILE — CABEÇALHO DA SALA
+   ========================================================= */
+@media (max-width: 760px) {
+  .academy-live-header {
+    position: absolute !important;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 60;
+    width: 100%;
+    height: 64px !important;
+    min-height: 64px !important;
+    padding: 0 14px;
+    display: flex;
+    align-items: center;
+    background: #ffffff !important;
+    border-bottom: 1px solid #e5e7eb !important;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.08);
+    color: #111827;
+  }
+
+  .academy-live-brand {
+    flex: 1;
+    min-width: 0;
+    gap: 10px;
+  }
+
+  .academy-live-brand img {
+    width: 104px;
+    height: 40px;
+    max-height: 40px;
+    object-fit: contain;
+  }
+
+  .academy-live-course {
+    min-width: 0;
+    display: flex !important;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .academy-live-course strong {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #111827 !important;
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-shadow: none;
+  }
+
+  .academy-live-course span {
+    display: block !important;
+    color: #64748b !important;
+    font-size: 10px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .academy-live-status {
+    flex-shrink: 0;
+    color: #64748b !important;
+    font-size: 9px;
+    text-shadow: none;
+  }
+
+  .academy-live-status > span {
+    width: 7px;
+    height: 7px;
+  }
+
+  .academy-live-main {
+    height: 100dvh !important;
+  }
+
+  .academy-video-area {
+    padding-top: 64px;
+  }
+
+  .academy-video-single,
+  .academy-video-grid,
+  .academy-empty-video {
+    top: 64px;
+    height: calc(100% - 64px);
+    inset-block-end: auto;
+  }
+}
+
+@media (max-width: 420px) {
+  .academy-live-header {
+    height: 58px !important;
+    min-height: 58px !important;
+    padding: 0 10px;
+  }
+
+  .academy-live-brand img {
+    width: 92px;
+    height: 34px;
+    max-height: 34px;
+  }
+
+  .academy-live-course strong {
+    max-width: 125px;
+    font-size: 10px;
+  }
+
+  .academy-live-course span {
+    font-size: 9px;
+  }
+
+  .academy-video-area {
+    padding-top: 58px;
+  }
+
+  .academy-video-single,
+  .academy-video-grid,
+  .academy-empty-video {
+    top: 58px;
+    height: calc(100% - 58px);
+  }
+}
