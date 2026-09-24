@@ -824,25 +824,25 @@ export default function Alunos() {
        * Os horários selecionados passam a pertencer ao aluno.
        * Os que foram desmarcados são liberados novamente.
        */
-      const horarioUpdates = horarios.map(
-        (horario) => {
-          const shouldBeLinked =
-            selectedHorarioIds.includes(
-              horario.id,
-            )
+      for (const horario of horarios) {
+        const shouldBeLinked =
+          selectedHorarioIds.includes(
+            horario.id,
+          )
 
-          const wasLinked =
-            horario.aluno_id ===
-            editingAluno.id
+        const wasLinked =
+          horario.aluno_id ===
+          editingAluno.id
 
-          if (
-            shouldBeLinked ===
-            wasLinked
-          ) {
-            return null
-          }
+        if (
+          shouldBeLinked ===
+          wasLinked
+        ) {
+          continue
+        }
 
-          return supabase
+        const { error: horarioError } =
+          await supabase
             .from('horarios')
             .update({
               aluno_id:
@@ -855,28 +855,10 @@ export default function Alunos() {
                   : true,
             })
             .eq('id', horario.id)
-        },
-      )
 
-      const horarioResults =
-        await Promise.all(
-          horarioUpdates.filter(
-            (
-              result,
-            ): result is PromiseLike<{
-              error: any
-            }> =>
-              Boolean(result),
-          ),
-        )
-
-      const horarioError =
-        horarioResults.find(
-          (result) => result.error,
-        )?.error
-
-      if (horarioError) {
-        throw horarioError
+        if (horarioError) {
+          throw horarioError
+        }
       }
 
       await loadAlunos()
