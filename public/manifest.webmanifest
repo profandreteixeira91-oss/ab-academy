@@ -1,0 +1,21 @@
+{
+  "name": "AB Academy - Portal do Aluno",
+  "short_name": "AB Academy",
+  "description": "Portal do aluno da AB Academy Idiomas.",
+  "lang": "pt-BR",
+  "dir": "ltr",
+  "start_url": "/aluno",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f7f9fc",
+  "theme_color": "#1649a0",
+  "icons": [
+    {
+      "src": "/favicon.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
