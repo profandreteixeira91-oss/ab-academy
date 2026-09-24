@@ -2300,3 +2300,158 @@
     height: 38px;
   }
 }
+
+
+/* =========================================================
+   CHAT LATERAL — MOBILE
+   ========================================================= */
+
+.academy-chat-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  border: 0;
+  padding: 0;
+  background: rgba(2, 8, 23, .52);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+  cursor: pointer;
+}
+
+.academy-chat-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 90;
+  width: min(390px, 92vw);
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: #f8fafc;
+  box-shadow: -18px 0 45px rgba(0, 0, 0, .22);
+  animation: academy-chat-slide-in .22s ease-out;
+}
+
+@keyframes academy-chat-slide-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.academy-chat-drawer-header {
+  flex: 0 0 auto;
+  min-height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.academy-chat-drawer-header > div {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.academy-chat-drawer-header strong {
+  color: #0f172a;
+  font-size: 14px;
+  line-height: 1.2;
+}
+
+.academy-chat-drawer-header span {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.academy-chat-drawer-header button {
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-radius: 10px;
+  background: #f1f5f9;
+  color: #334155;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.academy-chat-drawer .academy-chat {
+  flex: 1;
+  min-height: 0;
+  height: auto;
+  display: flex;
+  flex-direction: column;
+  border: 0;
+}
+
+.academy-chat-drawer .academy-chat-messages {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.academy-chat-drawer .academy-chat-input {
+  flex: 0 0 auto;
+}
+
+.academy-chat-toggle {
+  position: relative;
+}
+
+.academy-chat-toggle::after {
+  content: 'Chat';
+  position: absolute;
+  right: -2px;
+  top: -5px;
+  min-width: 13px;
+  height: 13px;
+  padding: 0 3px;
+  display: grid;
+  place-items: center;
+  border-radius: 99px;
+  background: #1769d1;
+  color: #ffffff;
+  font-size: 7px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+@media (max-width: 760px) {
+  .academy-chat-backdrop {
+    display: block;
+  }
+
+  .academy-chat-drawer {
+    width: min(390px, 92vw);
+  }
+
+  .academy-chat-drawer-header {
+    min-height: 58px;
+    padding-top: max(9px, env(safe-area-inset-top));
+  }
+
+  .academy-chat-toggle {
+    flex: 0 0 38px;
+  }
+}
+
+@media (min-width: 761px) {
+  .academy-chat-backdrop {
+    display: none;
+  }
+
+  .academy-chat-drawer {
+    width: 390px;
+  }
+}
