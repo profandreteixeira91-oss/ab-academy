@@ -15,6 +15,8 @@ import {
   UsersRound,
   RefreshCw,
   UserCog,
+  Clock3,
+  CheckCircle2,
 } from 'lucide-react'
 
 import { supabase } from '../../lib/supabase'
@@ -52,6 +54,17 @@ type Aluno = {
   professor_id: string | null
   created_at: string
   updated_at: string
+}
+
+type Horario = {
+  id: string
+  idioma: Idioma
+  dia_semana: number
+  hora_inicio: string
+  hora_fim: string
+  disponivel: boolean
+  aluno_id: string | null
+  professor_id: string | null
 }
 
 type AlunoForm = {
@@ -247,6 +260,15 @@ export default function Alunos() {
     useState<AlunoForm>(emptyForm)
 
   const [saving, setSaving] =
+    useState(false)
+
+  const [horarios, setHorarios] =
+    useState<Horario[]>([])
+
+  const [selectedHorarioIds, setSelectedHorarioIds] =
+    useState<string[]>([])
+
+  const [loadingHorarios, setLoadingHorarios] =
     useState(false)
 
   const [error, setError] =
@@ -477,7 +499,7 @@ export default function Alunos() {
     setSuccess('')
   }
 
-  function openEdit(aluno: Aluno) {
+  async function openEdit(aluno: Aluno) {
     setEditingAluno(aluno)
     setSelectedAluno(null)
 
@@ -485,8 +507,68 @@ export default function Alunos() {
       createFormFromAluno(aluno),
     )
 
+    setSelectedHorarioIds([])
+    setHorarios([])
     setError('')
     setSuccess('')
+    setLoadingHorarios(true)
+
+    try {
+      const { data, error: horariosError } =
+        await supabase
+          .from('horarios')
+          .select(`
+            id,
+            idioma,
+            dia_semana,
+            hora_inicio,
+            hora_fim,
+            disponivel,
+            aluno_id,
+            professor_id
+          `)
+          .eq('idioma', aluno.idioma)
+          .order('dia_semana', {
+            ascending: true,
+          })
+          .order('hora_inicio', {
+            ascending: true,
+          })
+
+      if (horariosError) {
+        throw horariosError
+      }
+
+      const loadedHorarios =
+        (data ?? []) as Horario[]
+
+      setHorarios(loadedHorarios)
+
+      setSelectedHorarioIds(
+        loadedHorarios
+          .filter(
+            (horario) =>
+              horario.aluno_id === aluno.id,
+          )
+          .map(
+            (horario) => horario.id,
+          ),
+      )
+    } catch (err) {
+      console.error(
+        '[Alunos] Erro ao carregar horários:',
+        err,
+      )
+
+      setError(
+        'Não foi possível carregar os horários: ' +
+          (err instanceof Error
+            ? err.message
+            : 'erro desconhecido'),
+      )
+    } finally {
+      setLoadingHorarios(false)
+    }
   }
 
   function closeModal() {
@@ -505,6 +587,40 @@ export default function Alunos() {
    * FORMULÁRIO
    * ============================================================
    */
+
+  function toggleHorario(horarioId: string) {
+    setSelectedHorarioIds((current) =>
+      current.includes(horarioId)
+        ? current.filter(
+            (id) => id !== horarioId,
+          )
+        : [...current, horarioId],
+    )
+  }
+
+  function getDayLabel(day: number) {
+    const labels: Record<number, string> = {
+      0: 'Domingo',
+      1: 'Segunda',
+      2: 'Terça',
+      3: 'Quarta',
+      4: 'Quinta',
+      5: 'Sexta',
+      6: 'Sábado',
+    }
+
+    return labels[day] ?? 'Dia'
+  }
+
+  function formatHorario(horario: Horario) {
+    return (
+      getDayLabel(horario.dia_semana) +
+      ' • ' +
+      horario.hora_inicio.slice(0, 5) +
+      '–' +
+      horario.hora_fim.slice(0, 5)
+    )
+  }
 
   function updateForm(
     field: keyof AlunoForm,
@@ -699,6 +815,69 @@ export default function Alunos() {
        * RECARREGAR DADOS DO BANCO
        * ========================================================
        */
+
+      /*
+       * ========================================================
+       * VINCULAR HORÁRIOS
+       * ========================================================
+       *
+       * Os horários selecionados passam a pertencer ao aluno.
+       * Os que foram desmarcados são liberados novamente.
+       */
+      const horarioUpdates = horarios.map(
+        (horario) => {
+          const shouldBeLinked =
+            selectedHorarioIds.includes(
+              horario.id,
+            )
+
+          const wasLinked =
+            horario.aluno_id ===
+            editingAluno.id
+
+          if (
+            shouldBeLinked ===
+            wasLinked
+          ) {
+            return null
+          }
+
+          return supabase
+            .from('horarios')
+            .update({
+              aluno_id:
+                shouldBeLinked
+                  ? editingAluno.id
+                  : null,
+              disponivel:
+                shouldBeLinked
+                  ? false
+                  : true,
+            })
+            .eq('id', horario.id)
+        },
+      )
+
+      const horarioResults =
+        await Promise.all(
+          horarioUpdates.filter(
+            (
+              result,
+            ): result is PromiseLike<{
+              error: any
+            }> =>
+              Boolean(result),
+          ),
+        )
+
+      const horarioError =
+        horarioResults.find(
+          (result) => result.error,
+        )?.error
+
+      if (horarioError) {
+        throw horarioError
+      }
 
       await loadAlunos()
 
@@ -1145,7 +1324,7 @@ export default function Alunos() {
                             type="button"
                             title="Editar aluno"
                             onClick={() =>
-                              openEdit(
+                              void openEdit(
                                 aluno,
                               )
                             }
@@ -1413,7 +1592,7 @@ export default function Alunos() {
                 type="button"
                 className="alunos-primary-button"
                 onClick={() =>
-                  openEdit(
+                  void openEdit(
                     selectedAluno,
                   )
                 }
@@ -1661,6 +1840,130 @@ export default function Alunos() {
                   poderá visualizar este
                   aluno no portal do
                   professor.
+                </p>
+              </div>
+
+              {/* ==================================================
+                  HORÁRIOS DO ALUNO
+                  ================================================== */}
+
+              <div className="alunos-form-section">
+                <div className="alunos-section-heading">
+                  <div>
+                    <h3>Horários do aluno</h3>
+                    <p>
+                      Vincule diretamente os horários recorrentes deste aluno.
+                    </p>
+                  </div>
+
+                  <span className="alunos-schedule-count">
+                    {selectedHorarioIds.length} selecionado(s)
+                  </span>
+                </div>
+
+                {loadingHorarios ? (
+                  <div className="alunos-schedule-loading">
+                    <RefreshCw
+                      size={17}
+                      className="alunos-spin"
+                    />
+                    Carregando horários...
+                  </div>
+                ) : horarios.length === 0 ? (
+                  <div className="alunos-schedule-empty">
+                    <Clock3 size={20} />
+                    <div>
+                      <strong>
+                        Nenhum horário cadastrado
+                      </strong>
+                      <span>
+                        Crie os horários deste idioma em Agenda para vinculá-los aqui.
+                      </span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="alunos-schedule-list">
+                    {horarios.map((horario) => {
+                      const linkedToAnother =
+                        Boolean(
+                          horario.aluno_id &&
+                          horario.aluno_id !==
+                            editingAluno.id,
+                        )
+
+                      const checked =
+                        selectedHorarioIds.includes(
+                          horario.id,
+                        )
+
+                      const optionClass =
+                        'alunos-schedule-option' +
+                        (checked ? ' selected' : '') +
+                        (linkedToAnother ? ' disabled' : '')
+
+                      return (
+                        <label
+                          key={horario.id}
+                          className={optionClass}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            disabled={
+                              saving ||
+                              linkedToAnother
+                            }
+                            onChange={() =>
+                              toggleHorario(
+                                horario.id,
+                              )
+                            }
+                          />
+
+                          <span className="alunos-schedule-check">
+                            {checked ? (
+                              <CheckCircle2
+                                size={18}
+                              />
+                            ) : (
+                              <Clock3
+                                size={18}
+                              />
+                            )}
+                          </span>
+
+                          <span className="alunos-schedule-info">
+                            <strong>
+                              {formatHorario(
+                                horario,
+                              )}
+                            </strong>
+
+                            <span>
+                              {idiomaLabels[
+                                horario.idioma
+                              ]}
+                              {horario.professor_id
+                                ? ' • Professor vinculado'
+                                : ' • Sem professor'}
+                            </span>
+                          </span>
+
+                          {linkedToAnother && (
+                            <span className="alunos-schedule-busy">
+                              Ocupado
+                            </span>
+                          )}
+                        </label>
+                      )
+                    })}
+                  </div>
+                )}
+
+                <p className="alunos-schedule-hint">
+                  Ao salvar, os horários marcados serão vinculados a este aluno e
+                  ficarão indisponíveis para novas matrículas. Os horários
+                  desmarcados serão liberados novamente.
                 </p>
               </div>
 
