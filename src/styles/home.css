@@ -3297,3 +3297,30 @@ h1, h2, h3 { font-family: var(--font-display); }
     max-width: 100%;
   }
 }
+
+
+/* =========================================================
+   HOME — MOBILE: NÃO SEPARAR PALAVRAS
+========================================================= */
+
+@media (max-width: 600px) {
+  .home {
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+
+  .home p,
+  .home span,
+  .home strong,
+  .home small,
+  .home h1,
+  .home h2,
+  .home h3,
+  .home li,
+  .home a {
+    word-break: normal;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+}
