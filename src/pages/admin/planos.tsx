@@ -188,6 +188,12 @@ export default function Planos() {
 
   const activeCount = planos.filter((plano) => plano.ativo).length
   const inactiveCount = planos.filter((plano) => !plano.ativo).length
+  const hasActiveFilters = Boolean(
+    search.trim() ||
+    filterIdioma !== 'todos' ||
+    filterTipo !== 'todos' ||
+    filterStatus !== 'todos',
+  )
 
   function openCreateModal() {
     setEditingPlano(null)
@@ -622,6 +628,11 @@ Esta ação não pode ser desfeita.`,
       </section>
 
       <section className="planos-toolbar">
+        <div className="planos-toolbar-heading">
+          <strong>Planos cadastrados</strong>
+          <span>{filteredPlanos.length} resultado{filteredPlanos.length === 1 ? '' : 's'}</span>
+        </div>
+
         <div className="planos-search">
           <Search size={17} />
 
@@ -692,15 +703,27 @@ Esta ação não pode ser desfeita.`,
               )
             }
           >
-            <option value="todos">
-              Todos os status
-            </option>
+            <option value="todos">Todos os status</option>
             <option value="ativo">Ativos</option>
             <option value="inativo">Inativos</option>
           </select>
-
           <ChevronDown size={15} />
         </div>
+
+        {hasActiveFilters && (
+          <button
+            type="button"
+            className="planos-clear-filters"
+            onClick={() => {
+              setSearch('')
+              setFilterIdioma('todos')
+              setFilterTipo('todos')
+              setFilterStatus('todos')
+            }}
+          >
+            Limpar filtros
+          </button>
+        )}
       </section>
 
       <section className="planos-table-card">
@@ -769,9 +792,7 @@ Esta ação não pode ser desfeita.`,
 
                     <td>
                       <span className="planos-language">
-                        {plano.idioma === 'ingles'
-                            }
-
+                        <span className="planos-language-dot" aria-hidden="true" />
                         {formatIdioma(plano.idioma)}
                       </span>
                     </td>
@@ -1127,12 +1148,13 @@ Esta ação não pode ser desfeita.`,
                       )
                     }
                     placeholder="0,00"
-                    disabled={saving}
+                    disabled={saving || form.tipo === 'avulso'}
                   />
 
                   <small>
-                    Calculado automaticamente quando as
-                    parcelas forem informadas.
+                    {form.tipo === 'avulso'
+                      ? 'Aula avulsa não utiliza parcelamento.'
+                      : 'Calculado automaticamente quando as parcelas forem informadas.'}
                   </small>
                 </div>
 
