@@ -1155,20 +1155,31 @@ export default function SalaAula() {
         return
       }
 
-      // Testa microfone e câmera antes de solicitar o token LiveKit.
-      // Assim o usuário recebe imediatamente o aviso de permissão do navegador.
+      // Testa o microfone antes de solicitar o token LiveKit.
+      // O áudio é obrigatório para a aula; a câmera é opcional.
       if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('Este navegador não oferece suporte ao acesso ao microfone e à câmera.')
+        throw new Error('Este navegador não oferece suporte ao acesso ao microfone.')
       }
 
-      let mediaStream: MediaStream | null = null
+      let microphoneStream: MediaStream | null = null
       try {
-        mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true, video: true })
+        microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true })
       } catch (mediaError) {
-        console.error('Permissão de mídia recusada:', mediaError)
-        throw new Error('Não foi possível acessar o microfone e a câmera. Permita o acesso no navegador e tente novamente.')
+        console.error('Permissão do microfone recusada:', mediaError)
+        throw new Error('Não foi possível acessar o microfone. Permita o uso do microfone no navegador e tente novamente.')
       } finally {
-        mediaStream?.getTracks().forEach((track) => track.stop())
+        microphoneStream?.getTracks().forEach((track) => track.stop())
+      }
+
+      // Solicita a câmera separadamente. Se ela for bloqueada,
+      // a aula continua funcionando normalmente com áudio.
+      let cameraStream: MediaStream | null = null
+      try {
+        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true })
+      } catch (cameraError) {
+        console.warn('Câmera não disponível ou sem permissão:', cameraError)
+      } finally {
+        cameraStream?.getTracks().forEach((track) => track.stop())
       }
 
       try {
