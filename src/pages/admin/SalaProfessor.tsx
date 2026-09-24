@@ -23,6 +23,7 @@ import {
 import {
   LiveKitRoom,
   RoomAudioRenderer,
+  StartAudio,
   useChat,
   useLocalParticipant,
   useParticipants,
@@ -811,6 +812,8 @@ function TeacherLiveRoom({
       >
 
         <RoomAudioRenderer />
+
+        <StartAudio label="Ativar áudio da aula" />
 
         {mediaWarning && (
           <div className="academy-media-warning" role="alert">
