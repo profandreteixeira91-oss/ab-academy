@@ -51,7 +51,14 @@
   width:calc(100% - 250px);
   margin-left:250px;
 }
-.central-page-footer .site-footer-bottom,
+.central-page-footer .site-footer-bottom{
+  width:100%;
+  max-width:none;
+  margin:0;
+  padding-left:34px;
+  padding-right:34px;
+  box-sizing:border-box;
+}
 .central-page-footer .site-footer-container{
   width:min(1180px,calc(100% - 40px));
 }
@@ -60,7 +67,12 @@
     width:100%;
     margin-left:0;
   }
-  .central-page-footer .site-footer-bottom,
+  .central-page-footer .site-footer-bottom{
+    width:100%;
+    padding-left:13px;
+    padding-right:13px;
+    box-sizing:border-box;
+  }
   .central-page-footer .site-footer-container{
     width:calc(100% - 26px);
   }
