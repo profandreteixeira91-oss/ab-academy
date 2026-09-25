@@ -397,9 +397,13 @@
 .student-content {
   width: 100%;
   max-width: 1250px;
+  min-height: calc(100dvh - 82px);
 
   margin: 0 auto;
-  padding: 34px;
+  padding: 34px 34px 0;
+
+  display: flex;
+  flex-direction: column;
 }
 
 /* =========================================================
@@ -3634,7 +3638,7 @@ body {
    ========================================================= */
 .student-site-footer{
   width:100%;
-  margin-top:56px;
+  margin-top:auto;
   padding-top:24px;
   border-top:1px solid var(--student-border);
   box-sizing:border-box;
@@ -3686,8 +3690,13 @@ body {
 }
 
 @media(max-width:760px){
+  .student-content{
+    min-height:calc(100dvh - 72px);
+    padding-bottom:0;
+  }
+
   .student-site-footer{
-    margin-top:42px;
+    margin-top:auto;
     padding-top:20px;
   }
 
