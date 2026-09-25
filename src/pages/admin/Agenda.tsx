@@ -500,49 +500,34 @@ export default function Agenda() {
     start: string,
     end: string,
     ignoredIds: string[] = [],
+    idioma?: 'ingles' | 'alemao',
+    professorId?: string | null,
   ) {
-    const startMinutes =
-      timeToMinutes(start)
-
-    const endMinutes =
-      timeToMinutes(end)
+    const startMinutes = timeToMinutes(start)
+    const endMinutes = timeToMinutes(end)
 
     return horarios.find((horario) => {
+      if (horario.dia_semana !== day) return false
+      if (ignoredIds.includes(horario.id)) return false
+
+      const existingStart = timeToMinutes(horario.hora_inicio.slice(0, 5))
+      const existingEnd = timeToMinutes(horario.hora_fim.slice(0, 5))
+
       if (
-        horario.dia_semana !== day
+        startMinutes >= existingEnd ||
+        endMinutes <= existingStart
       ) {
         return false
       }
 
-      if (
-        ignoredIds.includes(
-          horario.id,
-        )
-      ) {
-        return false
+      if (!idioma || horario.idioma === idioma) {
+        return true
       }
 
-      const existingStart =
-        timeToMinutes(
-          horario.hora_inicio.slice(
-            0,
-            5,
-          ),
-        )
-
-      const existingEnd =
-        timeToMinutes(
-          horario.hora_fim.slice(
-            0,
-            5,
-          ),
-        )
-
-      return (
-        startMinutes <
-          existingEnd &&
-        endMinutes >
-          existingStart
+      return !(
+        professorId &&
+        horario.professor_id &&
+        professorId !== horario.professor_id
       )
     })
   }
@@ -661,7 +646,9 @@ export default function Agenda() {
           editingId
             ? [editingId]
             : [],
-        )
+                    form.idioma,
+            form.professor_id || null,
+          )
 
       if (conflict) {
         throw new Error(
@@ -877,6 +864,9 @@ export default function Agenda() {
               day,
               startTime,
               endTime,
+              [],
+              bulkCreateForm.idioma,
+              bulkCreateForm.professor_id || null,
             )
 
           if (conflict) {
@@ -1046,12 +1036,24 @@ export default function Agenda() {
           )
         }
 
+        const nextIdioma =
+          bulkEditForm.idioma || horario.idioma
+
+        const nextProfessor =
+          bulkEditForm.professor_id === ''
+            ? horario.professor_id
+            : bulkEditForm.professor_id === '__none__'
+              ? null
+              : bulkEditForm.professor_id
+
         const conflict =
           getConflictingHorario(
             nextDay,
             nextStart,
             nextEnd,
             selectedIds,
+            nextIdioma,
+            nextProfessor,
           )
 
         if (conflict) {
