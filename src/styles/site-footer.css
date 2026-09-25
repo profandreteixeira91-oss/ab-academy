@@ -52,11 +52,9 @@
   margin-left:250px;
 }
 .central-page-footer .site-footer-bottom{
-  width:100%;
+  width:min(1250px,calc(100% - 68px));
   max-width:none;
-  margin:0;
-  padding-left:34px;
-  padding-right:34px;
+  margin:0 auto;
   box-sizing:border-box;
 }
 .central-page-footer .site-footer-container{
@@ -68,9 +66,8 @@
     margin-left:0;
   }
   .central-page-footer .site-footer-bottom{
-    width:100%;
-    padding-left:13px;
-    padding-right:13px;
+    width:calc(100% - 34px);
+    margin:0 auto;
     box-sizing:border-box;
   }
   .central-page-footer .site-footer-container{
