@@ -3322,7 +3322,7 @@ body {
 
 
 /* =========================================================
-   CENTRAL DE ATIVIDADES — AJUDA E TIPO
+   CENTRAL DE ATIVIDADES — MOBILE
    ========================================================= */
 
 .student-activity-help {
@@ -3344,12 +3344,6 @@ body {
   font-weight: 750;
   text-align: left;
   cursor: pointer;
-  transition: background .16s ease, border-color .16s ease;
-}
-
-.student-activity-help-toggle:hover {
-  background: #f1f6ff;
-  border-color: #c8d9f1;
 }
 
 .student-activity-help-toggle span {
@@ -3368,6 +3362,7 @@ body {
   margin: 8px 0 0;
 }
 
+/* Tipo de exercício sempre visível e claramente identificado. */
 .student-exercise-meta {
   display: flex;
   align-items: center;
@@ -3376,77 +3371,123 @@ body {
 
 .student-exercise-type {
   display: inline-flex !important;
-  flex-direction: column;
-  align-items: flex-start;
+  flex-direction: column !important;
+  align-items: flex-start !important;
+  justify-content: center;
   gap: 2px;
-  padding: 6px 10px;
-  border: 1px solid #d7e3f5;
-  border-radius: 9px;
-  background: #f7faff;
+  min-width: 142px;
+  padding: 7px 10px !important;
+  border: 1px solid #cddcf0 !important;
+  border-radius: 9px !important;
+  background: #f5f9ff !important;
   color: var(--student-primary) !important;
   font-size: 11px !important;
-  line-height: 1.2;
+  line-height: 1.2 !important;
+  white-space: normal !important;
 }
 
 .student-exercise-type small {
-  color: var(--student-text-muted);
-  font-size: 8px;
-  font-weight: 800;
+  display: block !important;
+  color: var(--student-text-muted) !important;
+  font-size: 8px !important;
+  font-weight: 800 !important;
   letter-spacing: .06em;
+  line-height: 1.2;
   text-transform: uppercase;
+}
+
+.student-exercise-type strong {
+  display: block;
+  color: var(--student-primary) !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  line-height: 1.25;
 }
 
 .student-exercise-meta > strong {
   white-space: nowrap;
 }
 
+/* =========================================================
+   MOBILE — MENU / LOGO
+   ========================================================= */
+
 @media (max-width: 760px) {
-  /* Área branca do cabeçalho/sidebar maior para acomodar o logo inteiro. */
   .student-sidebar {
-    padding-top: 14px;
+    width: min(310px, 90vw);
+    padding: 10px 14px 24px;
   }
 
   .student-brand {
-    height: 76px;
-    min-height: 76px;
-    margin-top: 0;
-    margin-bottom: 22px;
-    padding: 8px 4px;
+    width: 100%;
+    height: 108px;
+    min-height: 108px;
+    margin: 0 0 24px;
+    padding: 10px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     background: #fff;
+    border-bottom: 1px solid #edf1f6;
+    overflow: visible;
   }
 
   .student-brand img {
-    width: auto;
-    max-width: 205px;
-    max-height: 58px;
+    display: block;
+    width: 100%;
+    height: auto;
+    max-width: 255px;
+    max-height: 88px;
+    object-fit: contain;
   }
 
   .student-activity-help {
     margin: 10px 17px 0;
   }
 
+  .student-exercise-header {
+    gap: 10px;
+  }
+
+  .student-exercise-header > div:last-child {
+    width: 100%;
+    align-items: flex-start;
+    flex-direction: row;
+  }
+
   .student-exercise-meta {
     width: 100%;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
   }
 
   .student-exercise-type {
-    max-width: calc(100% - 70px);
+    min-width: 0;
+    max-width: calc(100% - 62px);
+    padding: 7px 9px !important;
+  }
+
+  .student-exercise-type strong {
+    font-size: 10px !important;
   }
 }
 
 @media (max-width: 480px) {
+  .student-sidebar {
+    width: min(320px, 92vw);
+  }
+
   .student-brand {
-    height: 82px;
-    min-height: 82px;
-    margin-bottom: 18px;
-    padding: 9px 3px;
+    height: 122px;
+    min-height: 122px;
+    margin-bottom: 20px;
+    padding: 10px 6px;
   }
 
   .student-brand img {
-    max-width: 215px;
-    max-height: 62px;
+    max-width: 275px;
+    max-height: 100px;
   }
 
   .student-activity-help {
@@ -3461,8 +3502,8 @@ body {
   }
 
   .student-exercise-type {
-    padding: 6px 8px;
-    font-size: 10px !important;
+    max-width: calc(100% - 60px);
+    padding: 7px 8px !important;
   }
 }
 
