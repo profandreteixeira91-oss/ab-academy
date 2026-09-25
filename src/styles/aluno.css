@@ -166,6 +166,17 @@
   font-weight: 600;
 }
 
+.student-nav-install {
+  color: var(--student-primary);
+  background: var(--student-blue-soft);
+  font-weight: 600;
+}
+
+.student-nav-install:hover {
+  background: var(--student-primary-light);
+  color: var(--student-primary);
+}
+
 .student-nav-item svg {
   flex: 0 0 auto;
 }
