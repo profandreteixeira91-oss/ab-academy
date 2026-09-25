@@ -161,14 +161,7 @@ function App() {
    */
 
   if (path === '/aluno') {
-    return (
-      <>
-        <Aluno />
-        <div className="student-page-footer">
-          <SiteFooter />
-        </div>
-      </>
-    )
+    return <Aluno />
   }
 
   /*
