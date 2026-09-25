@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
   ArrowLeft, BookOpen, CheckCircle2, ChevronRight, CircleHelp,
-  Filter, GraduationCap, Headphones, Languages, Loader2, PenLine, Search, Sparkles, Target,
+  Filter, GraduationCap, Headphones, Languages, Loader2, Menu, PenLine, Search, Sparkles, Target, X,
 } from 'lucide-react'
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
@@ -78,6 +78,7 @@ function CentralAtividades() {
   const [category, setCategory] = useState<Category | 'todas'>('todas')
   const [search, setSearch] = useState('')
   const [activityStats, setActivityStats] = useState({ completed: 0, correct: 0 })
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -227,6 +228,11 @@ function CentralAtividades() {
   const selectedLevel = LEVELS.find((item) => item.value === level)
   const [starting, setStarting] = useState(false)
 
+  const studentName = profile?.nome_completo || 'Aluno'
+  const firstName = studentName.trim().split(/\s+/)[0] || 'Aluno'
+  const avatar = user?.user_metadata?.avatar_url || user?.user_metadata?.picture || ''
+  const initials = studentName.trim().split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || 'AL'
+
   async function startActivities() {
     if (!language || starting) return
 
@@ -255,6 +261,41 @@ function CentralAtividades() {
 
   return (
     <div className="central-page">
+      {mobileMenuOpen && (
+        <button
+          type="button"
+          className="student-mobile-overlay"
+          aria-label="Fechar menu"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      <aside className={`student-sidebar ${mobileMenuOpen ? 'open' : ''}`}>
+        <div className="student-brand">
+          <img src={logo} alt="AB Academy" />
+          <button
+            type="button"
+            className="student-sidebar-close"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-label="Fechar menu"
+          >
+            <X size={20} />
+          </button>
+        </div>
+
+        <nav className="student-navigation">
+          <a href="/aluno" className="student-nav-item"><span>Início</span></a>
+          <a href="/aluno" className="student-nav-item"><span>Minhas aulas</span></a>
+          <a href="/aluno" className="student-nav-item"><span>Materiais</span></a>
+          <a href="/aluno" className="student-nav-item"><span>Atividades</span></a>
+          <a href="/aluno/central" className="student-nav-item active"><Sparkles size={19} /><span>Central de prática</span></a>
+          <a href="/aluno" className="student-nav-item"><span>Meu progresso</span></a>
+          <a href="/aluno" className="student-nav-item"><span>Solicitações</span></a>
+          <a href="/aluno" className="student-nav-item"><span>Financeiro</span></a>
+          <a href="/aluno" className="student-nav-item"><span>Meu perfil</span></a>
+        </nav>
+      </aside>
+
       <header className="central-header">
         <div className="central-header-left">
           <a href="/aluno" className="central-back"><ArrowLeft size={18} /> Portal do aluno</a>
@@ -264,6 +305,32 @@ function CentralAtividades() {
           <span>AB ACADEMY</span>
           <strong>Central de Atividades</strong>
         </div>
+      </header>
+
+      <header className="student-header">
+        <div className="student-header-left">
+          <button
+            type="button"
+            className="student-mobile-menu"
+            onClick={() => setMobileMenuOpen(true)}
+            aria-label="Abrir menu"
+          >
+            <Menu size={22} />
+          </button>
+          <div>
+            <span className="student-header-label">PORTAL DO ALUNO</span>
+            <h1>Olá, {firstName}!</h1>
+            <p>Continue sua jornada de aprendizado.</p>
+          </div>
+        </div>
+
+        <button type="button" className="student-user" aria-label="Perfil do aluno">
+          {avatar ? (
+            <img src={avatar} alt={studentName} />
+          ) : (
+            <div className="student-avatar-placeholder">{initials}</div>
+          )}
+        </button>
       </header>
 
       <main className="central-main">
