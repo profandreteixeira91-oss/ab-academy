@@ -29,6 +29,7 @@ type Content = {
 type Student={id:string;nome_completo:string}
 type Result={correct:boolean;score:number;message:string}
 const LANGUAGE_LABELS={ingles:'Inglês',alemao:'Alemão'}
+const EXERCISE_TYPE_LABELS:Record<ExerciseType,string>={multipla_escolha:'Múltipla escolha',multipla_resposta:'Múltiplas respostas',verdadeiro_falso:'Verdadeiro ou falso',dissertativa:'Dissertativa',resposta_curta:'Resposta curta',lacunas:'Complete as lacunas',ordenar:'Ordenar',associar:'Associar'}
 
 function normalize(value:string){return value.normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLocaleLowerCase()}
 
@@ -73,6 +74,7 @@ function CentralAtividade(){
   const [translation,setTranslation]=useState<Content|null>(null)
   const [translating,setTranslating]=useState(false)
   const [translationError,setTranslationError]=useState('')
+  const [showInstructions,setShowInstructions]=useState(false)
   const [nextActivity,setNextActivity]=useState<{id:string;titulo:string}|null>(null)
   const [activityNumber,setActivityNumber]=useState<number|null>(null)
   const [activityTotal,setActivityTotal]=useState<number|null>(null)
@@ -178,7 +180,6 @@ function CentralAtividade(){
     }
     setTranslating(false)
   }
-
   function isCorrect(){
     if(!activity)return false
     const c=activity.conteudo||{},a=answers.answer
@@ -308,7 +309,7 @@ function CentralAtividade(){
         <section className="central-activity-card">
           <div className="central-activity-heading">
             <div className="central-activity-heading-content">
-              <div className="central-activity-eyebrow"><span>ATIVIDADE DE PRÁTICA</span><i/><div className="central-live-time"><Clock3 size={14}/>{formatTime(elapsedSeconds)}</div></div>
+              <div className="central-activity-eyebrow"><span>ATIVIDADE DE PRÁTICA</span><span className="central-exercise-type">{EXERCISE_TYPE_LABELS[activity.tipo_exercicio]}</span><i/><div className="central-live-time"><Clock3 size={14}/>{formatTime(elapsedSeconds)}</div></div>
               <h1>{activity.titulo}</h1>
               {activity.descricao&&<p>{activity.descricao}</p>}
             </div>
@@ -316,7 +317,7 @@ function CentralAtividade(){
 
           <div className="central-activity-content-grid">
             <div className="central-activity-content-main">
-              {activity.instrucoes&&<div className="central-instructions"><div className="central-instructions-icon"><CircleHelp size={17}/></div><div><strong>Como fazer</strong><p>{activity.instrucoes}</p></div></div>}
+              {activity.instrucoes&&<div className={showInstructions?'central-instructions open':'central-instructions'}><button type="button" className="central-instructions-toggle" onClick={()=>setShowInstructions(value=>!value)}><span className="central-instructions-icon"><CircleHelp size={17}/></span><strong>Como fazer</strong><ChevronRight size={16} className="central-instructions-chevron"/></button>{showInstructions&&<p>{activity.instrucoes}</p>}</div>}
               <div className="central-translation-toolbar">
                 <button type="button" onClick={()=>void translateActivity()} disabled={translating}>
                   {translating?<><Loader2 size={15} className="central-activity-spin"/>Traduzindo...</>:translation?<><ArrowLeft size={15}/>Voltar ao idioma original</>:<>Aa&nbsp; Traduzir para português</>}
