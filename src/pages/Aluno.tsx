@@ -4083,6 +4083,8 @@ function ActivityModal({
   onAlternativeChange,
   onSubmit,
 }: ActivityModalProps) {
+  const [showDescription, setShowDescription] = useState(false)
+
   const readOnly =
     activity.status ===
       'respondida' ||
@@ -4137,12 +4139,38 @@ function ActivityModal({
         </div>
 
         {activity.description && (
-          <div className="student-activity-description">
-            <p>
-              {
-                activity.description
+          <div className="student-activity-help">
+            <button
+              type="button"
+              className="student-activity-help-toggle"
+              onClick={() =>
+                setShowDescription((current) => !current)
               }
-            </p>
+              aria-expanded={showDescription}
+            >
+              <MessageSquare size={17} />
+              <span>
+                {showDescription
+                  ? 'Ocultar instruções'
+                  : 'Precisa de ajuda? Ver instruções'}
+              </span>
+              <ChevronRight
+                size={17}
+                className={
+                  showDescription
+                    ? 'is-open'
+                    : ''
+                }
+              />
+            </button>
+
+            {showDescription && (
+              <div className="student-activity-description">
+                <p>
+                  {activity.description}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -4210,8 +4238,9 @@ function ActivityModal({
                           </h3>
                         </div>
 
-                        <div>
-                          <span>
+                        <div className="student-exercise-meta">
+                          <span className="student-exercise-type">
+                            <small>Tipo de exercício</small>
                             {
                               exerciseTypeLabels[
                                 exercise.tipo
