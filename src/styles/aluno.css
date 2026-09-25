@@ -3637,12 +3637,18 @@ body {
    Inserido diretamente dentro de .student-content.
    ========================================================= */
 .student-site-footer{
-  width:100%;
-  margin-top:auto;
+  position:fixed;
+  z-index:40;
+  left:calc(250px + max(0px, (100vw - 250px - 1250px) / 2) + 34px);
+  bottom:0;
+  width:min(1182px, calc(100vw - 318px));
+  margin:0;
   padding-top:24px;
   border-top:1px solid var(--student-border);
   box-sizing:border-box;
+  background:#fff;
   color:var(--student-text-secondary);
+  box-shadow:0 -4px 14px rgba(15,23,42,.04);
 }
 
 .student-site-footer-top{
@@ -3696,8 +3702,12 @@ body {
   }
 
   .student-site-footer{
-    margin-top:auto;
+    left:0;
+    bottom:0;
+    width:100%;
+    margin:0;
     padding-top:20px;
+    background:#fff;
   }
 
   .student-site-footer-top,
