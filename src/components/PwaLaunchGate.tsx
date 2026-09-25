@@ -12,9 +12,14 @@ export default function PwaLaunchGate({
 }: {
   children: ReactNode
 }) {
-  const [showSplash, setShowSplash] = useState(
-    () => window.location.pathname.startsWith('/aluno'),
-  )
+  const [showSplash, setShowSplash] = useState(() => {
+    if (typeof window === 'undefined') return false
+    const isAluno = window.location.pathname.startsWith('/aluno')
+    const isStandalone =
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+    return isAluno && isStandalone
+  })
   const [installPrompt, setInstallPrompt] =
     useState<BeforeInstallPromptEvent | null>(null)
   const [showInstall, setShowInstall] = useState(false)
@@ -24,9 +29,13 @@ export default function PwaLaunchGate({
       return
     }
 
-    const timer = window.setTimeout(() => {
-      setShowSplash(false)
-    }, 1400)
+    const isStandalone =
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+
+    const timer = isStandalone
+      ? window.setTimeout(() => setShowSplash(false), 1400)
+      : undefined
 
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault()
@@ -44,7 +53,7 @@ export default function PwaLaunchGate({
     )
 
     return () => {
-      window.clearTimeout(timer)
+      if (timer) window.clearTimeout(timer)
       window.removeEventListener(
         'beforeinstallprompt',
         handleBeforeInstallPrompt,
