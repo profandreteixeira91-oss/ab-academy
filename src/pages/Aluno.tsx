@@ -3336,10 +3336,6 @@ function Aluno() {
             />
           )}
         <footer className="student-site-footer">
-          <div className="student-site-footer-top">
-            <strong>AB Academy Idiomas</strong>
-            <span>Aprenda. Evolua. Conquiste.</span>
-          </div>
           <div className="student-site-footer-bottom">
             <span><strong>AB Academy Idiomas</strong>® 2026 - <strong>todos os direitos reservados</strong></span>
             <span>
