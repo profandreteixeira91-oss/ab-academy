@@ -196,13 +196,17 @@
   display: none;
 }
 
-.central-page .student-header,
-.central-page .central-main {
+.central-page .student-header {
   margin-left: 250px;
 }
 
 .central-page .central-main {
-  width: min(1180px, calc(100% - 40px));
+  width: calc(100% - 250px);
+  margin-left: 250px;
+  margin-right: 0;
+  padding-left: max(20px, calc((100vw - 250px - 1180px) / 2));
+  padding-right: max(20px, calc((100vw - 250px - 1180px) / 2));
+  box-sizing: border-box;
 }
 
 @media (max-width: 760px) {
@@ -231,6 +235,14 @@
   .central-page .student-header,
   .central-page .central-main {
     margin-left: 0;
+  }
+
+  .central-page .central-main {
+    width: 100%;
+    margin-right: 0;
+    padding-left: 13px;
+    padding-right: 13px;
+    box-sizing: border-box;
   }
 
   .student-header {
