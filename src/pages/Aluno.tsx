@@ -4240,12 +4240,14 @@ function ActivityModal({
 
                         <div className="student-exercise-meta">
                           <span className="student-exercise-type">
-                            <small>Tipo de exercício</small>
-                            {
-                              exerciseTypeLabels[
-                                exercise.tipo
-                              ]
-                            }
+                            <small>COMO RESPONDER</small>
+                            <strong>
+                              {
+                                exerciseTypeLabels[
+                                  exercise.tipo
+                                ]
+                              }
+                            </strong>
                           </span>
 
                           <strong>
