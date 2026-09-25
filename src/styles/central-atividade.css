@@ -217,8 +217,7 @@
 .central-order-list,
 .central-pairs{
   display:flex !important;
-  flex-direction:column !important;
-  align-items:stretch !important;
+  flex-direction:column !important;  align-items:stretch !important;
   width:100% !important;
   min-width:0 !important;
   max-width:none !important;
@@ -437,8 +436,7 @@
 }
 .central-order-item > span{
   width:32px;height:32px;display:flex;align-items:center;justify-content:center;border-radius:9px;
-  background:var(--ca-blue-soft);color:var(--ca-blue);font-size:10px;font-weight:950;
-}
+  background:var(--ca-blue-soft);color:var(--ca-blue);font-size:10px;font-weight:950;}
 .central-order-item strong{color:#344054;font-size:12px;line-height:1.55}
 .central-order-item > div{display:flex;gap:5px}
 .central-order-item button{
@@ -603,4 +601,71 @@
   .central-live-time{padding:5px 7px}
   .central-order-item{grid-template-columns:32px minmax(0,1fr)}
   .central-order-item > div{grid-column:2}
+}
+
+/* Ajustes solicitados — Central de prática */
+.central-exercise-type{
+  display:inline-flex;
+  align-items:center;
+  padding:4px 7px;
+  border:1px solid #dbeafe;
+  border-radius:7px;
+  background:#eff6ff;
+  color:#2563eb;
+  font-size:9px;
+  font-weight:850;
+  letter-spacing:.02em;
+}
+
+.central-instructions-toggle{
+  width:100%;
+  display:flex;
+  align-items:center;
+  gap:11px;
+  padding:0;
+  border:0;
+  background:transparent;
+  color:inherit;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.central-instructions-toggle .central-instructions-icon{
+  flex:0 0 30px;
+}
+.central-instructions-toggle strong{
+  flex:1;
+}
+.central-instructions-chevron{
+  color:#667085;
+  transition:transform .18s ease;
+}
+.central-instructions.open .central-instructions-chevron{
+  transform:rotate(90deg);
+}
+.central-instructions > p{
+  margin:9px 0 0 41px;
+}
+
+@media(max-width:700px){
+  .central-activity-header{
+    height:82px;
+    background:#fff;
+  }
+  .central-activity-header-inner{
+    width:calc(100% - 20px);
+    min-height:82px;
+  }
+  .central-activity-header img{
+    width:128px;
+    max-height:62px;
+    object-fit:contain;
+  }
+  .central-activity-eyebrow{
+    flex-wrap:wrap;
+    gap:7px;
+  }
+  .central-exercise-type{
+    font-size:8px;
+  }
 }
