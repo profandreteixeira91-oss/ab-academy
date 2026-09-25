@@ -669,3 +669,74 @@
     font-size:8px;
   }
 }
+
+
+/* Cabeçalho mobile — padrão do Portal do Aluno */
+.central-mobile-header-left{display:none}
+
+@media(max-width:700px){
+  .central-activity-header-inner{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+  }
+
+  .central-mobile-header-left{
+    display:flex;
+    align-items:center;
+    min-width:0;
+    gap:9px;
+  }
+
+  .central-mobile-menu{
+    width:38px;
+    height:38px;
+    flex:0 0 38px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    border:0;
+    border-radius:10px;
+    background:transparent;
+    color:#344054;
+    text-decoration:none;
+  }
+
+  .central-mobile-header-text{
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:2px;
+  }
+
+  .central-mobile-header-text span{
+    color:#98a2b3;
+    font-size:8px;
+    line-height:1;
+    font-weight:900;
+    letter-spacing:.09em;
+  }
+
+  .central-mobile-header-text strong{
+    overflow:hidden;
+    color:#172033;
+    font-size:12px;
+    line-height:1.25;
+    font-weight:850;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+
+  .central-activity-header .central-activity-back{
+    display:none;
+  }
+
+  .central-activity-header img{
+    display:none;
+  }
+
+  .central-header-progress{
+    flex:0 0 auto;
+  }
+}
