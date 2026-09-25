@@ -179,14 +179,58 @@
   font-weight: 700;
 }
 
-.central-page .student-sidebar,
+.central-page .student-sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 100;
+  width: 250px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  background: #fff;
+  border-right: 1px solid #e5eaf1;
+}
+
 .central-page .student-mobile-overlay {
   display: none;
+}
+
+.central-page .student-header,
+.central-page .central-main {
+  margin-left: 250px;
+}
+
+.central-page .central-main {
+  width: min(1180px, calc(100% - 40px));
 }
 
 @media (max-width: 760px) {
   .central-header {
     display: none;
+  }
+
+  .central-page .student-sidebar {
+    position: fixed;
+    inset: 0 auto 0 0;
+    z-index: 1000;
+    width: min(310px, 90vw);
+    height: 100vh;
+    padding: 10px 14px 24px;
+    background: #fff;
+    border-right: 1px solid #e5eaf1;
+    box-shadow: 10px 0 30px rgba(15, 23, 42, .12);
+    transform: translateX(-100%);
+    transition: transform .22s ease;
+  }
+
+  .central-page .student-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .central-page .student-header,
+  .central-page .central-main {
+    margin-left: 0;
   }
 
   .student-header {
