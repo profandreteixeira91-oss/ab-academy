@@ -161,7 +161,14 @@ function App() {
    */
 
   if (path === '/aluno') {
-    return withFooter(<Aluno />)
+    return (
+      <>
+        <Aluno />
+        <div className="student-page-footer">
+          <SiteFooter />
+        </div>
+      </>
+    )
   }
 
   /*
