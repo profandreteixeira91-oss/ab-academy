@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ab-academy-pwa-v2'
+const CACHE_NAME = 'ab-academy-pwa-v3'
 const STATIC_ASSETS = [
   '/manifest.webmanifest',
   '/favicon.png',
