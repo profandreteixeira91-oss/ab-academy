@@ -60,24 +60,18 @@ self.addEventListener('fetch', (event) => {
     url.pathname === '/favicon.png'
   ) {
     event.respondWith(
-      caches.match(request).then((cached) => {
-        if (cached) {
-          return cached
-        }
-
-        return fetch(request).then((response) => {
-          if (!response || response.status !== 200) {
-            return response
+      fetch(request)
+        .then((response) => {
+          if (response && response.status === 200) {
+            const copy = response.clone()
+            caches.open(CACHE_NAME).then((cache) => {
+              void cache.put(request, copy)
+            })
           }
-
-          const copy = response.clone()
-          caches.open(CACHE_NAME).then((cache) => {
-            void cache.put(request, copy)
-          })
 
           return response
         })
-      }),
+        .catch(() => caches.match(request)),
     )
   }
 })
