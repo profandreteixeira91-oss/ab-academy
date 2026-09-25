@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
-import { ArrowLeft, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3, Loader2, RotateCcw } from 'lucide-react'
+import { ArrowLeft, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3, Loader2, Menu, RotateCcw } from 'lucide-react'
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/central-atividade.css'
@@ -78,6 +78,7 @@ function CentralAtividade(){
   const [nextActivity,setNextActivity]=useState<{id:string;titulo:string}|null>(null)
   const [activityNumber,setActivityNumber]=useState<number|null>(null)
   const [activityTotal,setActivityTotal]=useState<number|null>(null)
+  const [studentFirstName,setStudentFirstName]=useState('Aluno')
   const answersLoadedRef=useRef(false)
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
 
@@ -91,6 +92,7 @@ function CentralAtividade(){
       const {data:studentData,error:studentError}=await supabase.from('alunos').select('id,nome_completo').eq('user_id',session.user.id).maybeSingle()
       if(studentError||!studentData){setError('Não foi possível identificar o aluno.');setLoading(false);return}
       setStudent(studentData as Student)
+      setStudentFirstName(studentData.nome_completo?.trim().split(/\s+/)[0] || 'Aluno')
       const {data:activityData,error:activityError}=await supabase.from('central_atividades').select('id,idioma,nivel,categoria,tipo_exercicio,titulo,descricao,instrucoes,conteudo,explicacao,dificuldade,tempo_estimado').eq('id',activityId).eq('status','publicada').maybeSingle()
       if(activityError||!activityData){setError('Atividade não encontrada ou indisponível.');setLoading(false);return}
       const currentActivity={...(activityData as Activity),conteudo:normalizeContent((activityData as Activity).conteudo||{})}
@@ -284,6 +286,15 @@ function CentralAtividade(){
   return <div className="central-activity-page">
     <header className="central-activity-header">
       <div className="central-activity-header-inner">
+        <div className="central-mobile-header-left">
+          <a href="/aluno" className="central-mobile-menu" aria-label="Abrir menu">
+            <Menu size={22}/>
+          </a>
+          <div className="central-mobile-header-text">
+            <span>PORTAL DO ALUNO</span>
+            <strong>Olá, {studentFirstName}!</strong>
+          </div>
+        </div>
         <a href="/aluno/central" className="central-activity-back"><ArrowLeft size={18}/><span>Central de Atividades</span></a>
         <img src={logo} alt="AB Academy"/>
         <div className="central-header-progress">{activityNumber!==null&&activityTotal!==null?<><strong>{activityNumber}</strong><span>/ {activityTotal}</span></>:<span>Prática</span>}</div>
