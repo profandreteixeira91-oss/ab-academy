@@ -1907,8 +1907,7 @@ function Aluno() {
               alternativa_id,
               pontuacao,
               feedback,
-              corrigida,
-              feedback
+              corrigida
             `,
           )
           .eq(
