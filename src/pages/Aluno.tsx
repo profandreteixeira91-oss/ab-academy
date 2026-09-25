@@ -31,6 +31,11 @@ import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/aluno.css'
 
+type BeforeInstallPromptEvent = Event & {
+  prompt: () => Promise<void>
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>
+}
+
 type StudentSection =
   | 'inicio'
   | 'aulas'
@@ -419,6 +424,19 @@ function Aluno() {
     setMobileMenuOpen,
   ] = useState(false)
 
+  const [installPrompt, setInstallPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null)
+
+  const [pwaInstalled, setPwaInstalled] =
+    useState(() => {
+      if (typeof window === 'undefined') return false
+
+      return (
+        window.matchMedia?.('(display-mode: standalone)').matches ||
+        (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+      )
+    })
+
   const [lessons, setLessons] =
     useState<Lesson[]>([])
 
@@ -806,6 +824,57 @@ function Aluno() {
       )
     }
   }, [])
+
+  useEffect(() => {
+    const isStandalone = () =>
+      window.matchMedia?.('(display-mode: standalone)').matches ||
+      (window.navigator as Navigator & { standalone?: boolean }).standalone === true
+
+    if (isStandalone()) {
+      setPwaInstalled(true)
+      setInstallPrompt(null)
+      return
+    }
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault()
+      setInstallPrompt(event as BeforeInstallPromptEvent)
+      setPwaInstalled(false)
+    }
+
+    const handleAppInstalled = () => {
+      setPwaInstalled(true)
+      setInstallPrompt(null)
+    }
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+    window.addEventListener('appinstalled', handleAppInstalled)
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
+      window.removeEventListener('appinstalled', handleAppInstalled)
+    }
+  }, [])
+
+  async function handleInstallPwa() {
+    if (pwaInstalled) return
+
+    if (!installPrompt) {
+      window.alert(
+        'A instalação ainda não está disponível neste navegador. Abra o menu do navegador e escolha "Instalar aplicativo" ou "Adicionar à tela inicial".',
+      )
+      return
+    }
+
+    await installPrompt.prompt()
+    const choice = await installPrompt.userChoice
+
+    if (choice.outcome === 'accepted') {
+      setPwaInstalled(true)
+    }
+
+    setInstallPrompt(null)
+  }
 
   function getNextLessonOccurrence(
   dayOfWeek: number,
@@ -2977,6 +3046,17 @@ function Aluno() {
             </span>
           </button>
         </nav>
+
+        {!pwaInstalled && (
+          <button
+            type="button"
+            className="student-nav-item student-nav-install"
+            onClick={() => void handleInstallPwa()}
+          >
+            <Download size={19} />
+            <span>Instalar aplicativo</span>
+          </button>
+        )}
 
         <button
           type="button"
