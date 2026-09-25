@@ -3266,3 +3266,45 @@
   .student-finance-card strong{font-size:20px}
   .student-finance-history-header{padding:15px}
 }
+
+
+/* =========================================================
+   PWA / MOBILE SCROLL FIX
+   ========================================================= */
+
+html,
+body,
+#root {
+  width: 100%;
+  min-height: 100%;
+}
+
+html,
+body {
+  overflow-x: hidden;
+}
+
+body {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.student-portal {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+.student-main {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: visible;
+}
+
+@media (max-width: 900px) {
+  .student-portal,
+  .student-main,
+  .student-content {
+    overflow: visible;
+  }
+}
