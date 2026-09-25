@@ -4161,12 +4161,24 @@ function ActivityModal({
       <div className="student-activity-modal">
         <div className="student-activity-modal-header">
           <div>
-            <span>
+            <span className="student-activity-eyebrow">
               {
                 languageLabels[
                   activity.language
                 ]
               }
+              {selectedExercises.length > 0 &&
+                ' - ' +
+                  Array.from(
+                    new Set(
+                      selectedExercises.map(
+                        (exercise) =>
+                          exerciseTypeLabels[
+                            exercise.tipo
+                          ],
+                      ),
+                    ),
+                  ).join(' - ')}
             </span>
 
             <h2>
@@ -4204,8 +4216,8 @@ function ActivityModal({
               <MessageSquare size={17} />
               <span>
                 {showDescription
-                  ? 'Ocultar instruções'
-                  : 'Precisa de ajuda? Ver instruções'}
+                  ? 'Ocultar Como fazer'
+                  : 'Como fazer'}
               </span>
               <ChevronRight
                 size={17}
