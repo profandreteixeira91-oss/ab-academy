@@ -171,7 +171,14 @@ function App() {
    */
 
   if (path === '/aluno/central') {
-    return withFooter(<CentralAtividades />)
+    return (
+      <>
+        <CentralAtividades />
+        <div className="central-page-footer">
+          <SiteFooter />
+        </div>
+      </>
+    )
   }
 
   /*
