@@ -1092,7 +1092,7 @@
 }
 
 
-.student-activity-eyebrow {
+.central-activity-eyebrow {
   display: inline-flex !important;
   align-items: center;
   flex-wrap: wrap;
@@ -3427,11 +3427,12 @@ body {
   }
 
   .student-brand {
+    position: relative;
     width: 100%;
-    height: 140px;
-    min-height: 140px;
+    height: 170px;
+    min-height: 170px;
     margin: 0 0 24px;
-    padding: 10px 8px;
+    padding: 12px 42px 12px 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -3445,8 +3446,14 @@ body {
     width: 100%;
     height: auto;
     max-width: 275px;
-    max-height: 118px;
+    max-height: 140px;
     object-fit: contain;
+  }
+
+  .student-brand .student-sidebar-close {
+    position: absolute;
+    top: 12px;
+    right: 12px;
   }
 
   .student-activity-help {
@@ -3487,15 +3494,15 @@ body {
   }
 
   .student-brand {
-    height: 150px;
-    min-height: 150px;
+    height: 180px;
+    min-height: 180px;
     margin-bottom: 20px;
-    padding: 10px 6px;
+    padding: 12px 42px 12px 8px;
   }
 
   .student-brand img {
     max-width: 285px;
-    max-height: 128px;
+    max-height: 150px;
   }
 
   .student-activity-help {
