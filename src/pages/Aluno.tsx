@@ -4161,17 +4161,17 @@ function ActivityModal({
       <div className="student-activity-modal">
         <div className="student-activity-modal-header">
           <div>
-            <span className="student-activity-eyebrow">
+            <span className="central-activity-eyebrow">
               {
                 languageLabels[
                   activity.language
                 ]
               }
-              {selectedExercises.length > 0 &&
+              {exercises.length > 0 &&
                 ' - ' +
                   Array.from(
                     new Set(
-                      selectedExercises.map(
+                      exercises.map(
                         (exercise) =>
                           exerciseTypeLabels[
                             exercise.tipo
