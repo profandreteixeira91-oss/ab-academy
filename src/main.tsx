@@ -1,6 +1,7 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
+import PwaLaunchGate from './components/PwaLaunchGate'
 import './styles/global.css'
 
 if ('serviceWorker' in navigator) {
@@ -15,6 +16,8 @@ if ('serviceWorker' in navigator) {
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <PwaLaunchGate>
+      <App />
+    </PwaLaunchGate>
   </React.StrictMode>,
 )
