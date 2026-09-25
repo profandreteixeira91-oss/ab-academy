@@ -3626,3 +3626,84 @@ body {
     line-height: 1.6;
   }
 }
+
+
+/* =========================================================
+   FOOTER EXCLUSIVO DO PORTAL DO ALUNO
+   Inserido diretamente dentro de .student-content.
+   ========================================================= */
+.student-site-footer{
+  width:100%;
+  margin-top:56px;
+  padding-top:24px;
+  border-top:1px solid var(--student-border);
+  box-sizing:border-box;
+  color:var(--student-text-secondary);
+}
+
+.student-site-footer-top{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:20px;
+  padding-bottom:20px;
+}
+
+.student-site-footer-top strong{
+  color:var(--student-text);
+  font-size:12px;
+}
+
+.student-site-footer-top span{
+  color:var(--student-text-muted);
+  font-size:11px;
+}
+
+.student-site-footer-bottom{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+  padding-top:18px;
+  border-top:1px solid #edf1f6;
+  color:var(--student-text-muted);
+  font-size:10.5px;
+  line-height:1.5;
+}
+
+.student-site-footer-bottom span:first-child{
+  color:var(--student-text-secondary);
+  font-weight:700;
+}
+
+.student-site-footer-bottom a{
+  color:var(--student-text-secondary);
+  text-decoration:none;
+}
+
+.student-site-footer-bottom a:hover{
+  color:var(--student-primary);
+}
+
+@media(max-width:760px){
+  .student-site-footer{
+    margin-top:42px;
+    padding-top:20px;
+  }
+
+  .student-site-footer-top,
+  .student-site-footer-bottom{
+    align-items:flex-start;
+    flex-direction:column;
+  }
+
+  .student-site-footer-top{
+    gap:6px;
+    padding-bottom:16px;
+  }
+
+  .student-site-footer-bottom{
+    gap:7px;
+    padding-top:16px;
+  }
+}
