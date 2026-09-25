@@ -137,6 +137,9 @@ type StudentAnswer = {
   exerciseId: string
   respostaTexto: string
   alternativaIds: string[]
+  feedback: string | null
+  pontuacao: number | null
+  corrigida: boolean
 }
 
 type RequestStatus = 'aberta' | 'em_andamento' | 'respondida' | 'fechada'
@@ -310,6 +313,9 @@ function createEmptyAnswer(
     exerciseId,
     respostaTexto: '',
     alternativaIds: [],
+    feedback: null,
+    pontuacao: null,
+    corrigida: false,
   }
 }
 
@@ -1901,7 +1907,8 @@ function Aluno() {
               alternativa_id,
               pontuacao,
               feedback,
-              corrigida
+              corrigida,
+              feedback
             `,
           )
           .eq(
@@ -1933,6 +1940,14 @@ function Aluno() {
           target.respostaTexto =
             answer.resposta_texto ||
             ''
+          target.feedback =
+            answer.feedback || null
+          target.pontuacao =
+            answer.pontuacao === null || answer.pontuacao === undefined
+              ? null
+              : Number(answer.pontuacao)
+          target.corrigida =
+            Boolean(answer.corrigida)
 
           if (answer.alternativa_id) {
             target.alternativaIds = [
@@ -4333,6 +4348,21 @@ function ActivityModal({
                             )
                           }
                         />
+                      )}
+
+                      {readOnly && answer.feedback && (
+                        <div className="student-exercise-feedback">
+                          <div className="student-exercise-feedback-header">
+                            <MessageSquare size={17} />
+                            <strong>Feedback do professor</strong>
+                            {answer.pontuacao !== null && (
+                              <span>
+                                {answer.pontuacao} pt
+                              </span>
+                            )}
+                          </div>
+                          <p>{answer.feedback}</p>
+                        </div>
                       )}
                     </div>
                   )
