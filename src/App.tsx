@@ -161,7 +161,7 @@ function App() {
    */
 
   if (path === '/aluno') {
-    return <Aluno />
+    return withFooter(<Aluno />)
   }
 
   /*
@@ -171,7 +171,7 @@ function App() {
    */
 
   if (path === '/aluno/central') {
-    return <CentralAtividades />
+    return withFooter(<CentralAtividades />)
   }
 
   /*
@@ -181,7 +181,7 @@ function App() {
    */
 
   if (path.startsWith('/aluno/central/atividade/')) {
-    return <CentralAtividade />
+    return withFooter(<CentralAtividade />)
   }
 
   /*
@@ -225,7 +225,7 @@ function App() {
    */
 
   if (path.startsWith('/aluno/aula/')) {
-    return <SalaAula />
+    return withFooter(<SalaAula />)
   }
 
   /*
