@@ -1061,6 +1061,12 @@ function Aluno() {
       )
     }
 
+    // O nome oficial do aluno vem do cadastro em alunos.
+    // O Supabase Auth não necessariamente possui esse nome no user_metadata.
+    if (data.nome_completo) {
+      setAuthStudentName(data.nome_completo)
+    }
+
     return data.aluno_id as string
   }
 
@@ -2882,11 +2888,11 @@ function Aluno() {
    */
 
   const name =
+    authStudentName ||
     user.user_metadata
       ?.full_name ||
     user.user_metadata
       ?.name ||
-    authStudentName ||
     'Aluno'
 
   const avatar =
