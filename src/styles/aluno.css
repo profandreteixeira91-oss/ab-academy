@@ -3322,6 +3322,151 @@ body {
 
 
 /* =========================================================
+   CENTRAL DE ATIVIDADES — AJUDA E TIPO
+   ========================================================= */
+
+.student-activity-help {
+  margin: 12px 28px 0;
+}
+
+.student-activity-help-toggle {
+  width: 100%;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 10px 13px;
+  border: 1px solid #dbe5f3;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: var(--student-primary);
+  font-size: 12px;
+  font-weight: 750;
+  text-align: left;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease;
+}
+
+.student-activity-help-toggle:hover {
+  background: #f1f6ff;
+  border-color: #c8d9f1;
+}
+
+.student-activity-help-toggle span {
+  flex: 1;
+}
+
+.student-activity-help-toggle svg:last-child {
+  transition: transform .18s ease;
+}
+
+.student-activity-help-toggle svg:last-child.is-open {
+  transform: rotate(90deg);
+}
+
+.student-activity-help .student-activity-description {
+  margin: 8px 0 0;
+}
+
+.student-exercise-meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.student-exercise-type {
+  display: inline-flex !important;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 6px 10px;
+  border: 1px solid #d7e3f5;
+  border-radius: 9px;
+  background: #f7faff;
+  color: var(--student-primary) !important;
+  font-size: 11px !important;
+  line-height: 1.2;
+}
+
+.student-exercise-type small {
+  color: var(--student-text-muted);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.student-exercise-meta > strong {
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  /* Área branca do cabeçalho/sidebar maior para acomodar o logo inteiro. */
+  .student-sidebar {
+    padding-top: 14px;
+  }
+
+  .student-brand {
+    height: 76px;
+    min-height: 76px;
+    margin-top: 0;
+    margin-bottom: 22px;
+    padding: 8px 4px;
+    background: #fff;
+  }
+
+  .student-brand img {
+    width: auto;
+    max-width: 205px;
+    max-height: 58px;
+  }
+
+  .student-activity-help {
+    margin: 10px 17px 0;
+  }
+
+  .student-exercise-meta {
+    width: 100%;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .student-exercise-type {
+    max-width: calc(100% - 70px);
+  }
+}
+
+@media (max-width: 480px) {
+  .student-brand {
+    height: 82px;
+    min-height: 82px;
+    margin-bottom: 18px;
+    padding: 9px 3px;
+  }
+
+  .student-brand img {
+    max-width: 215px;
+    max-height: 62px;
+  }
+
+  .student-activity-help {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .student-activity-help-toggle {
+    min-height: 42px;
+    padding: 9px 11px;
+    font-size: 11px;
+  }
+
+  .student-exercise-type {
+    padding: 6px 8px;
+    font-size: 10px !important;
+  }
+}
+
+/* =========================================================
    FEEDBACK DO PROFESSOR
    ========================================================= */
 
