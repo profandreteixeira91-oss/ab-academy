@@ -188,7 +188,7 @@ export default function PwaLaunchGate({
             alignItems: 'center',
             justifyContent: 'center',
             flexDirection: 'column',
-            background: '#f7f9fc',
+            background: '#ffffff',
             color: '#1649a0',
             fontFamily: 'inherit',
           }}
@@ -200,9 +200,8 @@ export default function PwaLaunchGate({
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              borderRadius: '50%',
+              borderRadius: 0,
               background: '#ffffff',
-              boxShadow: '0 16px 40px rgba(15,23,42,.12)',
               marginBottom: 24,
             }}
           >
@@ -210,8 +209,8 @@ export default function PwaLaunchGate({
               src={logo}
               alt="AB Academy"
               style={{
-                width: 96,
-                height: 96,
+                width: 82,
+                height: 82,
                 objectFit: 'contain',
               }}
             />
