@@ -3645,24 +3645,6 @@ body {
   color:var(--student-text-secondary);
 }
 
-.student-site-footer-top{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:20px;
-  padding-bottom:20px;
-}
-
-.student-site-footer-top strong{
-  color:var(--student-text);
-  font-size:12px;
-}
-
-.student-site-footer-top span{
-  color:var(--student-text-muted);
-  font-size:11px;
-}
-
 .student-site-footer-bottom{
   display:flex;
   align-items:center;
@@ -3700,15 +3682,11 @@ body {
     padding-top:20px;
   }
 
-  .student-site-footer-top,
   .student-site-footer-bottom{
     align-items:flex-start;
     flex-direction:column;
-  }
-
-  .student-site-footer-top{
-    gap:6px;
-    padding-bottom:16px;
+    gap:7px;
+    padding-top:16px;
   }
 
   .student-site-footer-bottom{
