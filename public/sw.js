@@ -1,13 +1,12 @@
-const CACHE_NAME = 'ab-academy-aluno-v1'
-const APP_SHELL = [
-  '/aluno',
+const CACHE_NAME = 'ab-academy-pwa-v2'
+const STATIC_ASSETS = [
   '/manifest.webmanifest',
-  '/favicon.png'
+  '/favicon.png',
 ]
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL))
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS)),
   )
   self.skipWaiting()
 })
@@ -18,9 +17,9 @@ self.addEventListener('activate', (event) => {
       Promise.all(
         keys
           .filter((key) => key !== CACHE_NAME)
-          .map((key) => caches.delete(key))
-      )
-    )
+          .map((key) => caches.delete(key)),
+      ),
+    ),
   )
   self.clients.claim()
 })
@@ -32,34 +31,53 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  const url = new URL(request.url)
+
+  // Nunca armazenar dados privados, sessões ou respostas da API.
+  if (
+    url.origin !== self.location.origin ||
+    url.pathname.startsWith('/rest/') ||
+    url.pathname.startsWith('/auth/') ||
+    url.pathname.startsWith('/functions/')
+  ) {
+    return
+  }
+
+  // Navegação: rede primeiro; fallback apenas para a entrada do portal.
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request)
-        .then((response) => {
-          const copy = response.clone()
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
-          return response
-        })
-        .catch(() => caches.match('/aluno'))
+      fetch(request).catch(() =>
+        caches.match('/aluno'),
+      ),
     )
     return
   }
 
-  event.respondWith(
-    caches.match(request).then((cached) => {
-      if (cached) {
-        return cached
-      }
-
-      return fetch(request).then((response) => {
-        if (!response || response.status !== 200 || response.type === 'opaque') {
-          return response
+  // Somente recursos estáticos do próprio site entram no cache.
+  if (
+    url.pathname.startsWith('/assets/') ||
+    url.pathname === '/manifest.webmanifest' ||
+    url.pathname === '/favicon.png'
+  ) {
+    event.respondWith(
+      caches.match(request).then((cached) => {
+        if (cached) {
+          return cached
         }
 
-        const copy = response.clone()
-        caches.open(CACHE_NAME).then((cache) => cache.put(request, copy))
-        return response
-      })
-    })
-  )
+        return fetch(request).then((response) => {
+          if (!response || response.status !== 200) {
+            return response
+          }
+
+          const copy = response.clone()
+          caches.open(CACHE_NAME).then((cache) => {
+            void cache.put(request, copy)
+          })
+
+          return response
+        })
+      }),
+    )
+  }
 })
