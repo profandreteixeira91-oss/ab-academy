@@ -1877,14 +1877,10 @@ function Aluno() {
             ),
         )
 
-      if (
-        activity.status ===
-          'respondida' ||
-        activity.status ===
-          'em_correcao' ||
-        activity.status ===
-          'corrigida'
-      ) {
+      // Carrega as respostas existentes tanto para atividades já
+      // enviadas quanto para atividades em andamento. Assim, abrir
+      // novamente uma atividade nunca apaga o que o aluno já respondeu.
+      {
         const studentId =
           await getStudentId(
             user?.id || '',
@@ -1937,8 +1933,10 @@ function Aluno() {
           }
 
           target.respostaTexto =
-            answer.resposta_texto ||
-            ''
+            answer.resposta_texto &&
+            !answer.alternativa_id
+              ? answer.resposta_texto
+              : ''
           target.feedback =
             answer.feedback || null
           target.pontuacao =
@@ -1964,6 +1962,7 @@ function Aluno() {
                     (id): id is string =>
                       typeof id === 'string',
                   )
+                target.respostaTexto = ''
               }
             } catch {
               // Resposta textual normal.
@@ -1989,6 +1988,46 @@ function Aluno() {
     } finally {
       setActivityLoading(false)
     }
+  }
+
+  function getNextActivity(
+    activity: Activity,
+  ) {
+    const sequence = activities
+      .filter(
+        (item) =>
+          item.status !== 'rascunho',
+      )
+      .slice()
+      .sort(
+        (a, b) =>
+          new Date(a.createdAt).getTime() -
+          new Date(b.createdAt).getTime(),
+      )
+
+    const index = sequence.findIndex(
+      (item) => item.id === activity.id,
+    )
+
+    return index >= 0
+      ? sequence[index + 1] || null
+      : null
+  }
+
+  function openNextActivity() {
+    if (!selectedActivity || submittingActivity) {
+      return
+    }
+
+    const nextActivity =
+      getNextActivity(selectedActivity)
+
+    if (!nextActivity) {
+      closeActivity()
+      return
+    }
+
+    void openActivity(nextActivity)
   }
 
   function closeActivity() {
@@ -3305,6 +3344,16 @@ function Aluno() {
           onTextChange={updateTextAnswer}
           onAlternativeChange={toggleAlternative}
           onSubmit={submitActivity}
+          onNextActivity={openNextActivity}
+          hasNextActivity={
+            selectedActivity
+              ? Boolean(
+                  getNextActivity(
+                    selectedActivity,
+                  ),
+                )
+              : false
+          }
         />
       )}
 
@@ -4069,6 +4118,8 @@ type ActivityModalProps = {
     alternativeId: string,
   ) => void
   onSubmit: () => void
+  onNextActivity?: () => void
+  hasNextActivity?: boolean
 }
 
 function ActivityModal({
@@ -4082,6 +4133,8 @@ function ActivityModal({
   onTextChange,
   onAlternativeChange,
   onSubmit,
+  onNextActivity,
+  hasNextActivity = false,
 }: ActivityModalProps) {
   const [showDescription, setShowDescription] = useState(false)
 
@@ -4458,8 +4511,24 @@ function ActivityModal({
                     onClose
                   }
                 >
-                  Fechar
+                  Voltar para central
                 </button>
+
+                {hasNextActivity &&
+                  onNextActivity && (
+                    <button
+                      type="button"
+                      className="student-primary-button"
+                      onClick={
+                        onNextActivity
+                      }
+                    >
+                      Próxima atividade
+                      <ChevronRight
+                        size={17}
+                      />
+                    </button>
+                  )}
               </div>
             )}
           </>
