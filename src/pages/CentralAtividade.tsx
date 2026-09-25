@@ -98,14 +98,13 @@ function CentralAtividade(){
       const {data:sequence}=await supabase.from('central_atividades').select('id,titulo,created_at').eq('idioma',currentActivity.idioma).eq('nivel',currentActivity.nivel).eq('status','publicada').order('created_at',{ascending:true}).order('id',{ascending:true})
       const {data:completedResponses}=await supabase.from('central_respostas').select('atividade_id').eq('aluno_id',studentData.id).eq('concluida',true)
       const completedIds=new Set((completedResponses||[]).map(response=>response.atividade_id))
+      setActivityNumber(completedIds.size)
+      setActivityTotal((sequence||[]).length)
+
       const availableSequence=(sequence||[]).filter(item=>!completedIds.has(item.id))
       if(availableSequence.length){
         const index=availableSequence.findIndex(item=>item.id===currentActivity.id)
-        if(index>=0){
-          setActivityNumber(index+1)
-          setActivityTotal(availableSequence.length)
-          if(availableSequence[index+1])setNextActivity({id:availableSequence[index+1].id,titulo:availableSequence[index+1].titulo})
-        }
+        if(index>=0&&availableSequence[index+1])setNextActivity({id:availableSequence[index+1].id,titulo:availableSequence[index+1].titulo})
       }
       const storedStart=window.sessionStorage.getItem(`ab-academy-activity-start-${activityId}`)
       const start=storedStart ? Number(storedStart) : Date.now()
@@ -287,7 +286,7 @@ function CentralAtividade(){
       <div className="central-activity-header-inner">
         <a href="/aluno/central" className="central-activity-back"><ArrowLeft size={18}/><span>Central de Atividades</span></a>
         <img src={logo} alt="AB Academy"/>
-        <div className="central-header-progress">{activityNumber&&activityTotal?<><strong>{activityNumber}</strong><span>/ {activityTotal}</span></>:<span>Prática</span>}</div>
+        <div className="central-header-progress">{activityNumber!==null&&activityTotal!==null?<><strong>{activityNumber}</strong><span>/ {activityTotal}</span></>:<span>Prática</span>}</div>
       </div>
     </header>
     <main className="central-activity-main">
