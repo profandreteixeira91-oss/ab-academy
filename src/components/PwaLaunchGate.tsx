@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { ReactNode } from 'react'
 import logo from '../assets/logo_abacademy.png'
 
 type BeforeInstallPromptEvent = Event & {
@@ -9,7 +10,7 @@ type BeforeInstallPromptEvent = Event & {
 export default function PwaLaunchGate({
   children,
 }: {
-  children: React.ReactNode
+  children: ReactNode
 }) {
   const [showSplash, setShowSplash] = useState(
     () => window.location.pathname.startsWith('/aluno'),
