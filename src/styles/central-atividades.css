@@ -94,12 +94,12 @@
    ocultado e o student-header assume a navegação.
    ========================================================= */
 
-.student-header {
+.central-page .student-header {
   display: none;
 }
 
-.student-sidebar,
-.student-mobile-overlay {
+.central-page .student-sidebar,
+.central-page .student-mobile-overlay {
   display: none;
 }
 
