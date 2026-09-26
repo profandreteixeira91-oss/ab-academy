@@ -520,15 +520,14 @@ export default function Agenda() {
         return false
       }
 
-      if (!idioma || horario.idioma === idioma) {
-        return true
+      // Idiomas diferentes podem ocupar o mesmo intervalo,
+      // independentemente do professor vinculado.
+      if (idioma && horario.idioma !== idioma) {
+        return false
       }
 
-      return !(
-        professorId &&
-        horario.professor_id &&
-        professorId !== horario.professor_id
-      )
+      // Mantém o bloqueio de sobreposição para o mesmo idioma.
+      return true
     })
   }
 
