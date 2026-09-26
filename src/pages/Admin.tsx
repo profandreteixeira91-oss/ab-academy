@@ -254,6 +254,11 @@ const navigation = [
         icon: BriefcaseBusiness,
       },
       {
+        id: 'enterprise',
+        label: 'AB Enterprise',
+        icon: BriefcaseBusiness,
+      },
+      {
         id: 'configuracoes',
         label: 'Configurações',
         icon: Settings,
