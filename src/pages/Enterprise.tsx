@@ -1,3 +1,5 @@
+import { useState } from 'react'
+
 import {
   ArrowRight,
   Building2,
@@ -12,8 +14,79 @@ import {
 
 import '../styles/enterprise.css'
 import logo from '../assets/logo_abacademy.png'
+import { supabase } from '../lib/supabase'
 
 function Enterprise() {
+  const [form, setForm] = useState({
+    nome: '',
+    empresa: '',
+    cargo: '',
+    email: '',
+    telefone: '',
+    colaboradores: '',
+    idiomas: [] as string[],
+    objetivo: '',
+    mensagem: '',
+  })
+  const [submitting, setSubmitting] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState('')
+
+  function toggleIdioma(idioma: string) {
+    setForm((current) => ({
+      ...current,
+      idiomas: current.idiomas.includes(idioma)
+        ? current.idiomas.filter((item) => item !== idioma)
+        : [...current.idiomas, idioma],
+    }))
+  }
+
+  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    setSubmitError('')
+
+    if (!form.nome || !form.empresa || !form.email || form.idiomas.length === 0) {
+      setSubmitError('Preencha nome, empresa, e-mail e pelo menos um idioma.')
+      return
+    }
+
+    try {
+      setSubmitting(true)
+
+      const { error } = await supabase.from('enterprise_leads').insert({
+        nome: form.nome.trim(),
+        empresa: form.empresa.trim(),
+        cargo: form.cargo.trim() || null,
+        email: form.email.trim(),
+        telefone: form.telefone.trim() || null,
+        colaboradores: form.colaboradores || null,
+        idiomas: form.idiomas,
+        objetivo: form.objetivo || null,
+        mensagem: form.mensagem.trim() || null,
+      })
+
+      if (error) throw error
+
+      setSubmitted(true)
+      setForm({
+        nome: '',
+        empresa: '',
+        cargo: '',
+        email: '',
+        telefone: '',
+        colaboradores: '',
+        idiomas: [],
+        objetivo: '',
+        mensagem: '',
+      })
+    } catch (error) {
+      console.error('Erro ao enviar lead Enterprise:', error)
+      setSubmitError('Não foi possível enviar sua solicitação. Tente novamente.')
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
   const situations = [
     'Reuniões e videoconferências',
     'Apresentações profissionais',
@@ -452,10 +525,86 @@ function Enterprise() {
               <strong>Inglês e alemão conectados ao seu negócio.</strong>
             </div>
 
-            <a href="#contato" className="enterprise-button enterprise-button-white">
-              Fale com nossa equipe
-              <ArrowRight size={18} />
-            </a>
+            {submitted ? (
+              <div className="enterprise-form-success">
+                <CheckCircle2 size={24} />
+                <strong>Solicitação recebida.</strong>
+                <span>Nossa equipe entrará em contato para entender as necessidades da sua empresa.</span>
+              </div>
+            ) : (
+              <form className="enterprise-lead-form" onSubmit={handleSubmit}>
+                <div className="enterprise-form-grid">
+                  <label>
+                    Nome *
+                    <input value={form.nome} onChange={(event) => setForm({ ...form, nome: event.target.value })} placeholder="Seu nome" required />
+                  </label>
+                  <label>
+                    Empresa *
+                    <input value={form.empresa} onChange={(event) => setForm({ ...form, empresa: event.target.value })} placeholder="Nome da empresa" required />
+                  </label>
+                  <label>
+                    Cargo
+                    <input value={form.cargo} onChange={(event) => setForm({ ...form, cargo: event.target.value })} placeholder="Seu cargo" />
+                  </label>
+                  <label>
+                    E-mail corporativo *
+                    <input type="email" value={form.email} onChange={(event) => setForm({ ...form, email: event.target.value })} placeholder="voce@empresa.com" required />
+                  </label>
+                  <label>
+                    WhatsApp
+                    <input value={form.telefone} onChange={(event) => setForm({ ...form, telefone: event.target.value })} placeholder="(00) 00000-0000" />
+                  </label>
+                  <label>
+                    Número de colaboradores
+                    <select value={form.colaboradores} onChange={(event) => setForm({ ...form, colaboradores: event.target.value })}>
+                      <option value="">Selecione</option>
+                      <option value="1-5">1 a 5</option>
+                      <option value="6-15">6 a 15</option>
+                      <option value="16-30">16 a 30</option>
+                      <option value="31-50">31 a 50</option>
+                      <option value="51-100">51 a 100</option>
+                      <option value="100+">Mais de 100</option>
+                    </select>
+                  </label>
+                </div>
+
+                <fieldset>
+                  <legend>Idioma de interesse *</legend>
+                  <div className="enterprise-form-options">
+                    {['Inglês', 'Alemão'].map((idioma) => (
+                      <label key={idioma} className={form.idiomas.includes(idioma) ? 'selected' : ''}>
+                        <input type="checkbox" checked={form.idiomas.includes(idioma)} onChange={() => toggleIdioma(idioma)} />
+                        <span>{idioma}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+
+                <label>
+                  Objetivo principal
+                  <select value={form.objetivo} onChange={(event) => setForm({ ...form, objetivo: event.target.value })}>
+                    <option value="">Selecione</option>
+                    <option value="desenvolvimento da equipe">Desenvolvimento da equipe</option>
+                    <option value="expansão internacional">Expansão internacional</option>
+                    <option value="atendimento a clientes">Atendimento a clientes</option>
+                    <option value="comunicação interna">Comunicação interna</option>
+                    <option value="outro">Outro</option>
+                  </select>
+                </label>
+
+                <label>
+                  Conte um pouco sobre a necessidade da sua empresa
+                  <textarea value={form.mensagem} onChange={(event) => setForm({ ...form, mensagem: event.target.value })} rows={4} placeholder="Quais situações profissionais sua equipe precisa desenvolver?" />
+                </label>
+
+                {submitError && <div className="enterprise-form-error">{submitError}</div>}
+
+                <button type="submit" className="enterprise-button enterprise-button-white" disabled={submitting}>
+                  {submitting ? 'Enviando...' : 'Fale com nossa equipe'}
+                  {!submitting && <ArrowRight size={18} />}
+                </button>
+              </form>
+            )}
 
             <a href="/" className="enterprise-back-link">Voltar para AB Academy</a>
           </div>
