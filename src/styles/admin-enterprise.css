@@ -1,0 +1,219 @@
+.admin-enterprise {
+  width: 100%;
+}
+
+.admin-enterprise-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+
+.admin-enterprise-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #3567c8;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.admin-enterprise-header h2 {
+  margin: 0;
+  color: #15213a;
+  font-size: 28px;
+}
+
+.admin-enterprise-header p {
+  margin: 8px 0 0;
+  max-width: 680px;
+  color: #68738a;
+  font-size: 14px;
+}
+
+.admin-enterprise-count {
+  padding: 10px 14px;
+  border: 1px solid #dfe6f2;
+  border-radius: 10px;
+  background: #fff;
+  color: #263654;
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-enterprise-toolbar {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.admin-enterprise-search {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-height: 44px;
+  padding: 0 13px;
+  border: 1px solid #dfe6f2;
+  border-radius: 10px;
+  background: #fff;
+  color: #8290a8;
+}
+
+.admin-enterprise-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  color: #263654;
+  font: inherit;
+}
+
+.admin-enterprise-toolbar > select,
+.admin-enterprise-status {
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid #dfe6f2;
+  border-radius: 10px;
+  background: #fff;
+  color: #263654;
+  font: inherit;
+}
+
+.admin-enterprise-list {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-enterprise-card {
+  padding: 20px;
+  border: 1px solid #e2e8f1;
+  border-radius: 14px;
+  background: #fff;
+  box-shadow: 0 5px 18px rgba(30, 52, 88, .04);
+}
+
+.admin-enterprise-card-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.admin-enterprise-card-date {
+  color: #8792a7;
+  font-size: 11px;
+}
+
+.admin-enterprise-card h3 {
+  margin: 4px 0 3px;
+  color: #17233b;
+  font-size: 18px;
+}
+
+.admin-enterprise-card-heading p {
+  margin: 0;
+  color: #647088;
+  font-size: 13px;
+}
+
+.admin-enterprise-status {
+  min-width: 155px;
+  cursor: pointer;
+}
+
+.admin-enterprise-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px 18px;
+  margin-top: 16px;
+  padding-top: 15px;
+  border-top: 1px solid #edf1f6;
+}
+
+.admin-enterprise-contact a,
+.admin-enterprise-contact span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #4c5d78;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.admin-enterprise-contact a:hover {
+  color: #275cc0;
+}
+
+.admin-enterprise-detail {
+  margin-top: 14px;
+  color: #4e5d76;
+  font-size: 13px;
+}
+
+.admin-enterprise-message {
+  margin-top: 12px;
+  padding: 13px 15px;
+  border-radius: 10px;
+  background: #f6f8fc;
+}
+
+.admin-enterprise-message strong {
+  color: #263654;
+  font-size: 12px;
+}
+
+.admin-enterprise-message p {
+  margin: 6px 0 0;
+  color: #5f6c82;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.admin-enterprise-empty {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px dashed #d8e0ed;
+  border-radius: 14px;
+  background: #fff;
+  color: #7b879d;
+  text-align: center;
+}
+
+.admin-enterprise-empty strong {
+  color: #3b4962;
+  font-size: 14px;
+}
+
+.admin-enterprise-empty span {
+  font-size: 12px;
+}
+
+@media (max-width: 700px) {
+  .admin-enterprise-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-enterprise-toolbar {
+    flex-direction: column;
+  }
+
+  .admin-enterprise-toolbar > select {
+    width: 100%;
+  }
+
+  .admin-enterprise-card-heading {
+    flex-direction: column;
+  }
+
+  .admin-enterprise-status {
+    width: 100%;
+  }
+}
