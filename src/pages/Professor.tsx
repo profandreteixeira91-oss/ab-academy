@@ -775,10 +775,12 @@ function Professor() {
   function getRegistroAulaAtual(
     horario: Horario,
   ) {
+    const today = getTodayDateKey()
+
     return registrosAulas.find(
       (registro) =>
         registro.horario_id === horario.id &&
-        registro.data_aula === getTodayDateKey(),
+        (registro.data_aula === today || registro.data_aula_override === today),
     )
   }
 
