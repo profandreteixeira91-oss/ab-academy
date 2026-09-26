@@ -660,7 +660,7 @@ function Home() {
                 <strong>Idioma não como requisito. Idioma como ferramenta.</strong>
               </div>
 
-              <a href="#contato" className="btn btn-primary enterprise-cta">
+              <a href="/enterprise" className="btn btn-primary enterprise-cta">
                 Quero preparar minha equipe
                 <ArrowRight size={18} />
               </a>
