@@ -30,9 +30,11 @@ import Financeiro from './admin/Financeiro'
 import CentralAtividades from './admin/CentralAtividades'
 import Comunicacao from './admin/Comunicacao'
 import Candidaturas from './admin/Candidaturas'
+import EnterpriseLeads from './admin/EnterpriseLeads'
 
 import '../styles/admin.css'
 import '../styles/central-admin.css'
+import '../styles/admin-enterprise.css'
 import logo from '../assets/logo_abacademy.png'
 
 type AdminModule = {
@@ -556,6 +558,10 @@ export default function Admin() {
             <Candidaturas />
           )}
 
+          {activeModule === 'enterprise' && (
+            <EnterpriseLeads />
+          )}
+
           {/* =================================================
               DEMAIS MÓDULOS
           ================================================= */}
@@ -569,7 +575,8 @@ export default function Admin() {
             activeModule !== 'financeiro' &&
             activeModule !== 'equipe' &&
             activeModule !== 'comunicacao' &&
-            activeModule !== 'candidaturas' && (
+            activeModule !== 'candidaturas' &&
+            activeModule !== 'enterprise' && (
               <div className="admin-panel">
                 <div className="admin-panel-header">
                   <h2 className="admin-panel-title">
