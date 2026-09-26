@@ -520,13 +520,21 @@ export default function Agenda() {
         return false
       }
 
-      // Idiomas diferentes podem ocupar o mesmo intervalo,
-      // independentemente do professor vinculado.
+      // Idiomas diferentes podem ocupar o mesmo intervalo.
       if (idioma && horario.idioma !== idioma) {
         return false
       }
 
-      // Mantém o bloqueio de sobreposição para o mesmo idioma.
+      // Para o mesmo idioma, professores diferentes podem ter
+      // horários coincidentes.
+      if (
+        professorId &&
+        horario.professor_id &&
+        professorId !== horario.professor_id
+      ) {
+        return false
+      }
+
       return true
     })
   }
