@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
   ArrowRight,
+  Building2,
+  Globe2,
   BookOpen,
   CheckCircle2,
   GraduationCap,
@@ -316,6 +318,71 @@ function Home() {
                     <strong>Aprenda do seu jeito</strong>
                   </div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* AB ACADEMY ENTERPRISE */}
+        <section className="enterprise-hero" id="enterprise">
+          <div className="container enterprise-hero-container">
+            <div className="enterprise-hero-content">
+              <div className="enterprise-brand" aria-label="AB Academy Enterprise">
+                <div className="enterprise-brand-mark">
+                  <span>AB</span>
+                  <i />
+                </div>
+                <div className="enterprise-brand-name">
+                  <strong>AB ACADEMY</strong>
+                  <span>ENTERPRISE</span>
+                </div>
+              </div>
+
+              <span className="enterprise-eyebrow">
+                Soluções corporativas em idiomas
+              </span>
+
+              <h2>
+                Seu negócio fala globalmente.
+                <br />
+                <span>Sua equipe também pode.</span>
+              </h2>
+
+              <p className="enterprise-lead">
+                Soluções personalizadas em inglês e alemão para empresas que atuam em um mundo cada vez mais conectado.
+              </p>
+
+              <p className="enterprise-description">
+                Desenvolvemos profissionais para se comunicarem com confiança em situações reais de trabalho, conectando o aprendizado às necessidades e aos objetivos do seu negócio.
+              </p>
+
+              <div className="enterprise-statement">
+                <Globe2 size={20} />
+                <strong>Idioma não como requisito. Idioma como ferramenta.</strong>
+              </div>
+
+              <a href="#contato" className="btn btn-primary enterprise-cta">
+                Quero preparar minha equipe
+                <ArrowRight size={18} />
+              </a>
+            </div>
+
+            <div className="enterprise-hero-visual" aria-hidden="true">
+              <div className="enterprise-visual-orbit enterprise-visual-orbit-one" />
+              <div className="enterprise-visual-orbit enterprise-visual-orbit-two" />
+              <div className="enterprise-visual-card enterprise-visual-card-main">
+                <div className="enterprise-card-icon"><Building2 size={24} /></div>
+                <span>AB ACADEMY</span>
+                <strong>ENTERPRISE</strong>
+                <small>Inglês + Alemão para negócios</small>
+              </div>
+              <div className="enterprise-visual-card enterprise-visual-card-language">
+                <span>EN</span>
+                <span>DE</span>
+              </div>
+              <div className="enterprise-visual-card enterprise-visual-card-global">
+                <Globe2 size={22} />
+                <span>Comunicação global</span>
               </div>
             </div>
           </div>
