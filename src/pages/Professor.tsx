@@ -1730,13 +1730,17 @@ function Professor() {
                         <span>
                           {getNextLesson(horario).toLocaleDateString('pt-BR')}{' '}
                           •{' '}
-                          {formatHour(
-                            horario.hora_inicio,
-                          )}{' '}
+                          {getNextLesson(horario).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}{' '}
                           -{' '}
-                          {formatHour(
-                            horario.hora_fim,
-                          )}
+                          {(() => {
+                            const startAt = getNextLesson(horario)
+                            const registro = registrosAulas.find((item) => item.horario_id === horario.id)
+                            if (!registro?.hora_fim_override) return formatHour(horario.hora_fim)
+                            const [h, m] = registro.hora_fim_override.slice(0, 5).split(':').map(Number)
+                            const endAt = new Date(startAt)
+                            endAt.setHours(h, m, 0, 0)
+                            return endAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                          })()}
                         </span>
 
                         <small>
