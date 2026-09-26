@@ -195,6 +195,7 @@ function Home() {
             <a href="#sobre" onClick={() => setMobileMenuOpen(false)}>Sobre</a>
             <a href="#cursos" onClick={() => setMobileMenuOpen(false)}>Cursos</a>
             <a href="#metodologia" onClick={() => setMobileMenuOpen(false)}>Metodologia</a>
+            <a href="#enterprise" onClick={() => setMobileMenuOpen(false)}>AB Enterprise</a>
             <a href="#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>
             <a href="/matricula" onClick={() => setMobileMenuOpen(false)}>Matricule-se</a>
             <a href="/aluno" onClick={() => setMobileMenuOpen(false)}>Área do aluno</a>
