@@ -268,11 +268,9 @@ const navigation = [
 ]
 
 export default function Admin() {
-  const [sidebarOpen, setSidebarOpen] =
-    useState(false)
-
-  const [activeModule, setActiveModule] =
-    useState('dashboard')
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [activeModule, setActiveModule] = useState('dashboard')
+  const [enterpriseNewLeadCount, setEnterpriseNewLeadCount] = useState(0)
 
   useEffect(() => {
     const title =
@@ -283,6 +281,38 @@ export default function Admin() {
 
     document.title = title + ' - AB Academy Idiomas'
   }, [activeModule])
+
+  useEffect(() => {
+    let mounted = true
+
+    const loadEnterpriseNewLeadCount = async () => {
+      const { count, error } = await supabase
+        .from('enterprise_leads')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'novo')
+
+      if (!mounted || error) {
+        if (error) {
+          console.error('Erro ao consultar novos leads Enterprise:', error)
+        }
+        return
+      }
+
+      setEnterpriseNewLeadCount(count || 0)
+    }
+
+    void loadEnterpriseNewLeadCount()
+
+    const interval = window.setInterval(
+      () => void loadEnterpriseNewLeadCount(),
+      15000,
+    )
+
+    return () => {
+      mounted = false
+      window.clearInterval(interval)
+    }
+  }, [])
 
   useEffect(() => {
     if (!sidebarOpen) {
@@ -330,9 +360,7 @@ export default function Admin() {
       ===================================================== */}
 
       <aside
-        className={`admin-sidebar ${
-          sidebarOpen ? 'open' : ''
-        }`}
+        className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}
       >
         <div className="admin-sidebar-header">
           <img
@@ -354,20 +382,14 @@ export default function Admin() {
 
               {section.items.map((item) => {
                 const Icon = item.icon
-
-                const isActive =
-                  activeModule === item.id
+                const isActive = activeModule === item.id
 
                 return (
                   <button
                     key={item.id}
                     type="button"
-                    className={`admin-nav-item ${
-                      isActive ? 'active' : ''
-                    }`}
-                    onClick={() =>
-                      handleNavigation(item.id)
-                    }
+                    className={`admin-nav-item ${isActive ? 'active' : ''}`}
+                    onClick={() => handleNavigation(item.id)}
                   >
                     <span className="admin-nav-item-icon">
                       <Icon
@@ -379,6 +401,15 @@ export default function Admin() {
                     <span className="admin-nav-item-label">
                       {item.label}
                     </span>
+
+                    {item.id === 'enterprise' && enterpriseNewLeadCount > 0 && (
+                      <span
+                        className="admin-nav-item-badge admin-nav-item-badge-alert"
+                        aria-label={`${enterpriseNewLeadCount} novos leads Enterprise`}
+                      >
+                        {enterpriseNewLeadCount > 99 ? '99+' : enterpriseNewLeadCount}
+                      </span>
+                    )}
                   </button>
                 )
               })}
@@ -393,7 +424,8 @@ export default function Admin() {
               Desenvolvido por{' '}
               <a href="https://www.amtsistemas.com.br/">
                 AMT Sistemas &amp; Soluções
-              </a>{' '}-{' '}
+              </a>{' '}
+              -{' '}
               <a href="https://www.amtsistemas.com.br/">
                 www.amtsistemas.com.br
               </a>
@@ -498,65 +530,33 @@ export default function Admin() {
 
         <section className="admin-content">
 
-          {/* =================================================
-              DASHBOARD
-          ================================================= */}
-
           {activeModule === 'dashboard' && (
             <Dashboard />
           )}
-
-          {/* =================================================
-              AGENDA
-          ================================================= */}
 
           {activeModule === 'agenda' && (
             <Agenda />
           )}
 
-          {/* =================================================
-              ALUNOS
-          ================================================= */}
-
           {activeModule === 'alunos' && (
             <Alunos />
           )}
-
-            {/* =================================================
-              ATIVIDADES
-          ================================================= */}
 
           {activeModule === 'atividades' && (
             <Atividades />
           )}
 
-               {/* =================================================
-              CENTRAL DE ATIVIDADES
-          ================================================= */}
-
           {activeModule === 'central' && (
             <CentralAtividades />
           )}
-
-          {/* =================================================
-              PLANOS
-          ================================================= */}
 
           {activeModule === 'planos' && (
             <Planos />
           )}
 
-          {/* =================================================
-              FINANCEIRO
-          ================================================= */}
-
           {activeModule === 'financeiro' && (
             <Financeiro />
           )}
-
-          {/* =================================================
-              EQUIPE
-          ================================================= */}
 
           {activeModule === 'equipe' && (
             <Equipe />
@@ -573,10 +573,6 @@ export default function Admin() {
           {activeModule === 'enterprise' && (
             <EnterpriseLeads />
           )}
-
-          {/* =================================================
-              DEMAIS MÓDULOS
-          ================================================= */}
 
           {activeModule !== 'dashboard' &&
             activeModule !== 'agenda' &&
@@ -600,8 +596,7 @@ export default function Admin() {
                   <div className="admin-empty-state-icon">
                     {activeModuleData?.icon ? (
                       (() => {
-                        const Icon =
-                          activeModuleData.icon
+                        const Icon = activeModuleData.icon
 
                         return (
                           <Icon
@@ -630,11 +625,8 @@ export default function Admin() {
                 </div>
               </div>
             )}
-
         </section>
-
       </main>
-
     </div>
   )
 }
