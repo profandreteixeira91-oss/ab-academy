@@ -4065,9 +4065,39 @@ body {
     background: #ffffff;
   }
 
+  .student-login-form-area {
+    gap: 14px;
+  }
+
   .student-login-form-area > * {
     width: 100%;
     max-width: none;
+  }
+
+  .student-login-form-area .student-login-label {
+    margin-bottom: 4px;
+  }
+
+  .student-login-form-area h1 {
+    margin-top: 4px;
+  }
+
+  .student-login-form-area > p {
+    margin-top: 0;
+    margin-bottom: 14px;
+  }
+
+  .student-login-form-area .student-login-error,
+  .student-login-form-area .student-login-info {
+    margin-bottom: 4px;
+  }
+
+  .student-login-form-area .student-login-field {
+    margin-bottom: 4px;
+  }
+
+  .student-login-form-area .student-auth-button {
+    margin-top: 4px;
   }
 
   .student-login-form-area .student-login-label {
