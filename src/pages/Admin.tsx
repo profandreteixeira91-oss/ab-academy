@@ -137,6 +137,13 @@ const modules: AdminModule[] = [
     icon: BriefcaseBusiness,
   },
   {
+    id: 'enterprise',
+    title: 'AB Enterprise',
+    description:
+      'Gerencie leads e oportunidades comerciais corporativas.',
+    icon: BriefcaseBusiness,
+  },
+  {
     id: 'equipe',
     title: 'Equipe',
     description:
