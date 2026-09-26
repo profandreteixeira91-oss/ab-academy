@@ -1123,6 +1123,9 @@ function Aluno() {
          aluno_id,
          professor_id,
          data_aula,
+         data_aula_override,
+         hora_inicio_override,
+         hora_fim_override,
          status`,
       )
       .eq('aluno_id', studentId)
@@ -1164,25 +1167,23 @@ function Aluno() {
     )
 
     const normalizedLessons: Lesson[] = (horarios || []).map((horario) => {
-      const { startAt, endAt } = getNextLessonOccurrence(
+      const { startAt: recurringStartAt, endAt: recurringEndAt } = getNextLessonOccurrence(
         Number(horario.dia_semana),
         horario.hora_inicio,
         horario.hora_fim,
       )
 
-      const lessonDate =
-        startAt.getFullYear() +
-        '-' +
-        String(startAt.getMonth() + 1).padStart(2, '0') +
-        '-' +
-        String(startAt.getDate()).padStart(2, '0')
+      const lessonDate = recurringStartAt.getFullYear() + '-' + String(recurringStartAt.getMonth() + 1).padStart(2, '0') + '-' + String(recurringStartAt.getDate()).padStart(2, '0')
 
-      const registro =
-        (registros || []).find(
-          (item) =>
-            item.horario_id === horario.id &&
-            item.data_aula === lessonDate,
-        )
+      const registro = (registros || []).find((item) => item.horario_id === horario.id && item.data_aula === lessonDate)
+      const actualDate = registro?.data_aula_override || lessonDate
+      const actualStart = registro?.hora_inicio_override || horario.hora_inicio
+      const actualEnd = registro?.hora_fim_override || horario.hora_fim
+      const [year, month, day] = actualDate.split('-').map(Number)
+      const [hours, minutes] = actualStart.slice(0, 5).split(':').map(Number)
+      const [endHours, endMinutes] = actualEnd.slice(0, 5).split(':').map(Number)
+      const startAt = new Date(year, month - 1, day, hours, minutes, 0, 0)
+      const endAt = new Date(year, month - 1, day, endHours, endMinutes, 0, 0)
 
       return {
         id: horario.id,
@@ -1191,7 +1192,7 @@ function Aluno() {
             ? 'Inglês'
             : 'Alemão',
         date: startAt.toLocaleDateString('pt-BR'),
-        time: horario.hora_inicio.slice(0, 5),
+        time: actualStart.slice(0, 5),
         teacher:
           professoresMap.get(horario.professor_id) ||
           'Professor',
@@ -1263,7 +1264,7 @@ function Aluno() {
                 ? 'Inglês'
                 : 'Alemão',
             date: startAt.toLocaleDateString('pt-BR'),
-            time: horario.hora_inicio.slice(0, 5),
+            time: actualStart.slice(0, 5),
             teacher:
               professoresMap.get(horario.professor_id) ||
               'Professor',
