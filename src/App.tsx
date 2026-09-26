@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import Home from './pages/Home'
+import Enterprise from './pages/Enterprise'
 
 import Matricula from './pages/matricula'
 
@@ -51,6 +52,7 @@ function App() {
     path === '/trabalhe-conosco' ? 'Trabalhe conosco' :
     path === '/planos' ? 'Planos' :
     path === '/diagnostica' ? 'Aula diagnóstica' :
+    path === '/enterprise' ? 'AB Academy Enterprise' :
     path.startsWith('/checkout/') ? 'Checkout' :
     path === '/aluno' ? 'Área do aluno' :
     path === '/aluno/central' ? 'Central de Atividades' :
@@ -82,6 +84,10 @@ function App() {
    * MATRÍCULA
    * =========================================================
    */
+
+  if (path === '/enterprise') {
+    return withFooter(<Enterprise />)
+  }
 
   if (path === '/trabalhe-conosco') {
     return <TrabalheConosco />
