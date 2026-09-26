@@ -1231,6 +1231,10 @@ function Aluno() {
             return null
           }
 
+          const actualDateForHistory = registro.data_aula_override || registro.data_aula
+          const actualStartForHistory = registro.hora_inicio_override || horario.hora_inicio
+          const actualEndForHistory = registro.hora_fim_override || horario.hora_fim
+
           const [year, month, day] =
             registro.data_aula.split('-').map(Number)
           const [hours, minutes] =
@@ -1256,6 +1260,10 @@ function Aluno() {
             0,
             0,
           )
+
+          if (endAt.getTime() > Date.now()) {
+            return null
+          }
 
           return {
             id: horario.id,
