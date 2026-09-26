@@ -73,6 +73,9 @@ type RegistroAula = {
   professor_id: string
   data_aula: string
   status: 'presente' | 'falta'
+  data_aula_override?: string | null
+  hora_inicio_override?: string | null
+  hora_fim_override?: string | null
 }
 
 type PortalSection =
@@ -367,6 +370,9 @@ function Professor() {
             aluno_id,
             professor_id,
             data_aula,
+            data_aula_override,
+            hora_inicio_override,
+            hora_fim_override,
             status
             `,
           )
@@ -878,75 +884,33 @@ function Professor() {
     horario: Horario,
   ) {
     const now = new Date()
-
     const currentDay = now.getDay()
+    let daysUntil = horario.dia_semana - currentDay
+    if (daysUntil < 0) daysUntil += 7
 
-    let daysUntil =
-      horario.dia_semana - currentDay
+    const recurringDate = new Date(now)
+    recurringDate.setDate(now.getDate() + daysUntil)
+    recurringDate.setHours(0, 0, 0, 0)
+    const recurringDateKey = [
+      recurringDate.getFullYear(),
+      String(recurringDate.getMonth() + 1).padStart(2, '0'),
+      String(recurringDate.getDate()).padStart(2, '0'),
+    ].join('-')
 
-    if (daysUntil < 0) {
-      daysUntil += 7
-    }
+    const registro = registrosAulas.find((item) => item.horario_id === horario.id && item.data_aula === recurringDateKey)
+    const actualDateKey = registro?.data_aula_override || recurringDateKey
+    const actualStart = registro?.hora_inicio_override || horario.hora_inicio
+    const actualEnd = registro?.hora_fim_override || horario.hora_fim
+    const [year, month, day] = actualDateKey.split('-').map(Number)
+    const [hours, minutes] = actualStart.slice(0, 5).split(':').map(Number)
+    const [endHours, endMinutes] = actualEnd.slice(0, 5).split(':').map(Number)
 
-    const [hours, minutes] =
-      horario.hora_inicio
-        .slice(0, 5)
-        .split(':')
-        .map(Number)
+    const lessonDate = new Date(year, month - 1, day, hours, minutes, 0, 0)
+    const lessonEnd = new Date(year, month - 1, day, endHours, endMinutes, 0, 0)
+    const accessStart = new Date(lessonDate.getTime() - 5 * 60 * 1000)
 
-    const lessonDate = new Date(now)
-
-    lessonDate.setDate(
-      now.getDate() + daysUntil,
-    )
-
-    lessonDate.setHours(
-      hours,
-      minutes,
-      0,
-      0,
-    )
-
-    const [endHours, endMinutes] =
-      horario.hora_fim
-        .slice(0, 5)
-        .split(':')
-        .map(Number)
-
-    const lessonEnd = new Date(lessonDate)
-    lessonEnd.setHours(
-      endHours,
-      endMinutes,
-      0,
-      0,
-    )
-
-    const accessStart = new Date(
-      lessonDate.getTime() - 5 * 60 * 1000,
-    )
-
-    /*
-     * Se a aula está para começar nos próximos
-     * 5 minutos ou já começou, ela deve ser
-     * considerada a próxima aula do professor.
-     */
-    if (
-      now.getTime() >= accessStart.getTime() &&
-      now.getTime() <= lessonEnd.getTime()
-    ) {
-      return lessonDate
-    }
-
-    /*
-     * Se o horário de hoje já passou, procura
-     * a ocorrência da próxima semana.
-     */
-    if (lessonDate <= now) {
-      lessonDate.setDate(
-        lessonDate.getDate() + 7,
-      )
-    }
-
+    if (now.getTime() >= accessStart.getTime() && now.getTime() <= lessonEnd.getTime()) return lessonDate
+    if (lessonDate <= now) lessonDate.setDate(lessonDate.getDate() + 7)
     return lessonDate
   }
 
