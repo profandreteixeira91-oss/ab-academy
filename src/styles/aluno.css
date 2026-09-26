@@ -3915,3 +3915,302 @@ body {
     background: #f8fafd;
   }
 }
+
+
+/* =========================================================
+   LOGIN — NOVO VISUAL PREMIUM DESKTOP
+   Tela integral dividida em duas áreas.
+   Mobile permanece com o visual existente.
+========================================================= */
+
+@media (min-width: 901px) {
+  .student-login-page {
+    width: 100vw;
+    min-width: 100vw;
+    height: 100vh;
+    min-height: 100vh;
+    padding: 0;
+    overflow: hidden;
+    display: flex;
+    align-items: stretch;
+    justify-content: stretch;
+    background: #ffffff;
+  }
+
+  .student-login-card {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: none;
+    height: 100vh;
+    min-height: 100vh;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: row;
+    align-items: stretch;
+    justify-content: stretch;
+    overflow: hidden;
+    border: 0;
+    border-radius: 0;
+    background: #ffffff;
+    box-shadow: none;
+    text-align: left;
+  }
+
+  .student-login-card::before,
+  .student-login-card::after {
+    display: none;
+  }
+
+  .student-login-brand-panel {
+    position: relative;
+    width: 48%;
+    min-width: 48%;
+    height: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    padding: 60px;
+    background:
+      radial-gradient(circle at 20% 18%, rgba(92, 151, 255, 0.28), transparent 24%),
+      radial-gradient(circle at 82% 82%, rgba(8, 37, 91, 0.30), transparent 30%),
+      linear-gradient(145deg, #123f8d 0%, #1649a0 52%, #0d3477 100%);
+    color: #ffffff;
+  }
+
+  .student-login-brand-panel::before,
+  .student-login-brand-panel::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+    pointer-events: none;
+  }
+
+  .student-login-brand-panel::before {
+    width: 560px;
+    height: 560px;
+    left: -290px;
+    top: -230px;
+    border: 1px solid rgba(255,255,255,0.11);
+    box-shadow:
+      0 0 0 70px rgba(255,255,255,0.025),
+      0 0 0 140px rgba(255,255,255,0.018);
+  }
+
+  .student-login-brand-panel::after {
+    width: 460px;
+    height: 460px;
+    right: -260px;
+    bottom: -250px;
+    border: 1px solid rgba(255,255,255,0.09);
+    box-shadow: 0 0 0 80px rgba(255,255,255,0.018);
+  }
+
+  .student-login-brand-panel .student-login-logo {
+    position: relative;
+    z-index: 2;
+    width: min(390px, 72%);
+    max-width: 390px;
+    height: auto;
+    max-height: none;
+    margin: 0 0 38px;
+    object-fit: contain;
+    object-position: center;
+    filter: brightness(0) invert(1);
+    drop-shadow: 0 18px 35px rgba(0,0,0,0.18);
+  }
+
+  .student-login-brand-copy {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 7px;
+    text-align: center;
+  }
+
+  .student-login-brand-copy strong {
+    margin-bottom: 5px;
+    font-size: 31px;
+    line-height: 1;
+    font-weight: 850;
+    letter-spacing: 0.19em;
+  }
+
+  .student-login-brand-copy span {
+    color: rgba(255,255,255,0.76);
+    font-size: 11px;
+    line-height: 1.4;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+  }
+
+  .student-login-form-area {
+    width: 52%;
+    min-width: 52%;
+    height: 100%;
+    min-height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+    overflow-y: auto;
+    overflow-x: hidden;
+    padding: 70px clamp(60px, 8vw, 150px);
+    background: #ffffff;
+  }
+
+  .student-login-form-area > * {
+    width: 100%;
+    max-width: none;
+  }
+
+  .student-login-form-area .student-login-label {
+    align-self: flex-start;
+    width: fit-content;
+  }
+
+  .student-login-form-area .student-login-footer {
+    margin-top: 30px;
+  }
+
+  .student-login-form-area .student-login-field input,
+  .student-login-form-area .student-auth-button {
+    width: 100%;
+  }
+
+  .student-login-form-area form {
+    width: 100%;
+  }
+
+  .student-login-card h1 {
+    max-width: 760px;
+    margin: 0;
+    color: #172033;
+    font-size: clamp(34px, 3vw, 48px);
+    line-height: 1.08;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+  }
+
+  .student-login-card > p {
+    max-width: 720px;
+    margin: 15px 0 32px;
+    color: #64748b;
+    font-size: 14px;
+    line-height: 1.7;
+  }
+
+  .student-login-field {
+    width: 100%;
+    margin-bottom: 17px;
+  }
+
+  .student-login-field label {
+    margin-bottom: 8px;
+    color: #334155;
+    font-size: 12px;
+    font-weight: 750;
+  }
+
+  .student-login-field input {
+    width: 100%;
+    height: 54px;
+    padding: 0 17px;
+    border: 1px solid #d9e2ef;
+    border-radius: 12px;
+    background: #fbfdff;
+    color: #172033;
+    font-size: 14px;
+    transition:
+      border-color .18s ease,
+      box-shadow .18s ease,
+      background .18s ease;
+  }
+
+  .student-login-field input:hover {
+    border-color: #b9c9df;
+    background: #ffffff;
+  }
+
+  .student-login-field input:focus {
+    border-color: #2a5cdb;
+    background: #ffffff;
+    box-shadow:
+      0 0 0 4px rgba(42, 92, 219, 0.10),
+      0 7px 20px rgba(42, 92, 219, 0.06);
+    outline: none;
+  }
+
+  .student-login-label {
+    margin: 0 0 13px;
+    padding: 7px 11px;
+    border: 1px solid #dbe7fa;
+    border-radius: 999px;
+    background: #f5f8fd;
+    color: #2457d6;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: .16em;
+  }
+
+  .student-auth-button {
+    min-height: 54px;
+    margin-top: 4px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 750;
+    box-shadow: 0 10px 24px rgba(22, 73, 160, 0.16);
+  }
+
+  .student-auth-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 14px 28px rgba(22, 73, 160, 0.20);
+  }
+
+  .student-login-error,
+  .student-login-info {
+    width: 100%;
+    border-radius: 11px;
+    font-size: 12px;
+  }
+
+  .student-login-error {
+    margin-bottom: 14px;
+    padding: 11px 13px;
+  }
+
+  .student-login-info {
+    margin-bottom: 14px;
+    padding: 11px 13px;
+  }
+
+  .student-login-footer {
+    width: 100%;
+    padding-top: 17px;
+    border-top-color: #edf1f6;
+    gap: 3px;
+  }
+
+  .student-login-footer span:first-child {
+    color: #334155;
+    font-size: 11px;
+  }
+
+  .student-login-footer span:last-child {
+    color: #94a3b8;
+    font-size: 10px;
+  }
+
+  .student-password-rules {
+    width: 100%;
+    border-color: #e2e9f3;
+    border-radius: 12px;
+    background: #f8fafd;
+  }
+}
