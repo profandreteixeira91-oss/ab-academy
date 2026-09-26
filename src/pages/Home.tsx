@@ -637,10 +637,6 @@ function Home() {
                 </div>
               </div>
 
-              <span className="enterprise-eyebrow">
-                Soluções corporativas em idiomas
-              </span>
-
               <h2>
                 Seu negócio fala globalmente.
                 <br />
@@ -667,6 +663,9 @@ function Home() {
             </div>
 
             <div className="enterprise-hero-visual" aria-hidden="true">
+              <span className="enterprise-eyebrow">
+                Soluções corporativas em idiomas
+              </span>
               <div className="enterprise-visual-orbit enterprise-visual-orbit-one" />
               <div className="enterprise-visual-orbit enterprise-visual-orbit-two" />
               <div className="enterprise-visual-card enterprise-visual-card-main">
