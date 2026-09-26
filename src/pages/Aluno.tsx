@@ -2473,11 +2473,20 @@ function Aluno() {
     return (
       <div className="student-login-page">
         <div className="student-login-card">
-          <img
-            src={logo}
-            alt="AB Academy"
-            className="student-login-logo"
-          />
+          <div className="student-login-brand-panel">
+            <img
+              src={logo}
+              alt="AB Academy"
+              className="student-login-logo"
+            />
+            <div className="student-login-brand-copy">
+              <strong>AB ACADEMY</strong>
+              <span>IDIOMAS QUE TRANSFORMAM</span>
+              <span>CONEXÕES QUE PERMANECEM</span>
+            </div>
+          </div>
+
+          <div className="student-login-form-area">
 
           <span className="student-login-label">
             PORTAL DO ALUNO
@@ -2884,6 +2893,7 @@ function Aluno() {
             <span>
               Portal exclusivo para alunos
             </span>
+          </div>
           </div>
         </div>
       </div>
