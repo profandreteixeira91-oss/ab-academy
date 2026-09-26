@@ -36,6 +36,7 @@ import '../styles/admin.css'
 import '../styles/central-admin.css'
 import '../styles/admin-enterprise.css'
 import logo from '../assets/logo_abacademy.png'
+import { supabase } from '../lib/supabase'
 
 type AdminModule = {
   id: string
@@ -355,10 +356,6 @@ export default function Admin() {
   return (
     <div className="admin-page">
 
-      {/* =====================================================
-          SIDEBAR
-      ===================================================== */}
-
       <aside
         className={`admin-sidebar ${sidebarOpen ? 'open' : ''}`}
       >
@@ -466,16 +463,7 @@ export default function Admin() {
         />
       )}
 
-      {/* =====================================================
-          MAIN
-      ===================================================== */}
-
       <main className="admin-main">
-
-        {/* ===================================================
-            HEADER
-        =================================================== */}
-
         <header className="admin-header">
           <div className="admin-header-left">
             <button
@@ -524,12 +512,7 @@ export default function Admin() {
           </div>
         </header>
 
-        {/* ===================================================
-            CONTENT
-        =================================================== */}
-
         <section className="admin-content">
-
           {activeModule === 'dashboard' && (
             <Dashboard />
           )}
