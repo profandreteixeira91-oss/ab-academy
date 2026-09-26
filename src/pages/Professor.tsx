@@ -1728,9 +1728,7 @@ function Professor() {
                         </span>
 
                         <span>
-                          {getDiaLabel(
-                            horario.dia_semana,
-                          )}{' '}
+                          {getNextLesson(horario).toLocaleDateString('pt-BR')}{' '}
                           •{' '}
                           {formatHour(
                             horario.hora_inicio,
