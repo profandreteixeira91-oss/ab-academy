@@ -207,7 +207,7 @@ export default function AdminAccess({
 
               <input
                 id="admin-password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value)
@@ -217,6 +217,16 @@ export default function AdminAccess({
                 autoComplete="current-password"
                 disabled={loginLoading}
               />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
+                  aria-pressed={showPassword}
+                  title={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
             </div>
 
             {loginError && (
