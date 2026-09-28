@@ -232,8 +232,8 @@ function Home() {
                   <ArrowRight size={18} />
                 </a>
 
-                <a href="#sobre" className="btn btn-outline">
-                  Conheça a AB Academy
+                <a href="/quero-aprender" className="btn btn-outline">
+                  Quero saber mais
                 </a>
               </div>
 
@@ -278,7 +278,7 @@ function Home() {
                 </div>
 
                 <div className="language-options">
-                  <a href="#contato" className="language-option">
+                  <a href="/quero-aprender?idioma=ingles" className="language-option">
                     <div className="language-flag">
                       🇺🇸
                     </div>
@@ -291,7 +291,7 @@ function Home() {
                     <ArrowRight size={19} />
                   </a>
 
-                  <a href="#contato" className="language-option">
+                  <a href="/quero-aprender?idioma=alemao" className="language-option">
                     <div className="language-flag">
                       🇩🇪
                     </div>
@@ -1005,7 +1005,7 @@ function Home() {
                   <ArrowRight size={18} />
                 </a>
 
-                <a href="#contato" className="cta-contact-link">
+                <a href="/quero-aprender" className="cta-contact-link">
                   Falar com a AB Academy
                   <ArrowRight size={17} />
                 </a>
