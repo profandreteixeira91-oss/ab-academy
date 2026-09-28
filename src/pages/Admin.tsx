@@ -538,7 +538,7 @@ export default function Admin() {
 
         <section className="admin-content">
           {activeModule === 'dashboard' && (
-            <Dashboard />
+            <Dashboard onNavigate={handleNavigation} />
           )}
 
           {activeModule === 'agenda' && (
