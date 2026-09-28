@@ -63,7 +63,7 @@ export default function LeadCapture() {
     const { error: insertError } = await supabase.from('leads').insert({
       ...form,
       origem: tracking.source,
-      landing_page: window.location.pathname,
+      landing_page: new URLSearchParams(window.location.search).get('landing_page') || window.location.pathname,
       source: tracking.source,
       medium: tracking.medium,
       campaign: tracking.campaign,
