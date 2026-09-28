@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
-import { ChevronRight, Loader2, LockKeyhole } from 'lucide-react'
+import { ChevronRight, Eye, EyeOff, Loader2, LockKeyhole } from 'lucide-react'
 import logo from '../../assets/logo_abacademy.png'
 import { supabase } from '../../lib/supabase'
 
