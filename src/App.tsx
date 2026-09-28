@@ -45,6 +45,27 @@ function App() {
     </>
   )
 
+  const attributionParams = new URLSearchParams(window.location.search)
+  const attributionKeys = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content']
+  const hasAttribution = attributionKeys.some((key) => attributionParams.get(key))
+
+  if (hasAttribution) {
+    try {
+      const current = JSON.parse(sessionStorage.getItem('abacademy_attribution') || '{}') as Record<string, string>
+      const next = { ...current }
+
+      attributionKeys.forEach((key) => {
+        const value = attributionParams.get(key)
+        const normalizedKey = key.replace('utm_', '')
+        if (value && !next[normalizedKey]) next[normalizedKey] = value
+      })
+
+      sessionStorage.setItem('abacademy_attribution', JSON.stringify(next))
+    } catch {
+      // Attribution must never interfere with page rendering.
+    }
+  }
+
   const path = window.location.pathname
 
   const pageTitle =
