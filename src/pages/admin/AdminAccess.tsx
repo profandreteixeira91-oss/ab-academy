@@ -3,7 +3,7 @@ import { ChevronRight, Eye, EyeOff, Loader2, LockKeyhole } from 'lucide-react'
 import logo from '../../assets/logo_abacademy.png'
 import { supabase } from '../../lib/supabase'
 
-import '../../styles/admin/AdminAccess.css'
+import '../../styles/admin/AdminAccess.css'\nimport '../../styles/aluno.css'
 
 type AdminAccessProps = {
   children: ReactNode
@@ -136,16 +136,34 @@ export default function AdminAccess({ children }: AdminAccessProps) {
 
   if (checkingSession) {
     return (
-      <div className="admin-access-page">
-        <div className="admin-access-card">
-          <div className="admin-access-icon">
-            <LockKeyhole size={25} />
+      <div className="student-login-page">
+        <div className="student-login-card">
+          <div className="student-login-brand-panel">
+            <img
+              src={logo}
+              alt="AB Academy"
+              className="student-login-logo"
+            />
+            <div className="student-login-brand-copy">
+              <strong>AB ACADEMY</strong>
+              <span>IDIOMAS QUE TRANSFORMAM</span>
+              <span>CONEXÕES QUE PERMANECEM</span>
+            </div>
           </div>
-          <h1>Verificando acesso</h1>
-          <p>Verificando a sessão administrativa...</p>
-          <div className="admin-access-loading">
-            <span />
-            Aguarde...
+
+          <div className="student-login-form-area">
+            <span className="student-login-label">
+              PORTAL ADMINISTRATIVO
+            </span>
+
+            <h1>Verificando acesso</h1>
+
+            <p>Verificando a sessão administrativa...</p>
+
+            <div className="student-login-loading">
+              <Loader2 size={19} className="student-spin" />
+              Aguarde...
+            </div>
           </div>
         </div>
       </div>
@@ -157,22 +175,36 @@ export default function AdminAccess({ children }: AdminAccessProps) {
   }
 
   return (
-    <div className="admin-access-page">
-      <div className="admin-access-card">
-        <div className="admin-access-brand">
-          <img src={logo} alt="AB Academy" />
-          <span>PORTAL ADMINISTRATIVO</span>
+    <div className="student-login-page">
+      <div className="student-login-card">
+        <div className="student-login-brand-panel">
+          <img
+            src={logo}
+            alt="AB Academy"
+            className="student-login-logo"
+          />
+          <div className="student-login-brand-copy">
+            <strong>AB ACADEMY</strong>
+            <span>IDIOMAS QUE TRANSFORMAM</span>
+            <span>CONEXÕES QUE PERMANECEM</span>
+          </div>
         </div>
 
-        <div className="admin-access-header">
+        <div className="student-login-form-area">
+          <span className="student-login-label">
+            PORTAL ADMINISTRATIVO
+          </span>
+
           <h1>Acesse sua conta</h1>
-          <p>Informe o e-mail e a senha do administrador.</p>
-        </div>
 
-        <form className="admin-access-form" onSubmit={handleLogin}>
-          <div className="admin-access-field">
-            <label htmlFor="admin-email">E-mail</label>
-            <div className="admin-access-input-wrapper">
+          <p>
+            Informe o e-mail e a senha do administrador.
+          </p>
+
+          <form onSubmit={handleLogin}>
+            <div className="student-login-field">
+              <label htmlFor="admin-email">E-mail</label>
+
               <input
                 id="admin-email"
                 type="email"
@@ -182,16 +214,15 @@ export default function AdminAccess({ children }: AdminAccessProps) {
                   setLoginError('')
                 }}
                 placeholder="seu@email.com"
-                autoComplete="username"
+                autoComplete="email"
                 autoFocus
                 disabled={loginLoading}
               />
             </div>
-          </div>
 
-          <div className="admin-access-field">
-            <label htmlFor="admin-password">Senha</label>
-            <div className="admin-access-input-wrapper">
+            <div className="student-login-field">
+              <label htmlFor="admin-password">Senha</label>
+
               <input
                 id="admin-password"
                 type={showPassword ? 'text' : 'password'}
@@ -204,48 +235,49 @@ export default function AdminAccess({ children }: AdminAccessProps) {
                 autoComplete="current-password"
                 disabled={loginLoading}
               />
+
               <button
                 type="button"
-                className="admin-access-password-toggle"
+                className="auth-password-toggle"
                 onClick={() => setShowPassword((value) => !value)}
                 aria-label={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
+                aria-pressed={showPassword}
                 title={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
                 disabled={loginLoading}
               >
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
-          </div>
 
-          {loginError && (
-            <div className="admin-access-error" role="alert">
-              {loginError}
-            </div>
-          )}
-
-          <button
-            type="submit"
-            className="admin-access-button"
-            disabled={loginLoading}
-          >
-            {loginLoading ? (
-              <>
-                <Loader2 size={18} className="admin-access-button-spinner" />
-                Entrando...
-              </>
-            ) : (
-              <>
-                Entrar
-                <ChevronRight size={18} />
-              </>
+            {loginError && (
+              <div className="student-login-error" role="alert">
+                {loginError}
+              </div>
             )}
-          </button>
-        </form>
 
-        <div className="admin-access-footer">
-          <span>AB Academy</span>
-          <span>•</span>
-          <span>Acesso exclusivo à administração</span>
+            <button
+              type="submit"
+              className="student-primary-button student-auth-button"
+              disabled={loginLoading}
+            >
+              {loginLoading ? (
+                <>
+                  <Loader2 size={19} className="student-spin" />
+                  Entrando...
+                </>
+              ) : (
+                <>
+                  Entrar
+                  <ChevronRight size={18} />
+                </>
+              )}
+            </button>
+          </form>
+
+          <div className="student-login-footer">
+            <span>AB Academy</span>
+            <span>Acesso exclusivo à administração</span>
+          </div>
         </div>
       </div>
     </div>
