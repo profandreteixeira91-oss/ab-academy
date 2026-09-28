@@ -523,3 +523,92 @@
     font-size: 26px;
   }
 }
+
+
+/* =========================================================
+   MOBILE — CONTROLE DEFINITIVO DE OVERFLOW
+========================================================= */
+@media (max-width: 900px) {
+  .diagnostic-page,
+  .diagnostic-header,
+  .diagnostic-main,
+  .diagnostic-hero,
+  .diagnostic-content,
+  .diagnostic-grid,
+  .diagnostic-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .diagnostic-page,
+  .diagnostic-header,
+  .diagnostic-main,
+  .diagnostic-content {
+    width: 100%;
+    overflow-x: clip;
+  }
+
+  .diagnostic-header > *,
+  .diagnostic-hero > *,
+  .diagnostic-content > *,
+  .diagnostic-card > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .diagnostic-logo {
+    min-width: 0;
+    max-width: calc(100% - 150px);
+  }
+
+  .diagnostic-logo .academy-header-logo {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+  }
+
+  .diagnostic-back {
+    flex: 0 1 auto;
+    max-width: 100%;
+    white-space: nowrap;
+  }
+
+  .diagnostic-highlight,
+  .diagnostic-price {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .diagnostic-highlight span,
+  .diagnostic-highlight strong,
+  .diagnostic-card p,
+  .diagnostic-card h3 {
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 480px) {
+  .diagnostic-logo {
+    max-width: calc(100% - 128px);
+  }
+
+  .diagnostic-logo .academy-header-logo {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .diagnostic-logo {
+    max-width: calc(100% - 116px);
+  }
+
+  .diagnostic-highlight {
+    width: 100%;
+  }
+
+  .diagnostic-highlight span,
+  .diagnostic-highlight strong {
+    max-width: 100%;
+  }
+}
