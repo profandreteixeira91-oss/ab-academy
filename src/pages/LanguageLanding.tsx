@@ -1,4 +1,4 @@
-import { ArrowRight, BriefcaseBusiness, CheckCircle2, Clock3, MessageCircle, Sparkles, Target, Users } from 'lucide-react'
+import { ArrowRight, BriefcaseBusiness, CheckCircle2, Clock3, MessageCircle, Sparkles, Target, Users, BookOpen, Smartphone, ClipboardCheck, LifeBuoy } from 'lucide-react'
 import '../styles/language-landing.css'
 import usaFlag from '../assets/flag-usa.svg'
 import germanyFlag from '../assets/flag-germany.svg'
@@ -33,6 +33,34 @@ const content = {
   },
 }
 
+const BENEFITS = [
+  {
+    icon: ClipboardCheck,
+    title: 'Conteúdo sob medida',
+    text: 'Ao se matricular, você terá um conteúdo pensado de acordo com o seu nível, seus objetivos e suas principais dificuldades. Assim, você aprende exatamente o que precisa, no seu ritmo, sem perder tempo com conteúdos que já domina ou que não fazem sentido para o seu momento. O resultado: aulas mais direcionadas, um aprendizado mais eficiente e um caminho claro para você evoluir.',
+  },
+  {
+    icon: BookOpen,
+    title: 'Materiais e atividades',
+    text: 'O aprendizado continua depois da aula. Você terá materiais e atividades preparados especialmente para o seu nível e para aquilo que precisa desenvolver. Dessa forma, poderá praticar no seu dia a dia, mesmo que ainda esteja começando. Você não recebe apenas conteúdo: recebe ferramentas para transformar o que aprende em prática e desenvolver autonomia ao longo do processo.',
+  },
+  {
+    icon: Smartphone,
+    title: 'App do aluno',
+    text: 'Sua evolução não precisa parar quando a aula termina. Você terá acesso ao app do aluno para acompanhar sua jornada de estudos, revisar conteúdos e praticar o idioma de forma simples e rápida, de qualquer lugar. Assim, você não depende apenas do momento da aula para estudar. Você consegue manter o contato com o idioma, acompanhar seu progresso e transformar pequenos momentos do seu dia em oportunidades de aprendizagem.',
+  },
+  {
+    icon: CheckCircle2,
+    title: 'Central de Atividades',
+    text: 'Continue aprendendo mesmo quando a aula termina. Com acesso à Central de Atividades, você terá conteúdos e exercícios para praticar o idioma no seu ritmo e nos momentos que forem mais convenientes para você. Assim, você mantém o contato com o idioma ao longo da semana, reforça o que aprendeu nas aulas e cria mais oportunidades para desenvolver suas habilidades. Mais prática, mais contato com o idioma e mais oportunidades para transformar conhecimento em confiança.',
+  },
+  {
+    icon: LifeBuoy,
+    title: 'Suporte durante a jornada',
+    text: 'Suporte para você continuar avançando. Sabemos que dúvidas podem surgir justamente quando você está estudando sozinho. Por isso, você terá suporte via WhatsApp e um canal para tirar dúvidas durante sua jornada. Assim, você não precisa esperar até a próxima aula para resolver uma dificuldade. Você recebe orientação para continuar estudando, praticando e avançando sem deixar que uma dúvida interrompa seu aprendizado.',
+  },
+]
+
 const WHATSAPP_NUMBER = '5511999738440'
 
 export default function LanguageLanding({ language }: Props) {
@@ -49,6 +77,7 @@ export default function LanguageLanding({ language }: Props) {
         <nav className="language-landing-nav" aria-label="Navegação da página">
           <a href="#como-funciona">Como funciona</a>
           <a href="#para-quem">Para quem é</a>
+          <a href="#beneficios">Benefícios</a>
           <a href={plansUrl}>Planos</a>
         </nav>
         <a href={leadUrl} className="language-landing-header-link">Fale com a equipe</a>
@@ -146,7 +175,29 @@ export default function LanguageLanding({ language }: Props) {
         </div>
       </section>
 
-      <section className="language-landing-section">
+      <section className="language-landing-section" id="beneficios">
+        <div className="language-landing-container">
+          <div className="language-landing-section-heading">
+            <span className="language-landing-eyebrow">BENEFÍCIOS DOS PLANOS</span>
+            <h2>Você não leva apenas aulas. Leva uma estrutura completa para aprender.</h2>
+            <p>Os planos da AB Academy incluem recursos para que seu aprendizado continue antes, durante e depois de cada aula.</p>
+          </div>
+
+          <div className="language-landing-benefits">
+            {BENEFITS.map(({ icon: Icon, title, text }) => (
+              <article key={title} className="language-landing-benefit-card">
+                <div className="language-landing-icon"><Icon size={19} /></div>
+                <div>
+                  <h3>{title}</h3>
+                  <p>{text}</p>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="language-landing-section language-landing-section-soft">
         <div className="language-landing-container">
           <div className="language-landing-section-heading">
             <span className="language-landing-eyebrow">O QUE VOCÊ DESENVOLVE</span>
