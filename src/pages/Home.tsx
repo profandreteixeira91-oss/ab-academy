@@ -9,6 +9,7 @@ import {
   Languages,
   Laptop,
   Menu,
+  MessageCircle,
   Users,
   X,
 } from 'lucide-react'
@@ -134,6 +135,8 @@ function Home() {
       </div>
     )
   }
+
+  const whatsappUrl = `https://wa.me/5511999738440?text=${encodeURIComponent('Olá! Tenho interesse em estudar na AB Academy e gostaria de saber mais.')}`
 
   return (
     <div className="home">
@@ -1015,6 +1018,10 @@ function Home() {
         </section>
       </main>
 
+      <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="home-whatsapp" aria-label="Falar com a AB Academy pelo WhatsApp">
+        <MessageCircle size={22} />
+        <span>Fale conosco</span>
+      </a>
     </div>
   )
 }
