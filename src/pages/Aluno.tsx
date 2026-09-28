@@ -24,6 +24,8 @@ import {
   ReceiptText,
   Send,
   Video,
+  Eye,
+  EyeOff,
   X,
 } from 'lucide-react'
 
@@ -399,6 +401,10 @@ function Aluno() {
 
   const [authEmail, setAuthEmail] =
     useState('')
+
+  const [showAuthPassword, setShowAuthPassword] = useState(false)
+  const [showNewPassword, setShowNewPassword] = useState(false)
+  const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false)
 
   const [authPassword, setAuthPassword] =
     useState('')
@@ -2661,7 +2667,7 @@ function Aluno() {
 
                 <input
                   id="student-password"
-                  type="password"
+                  type={showAuthPassword ? 'text' : 'password'}
                   value={authPassword}
                   onChange={(
                     event,
@@ -2688,6 +2694,9 @@ function Aluno() {
                     authLoading
                   }
                 />
+                <button type="button" className="auth-password-toggle" onClick={() => setShowAuthPassword(!showAuthPassword)} aria-label={showAuthPassword ? 'Ocultar senha' : 'Visualizar senha'} title={showAuthPassword ? 'Ocultar senha' : 'Visualizar senha'}>
+                  {showAuthPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
 
               <button
@@ -2758,7 +2767,7 @@ function Aluno() {
 
                 <input
                   id="student-new-password"
-                  type="password"
+                  type={showNewPassword ? 'text' : 'password'}
                   value={authPassword}
                   onChange={(
                     event,
@@ -2775,6 +2784,9 @@ function Aluno() {
                     authLoading
                   }
                 />
+                <button type="button" className="auth-password-toggle" onClick={() => setShowNewPassword(!showNewPassword)} aria-label={showNewPassword ? 'Ocultar senha' : 'Visualizar senha'} title={showNewPassword ? 'Ocultar senha' : 'Visualizar senha'}>
+                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
 
               <div className="student-login-field">
@@ -2784,7 +2796,7 @@ function Aluno() {
 
                 <input
                   id="student-password-confirmation"
-                  type="password"
+                  type={showPasswordConfirmation ? 'text' : 'password'}
                   value={
                     authPasswordConfirmation
                   }
@@ -2813,6 +2825,9 @@ function Aluno() {
                     authLoading
                   }
                 />
+                <button type="button" className="auth-password-toggle" onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)} aria-label={showPasswordConfirmation ? 'Ocultar senha' : 'Visualizar senha'} title={showPasswordConfirmation ? 'Ocultar senha' : 'Visualizar senha'}>
+                  {showPasswordConfirmation ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
               </div>
 
               <div className="student-password-rules">
