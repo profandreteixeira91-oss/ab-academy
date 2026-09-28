@@ -585,6 +585,17 @@
     padding: 22px;
   }
 
+  .checkout-field input,
+  .checkout-field select,
+  .checkout-field textarea {
+    font-size: 16px;
+  }
+
+  .checkout-confirmation {
+    margin: 40px auto;
+    padding: 44px 24px;
+  }
+
   .checkout-fields-row,
   .checkout-fields-row:has(.checkout-field:nth-child(3)) {
     grid-template-columns: 1fr;
@@ -611,12 +622,6 @@
 
   .checkout-header p {
     font-size: 14px;
-  }
-
-  .checkout-field input,
-  .checkout-field select,
-  .checkout-field textarea {
-    font-size: 16px;
   }
 
   .checkout-confirmation {
