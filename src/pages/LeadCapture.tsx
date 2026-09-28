@@ -11,6 +11,9 @@ const languageLabels: Record<Language, string> = {
   ambos: 'Inglês e Alemão',
 }
 
+const WHATSAPP_NUMBER = '5511999738440'
+const WHATSAPP_MESSAGE = 'Olá! Tenho interesse em estudar na AB Academy e gostaria de saber mais.'
+
 function getTracking() {
   const params = new URLSearchParams(window.location.search)
   return {
@@ -39,6 +42,8 @@ export default function LeadCapture() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+
+  const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -81,6 +86,9 @@ export default function LeadCapture() {
             Recebemos seu interesse em {languageLabels[form.idioma_interesse]}. A equipe da AB Academy entrará em contato para orientar seus próximos passos.
           </p>
           <div className="lead-success-actions">
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="lead-whatsapp-button">
+              <MessageCircle size={17} /> Falar pelo WhatsApp
+            </a>
             <a href="/diagnostica" className="lead-primary-button">Conhecer a aula diagnóstica <ArrowRight size={17} /></a>
             <a href="/" className="lead-secondary-button">Voltar para o site</a>
           </div>
@@ -104,13 +112,14 @@ export default function LeadCapture() {
             <span><CheckCircle2 size={17} /> Inglês e Alemão</span>
             <span><CheckCircle2 size={17} /> Metodologia prática</span>
           </div>
-          <div className="lead-whatsapp-note">
+          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="lead-whatsapp-note">
             <MessageCircle size={18} />
             <div>
               <strong>Prefere conversar?</strong>
-              <span>Em breve, este canal também poderá iniciar o atendimento diretamente pelo WhatsApp.</span>
+              <span>Fale diretamente com a AB Academy pelo WhatsApp.</span>
             </div>
-          </div>
+            <ArrowRight size={16} />
+          </a>
         </div>
 
         <form className="lead-form" onSubmit={handleSubmit}>
