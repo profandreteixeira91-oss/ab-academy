@@ -13,7 +13,7 @@ const WHATSAPP_NUMBER = '5511999738440'
 
 export default function LanguageLanding({ language }: Props) {
   const data = content[language]
-  const leadUrl = '/quero-aprender?idioma=' + language
+  const leadUrl = '/quero-aprender?idioma=' + language + '&landing_page=/' + language
   const whatsappUrl = 'https://wa.me/' + WHATSAPP_NUMBER + '?text=' + encodeURIComponent('Olá! Tenho interesse em estudar ' + data.name + ' na AB Academy e gostaria de saber mais.')
   return (
     <main className="language-landing">
