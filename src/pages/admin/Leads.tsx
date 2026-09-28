@@ -5,7 +5,6 @@ import { supabase } from '../../lib/supabase'
 type Lead={id:string;nome:string;email:string;telefone:string;idioma_interesse:string;objetivo:string|null;nivel:string|null;origem:string;landing_page:string|null;source:string|null;medium:string|null;campaign:string|null;term:string|null;content:string|null;referrer:string|null;status:string;observacoes:string|null;contacted_at:string|null;created_at:string;updated_at:string}
 const statuses=[['novo','Novo'],['contatado','Contatado'],['diagnostico','Diagnóstico'],['proposta_enviada','Proposta enviada'],['negociacao','Negociação'],['matriculado','Matriculado'],['perdido','Perdido']]
 const langs:Record<string,string>={ingles:'Inglês',alemao:'Alemão',ambos:'Inglês + Alemão'}
-const label=(s:string)=>statuses.find(([v])=>v===s)?.[1]||s
 const date=(v:string)=>new Date(v).toLocaleString('pt-BR',{dateStyle:'short',timeStyle:'short'})
 const whatsappNumber='5511999738440'
 
