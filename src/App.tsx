@@ -34,6 +34,7 @@ import Error404 from './pages/Error404'
 import TrabalheConosco from './pages/TrabalheConosco'
 import Planos from './pages/Planos'
 import Diagnostica from './pages/Diagnostica'
+import LeadCapture from './pages/LeadCapture'
 import SiteFooter from './components/SiteFooter'
 
 function App() {
@@ -52,6 +53,7 @@ function App() {
     path === '/trabalhe-conosco' ? 'Trabalhe conosco' :
     path === '/planos' ? 'Planos' :
     path === '/diagnostica' ? 'Aula diagnóstica' :
+    path === '/quero-aprender' ? 'Fale com a AB Academy' :
     path === '/enterprise' ? 'AB Academy Enterprise' :
     path.startsWith('/checkout/') ? 'Checkout' :
     path === '/aluno' ? 'Área do aluno' :
@@ -99,6 +101,10 @@ function App() {
 
   if (path === '/diagnostica') {
     return withFooter(<Diagnostica />)
+  }
+
+  if (path === '/quero-aprender') {
+    return <LeadCapture />
   }
 
   if (path === '/matricula') {
