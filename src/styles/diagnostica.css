@@ -224,6 +224,15 @@
   box-shadow: 0 18px 38px rgba(25, 42, 70, 0.10);
 }
 
+.diagnostic-card.selected {
+  border-color: #8eace0;
+  box-shadow: 0 14px 34px rgba(22, 70, 216, 0.12);
+}
+
+.diagnostic-card.selected .diagnostic-card-label {
+  color: #1646d8;
+}
+
 .diagnostic-flag {
   width: 48px;
   height: 34px;
