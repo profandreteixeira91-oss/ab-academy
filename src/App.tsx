@@ -69,7 +69,69 @@ function App() {
     path === '/termos-de-servico' ? 'Termos de Serviço' :
     'Página não encontrada'
 
+  const pageDescriptions: Record<string, string> = {
+    '/': 'Aprenda inglês e alemão com a AB Academy. Metodologia prática, acompanhamento especializado e plataforma completa para sua evolução.',
+    '/planos': 'Conheça os planos de inglês e alemão da AB Academy e escolha a opção ideal para seus objetivos.',
+    '/diagnostica': 'Faça sua aula diagnóstica de inglês ou alemão e descubra o melhor caminho para sua evolução.',
+    '/quero-aprender': 'Fale com a AB Academy e descubra como começar a estudar inglês ou alemão.',
+    '/enterprise': 'Inglês e alemão para empresas. Conheça as soluções corporativas da AB Academy Enterprise.',
+    '/trabalhe-conosco': 'Faça parte da equipe da AB Academy. Envie seu perfil e candidate-se para trabalhar conosco.',
+    '/matricula': 'Matricule-se na AB Academy e comece sua jornada de aprendizagem em inglês ou alemão.',
+    '/politica-privacidade': 'Conheça a política de privacidade da AB Academy Idiomas.',
+    '/termos-de-servico': 'Conheça os termos de serviço da AB Academy Idiomas.',
+  }
+
+  const isPublicPage =
+    path === '/' ||
+    Object.prototype.hasOwnProperty.call(pageDescriptions, path)
+
   document.title = pageTitle + ' - AB Academy Idiomas'
+
+  if (isPublicPage) {
+    const description = pageDescriptions[path] ?? pageDescriptions['/']
+    const canonicalUrl = `https://abacademyidiomas.com.br${path === '/' ? '/' : path}`
+
+    let descriptionTag = document.querySelector('meta[name="description"]')
+    if (!descriptionTag) {
+      descriptionTag = document.createElement('meta')
+      descriptionTag.setAttribute('name', 'description')
+      document.head.appendChild(descriptionTag)
+    }
+    descriptionTag.setAttribute('content', description)
+
+    let canonicalTag = document.querySelector('link[rel="canonical"]')
+    if (!canonicalTag) {
+      canonicalTag = document.createElement('link')
+      canonicalTag.setAttribute('rel', 'canonical')
+      document.head.appendChild(canonicalTag)
+    }
+    canonicalTag.setAttribute('href', canonicalUrl)
+
+    const ogTitle = pageTitle + ' - AB Academy Idiomas'
+    let ogTitleTag = document.querySelector('meta[property="og:title"]')
+    if (!ogTitleTag) {
+      ogTitleTag = document.createElement('meta')
+      ogTitleTag.setAttribute('property', 'og:title')
+      document.head.appendChild(ogTitleTag)
+    }
+    ogTitleTag.setAttribute('content', ogTitle)
+
+    let ogDescriptionTag = document.querySelector('meta[property="og:description"]')
+    if (!ogDescriptionTag) {
+      ogDescriptionTag = document.createElement('meta')
+      ogDescriptionTag.setAttribute('property', 'og:description')
+      document.head.appendChild(ogDescriptionTag)
+    }
+    ogDescriptionTag.setAttribute('content', description)
+
+    let ogUrlTag = document.querySelector('meta[property="og:url"]')
+    if (!ogUrlTag) {
+      ogUrlTag = document.createElement('meta')
+      ogUrlTag.setAttribute('property', 'og:url')
+      document.head.appendChild(ogUrlTag)
+    }
+    ogUrlTag.setAttribute('content', canonicalUrl)
+  }
 
   /*
    * =========================================================
