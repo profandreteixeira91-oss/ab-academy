@@ -281,7 +281,7 @@ function Home() {
                 </div>
 
                 <div className="language-options">
-                  <a href="/quero-aprender?idioma=ingles" className="language-option">
+                  <a href="/ingles" className="language-option">
                     <div className="language-flag">
                       🇺🇸
                     </div>
@@ -294,7 +294,7 @@ function Home() {
                     <ArrowRight size={19} />
                   </a>
 
-                  <a href="/quero-aprender?idioma=alemao" className="language-option">
+                  <a href="/alemao" className="language-option">
                     <div className="language-flag">
                       🇩🇪
                     </div>
@@ -464,7 +464,7 @@ function Home() {
 
                 {renderPlanos(planosIngles)}
 
-                <a href="/planos">
+                <a href="/ingles">
                   Saiba mais
                   <ArrowRight size={17} />
                 </a>
@@ -530,7 +530,7 @@ function Home() {
 
                 {renderPlanos(planosAlemao)}
 
-                <a href="/planos">
+                <a href="/alemao">
                   Saiba mais
                   <ArrowRight size={17} />
                 </a>
