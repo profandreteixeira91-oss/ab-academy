@@ -4,70 +4,80 @@ import logo from '../../assets/logo_abacademy.png'
 import { supabase } from '../../lib/supabase'
 
 import '../../styles/admin/AdminAccess.css'
-import '../../styles/aluno.css'
 
 type AdminAccessProps = {
   children: ReactNode
 }
 
-export default function AdminAccess({
-  children,
-}: AdminAccessProps) {
-  const [loading, setLoading] = useState(true)
+export default function AdminAccess({ children }: AdminAccessProps) {
+  const [checkingSession, setCheckingSession] = useState(true)
   const [authorized, setAuthorized] = useState(false)
-
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loginLoading, setLoginLoading] = useState(false)
   const [loginError, setLoginError] = useState('')
 
-  useEffect(() => {
-    checkAdminAccess()
-  }, [])
+  async function verifyAdmin(userId: string) {
+    const { data, error } = await supabase
+      .from('admin_users')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('ativo', true)
+      .maybeSingle()
 
-  async function checkAdminAccess() {
+    if (error) {
+      console.error('Erro ao verificar administrador:', error)
+      return false
+    }
+
+    return !!data
+  }
+
+  async function checkSession() {
     try {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
+      const { data: { session } } = await supabase.auth.getSession()
 
-      if (!user) {
+      if (!session?.user) {
         setAuthorized(false)
         return
       }
 
-      const { data, error } = await supabase
-        .from('admin_users')
-        .select('id, ativo')
-        .eq('user_id', user.id)
-        .eq('ativo', true)
-        .maybeSingle()
-
-      if (error) {
-        console.error(
-          'Erro ao verificar administrador:',
-          error,
-        )
-
-        setAuthorized(false)
-        return
-      }
-
-      setAuthorized(!!data)
+      setAuthorized(await verifyAdmin(session.user.id))
     } catch (error) {
-      console.error(
-        'Erro ao verificar acesso administrativo:',
-        error,
-      )
-
+      console.error('Erro ao verificar sessão administrativa:', error)
       setAuthorized(false)
     } finally {
-      setLoading(false)
+      setCheckingSession(false)
     }
   }
 
-  async function handleLogin() {
+  useEffect(() => {
+    void checkSession()
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        if (!session?.user) {
+          setAuthorized(false)
+          setCheckingSession(false)
+          return
+        }
+
+        void verifyAdmin(session.user.id).then((isAdmin) => {
+          setAuthorized(isAdmin)
+          setCheckingSession(false)
+        })
+      },
+    )
+
+    return () => subscription.unsubscribe()
+  }, [])
+
+  async function handleLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+
+    if (loginLoading) return
+
     setLoginError('')
 
     const normalizedEmail = email.trim().toLowerCase()
@@ -85,107 +95,84 @@ export default function AdminAccess({
     setLoginLoading(true)
 
     try {
-      const { error } =
-        await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password,
-        })
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: normalizedEmail,
+        password,
+      })
 
       if (error) {
+        console.error('Erro no login administrativo:', error)
+        setAuthorized(false)
         setLoginError(
           'Não foi possível realizar o login. Verifique seu e-mail e senha.',
         )
-
         return
       }
 
-      await checkAdminAccess()
-    } catch (error) {
-      console.error(
-        'Erro ao realizar login administrativo:',
-        error,
-      )
+      if (!data.user) {
+        setAuthorized(false)
+        setLoginError('Não foi possível identificar o usuário autenticado.')
+        return
+      }
 
-      setLoginError(
-        'Ocorreu um erro ao realizar o login. Tente novamente.',
-      )
+      const isAdmin = await verifyAdmin(data.user.id)
+
+      if (!isAdmin) {
+        await supabase.auth.signOut()
+        setAuthorized(false)
+        setLoginError('Este usuário não possui acesso administrativo.')
+        return
+      }
+
+      setAuthorized(true)
+    } catch (error) {
+      console.error('Erro ao realizar login administrativo:', error)
+      setAuthorized(false)
+      setLoginError('Ocorreu um erro ao realizar o login. Tente novamente.')
     } finally {
       setLoginLoading(false)
     }
   }
 
-  function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault()
-
-    if (!loginLoading) {
-      handleLogin()
-    }
-  }
-
-  if (loading) {
+  if (checkingSession) {
     return (
       <div className="admin-access-page">
         <div className="admin-access-card">
           <div className="admin-access-icon">
             <LockKeyhole size={25} />
           </div>
-
           <h1>Verificando acesso</h1>
-
-          <p>
-            Aguarde enquanto verificamos suas
-            permissões administrativas.
-          </p>
-
+          <p>Verificando a sessão administrativa...</p>
           <div className="admin-access-loading">
             <span />
-            Verificando...
+            Aguarde...
           </div>
         </div>
       </div>
     )
   }
 
-  if (!authorized) {
-    return (
-      <div className="student-login-page">
-        <div className="student-login-card">
-          <div className="student-login-brand-panel">
-            <img
-              src={logo}
-              alt="AB Academy"
-              className="student-login-logo"
-            />
-            <div className="student-login-brand-copy">
-              <strong>AB ACADEMY</strong>
-              <span>IDIOMAS QUE TRANSFORMAM</span>
-              <span>CONEXÕES QUE PERMANECEM</span>
-            </div>
-          </div>
+  if (authorized) {
+    return <>{children}</>
+  }
 
-          <div className="student-login-form-area">
+  return (
+    <div className="admin-access-page">
+      <div className="admin-access-card">
+        <div className="admin-access-brand">
+          <img src={logo} alt="AB Academy" />
+          <span>PORTAL ADMINISTRATIVO</span>
+        </div>
 
-          <span className="student-login-label">
-            PORTAL ADMINISTRATIVO
-          </span>
+        <div className="admin-access-header">
+          <h1>Acesse sua conta</h1>
+          <p>Informe o e-mail e a senha do administrador.</p>
+        </div>
 
-          <h1>
-            Acesse sua conta
-          </h1>
-
-          <p>
-            Informe o e-mail utilizado para
-            acessar o painel administrativo.
-          </p>
-
-          <form onSubmit={handleSubmit}>
-            <div className="student-login-field">
-              <label htmlFor="admin-email">
-                E-mail
-              </label>
-
+        <form className="admin-access-form" onSubmit={handleLogin}>
+          <div className="admin-access-field">
+            <label htmlFor="admin-email">E-mail</label>
+            <div className="admin-access-input-wrapper">
               <input
                 id="admin-email"
                 type="email"
@@ -195,16 +182,16 @@ export default function AdminAccess({
                   setLoginError('')
                 }}
                 placeholder="seu@email.com"
-                autoComplete="email"
+                autoComplete="username"
+                autoFocus
                 disabled={loginLoading}
               />
             </div>
+          </div>
 
-            <div className="student-login-field">
-              <label htmlFor="admin-password">
-                Senha
-              </label>
-
+          <div className="admin-access-field">
+            <label htmlFor="admin-password">Senha</label>
+            <div className="admin-access-input-wrapper">
               <input
                 id="admin-password"
                 type={showPassword ? 'text' : 'password'}
@@ -217,60 +204,50 @@ export default function AdminAccess({
                 autoComplete="current-password"
                 disabled={loginLoading}
               />
-                <button
-                  type="button"
-                  className="auth-password-toggle"
-                  onClick={() => setShowPassword(!showPassword)}
-                  aria-label={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
-                  aria-pressed={showPassword}
-                  title={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
-                >
-                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                </button>
+              <button
+                type="button"
+                className="admin-access-password-toggle"
+                onClick={() => setShowPassword((value) => !value)}
+                aria-label={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
+                title={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
+                disabled={loginLoading}
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
+          </div>
 
-            {loginError && (
-              <div className="student-login-error">
-                {loginError}
-              </div>
+          {loginError && (
+            <div className="admin-access-error" role="alert">
+              {loginError}
+            </div>
+          )}
+
+          <button
+            type="submit"
+            className="admin-access-button"
+            disabled={loginLoading}
+          >
+            {loginLoading ? (
+              <>
+                <Loader2 size={18} className="admin-access-button-spinner" />
+                Entrando...
+              </>
+            ) : (
+              <>
+                Entrar
+                <ChevronRight size={18} />
+              </>
             )}
+          </button>
+        </form>
 
-            <button
-              type="submit"
-              className="student-primary-button student-auth-button"
-              disabled={loginLoading}
-            >
-              {loginLoading ? (
-                <>
-                  <Loader2
-                    size={19}
-                    className="student-spin"
-                  />
-                  Entrando...
-                </>
-              ) : (
-                <>
-                  Entrar
-                  <ChevronRight size={18} />
-                </>
-              )}
-            </button>
-          </form>
-
-          <div className="student-login-footer">
-            <span>
-              AB Academy
-            </span>
-
-            <span>
-              Acesso exclusivo à administração
-            </span>
-          </div>
-          </div>
+        <div className="admin-access-footer">
+          <span>AB Academy</span>
+          <span>•</span>
+          <span>Acesso exclusivo à administração</span>
         </div>
       </div>
-    )
-  }
-
-  return <>{children}</>
+    </div>
+  )
 }
