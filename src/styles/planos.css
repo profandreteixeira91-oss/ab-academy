@@ -1053,3 +1053,83 @@
     hyphens: none;
   }
 }
+
+
+/* =========================================================
+   MOBILE — CONTROLE DEFINITIVO DE OVERFLOW
+========================================================= */
+@media (max-width: 900px) {
+  .planos-page-shell,
+  .planos-page,
+  .planos-hero,
+  .planos-section,
+  .planos-container,
+  .planos-language,
+  .planos-grid,
+  .planos-detail-card,
+  .planos-language-switch,
+  .planos-language-switch-buttons,
+  .planos-diagnostic {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .planos-page-shell,
+  .planos-page,
+  .planos-hero,
+  .planos-section {
+    width: 100%;
+    overflow-x: clip;
+  }
+
+  .planos-detail-card > *,
+  .planos-language-switch-button > *,
+  .planos-diagnostic > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .planos-detail-card h3,
+  .planos-detail-description,
+  .planos-detail-features li,
+  .planos-detail-cta,
+  .planos-diagnostic h2,
+  .planos-diagnostic p {
+    overflow-wrap: break-word;
+  }
+
+  .planos-detail-cta {
+    white-space: normal;
+  }
+}
+
+@media (max-width: 600px) {
+  .planos-page-shell .header-container {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .planos-page-shell .logo {
+    min-width: 0;
+    max-width: calc(100% - 58px);
+  }
+
+  .planos-page-shell .logo img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  .planos-language-switch-button {
+    min-width: 0;
+  }
+}
+
+@media (max-width: 380px) {
+  .planos-page-shell .logo {
+    max-width: calc(100% - 54px);
+  }
+
+  .planos-language-switch-button {
+    width: 100%;
+  }
+}
