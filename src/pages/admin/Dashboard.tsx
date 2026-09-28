@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  ArrowRight,
+  BarChart3,
   ArrowLeft,
   ArrowRight,
   CalendarDays,
@@ -80,7 +82,9 @@ function languageLabel(value: string) {
   return value === 'alemao' ? 'Alemão' : 'Inglês'
 }
 
-export default function Dashboard() {
+type Lead = { status: string; source: string | null; created_at: string }
+
+export default function Dashboard({ onNavigate }: { onNavigate?: (module: string) => void }) {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -88,6 +92,7 @@ export default function Dashboard() {
   const [selectedDate, setSelectedDate] = useState(startOfDay(new Date()))
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [moduleStats, setModuleStats] = useState<ModuleStat[]>([])
+  const [leads, setLeads] = useState<Lead[]>([])
 
   async function loadDashboard() {
     try {
@@ -105,12 +110,16 @@ export default function Dashboard() {
         supabase.from('mensalidades').select('id', { count: 'exact', head: true }).in('status', ['pendente', 'vencida']),
         supabase.from('solicitacoes').select('id', { count: 'exact', head: true }).in('status', ['aberta', 'em_andamento']),
         supabase.from('lancamentos_financeiros').select('id', { count: 'exact', head: true }).eq('tipo', 'despesa').eq('status', 'pendente'),
+        supabase.from('leads').select('status,source,created_at').order('created_at', { ascending: false }),
       ])
 
       const scheduleResult = results[2]
+      const leadsResult = results[10]
       if (scheduleResult.error) throw scheduleResult.error
+      if (leadsResult.error) throw leadsResult.error
 
       setSchedules((scheduleResult.data || []) as Schedule[])
+      setLeads((leadsResult.data || []) as Lead[])
 
       setModuleStats([
         { id: 'alunos', label: 'Alunos', value: results[0].count || 0, detail: 'cadastros', icon: Users },
@@ -136,6 +145,31 @@ export default function Dashboard() {
   useEffect(() => {
     void loadDashboard()
   }, [])
+
+  const commercialStats = useMemo(() => {
+    const total = leads.length
+    const count = (statuses: string[]) => statuses.length === 0
+      ? total
+      : leads.filter((lead) => statuses.includes(lead.status)).length
+
+    return {
+      total,
+      newLeads: leads.filter((lead) => lead.status === 'novo').length,
+      contacted: count(['contatado', 'diagnostico', 'proposta_enviada', 'negociacao', 'matriculado']),
+      diagnostics: count(['diagnostico', 'proposta_enviada', 'negociacao', 'matriculado']),
+      proposals: count(['proposta_enviada', 'negociacao', 'matriculado']),
+      enrollments: count(['matriculado']),
+    }
+  }, [leads])
+
+  const sourceStats = useMemo(() => {
+    const counts = new Map<string, number>()
+    leads.forEach((lead) => {
+      const source = lead.source?.trim() || 'Orgânico / direto'
+      counts.set(source, (counts.get(source) || 0) + 1)
+    })
+    return Array.from(counts.entries()).sort((a, b) => b[1] - a[1]).slice(0, 6)
+  }, [leads])
 
   const selectedWeekStart = useMemo(() => {
     const date = startOfDay(selectedDate)
@@ -213,6 +247,78 @@ export default function Dashboard() {
       {error && (
         <div className="dashboard-error"><AlertCircle size={18} /><span>{error}</span></div>
       )}
+
+      <section className="dashboard-commercial">
+        <div className="dashboard-commercial-header">
+          <div>
+            <span className="dashboard-eyebrow">CAPTAÇÃO E VENDAS</span>
+            <h2>Funil comercial</h2>
+            <p>Acompanhe os leads captados pelo site e a evolução no atendimento.</p>
+          </div>
+          <button type="button" className="dashboard-commercial-action" onClick={() => onNavigate?.('leads')}>
+            Ver todos os leads <ArrowRight size={15} />
+          </button>
+        </div>
+
+        <div className="dashboard-funnel">
+          {[
+            ['Leads', commercialStats.total, commercialStats.total],
+            ['Contatados', commercialStats.contacted, commercialStats.total],
+            ['Diagnósticos', commercialStats.diagnostics, commercialStats.total],
+            ['Propostas', commercialStats.proposals, commercialStats.total],
+            ['Matrículas', commercialStats.enrollments, commercialStats.total],
+          ].map(([label, value, total], index) => (
+            <div className="dashboard-funnel-step" key={label}>
+              <button type="button" className="dashboard-funnel-card" onClick={() => onNavigate?.('leads')}>
+                <span>{label}</span>
+                <strong>{value}</strong>
+                <small>{index === 0 ? `${commercialStats.newLeads} novos agora` : `${total ? Math.round((value / total) * 100) : 0}% do total`}</small>
+              </button>
+              {index < 4 && <ArrowRight className="dashboard-funnel-arrow" size={16} />}
+            </div>
+          ))}
+        </div>
+
+        <div className="dashboard-commercial-grid">
+          <div className="dashboard-commercial-card">
+            <div className="dashboard-commercial-card-heading">
+              <div>
+                <span>ORIGEM DOS LEADS</span>
+                <strong>Principais canais</strong>
+              </div>
+              <BarChart3 size={18} />
+            </div>
+            {sourceStats.length === 0 ? (
+              <div className="dashboard-commercial-empty">Ainda não há leads para analisar.</div>
+            ) : (
+              <div className="dashboard-source-list">
+                {sourceStats.map(([source, value]) => (
+                  <button type="button" className="dashboard-source-row" key={source} onClick={() => onNavigate?.('leads')}>
+                    <span>{source}</span>
+                    <div className="dashboard-source-track"><i style={{ width: `${commercialStats.total ? (value / commercialStats.total) * 100 : 0}%` }} /></div>
+                    <strong>{value}</strong>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="dashboard-commercial-card">
+            <div className="dashboard-commercial-card-heading">
+              <div>
+                <span>ATENÇÃO COMERCIAL</span>
+                <strong>Leads aguardando contato</strong>
+              </div>
+              <Users size={18} />
+            </div>
+            <button type="button" className="dashboard-attention-value" onClick={() => onNavigate?.('leads')}>
+              <strong>{commercialStats.newLeads}</strong>
+              <span>novos leads aguardando atendimento</span>
+              <small>{commercialStats.newLeads > 0 ? 'Priorize o contato para não perder a oportunidade.' : 'Nenhum novo lead aguardando contato.'}</small>
+            </button>
+          </div>
+        </div>
+      </section>
 
       <section className="dashboard-module-grid">
         {moduleStats.map((module) => {
