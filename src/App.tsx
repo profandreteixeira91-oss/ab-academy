@@ -1,4 +1,6 @@
 import type { ReactNode } from 'react'
+import './styles/mobile-responsive.css'
+
 import Home from './pages/Home'
 import Enterprise from './pages/Enterprise'
 
