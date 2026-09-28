@@ -37,6 +37,7 @@ import Leads from './admin/Leads'
 import '../styles/admin.css'
 import '../styles/central-admin.css'
 import '../styles/admin-enterprise.css'
+import '../styles/admin-leads.css'
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 
@@ -314,22 +315,6 @@ export default function Admin() {
 
       if (enterpriseError) console.error('Erro ao consultar novos leads Enterprise:', enterpriseError)
       else setEnterpriseNewLeadCount(enterpriseCount || 0)
-    }
-
-    const loadEnterpriseNewLeadCount = async () => {
-      const { count, error } = await supabase
-        .from('enterprise_leads')
-        .select('id', { count: 'exact', head: true })
-        .eq('status', 'novo')
-
-      if (!mounted || error) {
-        if (error) {
-          console.error('Erro ao consultar novos leads Enterprise:', error)
-        }
-        return
-      }
-
-      setEnterpriseNewLeadCount(count || 0)
     }
 
     void loadNewLeadCounts()
