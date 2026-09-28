@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://abacademyidiomas.com.br/sitemap.xml
