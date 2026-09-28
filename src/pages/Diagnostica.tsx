@@ -42,6 +42,12 @@ function formatCurrency(value: number) {
 }
 
 export default function Diagnostica() {
+  const requestedLanguage = new URLSearchParams(window.location.search).get('idioma')
+  const selectedLanguage: Language | null =
+    requestedLanguage === 'ingles' || requestedLanguage === 'alemao'
+      ? requestedLanguage
+      : null
+
   const [plans, setPlans] = useState<DiagnosticPlan[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -135,18 +141,21 @@ export default function Diagnostica() {
 
           {!loading && !error && (
             <div className="diagnostic-grid">
-              {(['ingles', 'alemao'] as Language[]).map((language) => {
+              {(['ingles', 'alemao'] as Language[])
+                .sort((a, b) => (a === selectedLanguage ? -1 : b === selectedLanguage ? 1 : 0))
+                .map((language) => {
                 const plan = plans.find((item) => item.idioma === language)
                 const info = languageInfo[language]
+                const isSelected = selectedLanguage === language
 
                 if (!plan) return null
 
                 return (
-                  <article className="diagnostic-card" key={plan.id}>
+                  <article className={'diagnostic-card' + (isSelected ? ' selected' : '')} key={plan.id}>
                     <img src={info.flag} alt="" className="diagnostic-flag" />
 
                     <span className="diagnostic-card-label">
-                      Aula diagnóstica
+                      {isSelected ? 'Idioma selecionado' : 'Aula diagnóstica'}
                     </span>
 
                     <h3>{info.label}</h3>
