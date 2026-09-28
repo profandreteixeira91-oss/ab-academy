@@ -4450,3 +4450,47 @@ body {
     width: 165px;
   }
 }
+
+
+/* Alternância de visibilidade da senha nos portais */
+.student-login-field {
+  position: relative;
+}
+
+.student-login-field .auth-password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 36px;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #64748b;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.student-login-field .auth-password-toggle:hover {
+  background: #eef4fd;
+  color: var(--student-primary, #1649a0);
+}
+
+.student-login-field .auth-password-toggle:focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
+}
+
+.student-login-field input:has(+ .auth-password-toggle) {
+  padding-right: 48px;
+}
+
+@media (max-width: 900px) {
+  .student-login-field .auth-password-toggle {
+    top: 36px;
+  }
+}
