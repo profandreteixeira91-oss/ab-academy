@@ -37,6 +37,7 @@ import TrabalheConosco from './pages/TrabalheConosco'
 import Planos from './pages/Planos'
 import Diagnostica from './pages/Diagnostica'
 import LeadCapture from './pages/LeadCapture'
+import LanguageLanding from './pages/LanguageLanding'
 import SiteFooter from './components/SiteFooter'
 
 function App() {
@@ -77,6 +78,8 @@ function App() {
     path === '/planos' ? 'Planos' :
     path === '/diagnostica' ? 'Aula diagnóstica' :
     path === '/quero-aprender' ? 'Fale com a AB Academy' :
+    path === '/ingles' ? 'Curso de Inglês' :
+    path === '/alemao' ? 'Curso de Alemão' :
     path === '/enterprise' ? 'AB Academy Enterprise' :
     path.startsWith('/checkout/') ? 'Checkout' :
     path === '/aluno' ? 'Área do aluno' :
@@ -97,6 +100,8 @@ function App() {
     '/planos': 'Conheça os planos de inglês e alemão da AB Academy e escolha a opção ideal para seus objetivos.',
     '/diagnostica': 'Faça sua aula diagnóstica de inglês ou alemão e descubra o melhor caminho para sua evolução.',
     '/quero-aprender': 'Fale com a AB Academy e descubra como começar a estudar inglês ou alemão.',
+    '/ingles': 'Curso de inglês da AB Academy com metodologia prática e acompanhamento especializado.',
+    '/alemao': 'Curso de alemão da AB Academy com metodologia prática e acompanhamento especializado.',
     '/enterprise': 'Inglês e alemão para empresas. Conheça as soluções corporativas da AB Academy Enterprise.',
     '/trabalhe-conosco': 'Faça parte da equipe da AB Academy. Envie seu perfil e candidate-se para trabalhar conosco.',
     '/matricula': 'Matricule-se na AB Academy e comece sua jornada de aprendizagem em inglês ou alemão.',
@@ -190,6 +195,14 @@ function App() {
 
   if (path === '/quero-aprender') {
     return <LeadCapture />
+  }
+
+  if (path === '/ingles') {
+    return <LanguageLanding language="ingles" />
+  }
+
+  if (path === '/alemao') {
+    return <LanguageLanding language="alemao" />
   }
 
   if (path === '/matricula') {
