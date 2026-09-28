@@ -83,3 +83,91 @@
 @media(max-width:1000px){.language-landing-nav{display:none}.language-landing-header{grid-template-columns:1fr auto}.language-landing-hero-grid{grid-template-columns:1fr;gap:35px}.language-landing-copy{max-width:780px}.language-landing-visual{min-height:350px}.language-landing-steps,.language-landing-audience{grid-template-columns:1fr}.language-landing-benefits{grid-template-columns:1fr}.language-landing-benefit-card:last-child{grid-column:auto}.language-landing-outcomes{grid-template-columns:1fr}.language-landing-cta-inner{align-items:flex-start;flex-direction:column}.language-landing-cta-actions{width:100%}}
 @media(max-width:600px){.language-landing-header{min-height:68px;padding:0 16px}.language-landing-brand{font-size:17px}.language-landing-header-link{min-height:44px;padding:0 11px}.language-landing-container{width:calc(100% - 28px)}.language-landing-hero{padding:46px 0 54px}.language-landing-hero-meta{align-items:flex-start;flex-direction:column;gap:11px;margin-bottom:18px}.language-landing-language{margin-bottom:0}.language-landing-language img{width:38px;height:26px}.language-landing-copy h1{font-size:clamp(35px,10.5vw,46px);line-height:1.06}.language-landing-lead{margin-top:18px;font-size:15px;line-height:1.68}.language-landing-actions{flex-direction:column;gap:8px;margin-top:24px}.language-landing-primary,.language-landing-secondary{width:100%;min-height:49px}.language-landing-benefit-card{min-width:0}.language-landing-benefit-card .language-landing-icon{width:38px;height:38px;flex-basis:38px}.language-landing-benefit-card p{overflow-wrap:anywhere}.language-landing-trust{flex-direction:column;gap:9px;margin-top:19px}.language-landing-visual{min-height:285px;margin-top:0;overflow:hidden}.orbit-one{width:270px;height:270px}.orbit-two{width:190px;height:190px}.language-landing-visual-card{width:230px;min-height:230px;padding:22px;border-radius:20px}.language-landing-visual-card img{width:42px;height:28px}.language-landing-visual-card>span{margin-top:20px}.language-landing-visual-card>strong{margin-top:22px;font-size:29px}.language-landing-visual-card>small{font-size:11px}.language-landing-proof-grid{grid-template-columns:1fr}.language-landing-proof-grid>div{border-right:0;border-bottom:1px solid #e8edf3;padding:18px 0}.language-landing-proof-grid>div:last-child{border-bottom:0}.language-landing-section{padding:61px 0}.language-landing-section-heading h2{font-size:clamp(29px,8.2vw,36px)}.language-landing-section-heading p{font-size:13px}.language-landing-steps,.language-landing-audience{gap:10px;margin-top:28px}.language-landing-steps article,.language-landing-audience article{padding:20px}.language-landing-benefits{gap:10px;margin-top:28px}.language-landing-benefit-card{padding:20px;gap:13px}.language-landing-benefit-card h3{font-size:14px}.language-landing-benefit-card p{font-size:11.5px;line-height:1.68}.language-landing-outcomes{gap:8px;margin-top:27px}.language-landing-outcomes div{padding:14px;font-size:11.5px}.language-landing-info-row{grid-template-columns:1fr;gap:9px}.language-landing-info-row>div{padding:18px}.language-landing-cta{padding-bottom:48px}.language-landing-cta-inner{padding:26px 20px;gap:24px}.language-landing-cta h2{font-size:25px}.language-landing-cta-actions{flex-direction:column;width:100%}.language-landing-cta-actions .language-landing-primary,.language-landing-cta-actions .language-landing-secondary{width:100%}.language-landing-footer{align-items:flex-start;flex-direction:column;padding:20px 14px;line-height:1.6}}
 @media(max-width:380px){.language-landing-container{width:calc(100% - 22px)}.language-landing-hero{padding-top:38px}.language-landing-copy h1{font-size:34px}.language-landing-visual{min-height:260px}.language-landing-visual-card{width:210px;min-height:215px}.language-landing-visual-card>strong{font-size:27px}.language-landing-actions{gap:7px}.language-landing-primary,.language-landing-secondary{min-height:47px;padding:0 12px}.language-landing-benefit-card{padding:17px;gap:10px}.language-landing-benefit-card h3{font-size:13.5px}.language-landing-benefit-card p{font-size:11px}.language-landing-header-link{font-size:10px;padding:0 8px}}
+
+
+/* =========================================================
+   MOBILE — CONTROLE DEFINITIVO DE OVERFLOW
+========================================================= */
+@media (max-width: 900px) {
+  .language-landing,
+  .language-landing-header,
+  .language-landing-hero,
+  .language-landing-proof,
+  .language-landing-section,
+  .language-landing-cta,
+  .language-landing-footer {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: clip;
+  }
+
+  .language-landing-container,
+  .language-landing-hero-grid,
+  .language-landing-copy,
+  .language-landing-visual,
+  .language-landing-cta-inner,
+  .language-landing-section-heading,
+  .language-landing-benefit-card,
+  .language-landing-benefit-card > div:last-child,
+  .language-landing-info-row > div,
+  .language-landing-info-row > div > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .language-landing img,
+  .language-landing svg {
+    max-width: 100%;
+  }
+
+  .language-landing h1,
+  .language-landing h2,
+  .language-landing h3,
+  .language-landing p,
+  .language-landing span,
+  .language-landing a {
+    overflow-wrap: break-word;
+  }
+}
+
+@media (max-width: 600px) {
+  .language-landing-header {
+    gap: 10px;
+  }
+
+  .language-landing-brand {
+    min-width: 0;
+  }
+
+  .language-landing-header-link {
+    flex: 0 1 auto;
+    max-width: 48%;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .language-landing-hero-grid {
+    width: calc(100% - 28px);
+  }
+
+  .language-landing-cta-inner {
+    width: calc(100% - 28px);
+  }
+
+  .language-landing-cta-inner > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .language-landing-header-link {
+    max-width: 52%;
+  }
+
+  .language-landing-hero-grid,
+  .language-landing-cta-inner {
+    width: calc(100% - 22px);
+  }
+}
