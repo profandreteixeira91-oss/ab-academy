@@ -10,6 +10,8 @@ import {
   Clock3,
   Languages,
   Video,
+  Eye,
+  EyeOff,
   ArrowRight,
   CheckCircle2,
   Circle,
@@ -134,6 +136,7 @@ function Professor() {
     useState<PortalSection>('dashboard')
 
   const [email, setEmail] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
@@ -2203,7 +2206,7 @@ function Professor() {
 
               <input
                 id="professor-password"
-                type="password"
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(event) => {
                   setPassword(event.target.value)
@@ -2213,6 +2216,16 @@ function Professor() {
                 autoComplete="current-password"
                 disabled={loginLoading}
               />
+                <button
+                  type="button"
+                  className="auth-password-toggle"
+                  onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
+                  aria-pressed={showPassword}
+                  title={showPassword ? 'Ocultar senha' : 'Visualizar senha'}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
             </div>
 
             {error && (
