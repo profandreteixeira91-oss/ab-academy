@@ -4,7 +4,6 @@ import {
   ArrowRight,
   BarChart3,
   ArrowLeft,
-  ArrowRight,
   CalendarDays,
   CheckCircle2,
   ClipboardList,
