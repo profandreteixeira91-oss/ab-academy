@@ -1,0 +1,530 @@
+/* =========================================================
+   AB ACADEMY — MOBILE RESPONSIVE FOUNDATION
+   Correções estruturais para 320px–900px.
+   Não altera o layout desktop.
+========================================================= */
+
+@media (max-width: 900px) {
+  html,
+  body,
+  #root {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  img,
+  video,
+  canvas,
+  svg {
+    max-width: 100%;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    max-width: 100%;
+  }
+
+  table {
+    max-width: 100%;
+  }
+
+  .btn,
+  button,
+  a {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* Conteúdo público */
+  .home main,
+  .diagnostic-main,
+  .lead-page,
+  .careers-main,
+  .planos-page,
+  .enterprise-page {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Evita que headers fixos cubram o início da página. */
+  .home .hero {
+    scroll-margin-top: 76px;
+  }
+
+  .home .section,
+  .home section[id] {
+    scroll-margin-top: 76px;
+  }
+
+  /* Home: no mobile a ação principal fica no menu. */
+  .home .header-actions .header-button {
+    display: none;
+  }
+
+  .home .header-actions {
+    margin-left: auto;
+    flex: 0 0 auto;
+  }
+
+  .home .mobile-menu-button {
+    display: inline-flex;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .home .mobile-navigation {
+    left: 12px;
+    right: 12px;
+    width: auto;
+    max-height: calc(100dvh - 84px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 10px;
+  }
+
+  .home .mobile-navigation a {
+    min-height: 46px;
+  }
+
+  .home .header-container {
+    width: calc(100% - 24px);
+    min-width: 0;
+  }
+
+  .home .logo {
+    min-width: 0;
+    max-width: calc(100% - 58px);
+  }
+
+  .home .logo img {
+    width: auto;
+    max-width: 145px;
+    height: 44px;
+    min-width: 0;
+  }
+
+  .home main {
+    padding-top: 72px;
+  }
+
+  .home .hero-container,
+  .home .container {
+    min-width: 0;
+  }
+
+  .home .hero-card,
+  .home .course-card,
+  .home .feature-card,
+  .home .cta-container,
+  .home .careers-container,
+  .home .diagnostic-container {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .home .hero-card,
+  .home .course-card,
+  .home .feature-card {
+    overflow: hidden;
+  }
+
+  .home .hero-card-heading,
+  .home .hero-card-footer,
+  .home .course-price-summary,
+  .home .course-target {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .home .hero-card-footer {
+    flex-wrap: wrap;
+  }
+
+  .home .hero-card-footer > div {
+    min-width: 0;
+  }
+
+  .home .enterprise-hero-container {
+    min-width: 0;
+  }
+
+  .home .enterprise-hero-content,
+  .home .enterprise-hero-visual {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .home .enterprise-visual-card-language,
+  .home .enterprise-visual-card-global {
+    max-width: calc(100% - 16px);
+  }
+
+  .home .enterprise-visual-card-global {
+    white-space: normal;
+  }
+
+  /* Páginas públicas: espaçamento lateral consistente. */
+  .diagnostic-main,
+  .lead-page,
+  .careers-main {
+    width: min(calc(100% - 28px), 1120px);
+  }
+
+  .planos-page .container,
+  .enterprise-page .container {
+    width: min(calc(100% - 28px), 1180px);
+  }
+
+  /* Formulários: campos nunca podem escapar da viewport. */
+  .lead-form,
+  .lead-form-grid,
+  .enterprise-lead-form,
+  .enterprise-form-grid,
+  .careers-form-card,
+  .careers-form-grid,
+  .enrollment-form,
+  .enrollment-layout {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .lead-form-grid,
+  .enterprise-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lead-form input,
+  .lead-form select,
+  .enterprise-lead-form input,
+  .enterprise-lead-form select,
+  .enterprise-lead-form textarea,
+  .careers-form-card input,
+  .careers-form-card select,
+  .careers-form-card textarea,
+  .enrollment-form input,
+  .enrollment-form select,
+  .enrollment-form textarea {
+    width: 100%;
+    min-width: 0;
+    font-size: 16px;
+  }
+
+  /* Matrícula: agenda adaptada para toque. */
+  .schedule-calendar {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .schedule-date {
+    min-height: 66px;
+  }
+
+  .schedule-times {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .schedule-selected-summary > div {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .enrollment-actions {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .enrollment-submit,
+  .enrollment-back-button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Rodapé público */
+  .site-footer-container,
+  .site-footer-bottom {
+    min-width: 0;
+  }
+
+  .site-footer-bottom > span {
+    max-width: 100%;
+    overflow-wrap: normal;
+  }
+
+  /* Tabelas e listas administrativas */
+  .table-responsive,
+  .admin-table-wrapper,
+  .admin-data-table-wrapper,
+  .leads-table-wrapper,
+  .enterprise-table-wrapper,
+  .table-container {
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Portal do aluno */
+  .student-main,
+  .student-content {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .student-content > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .student-card,
+  .student-dashboard-card,
+  .student-welcome-card,
+  .student-next-lesson,
+  .student-activity-card,
+  .student-lesson-card,
+  .student-history-card,
+  .student-profile-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .student-primary-button,
+  .student-secondary-button {
+    min-height: 44px;
+  }
+
+  /* Portal administrativo */
+  .admin-main,
+  .admin-content,
+  .admin-page {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-content > *,
+  .admin-page > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .admin-module-grid,
+  .admin-summary-grid,
+  .admin-content-grid {
+    min-width: 0;
+  }
+
+  .admin-card,
+  .admin-summary-card,
+  .admin-module-card {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Sala de aula */
+  .virtual-classroom-page,
+  .academy-live-page {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    min-height: 100dvh;
+    overflow-x: hidden;
+  }
+
+  .academy-live-header,
+  .virtual-classroom-header {
+    padding-left: max(12px, env(safe-area-inset-left));
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+
+  /* Login mobile */
+  .student-login-page,
+  .admin-access-page,
+  .professor-access-page {
+    width: 100%;
+    min-width: 0;
+    min-height: 100dvh;
+    padding:
+      max(20px, env(safe-area-inset-top))
+      max(16px, env(safe-area-inset-right))
+      max(20px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+  }
+
+  .student-login-card,
+  .admin-access-card,
+  .professor-access-card {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  .home main {
+    padding-top: 68px;
+  }
+
+  .home .header-container {
+    min-height: 68px;
+  }
+
+  .home .hero-container {
+    padding-top: 34px;
+    padding-bottom: 44px;
+  }
+
+  .home .section {
+    padding-top: 58px;
+    padding-bottom: 58px;
+  }
+
+  .home .section-header {
+    margin-bottom: 30px;
+  }
+
+  .home .section-title {
+    font-size: clamp(27px, 8vw, 36px);
+  }
+
+  .home .section-description {
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .home .hero-content > p {
+    font-size: 14.5px;
+  }
+
+  .home .hero-card {
+    padding: 24px 20px;
+  }
+
+  .home .hero-card-footer {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home .hero-card-footer > div:last-child {
+    grid-column: 1 / -1;
+  }
+
+  .home .courses-grid,
+  .home .features-grid {
+    gap: 14px;
+  }
+
+  .home .course-card,
+  .home .feature-card {
+    padding: 20px;
+  }
+
+  .home .careers-container,
+  .home .diagnostic-container,
+  .home .cta-container {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+
+  .site-footer-container {
+    padding-top: 40px;
+    padding-bottom: 30px;
+  }
+
+  .site-footer-logo img {
+    max-width: 190px;
+    height: 64px;
+  }
+
+  .site-footer-links {
+    width: 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px 16px;
+  }
+
+  .site-footer-bottom {
+    width: calc(100% - 28px);
+  }
+
+  .site-footer-legal {
+    width: 100%;
+    gap: 12px 16px;
+  }
+
+  .student-header {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+
+  .student-content {
+    padding-left: 13px;
+    padding-right: 13px;
+  }
+
+  .student-site-footer-bottom {
+    overflow-wrap: normal;
+  }
+
+  .admin-content {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .admin-header {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .admin-page-intro h1 {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .home .header-container {
+    width: calc(100% - 16px);
+  }
+
+  .home .logo img {
+    max-width: 128px;
+    height: 40px;
+  }
+
+  .home .mobile-menu-button {
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    min-height: 42px;
+  }
+
+  .home .hero-container {
+    width: calc(100% - 22px);
+  }
+
+  .home .hero h1 {
+    font-size: 33px;
+  }
+
+  .home .hero-card {
+    padding: 21px 17px;
+  }
+
+  .home .course-card,
+  .home .feature-card {
+    padding: 18px;
+  }
+
+  .schedule-calendar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .schedule-times {
+    grid-template-columns: 1fr;
+  }
+
+  .site-footer-links {
+    grid-template-columns: 1fr;
+  }
+}
