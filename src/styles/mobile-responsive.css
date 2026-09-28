@@ -37,6 +37,82 @@
     -webkit-tap-highlight-color: transparent;
   }
 
+
+
+  /* Páginas de idioma — mesmo controle estrutural da Home.
+     Nenhum elemento interno pode aumentar a largura da viewport. */
+  .language-landing,
+  .language-landing main,
+  .language-landing-header,
+  .language-landing-hero,
+  .language-landing-proof,
+  .language-landing-section,
+  .language-landing-cta,
+  .language-landing-footer {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .language-landing-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 10px;
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
+  }
+
+  .language-landing-brand,
+  .language-landing-header-link,
+  .language-landing-container,
+  .language-landing-hero-grid,
+  .language-landing-copy,
+  .language-landing-visual,
+  .language-landing-cta-inner,
+  .language-landing-cta-actions,
+  .language-landing-section-heading,
+  .language-landing-benefit-card,
+  .language-landing-benefit-card > div,
+  .language-landing-info-row > div,
+  .language-landing-outcomes > div {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .language-landing-brand {
+    overflow-wrap: normal;
+    white-space: nowrap;
+  }
+
+  .language-landing-header-link {
+    justify-self: end;
+    width: auto;
+    max-width: 48vw;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    text-align: center;
+  }
+
+  .language-landing-container {
+    width: calc(100% - 28px);
+  }
+
+  .language-landing img,
+  .language-landing video,
+  .language-landing canvas,
+  .language-landing svg {
+    max-width: 100%;
+  }
+
+  .language-landing h1,
+  .language-landing h2,
+  .language-landing h3,
+  .language-landing p,
+  .language-landing span,
+  .language-landing a {
+    overflow-wrap: break-word;
+  }
+
   /* Conteúdo público */
   .home main,
   .diagnostic-main,
