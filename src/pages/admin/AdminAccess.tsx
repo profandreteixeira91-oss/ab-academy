@@ -3,7 +3,8 @@ import { ChevronRight, Eye, EyeOff, Loader2, LockKeyhole } from 'lucide-react'
 import logo from '../../assets/logo_abacademy.png'
 import { supabase } from '../../lib/supabase'
 
-import '../../styles/admin/AdminAccess.css'\nimport '../../styles/aluno.css'
+import '../../styles/admin/AdminAccess.css'
+import '../../styles/aluno.css'
 
 type AdminAccessProps = {
   children: ReactNode
