@@ -612,3 +612,11 @@
     max-width: 100%;
   }
 }
+
+
+@media (max-width: 380px) {
+  .diagnostic-logo .academy-header-logo {
+    width: auto;
+    max-width: 132px;
+  }
+}
