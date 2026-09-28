@@ -16,12 +16,20 @@ const WHATSAPP_MESSAGE = 'Olá! Tenho interesse em estudar na AB Academy e gosta
 
 function getTracking() {
   const params = new URLSearchParams(window.location.search)
+  let stored: Record<string, string> = {}
+
+  try {
+    stored = JSON.parse(sessionStorage.getItem('abacademy_attribution') || '{}') as Record<string, string>
+  } catch {
+    stored = {}
+  }
+
   return {
-    source: params.get('utm_source') || params.get('source') || 'site',
-    medium: params.get('utm_medium'),
-    campaign: params.get('utm_campaign'),
-    term: params.get('utm_term'),
-    content: params.get('utm_content'),
+    source: params.get('utm_source') || params.get('source') || stored.source || 'site',
+    medium: params.get('utm_medium') || stored.medium || null,
+    campaign: params.get('utm_campaign') || stored.campaign || null,
+    term: params.get('utm_term') || stored.term || null,
+    content: params.get('utm_content') || stored.content || null,
   }
 }
 
