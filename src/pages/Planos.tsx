@@ -106,7 +106,10 @@ function PlanoCard({ plano }: { plano: Plano }) {
 
 function Planos() {
   const [planos, setPlanos] = useState<Plano[]>([])
-  const [idiomaSelecionado, setIdiomaSelecionado] = useState<'ingles' | 'alemao'>('ingles')
+  const [idiomaSelecionado, setIdiomaSelecionado] = useState<'ingles' | 'alemao'>(() => {
+    const idioma = new URLSearchParams(window.location.search).get('idioma')
+    return idioma === 'alemao' ? 'alemao' : 'ingles'
+  })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -199,6 +202,7 @@ function Planos() {
             <a href="/">Início</a>
             <a href="/#sobre">Sobre</a>
             <a href="/#cursos">Cursos</a>
+            <a href="/planos" aria-current="page">Planos</a>
             <a href="/#metodologia">Metodologia</a>
             <a href="/#contato">Contato</a>
           </nav>
@@ -229,6 +233,7 @@ function Planos() {
             <a href="/" onClick={() => setMobileMenuOpen(false)}>Início</a>
             <a href="/#sobre" onClick={() => setMobileMenuOpen(false)}>Sobre</a>
             <a href="/#cursos" onClick={() => setMobileMenuOpen(false)}>Cursos</a>
+            <a href="/planos" onClick={() => setMobileMenuOpen(false)}>Planos</a>
             <a href="/#metodologia" onClick={() => setMobileMenuOpen(false)}>Metodologia</a>
             <a href="/#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>
             <a href="/matricula" onClick={() => setMobileMenuOpen(false)}>Matricule-se</a>
@@ -318,7 +323,7 @@ function Planos() {
                     Pagamento único, sem recorrência.
                   </p>
                 </div>
-                <a href="/diagnostica" className="btn btn-secondary">
+                <a href={'/diagnostica?idioma=' + idiomaSelecionado} className="btn btn-secondary">
                   Quero fazer a aula diagnóstica
                   <ArrowRight size={17} />
                 </a>
