@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   Menu,
   MessageSquare,
+  UserPlus,
   Settings,
   Users,
   X,
@@ -31,6 +32,7 @@ import CentralAtividades from './admin/CentralAtividades'
 import Comunicacao from './admin/Comunicacao'
 import Candidaturas from './admin/Candidaturas'
 import EnterpriseLeads from './admin/EnterpriseLeads'
+import Leads from './admin/Leads'
 
 import '../styles/admin.css'
 import '../styles/central-admin.css'
@@ -136,6 +138,13 @@ const modules: AdminModule[] = [
     description:
       'Receba e acompanhe candidaturas de professores.',
     icon: BriefcaseBusiness,
+  },
+  {
+    id: 'leads',
+    title: 'Leads',
+    description:
+      'Gerencie contatos interessados em estudar na AB Academy e acompanhe o funil comercial.',
+    icon: UserPlus,
   },
   {
     id: 'enterprise',
@@ -255,6 +264,11 @@ const navigation = [
         icon: BriefcaseBusiness,
       },
       {
+        id: 'leads',
+        label: 'Leads',
+        icon: UserPlus,
+      },
+      {
         id: 'enterprise',
         label: 'AB Enterprise',
         icon: BriefcaseBusiness,
@@ -272,6 +286,7 @@ export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [activeModule, setActiveModule] = useState('dashboard')
   const [enterpriseNewLeadCount, setEnterpriseNewLeadCount] = useState(0)
+  const [newLeadCount, setNewLeadCount] = useState(0)
 
   useEffect(() => {
     const title =
@@ -285,6 +300,21 @@ export default function Admin() {
 
   useEffect(() => {
     let mounted = true
+
+    const loadNewLeadCounts = async () => {
+      const [{ count: leadCount, error: leadError }, { count: enterpriseCount, error: enterpriseError }] = await Promise.all([
+        supabase.from('leads').select('id', { count: 'exact', head: true }).eq('status', 'novo'),
+        supabase.from('enterprise_leads').select('id', { count: 'exact', head: true }).eq('status', 'novo'),
+      ])
+
+      if (!mounted) return
+
+      if (leadError) console.error('Erro ao consultar novos leads:', leadError)
+      else setNewLeadCount(leadCount || 0)
+
+      if (enterpriseError) console.error('Erro ao consultar novos leads Enterprise:', enterpriseError)
+      else setEnterpriseNewLeadCount(enterpriseCount || 0)
+    }
 
     const loadEnterpriseNewLeadCount = async () => {
       const { count, error } = await supabase
@@ -302,10 +332,10 @@ export default function Admin() {
       setEnterpriseNewLeadCount(count || 0)
     }
 
-    void loadEnterpriseNewLeadCount()
+    void loadNewLeadCounts()
 
     const interval = window.setInterval(
-      () => void loadEnterpriseNewLeadCount(),
+      () => void loadNewLeadCounts(),
       15000,
     )
 
@@ -398,6 +428,15 @@ export default function Admin() {
                     <span className="admin-nav-item-label">
                       {item.label}
                     </span>
+
+                    {item.id === 'leads' && newLeadCount > 0 && (
+                      <span
+                        className="admin-nav-item-badge admin-nav-item-badge-alert"
+                        aria-label={`${newLeadCount} novos leads`}
+                      >
+                        {newLeadCount > 99 ? '99+' : newLeadCount}
+                      </span>
+                    )}
 
                     {item.id === 'enterprise' && enterpriseNewLeadCount > 0 && (
                       <span
@@ -553,6 +592,10 @@ export default function Admin() {
             <Candidaturas />
           )}
 
+          {activeModule === 'leads' && (
+            <Leads />
+          )}
+
           {activeModule === 'enterprise' && (
             <EnterpriseLeads />
           )}
@@ -567,6 +610,7 @@ export default function Admin() {
             activeModule !== 'equipe' &&
             activeModule !== 'comunicacao' &&
             activeModule !== 'candidaturas' &&
+            activeModule !== 'leads' &&
             activeModule !== 'enterprise' && (
               <div className="admin-panel">
                 <div className="admin-panel-header">
