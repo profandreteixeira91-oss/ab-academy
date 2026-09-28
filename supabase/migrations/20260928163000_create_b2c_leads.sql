@@ -31,9 +31,13 @@ create index if not exists leads_campaign_idx on public.leads(campaign);
 
 alter table public.leads enable row level security;
 
+drop policy if exists "Public can create leads" on public.leads;
 create policy "Public can create leads" on public.leads for insert to anon, authenticated with check (true);
+drop policy if exists "Admins can read leads" on public.leads;
 create policy "Admins can read leads" on public.leads for select to authenticated using (exists (select 1 from public.admin_users au where au.user_id=(select auth.uid()) and au.ativo=true));
+drop policy if exists "Admins can update leads" on public.leads;
 create policy "Admins can update leads" on public.leads for update to authenticated using (exists (select 1 from public.admin_users au where au.user_id=(select auth.uid()) and au.ativo=true)) with check (exists (select 1 from public.admin_users au where au.user_id=(select auth.uid()) and au.ativo=true));
+drop policy if exists "Admins can delete leads" on public.leads;
 create policy "Admins can delete leads" on public.leads for delete to authenticated using (exists (select 1 from public.admin_users au where au.user_id=(select auth.uid()) and au.ativo=true));
 
 grant insert on public.leads to anon, authenticated;
