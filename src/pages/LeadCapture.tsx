@@ -66,7 +66,7 @@ export default function LeadCapture() {
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
   useEffect(() => {
-    if (form.modalidade === 'individual') {
+    if (form.modalidade === 'individual' || form.idioma_interesse === 'ambos') {
       setCommercialPrice(null)
       return
     }
@@ -79,7 +79,7 @@ export default function LeadCapture() {
       const { data: frequencia } = await supabase
         .from('modalidade_frequencias')
         .select('id')
-        .eq('idioma', form.idioma_interesse === 'ambos' ? 'ingles' : form.idioma_interesse)
+        .eq('idioma', form.idioma_interesse)
         .eq('modalidade', form.modalidade)
         .eq('aulas_semana', aulasSemana)
         .eq('ativo', true)
