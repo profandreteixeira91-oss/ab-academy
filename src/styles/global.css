@@ -228,3 +228,142 @@ img {
     flex-basis: 155px !important;
   }
 }
+
+
+/* =========================================================
+   CABEÇALHO MOBILE UNIFICADO
+========================================================= */
+
+.mobile-system-header {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-system-header {
+    position: sticky;
+    top: 0;
+    z-index: 3000;
+    display: block;
+    width: 100%;
+    min-height: 64px;
+    background: rgba(255, 255, 255, 0.97);
+    border-bottom: 1px solid var(--border);
+    box-shadow: 0 4px 18px rgba(16, 24, 40, 0.06);
+    backdrop-filter: blur(14px);
+  }
+
+  .mobile-system-header-inner {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr minmax(120px, 1.5fr) 1fr;
+    align-items: center;
+    width: 100%;
+    min-height: 64px;
+    padding: 6px 12px;
+  }
+
+  .mobile-system-header-brand {
+    display: flex;
+    align-items: center;
+    justify-self: start;
+    min-width: 0;
+    width: auto;
+  }
+
+  .mobile-system-header-brand img {
+    display: block;
+    width: auto;
+    height: 46px;
+    max-width: 145px;
+    object-fit: contain;
+  }
+
+  .mobile-system-header-title {
+    min-width: 0;
+    max-width: 100%;
+    padding: 0 8px;
+    text-align: center;
+    color: var(--text);
+    font-family: 'Montserrat', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  .mobile-system-header-title span {
+    display: -webkit-box;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+
+  .mobile-system-header-menu {
+    justify-self: end;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--primary);
+  }
+
+  .mobile-system-header-navigation {
+    display: grid;
+    gap: 6px;
+    width: 100%;
+    padding: 8px 12px 14px;
+    border-top: 1px solid var(--border);
+    background: #fff;
+  }
+
+  .mobile-system-header-navigation a {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 12px;
+    border-radius: 10px;
+    color: var(--text);
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .mobile-system-header-navigation a:active {
+    background: var(--primary-light);
+    color: var(--primary);
+  }
+
+  /* A Home já possui cabeçalho próprio no desktop.
+     No mobile, o cabeçalho unificado assume essa função. */
+  .home .header {
+    display: none;
+  }
+
+  /* Cabeçalhos dos portais não competem com o cabeçalho global. */
+  .student-header,
+  .professor-header,
+  .admin-header {
+    display: none !important;
+  }
+}
+
+@media (max-width: 380px) {
+  .mobile-system-header-inner {
+    grid-template-columns: 1fr minmax(105px, 1.3fr) 1fr;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .mobile-system-header-brand img {
+    max-width: 125px;
+    height: 42px;
+  }
+
+  .mobile-system-header-title {
+    font-size: 13px;
+  }
+}
