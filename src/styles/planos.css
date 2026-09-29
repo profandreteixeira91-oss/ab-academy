@@ -1133,3 +1133,14 @@
     width: 100%;
   }
 }
+
+
+/* Seleção de modalidade */
+.planos-modality-switch{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:18px}
+.planos-modality-switch .planos-language-switch-button{min-height:96px;padding:18px 16px;align-items:flex-start;justify-content:center}
+.planos-modality-switch .planos-language-switch-button h2{margin:0;font-size:18px}
+.planos-modality-switch .planos-language-switch-button span{display:block;margin-top:5px;color:#71809a;font-size:11px;font-weight:600}
+.planos-modality-switch .planos-language-switch-button.active span{color:#3567c8}
+.planos-modality-note{max-width:760px;margin:0 auto 28px;padding:12px 16px;border:1px solid #dce7f7;border-radius:12px;background:#f7faff;color:#5d6d86;font-size:12px;line-height:1.6;text-align:center}
+.planos-detail-card--dupla,.planos-detail-card--grupo{border-color:#dce7f7}
+@media(max-width:720px){.planos-modality-switch{grid-template-columns:1fr}.planos-modality-switch .planos-language-switch-button{min-height:76px}.planos-modality-note{margin-bottom:22px}}
