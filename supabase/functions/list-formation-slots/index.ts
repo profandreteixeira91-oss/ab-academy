@@ -26,20 +26,36 @@ Deno.serve(async (req) => {
     }
   }
   const requestedId = urlRequestedId || bodyRequestedId
+  let requestedModality: 'dupla' | 'grupo' | null = null
+  const queryModality = new URL(req.url).searchParams.get('modalidade')
+  if (queryModality === 'dupla' || queryModality === 'grupo') requestedModality = queryModality
+  if (req.method === 'POST') {
+    try {
+      const body = await req.json()
+      if (body?.modalidade === 'dupla' || body?.modalidade === 'grupo') requestedModality = body.modalidade
+    } catch {
+      // Corpo opcional.
+    }
+  }
 
   const { data: slots, error } = await admin
     .from('horarios')
     .select('id,idioma,dia_semana,hora_inicio,hora_fim,tipo_horario,disponivel')
     .eq('disponivel', true)
     .is('aluno_id', null)
-    .in('tipo_horario', ['dupla', 'grupo'])
     .order('idioma')
     .order('dia_semana')
     .order('hora_inicio')
 
   if (error) return new Response(JSON.stringify({ error: 'Não foi possível carregar os horários.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
-  const filtered = requestedId ? (slots || []).filter((slot) => slot.id === requestedId) : (slots || [])
+  const candidates = (slots || []).filter((slot) => {
+    if (!requestedModality) return ['dupla', 'grupo'].includes(slot.tipo_horario)
+    if (slot.tipo_horario === requestedModality) return true
+    if (slot.tipo_horario !== 'individual') return false
+    return true
+  })
+  const filtered = requestedId ? candidates.filter((slot) => slot.id === requestedId) : candidates
   const results = []
 
   for (const slot of filtered) {
@@ -70,8 +86,9 @@ Deno.serve(async (req) => {
       .in('status', ['novo', 'em_contato', 'qualificado'])
 
     const total = Math.max(interessados, 0) + (leadCount ?? 0)
-    const quantidadeMaxima = turma?.quantidade_maxima ?? (slot.tipo_horario === 'dupla' ? 2 : 6)
-    const quantidadeMinima = turma?.quantidade_minima ?? (slot.tipo_horario === 'dupla' ? 2 : 3)
+    const effectiveModality = requestedModality ?? (slot.tipo_horario === 'dupla' || slot.tipo_horario === 'grupo' ? slot.tipo_horario : 'dupla')
+    const quantidadeMaxima = turma?.quantidade_maxima ?? (effectiveModality === 'dupla' ? 2 : 6)
+    const quantidadeMinima = turma?.quantidade_minima ?? (effectiveModality === 'dupla' ? 2 : 3)
 
     results.push({
       horario_id: slot.id,
@@ -79,7 +96,7 @@ Deno.serve(async (req) => {
       dia_semana: slot.dia_semana,
       hora_inicio: slot.hora_inicio,
       hora_fim: slot.hora_fim,
-      tipo_horario: slot.tipo_horario,
+      tipo_horario: effectiveModality,
       turma_status: turma?.status ?? 'em_formacao',
       quantidade_minima: quantidadeMinima,
       quantidade_maxima: quantidadeMaxima,
