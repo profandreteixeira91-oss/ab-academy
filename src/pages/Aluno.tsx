@@ -2696,6 +2696,10 @@ function Aluno() {
   const navigateTo = (
     nextSection: StudentSection,
   ) => {
+    if (paymentEntry) {
+      closePaymentScreen()
+    }
+
     setSection(nextSection)
     setMobileMenuOpen(false)
 
