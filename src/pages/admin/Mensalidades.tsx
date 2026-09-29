@@ -169,7 +169,44 @@ export default function Mensalidades() {
 
   function selectPlan(id: string) {
     const plan = planos.find(p => p.id === id)
-    setForm(current => ({ ...current, plano_id: id, valor: plan ? String(plan.preco).replace('.', ',') : current.valor }))
+    setForm(current => ({
+      ...current,
+      plano_id: id,
+      // Ao criar uma nova mensalidade, o plano define o valor padrão.
+      // O admin pode alterar o campo Valor logo abaixo para um preço personalizado.
+      valor: plan ? String(plan.preco).replace('.', ',') : current.valor,
+    }))
+  }
+
+  async function selectStudent(id: string) {
+    setField('aluno_id', id)
+    if (!id || editingId) return
+
+    try {
+      const { data, error: matriculaError } = await supabase
+        .from('matriculas')
+        .select('plano_id')
+        .eq('aluno_id', id)
+        .eq('status', 'ativa')
+        .not('plano_id', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (matriculaError || !data?.plano_id) return
+
+      const plan = planos.find(p => p.id === data.plano_id)
+      if (!plan) return
+
+      setForm(current => ({
+        ...current,
+        aluno_id: id,
+        plano_id: plan.id,
+        valor: String(plan.preco).replace('.', ','),
+      }))
+    } catch (e) {
+      console.error('Não foi possível identificar o plano ativo do aluno:', e)
+    }
   }
 
   async function save() {
@@ -292,11 +329,19 @@ export default function Mensalidades() {
         <div className="mensalidades-modal">
           <header><div><span className="mensalidades-eyebrow">CONTAS A RECEBER</span><h2>{editingId ? 'Editar mensalidade' : 'Nova mensalidade'}</h2></div><button type="button" onClick={close} disabled={saving}><X size={18}/></button></header>
           <div className="mensalidades-form">
-            <label><span>Aluno *</span><select value={form.aluno_id} onChange={e => setField('aluno_id', e.target.value)} disabled={saving}><option value="">Selecione</option>{alunos.map(a => <option key={a.id} value={a.id}>{a.nome_completo || 'Aluno sem nome'}</option>)}</select></label>
+            <label><span>Aluno *</span><select value={form.aluno_id} onChange={e => selectStudent(e.target.value)} disabled={saving}><option value="">Selecione</option>{alunos.map(a => <option key={a.id} value={a.id}>{a.nome_completo || 'Aluno sem nome'}</option>)}</select></label>
             <label><span>Plano</span><select value={form.plano_id} onChange={e => selectPlan(e.target.value)} disabled={saving}><option value="">Sem plano</option>{planos.map(p => <option key={p.id} value={p.id}>{p.nome}</option>)}</select></label>
             <label><span>Competência *</span><input type="month" value={form.competencia.slice(0, 7)} onChange={e => setField('competencia', e.target.value + '-01')} disabled={saving}/></label>
             <label><span>Vencimento *</span><input type="date" value={form.data_vencimento} onChange={e => setField('data_vencimento', e.target.value)} disabled={saving}/></label>
-            <label><span>Valor *</span><input value={form.valor} inputMode="decimal" placeholder="0,00" onChange={e => setField('valor', e.target.value)} disabled={saving}/></label>
+            <label>
+              <span>Valor da mensalidade *</span>
+              <input value={form.valor} inputMode="decimal" placeholder="0,00" onChange={e => setField('valor', e.target.value)} disabled={saving}/>
+              <small className="mensalidades-value-help">
+                {form.plano_id
+                  ? 'Valor padrão do plano. Altere este campo somente quando este aluno tiver uma condição diferenciada.'
+                  : 'Informe o valor acordado para esta mensalidade.'}
+              </small>
+            </label>
             <label><span>Método</span><select value={form.metodo_pagamento} onChange={e => setField('metodo_pagamento', e.target.value)} disabled={saving}><option>PIX</option><option>Cartão</option><option>Boleto</option><option>Transferência</option><option>Dinheiro</option><option>Outro</option></select></label>
             <label><span>Parcela</span><input type="number" min="1" value={form.numero_parcela} onChange={e => setField('numero_parcela', e.target.value)} disabled={saving}/></label>
             <label><span>Total de parcelas</span><input type="number" min="1" value={form.total_parcelas} onChange={e => setField('total_parcelas', e.target.value)} disabled={saving}/></label>
