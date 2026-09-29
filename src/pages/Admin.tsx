@@ -40,6 +40,7 @@ import '../styles/admin.css'
 import '../styles/central-admin.css'
 import '../styles/admin-enterprise.css'
 import '../styles/admin-leads.css'
+import '../styles/admin-turmas.css'
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 
