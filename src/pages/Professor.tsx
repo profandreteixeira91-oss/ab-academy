@@ -581,14 +581,39 @@ function Professor() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (event) => {
-        // Trocar de aba do navegador não deve disparar recarregamento
-        // nem reconstrução do portal. Apenas mudanças reais de autenticação
-        // atualizam o estado do professor.
-        if (
-          event === 'SIGNED_IN' ||
-          event === 'SIGNED_OUT'
-        ) {
-          loadProfessor()
+        /*
+         * O Supabase pode emitir SIGNED_IN novamente quando a sessão
+         * é sincronizada ao retornar para uma aba que ficou em segundo
+         * plano. Isso NÃO representa um novo login e não pode reconstruir
+         * o Portal do Professor.
+         *
+         * SIGNED_IN só é tratado aqui quando ainda não existe um
+         * professor carregado. Depois que o portal está autenticado,
+         * a troca de abas não dispara nova consulta nem reset de estado.
+         */
+        if (event === 'SIGNED_IN') {
+          if (!professor && !loadingProfessorRef.current) {
+            void loadProfessor()
+          }
+          return
+        }
+
+        if (event === 'SIGNED_OUT') {
+          setProfessor(null)
+          setIdiomas([])
+          setHorarios([])
+          setAlunos([])
+          setAtividades([])
+          setRegistrosAulas([])
+          setActiveSection('dashboard')
+
+          try {
+            sessionStorage.removeItem(
+              'abacademy_professor_section',
+            )
+          } catch {
+            // O logout continua funcionando sem sessionStorage.
+          }
         }
       },
     )
