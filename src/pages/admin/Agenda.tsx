@@ -36,6 +36,7 @@ type Professor = {
 
 type Horario = {
   id: string
+  tipo_horario: 'individual' | 'dupla' | 'grupo'
   idioma: 'ingles' | 'alemao'
   dia_semana: number
   hora_inicio: string
@@ -46,6 +47,7 @@ type Horario = {
 }
 
 type HorarioForm = {
+  tipo_horario: 'individual' | 'dupla' | 'grupo'
   idioma: 'ingles' | 'alemao'
   dia_semana: number
   hora_inicio: string
@@ -142,6 +144,7 @@ const idiomas = [
  */
 
 const initialForm: HorarioForm = {
+  tipo_horario: 'individual',
   idioma: 'ingles',
   dia_semana: 1,
   hora_inicio: '08:00',
@@ -255,6 +258,7 @@ export default function Agenda() {
           .from('horarios')
           .select(`
             id,
+            tipo_horario,
             idioma,
             dia_semana,
             hora_inicio,
@@ -684,6 +688,7 @@ export default function Agenda() {
     setEditingId(horario.id)
 
     setForm({
+      tipo_horario: horario.tipo_horario || 'individual',
       idioma:
         horario.idioma === 'alemao'
           ? 'alemao'
@@ -784,6 +789,7 @@ export default function Agenda() {
       }
 
       const payload = {
+        tipo_horario: form.tipo_horario,
         idioma: form.idioma,
         dia_semana: form.dia_semana,
         hora_inicio:
@@ -2266,6 +2272,25 @@ export default function Agenda() {
             </div>
 
             <div className="agenda-form">
+
+              <div className="agenda-form-field">
+                <label htmlFor="agenda-tipo">Tipo de horário</label>
+                <select
+                  id="agenda-tipo"
+                  value={form.tipo_horario}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      tipo_horario: event.target.value as 'individual' | 'dupla' | 'grupo',
+                    }))
+                  }
+                >
+                  <option value="individual">Individual</option>
+                  <option value="dupla">Dupla</option>
+                  <option value="grupo">Grupo</option>
+                </select>
+                <small>Define como este horário poderá ser utilizado na matrícula e na formação de turmas.</small>
+              </div>
 
               <div className="agenda-form-field">
 
