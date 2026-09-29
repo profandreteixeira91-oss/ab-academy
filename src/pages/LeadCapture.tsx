@@ -67,8 +67,33 @@ export default function LeadCapture() {
     initialModality === 'individual' ? 'ja_tenho_participantes' : 'preciso_formar_turma',
   )
   const [individualStartPrice, setIndividualStartPrice] = useState<number | null>(null)
+  const [selectedFormationSlot, setSelectedFormationSlot] = useState<{ horario_id: string; idioma: Language; dia_semana: number; hora_inicio: string; hora_fim: string; tipo_horario: Modality; interessados: number; quantidade_maxima: number } | null>(null)
 
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
+
+  useEffect(() => {
+    const horarioId = new URLSearchParams(window.location.search).get('horario_id')
+    if (!horarioId) return
+    let active = true
+    async function loadFormationSlot() {
+      const { data, error } = await supabase
+        .from('horarios_formacao_publicos')
+        .select('horario_id,idioma,dia_semana,hora_inicio,hora_fim,tipo_horario,interessados,quantidade_maxima')
+        .eq('horario_id', horarioId)
+        .maybeSingle()
+      if (!active || error || !data) return
+      setSelectedFormationSlot(data as typeof selectedFormationSlot)
+      setForm(current => ({
+        ...current,
+        idioma_interesse: data.idioma as Language,
+        modalidade: data.tipo_horario as Modality,
+        quantidade_participantes: data.tipo_horario === 'dupla' ? '2' : String(data.quantidade_maxima),
+      }))
+      setFormacaoTurma('preciso_formar_turma')
+    }
+    void loadFormationSlot()
+    return () => { active = false }
+  }, [])
 
   useEffect(() => {
     if (form.modalidade === 'individual' || form.idioma_interesse === 'ambos') {
@@ -200,6 +225,7 @@ export default function LeadCapture() {
       term: tracking.term,
       content: tracking.content,
       referrer: document.referrer || null,
+      horario_id: selectedFormationSlot?.horario_id || null,
       modalidade: form.modalidade,
       formacao_turma: form.modalidade === 'individual' ? null : formacaoTurma,
       aulas_semana: aulasSemana,
@@ -273,6 +299,14 @@ export default function LeadCapture() {
             <p>Leva menos de um minuto.</p>
           </div>
 
+          {selectedFormationSlot && (
+            <div className="lead-commercial-price">
+              <span>Horário selecionado</span>
+              <strong>{selectedFormationSlot.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'} · {selectedFormationSlot.dia_semana === 0 ? 'Domingo' : selectedFormationSlot.dia_semana === 1 ? 'Segunda-feira' : selectedFormationSlot.dia_semana === 2 ? 'Terça-feira' : selectedFormationSlot.dia_semana === 3 ? 'Quarta-feira' : selectedFormationSlot.dia_semana === 4 ? 'Quinta-feira' : selectedFormationSlot.dia_semana === 5 ? 'Sexta-feira' : 'Sábado'} · {selectedFormationSlot.hora_inicio.slice(0,5)}–{selectedFormationSlot.hora_fim.slice(0,5)}</strong>
+              <small>{selectedFormationSlot.interessados} {selectedFormationSlot.interessados === 1 ? 'aluno já interessado' : 'alunos já interessados'}. Seus dados não serão exibidos aos demais interessados.</small>
+            </div>
+          )}
+
           <label>Nome completo<input required value={form.nome} onChange={(e) => setForm({ ...form, nome: e.target.value })} placeholder="Seu nome" /></label>
           <div className="lead-form-grid">
             <label>E-mail<input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="voce@email.com" /></label>
@@ -334,7 +368,7 @@ export default function LeadCapture() {
                     ? 'A AB Academy confirmará os participantes, nível e disponibilidade antes de liberar a matrícula e o valor da modalidade.'
                     : formacaoTurma === 'preciso_formar_turma'
                       ? 'A AB Academy poderá ajudar a formar uma turma compatível. Você aguarda a formação antes de iniciar.'
-                      : 'Você pode começar imediatamente no plano individual. Quando uma dupla ou turma compatível for formada, a migração para a modalidade coletiva será registrada para os meses seguintes.'}
+                      : 'Você pode começar imediatamente no plano individual com 10% de desconto enquanto aguarda a formação. Quando uma dupla ou turma compatível for formada, você migra para o valor coletivo correspondente.'}
                 </p>
               </fieldset>
 
@@ -345,7 +379,7 @@ export default function LeadCapture() {
                 {commercialPrice !== null && formacaoTurma === 'ja_tenho_participantes' && <small>por aluno / mês · {form.aulas_semana}x por semana</small>}
                 {form.modalidade === 'grupo' && <small>Valor individual conforme o tamanho da turma (3 a 6 participantes).</small>}
                 {form.modalidade === 'dupla' && <small>Valor individual para a dupla.</small>}
-                {formacaoTurma === 'iniciar_individual' && <small>Você começa agora no plano individual e, quando a turma for formada, migra para o valor coletivo durante a condição especial definida pela AB Academy.</small>}
+                {formacaoTurma === 'iniciar_individual' && <small>Você começa agora no plano individual com 10% de desconto enquanto aguarda a formação. Quando a turma for formada, migra para o valor coletivo correspondente.</small>}
                 <small>O valor exibido é uma referência comercial. A condição coletiva só começa após a confirmação da turma.</small>
               </div>
 
