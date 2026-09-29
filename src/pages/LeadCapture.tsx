@@ -62,6 +62,9 @@ export default function LeadCapture() {
   const [error, setError] = useState('')
   const [commercialPrice, setCommercialPrice] = useState<number | null>(null)
   const [priceLoading, setPriceLoading] = useState(false)
+  const [formacaoTurma, setFormacaoTurma] = useState<'ja_tenho_participantes' | 'preciso_formar_turma'>(
+    initialModality === 'individual' ? 'ja_tenho_participantes' : 'preciso_formar_turma',
+  )
 
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
@@ -111,6 +114,14 @@ export default function LeadCapture() {
     return () => { active = false }
   }, [form.modalidade, form.idioma_interesse, form.aulas_semana, form.quantidade_participantes])
 
+  useEffect(() => {
+    if (form.modalidade === 'individual') {
+      setFormacaoTurma('ja_tenho_participantes')
+    } else if (!formacaoTurma) {
+      setFormacaoTurma('preciso_formar_turma')
+    }
+  }, [form.modalidade])
+
   function formatLeadPrice(value: number) {
     return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
   }
@@ -159,6 +170,7 @@ export default function LeadCapture() {
       content: tracking.content,
       referrer: document.referrer || null,
       modalidade: form.modalidade,
+      formacao_turma: form.modalidade === 'individual' ? null : formacaoTurma,
       aulas_semana: aulasSemana,
       quantidade_participantes: quantidade,
       horario_preferido: form.horario_preferido || null,
@@ -183,7 +195,7 @@ export default function LeadCapture() {
           <span className="lead-eyebrow">Cadastro recebido</span>
           <h1>Obrigado, {form.nome.split(' ')[0] || 'por seu interesse'}.</h1>
           <p>
-            Recebemos seu interesse em {languageLabels[form.idioma_interesse]}. A equipe da AB Academy entrará em contato para orientar seus próximos passos.
+            Recebemos seu interesse em {languageLabels[form.idioma_interesse]}. {form.modalidade === 'individual' ? 'A equipe da AB Academy entrará em contato para orientar seus próximos passos.' : 'Para duplas e grupos, a equipe confirmará os participantes e a formação da turma antes de liberar a matrícula.'}
           </p>
           <div className="lead-success-actions">
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="lead-whatsapp-button">
@@ -269,12 +281,32 @@ export default function LeadCapture() {
                   <input required min={form.modalidade === 'dupla' ? 2 : 3} max={form.modalidade === 'dupla' ? 2 : 6} type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
                 </label>
               </div>
+              <fieldset className="lead-group-formation">
+                <legend>Você já tem os participantes?</legend>
+                <div className="lead-language-options">
+                  <label className={formacaoTurma === 'ja_tenho_participantes' ? 'selected' : ''}>
+                    <input type="radio" name="formacao_turma" value="ja_tenho_participantes" checked={formacaoTurma === 'ja_tenho_participantes'} onChange={() => setFormacaoTurma('ja_tenho_participantes')} />
+                    <span>Sim, já tenho minha {form.modalidade === 'dupla' ? 'dupla' : 'turma'}</span>
+                  </label>
+                  <label className={formacaoTurma === 'preciso_formar_turma' ? 'selected' : ''}>
+                    <input type="radio" name="formacao_turma" value="preciso_formar_turma" checked={formacaoTurma === 'preciso_formar_turma'} onChange={() => setFormacaoTurma('preciso_formar_turma')} />
+                    <span>Não, preciso de ajuda para formar</span>
+                  </label>
+                </div>
+                <p className="lead-group-formation-note">
+                  {formacaoTurma === 'ja_tenho_participantes'
+                    ? 'A AB Academy confirmará os participantes, nível e disponibilidade antes de liberar a matrícula e o valor da modalidade.'
+                    : 'A AB Academy poderá ajudar a formar uma turma compatível. O valor promocional de dupla ou grupo não é uma matrícula individual.'}
+                </p>
+              </fieldset>
+
               <div className="lead-commercial-price" aria-live="polite">
                 <span>Investimento estimado</span>
                 <strong>{priceLoading ? 'Calculando...' : commercialPrice !== null ? formatLeadPrice(commercialPrice) : 'A consultar'}</strong>
                 {commercialPrice !== null && <small>por aluno / mês · {form.aulas_semana}x por semana</small>}
                 {form.modalidade === 'grupo' && <small>Valor individual conforme o tamanho da turma (3 a 6 participantes).</small>}
                 {form.modalidade === 'dupla' && <small>Valor individual para a dupla.</small>}
+                <small>O valor exibido é uma referência comercial. A matrícula só é liberada após a confirmação dos participantes.</small>
               </div>
 
               <label>Melhor horário
