@@ -93,8 +93,8 @@ function ModalidadeCard({
       <h3>{dupla ? 'Aulas em dupla' : 'Aulas em grupo'}</h3>
       <p className="planos-detail-description">
         {dupla
-          ? 'Estude com outra pessoa, com acompanhamento do professor e valor individual por participante.'
-          : 'Monte sua turma com 3 a 6 participantes. Quanto maior a turma, menor o investimento individual.'}
+          ? 'Estude com outra pessoa, em uma turma real de 2 participantes, com acompanhamento do professor e valor individual por participante.'
+          : 'Monte uma turma real com 3 a 6 participantes. Quanto maior a turma, menor o investimento individual. A modalidade não funciona como desconto para matrícula individual.'}
       </p>
 
       <div className="planos-frequency-list">
