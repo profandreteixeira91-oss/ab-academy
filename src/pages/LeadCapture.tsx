@@ -237,25 +237,6 @@ export default function LeadCapture() {
       return
     }
 
-    if (
-      form.modalidade !== 'individual' &&
-      selectedFormationSlot?.horario_id
-    ) {
-      const { error: formationError } = await supabase.rpc(
-        'vincular_lead_formacao',
-        {
-          p_lead_id: createdLead.id,
-          p_horario_id: selectedFormationSlot.horario_id,
-        },
-      )
-
-      if (formationError) {
-        console.error('Erro ao vincular formação:', formationError)
-        setError('Seu interesse foi registrado, mas não foi possível vincular automaticamente a formação deste horário. A equipe poderá concluir o vínculo pelo Admin.')
-        setLoading(false)
-        return
-      }
-    }
 
     setSuccess(true)
     setLoading(false)
