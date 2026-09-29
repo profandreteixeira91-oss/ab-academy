@@ -1,0 +1,26 @@
+.admin-turmas{display:flex;flex-direction:column;gap:20px}
+.admin-turmas-header{display:flex;justify-content:space-between;gap:24px;align-items:flex-start}
+.admin-turmas-eyebrow{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#0b63ce}
+.admin-turmas-header h2{margin:5px 0 6px;font-size:28px;color:#13233b}
+.admin-turmas-header p{margin:0;color:#6d7b90;max-width:720px;line-height:1.55}
+.admin-turmas-summary{display:flex;gap:10px}
+.admin-turmas-summary div{min-width:105px;padding:13px 15px;border:1px solid #e2e9f3;border-radius:14px;background:#fff;display:flex;flex-direction:column}
+.admin-turmas-summary strong{font-size:22px;color:#13233b}.admin-turmas-summary span{font-size:11px;color:#718097}
+.admin-turmas-rule{display:flex;gap:12px;align-items:flex-start;padding:14px 16px;border:1px solid #d9e5f5;border-radius:14px;background:#f6f9fe;color:#61718a}
+.admin-turmas-rule svg{color:#0b63ce;flex:none}.admin-turmas-rule div{display:flex;flex-direction:column;gap:3px}.admin-turmas-rule strong{font-size:12px;color:#26364d}.admin-turmas-rule span{font-size:12px;line-height:1.5}
+.admin-turmas-list{display:flex;flex-direction:column;gap:12px}
+.admin-turma-card{background:#fff;border:1px solid #e2e9f3;border-radius:16px;padding:17px;box-shadow:0 8px 24px rgba(20,43,77,.04)}
+.admin-turma-heading{display:flex;justify-content:space-between;gap:20px;align-items:center}
+.admin-turma-date{font-size:10px;color:#8a96a8}.admin-turma-heading h3{margin:4px 0;font-size:16px;color:#13233b}.admin-turma-heading p{margin:0;font-size:12px;color:#718097}
+.admin-turma-heading-actions{display:flex;gap:9px;align-items:center}.admin-turma-heading-actions button,.admin-turma-ready,.admin-turma-add-grid button{border:1px solid #d7e2ef;background:#fff;color:#24405f;border-radius:9px;padding:8px 11px;font-weight:700;cursor:pointer}
+.admin-turma-status,.admin-turma-member-status{font-size:10px;font-weight:800;border-radius:999px;padding:5px 8px;background:#eef3f8;color:#607088}
+.admin-turma-status.status-pronta{background:#e9f7ef;color:#187143}.admin-turma-status.status-ativa{background:#e9f2ff;color:#0b63ce}
+.admin-turma-progress{height:6px;background:#edf2f7;border-radius:99px;margin-top:15px;overflow:hidden}.admin-turma-progress span{display:block;height:100%;background:#0b63ce;border-radius:inherit}
+.admin-turma-body{margin-top:16px;padding-top:16px;border-top:1px solid #edf1f6;display:flex;flex-direction:column;gap:16px}
+.admin-turma-members{display:flex;flex-direction:column;gap:8px}.admin-turma-member{display:flex;justify-content:space-between;gap:15px;align-items:center;padding:11px 12px;border:1px solid #edf1f6;border-radius:11px}.admin-turma-member>div:first-child{display:flex;flex-direction:column;gap:3px}.admin-turma-member strong{font-size:12px;color:#26364d}.admin-turma-member span{font-size:11px;color:#7b8799}.admin-turma-member-actions{display:flex;align-items:center;gap:6px}.admin-turma-member-actions button{width:29px;height:29px;border:1px solid #dbe4ef;background:#fff;border-radius:8px;display:grid;place-items:center;color:#607088;cursor:pointer}
+.admin-turma-member-status.status-confirmado{background:#e9f7ef;color:#187143}.admin-turma-member-status.status-cancelado,.admin-turma-member-status.status-recusado{background:#fff0f0;color:#b44a4a}
+.admin-turma-add{display:flex;flex-direction:column;gap:8px}.admin-turma-add>strong{font-size:12px;color:#26364d}.admin-turma-add-grid{display:grid;grid-template-columns:1.1fr 1.1fr .8fr auto;gap:8px}.admin-turma-add-grid input{min-width:0;border:1px solid #dbe4ef;border-radius:9px;padding:9px 10px;outline:none}.admin-turma-add-grid button{display:flex;align-items:center;gap:6px;background:#0b63ce;color:#fff;border-color:#0b63ce}.admin-turma-ready{align-self:flex-start;display:flex;align-items:center;gap:7px;background:#f6f9fe}
+.admin-turmas-empty{padding:45px 20px;border:1px dashed #d8e2ef;border-radius:16px;background:#fff;display:flex;align-items:center;flex-direction:column;gap:7px;color:#758297}.admin-turmas-empty strong{color:#26364d}
+.admin-lead-turma-action{margin-top:12px}.admin-lead-turma-action button{display:flex;align-items:center;gap:7px;border:1px solid #0b63ce;background:#0b63ce;color:#fff;border-radius:9px;padding:9px 12px;font-weight:700;cursor:pointer}
+@media(max-width:900px){.admin-turmas-header{flex-direction:column}.admin-turmas-summary{width:100%}.admin-turmas-summary div{flex:1}.admin-turma-heading{align-items:flex-start;flex-direction:column}.admin-turma-heading-actions{width:100%;justify-content:space-between}.admin-turma-add-grid{grid-template-columns:1fr 1fr}.admin-turma-add-grid button{justify-content:center}.admin-turma-member{align-items:flex-start;flex-direction:column}.admin-turma-member-actions{width:100%;justify-content:flex-end}}
+@media(max-width:560px){.admin-turmas-summary{display:grid;grid-template-columns:1fr 1fr 1fr}.admin-turmas-summary div{min-width:0}.admin-turma-add-grid{grid-template-columns:1fr}.admin-turma-add-grid button{width:100%}}
