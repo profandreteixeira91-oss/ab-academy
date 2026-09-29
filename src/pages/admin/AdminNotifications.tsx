@@ -17,6 +17,8 @@ type Props = {
   onNavigate: (module: string) => void
 }
 
+const VAPID_PUBLIC_KEY = 'BHHIQyYOOzxLTiMitqMuTFAjWt1bRx472WdEyOOFSqoaql77wk3MRRHDnDd1u0XX8IqjxPHKEymJ8Q26PRSCeJI'
+
 const icons = {
   lead: UserPlus,
   enterprise: BriefcaseBusiness,
@@ -128,7 +130,7 @@ export default function AdminNotifications({ onNavigate }: Props) {
   }, [])
 
   async function enableBrowserNotifications() {
-    if (!('Notification' in window)) {
+    if (!('Notification' in window) || !('serviceWorker' in navigator) || !('PushManager' in window)) {
       setBrowserPermission('unsupported')
       return
     }
@@ -136,14 +138,55 @@ export default function AdminNotifications({ onNavigate }: Props) {
     const permission = await Notification.requestPermission()
     setBrowserPermission(permission)
 
-    if (permission === 'granted') {
+    if (permission !== 'granted') return
+
+    try {
+      const registration = await navigator.serviceWorker.ready
+      const existingSubscription = await registration.pushManager.getSubscription()
+      const subscription = existingSubscription ?? await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      })
+
+      const json = subscription.toJSON()
+
+      if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) {
+        throw new Error('Assinatura Web Push inválida.')
+      }
+
+      const { data: { user } } = await supabase.auth.getUser()
+
+      if (!user) throw new Error('Sessão administrativa não encontrada.')
+
+      const { error } = await supabase
+        .from('admin_notificacoes_push_subscriptions')
+        .upsert({
+          user_id: user.id,
+          endpoint: json.endpoint,
+          p256dh: json.keys.p256dh,
+          auth: json.keys.auth,
+          updated_at: new Date().toISOString(),
+        }, { onConflict: 'endpoint' })
+
+      if (error) throw error
+
       new Notification('Notificações ativadas', {
         body: 'A AB Academy avisará você sobre novos eventos administrativos.',
         icon: '/icons/icon-192.svg',
         badge: '/icons/icon-192.svg',
         tag: 'admin-notificacoes-ativadas',
       })
+    } catch (error) {
+      console.error('Erro ao ativar Web Push administrativo:', error)
     }
+  }
+
+  function urlBase64ToUint8Array(value: string) {
+    const padding = '='.repeat((4 - (value.length % 4)) % 4)
+    const base64 = (value + padding).replace(/-/g, '+').replace(/_/g, '/')
+    const rawData = window.atob(base64)
+
+    return Uint8Array.from([...rawData].map((char) => char.charCodeAt(0)))
   }
 
   const unreadCount = useMemo(
