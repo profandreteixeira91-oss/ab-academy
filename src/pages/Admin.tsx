@@ -32,6 +32,7 @@ import Comunicacao from './admin/Comunicacao'
 import Candidaturas from './admin/Candidaturas'
 import EnterpriseLeads from './admin/EnterpriseLeads'
 import Leads from './admin/Leads'
+import Turmas from './admin/Turmas'
 import AdminNotifications from './admin/AdminNotifications'
 import Analytics from './admin/Analytics'
 
@@ -274,6 +275,12 @@ const navigation = [
         id: 'leads',
         label: 'Leads',
         icon: UserPlus,
+      },
+      {
+        id: 'turmas',
+        title: 'Duplas e Grupos',
+        description: 'Forme turmas, confirme participantes e controle a liberação comercial.',
+        icon: Users,
       },
       {
         id: 'enterprise',
@@ -584,6 +591,10 @@ export default function Admin() {
             <Leads />
           )}
 
+          {activeModule === 'turmas' && (
+            <Turmas />
+          )}
+
           {activeModule === 'enterprise' && (
             <EnterpriseLeads />
           )}
@@ -599,6 +610,7 @@ export default function Admin() {
             activeModule !== 'comunicacao' &&
             activeModule !== 'candidaturas' &&
             activeModule !== 'leads' &&
+            activeModule !== 'turmas' &&
             activeModule !== 'enterprise' && (
               <div className="admin-panel">
                 <div className="admin-panel-header">
