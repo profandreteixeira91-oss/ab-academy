@@ -195,6 +195,8 @@ export default function Matricula() {
   const [availableSchedules, setAvailableSchedules] = useState<Horario[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<SelectedSchedule | null>(null)
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
+  const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
+  const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
 
   const selectedLanguageLabel =
     language === 'ingles'
@@ -354,7 +356,7 @@ export default function Matricula() {
 
   useEffect(() => {
     if (language) loadSchedules(language)
-  }, [language, plan?.modalidade])
+  }, [language, plan?.modalidade, formationSlotId, waitingFormation])
 
   const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
     const { data, error: planError } = await supabase
@@ -384,6 +386,38 @@ export default function Matricula() {
   ) => {
     setLoadingSchedules(true)
     setError('')
+
+    if (formationSlotId && waitingFormation) {
+      const { data, error: formationError } = await supabase
+        .from('horarios_formacao_publicos')
+        .select('horario_id,idioma,dia_semana,hora_inicio,hora_fim,tipo_horario')
+        .eq('horario_id', formationSlotId)
+        .eq('idioma', selectedLanguage)
+        .maybeSingle()
+
+      if (formationError || !data) {
+        setError('O horário de formação selecionado não está mais disponível.')
+        setAvailableSchedules([])
+        setLoadingSchedules(false)
+        return
+      }
+
+      setAvailableSchedules([{
+        id: data.horario_id,
+        tipo_horario: data.tipo_horario,
+        idioma: data.idioma,
+        dia_semana: data.dia_semana,
+        hora_inicio: data.hora_inicio,
+        hora_fim: data.hora_fim,
+        disponivel: true,
+        aluno_id: null,
+        created_at: '',
+        meet_url: null,
+        meet_space_name: null,
+      } as Horario])
+      setLoadingSchedules(false)
+      return
+    }
 
     const { data, error: schedulesError } =
       await supabase
@@ -753,6 +787,8 @@ export default function Matricula() {
         tipo_plano: plan?.tipo ?? 'mensal',
         turma_token: collectiveEnrollment?.token ?? null,
         turma_participante_id: collectiveEnrollment?.participanteId ?? null,
+        horario_formacao_id: waitingFormation ? formationSlotId : null,
+        aguardando_formacao: waitingFormation,
 
         objetivos: null,
 
@@ -760,7 +796,7 @@ export default function Matricula() {
 
         valor_aula: collectiveEnrollment ? null : plan?.tipo === 'avulso' ? Number(plan.preco) : plan?.tipo === 'anual' ? null : Number(plan?.preco ?? 0) / (plan?.tipo === 'intensivo' ? 12 : plan?.tipo === 'personalizado' ? 8 : 4),
 
-        valor_mensal: collectiveEnrollment?.valorMensal ?? (plan?.tipo === 'avulso' || plan?.tipo === 'anual' ? null : Number(plan?.preco ?? 0)),
+        valor_mensal: collectiveEnrollment?.valorMensal ?? (waitingFormation ? Math.round(Number(plan?.preco ?? 0) * 0.9 * 100) / 100 : (plan?.tipo === 'avulso' || plan?.tipo === 'anual' ? null : Number(plan?.preco ?? 0))),
 
         valor_anual: collectiveEnrollment ? null : plan?.tipo === 'anual' ? Number(plan.preco) : null,
 
@@ -774,7 +810,7 @@ export default function Matricula() {
 
         dados_aluno: dadosAluno,
 
-        valor: collectiveEnrollment?.valorMensal ?? Number(plan?.preco ?? 0),
+        valor: collectiveEnrollment?.valorMensal ?? (waitingFormation ? Math.round(Number(plan?.preco ?? 0) * 0.9 * 100) / 100 : Number(plan?.preco ?? 0)),
       }
 
       const {
