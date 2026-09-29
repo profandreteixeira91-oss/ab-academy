@@ -3,7 +3,7 @@ import { CheckCircle2, Copy, Plus, Users, XCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 type Turma = { id: string; modalidade: 'dupla' | 'grupo'; idioma: 'ingles' | 'alemao'; aulas_semana: number; quantidade_minima: number; quantidade_maxima: number; horario_preferido: string | null; status: string; origem_lead_id: string | null; created_at: string }
-type Participante = { id: string; turma_id: string; nome: string; email: string; telefone: string | null; papel: 'organizador' | 'participante'; status: 'convidado' | 'confirmado' | 'recusado' | 'cancelado'; forma_inicio: 'coletivo' | 'individual_aguardando'; valor_individual: number | null; valor_coletivo: number | null; condicao_meses: number | null; condicao_inicio: string | null; condicao_fim: string | null }
+type Participante = { id: string; turma_id: string; nome: string; email: string; telefone: string | null; papel: 'organizador' | 'participante'; status: 'convidado' | 'confirmado' | 'recusado' | 'cancelado'; forma_inicio: 'coletivo' | 'individual_aguardando'; valor_individual: number | null; valor_coletivo: number | null; valor_coletivo_normal: number | null; condicao_meses: number | null; condicao_inicio: string | null; condicao_fim: string | null }
 
 const statusLabel: Record<string, string> = { em_formacao: 'Em formação', aguardando_confirmacoes: 'Aguardando confirmações', pronta: 'Pronta para matrícula', ativa: 'Ativa', encerrada: 'Encerrada', cancelada: 'Cancelada' }
 const langLabel: Record<string, string> = { ingles: 'Inglês', alemao: 'Alemão' }
@@ -68,6 +68,7 @@ export default function Turmas() {
         turma_id: turma.id,
         participante_id: member.id,
         valor_mensal: member.valor_coletivo,
+        valor_coletivo_normal: member.valor_coletivo_normal,
         condicao_meses: member.condicao_meses,
         condicao_inicio: member.condicao_inicio,
         condicao_fim: member.condicao_fim,
@@ -103,7 +104,7 @@ export default function Turmas() {
       let collectivePrice: number | null = null
       if (frequency) {
         if (turma.modalidade === 'dupla') {
-          collectivePrice = frequency.preco_mensal
+          collectivePrice = Number(frequency.preco_mensal)
         } else {
           const { data: tier } = await supabase
             .from('modalidade_frequencia_precos')
@@ -112,7 +113,7 @@ export default function Turmas() {
             .eq('quantidade_participantes', confirmed)
             .eq('ativo', true)
             .maybeSingle()
-          collectivePrice = tier?.preco_mensal ?? null
+          collectivePrice = tier?.preco_mensal != null ? Number(tier.preco_mensal) : null
         }
       }
 
@@ -127,6 +128,7 @@ export default function Turmas() {
           return y + '-' + m + '-' + d
         }
 
+        const conditionPrice = Math.round(collectivePrice * 0.9 * 100) / 100
         const waitingIds = confirmedParticipants
           .filter(p => p.forma_inicio === 'individual_aguardando')
           .map(p => p.id)
@@ -135,7 +137,8 @@ export default function Turmas() {
           await supabase
             .from('turma_participantes')
             .update({
-              valor_coletivo: collectivePrice,
+              valor_coletivo: conditionPrice,
+              valor_coletivo_normal: collectivePrice,
               condicao_meses: 3,
               condicao_inicio: iso(conditionStart),
               condicao_fim: iso(conditionEnd),
@@ -150,7 +153,7 @@ export default function Turmas() {
         if (directIds.length) {
           await supabase
             .from('turma_participantes')
-            .update({ valor_coletivo: collectivePrice })
+            .update({ valor_coletivo: collectivePrice, valor_coletivo_normal: collectivePrice })
             .in('id', directIds)
         }
       }
@@ -179,7 +182,7 @@ export default function Turmas() {
             </div>
             <div className="admin-turma-progress"><span style={{ width: Math.min(100, (confirmed / turma.quantidade_maxima) * 100) + '%' }} /></div>
             {isOpen && <div className="admin-turma-body">
-              <div className="admin-turma-members">{members.map(member => <div className="admin-turma-member" key={member.id}><div><strong>{member.nome}</strong><span>{member.email}{member.telefone ? ' · ' + member.telefone : ''}</span>{member.forma_inicio === 'individual_aguardando' && <small>Começou no individual · condição coletiva: {member.valor_coletivo ? 'R$ ' + Number(member.valor_coletivo).toFixed(2).replace('.', ',') + '/mês' : 'aguardando formação'} · {member.condicao_meses || 3} meses</small>}</div><div className="admin-turma-member-actions"><span className={'admin-turma-member-status status-' + member.status}>{member.status}</span>{member.status !== 'confirmado' && member.status !== 'cancelado' && <button type="button" title="Confirmar participante" onClick={() => void changeParticipantStatus(member, 'confirmado')}><CheckCircle2 size={16} /></button>}{member.status !== 'cancelado' && <button type="button" title="Cancelar participante" onClick={() => void changeParticipantStatus(member, 'cancelado')}><XCircle size={16} /></button>}{turma.status === 'pronta' && member.status === 'confirmado' && member.valor_coletivo !== null && <button type="button" title="Liberar matrícula" onClick={() => void releaseEnrollment(turma, member)} disabled={saving === member.id}>Liberar matrícula</button>}</div>{releasedLinks[member.id] && <div className="admin-turma-release-link"><span>{releasedLinks[member.id]}</span><button type="button" onClick={() => void navigator.clipboard.writeText(releasedLinks[member.id])}><Copy size={15} /> Copiar</button></div>}</div>)}</div>
+              <div className="admin-turma-members">{members.map(member => <div className="admin-turma-member" key={member.id}><div><strong>{member.nome}</strong><span>{member.email}{member.telefone ? ' · ' + member.telefone : ''}</span>{member.forma_inicio === 'individual_aguardando' && <small>Começou no individual · condição coletiva: {member.valor_coletivo ? 'R$ ' + Number(member.valor_coletivo).toFixed(2).replace('.', ',') + '/mês' : 'aguardando formação'} (normal: {member.valor_coletivo_normal ? 'R$ ' + Number(member.valor_coletivo_normal).toFixed(2).replace('.', ',') : '—'}) · {member.condicao_meses || 3} meses · 10% de desconto</small>}</div><div className="admin-turma-member-actions"><span className={'admin-turma-member-status status-' + member.status}>{member.status}</span>{member.status !== 'confirmado' && member.status !== 'cancelado' && <button type="button" title="Confirmar participante" onClick={() => void changeParticipantStatus(member, 'confirmado')}><CheckCircle2 size={16} /></button>}{member.status !== 'cancelado' && <button type="button" title="Cancelar participante" onClick={() => void changeParticipantStatus(member, 'cancelado')}><XCircle size={16} /></button>}{turma.status === 'pronta' && member.status === 'confirmado' && member.valor_coletivo !== null && <button type="button" title="Liberar matrícula" onClick={() => void releaseEnrollment(turma, member)} disabled={saving === member.id}>Liberar matrícula</button>}</div>{releasedLinks[member.id] && <div className="admin-turma-release-link"><span>{releasedLinks[member.id]}</span><button type="button" onClick={() => void navigator.clipboard.writeText(releasedLinks[member.id])}><Copy size={15} /> Copiar</button></div>}</div>)}</div>
               <div className="admin-turma-add"><strong>Adicionar participante</strong><div className="admin-turma-add-grid"><input value={draft.nome} onChange={e => setDrafts(x => ({ ...x, [turma.id]: { ...draft, nome: e.target.value } }))} placeholder="Nome completo" /><input value={draft.email} onChange={e => setDrafts(x => ({ ...x, [turma.id]: { ...draft, email: e.target.value } }))} type="email" placeholder="E-mail" /><input value={draft.telefone} onChange={e => setDrafts(x => ({ ...x, [turma.id]: { ...draft, telefone: e.target.value } }))} placeholder="WhatsApp" /><button type="button" disabled={saving === turma.id} onClick={() => void addParticipant(turma)}><Plus size={16} />{saving === turma.id ? 'Adicionando...' : 'Adicionar'}</button></div></div>
               <button type="button" className="admin-turma-ready" onClick={() => void refreshTurmaStatus(turma)}><CheckCircle2 size={16} /> Atualizar status da turma</button>
             </div>}
