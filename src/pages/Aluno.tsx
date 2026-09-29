@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
   BookOpen,
@@ -588,6 +588,16 @@ function Aluno() {
 }
 
   /*
+   * A sessão do aluno é mantida pelos mesmos princípios do Portal
+   * do Professor: troca de aba não reconstrói o portal e um SIGNED_IN
+   * repetido para a mesma sessão é ignorado.
+   */
+  const authUserIdRef = useRef<string | null>(null)
+  const studentIdRef = useRef<string | null>(null)
+  const authLoadFinishedRef = useRef(false)
+  const authLoadingRef = useRef(false)
+
+  /*
    * =========================================================
    * VERIFICAR E-MAIL
    * =========================================================
@@ -1049,6 +1059,13 @@ function Aluno() {
   async function getStudentId(
     userId: string,
   ) {
+    if (
+      authUserIdRef.current === userId &&
+      studentIdRef.current
+    ) {
+      return studentIdRef.current
+    }
+
     const {
       data: authData,
       error: authError,
@@ -1120,7 +1137,9 @@ function Aluno() {
       setAuthStudentName(data.nome_completo)
     }
 
-    return data.aluno_id as string
+    studentIdRef.current = data.aluno_id as string
+    authUserIdRef.current = userId
+    return studentIdRef.current
   }
 
   /*
@@ -1682,99 +1701,103 @@ function Aluno() {
 
     const loadAuthenticatedUser =
       async (authenticatedUser: User) => {
-        try {
-          /*
-           * O student-auth valida o cadastro usando service role.
-           * Não dependemos de uma consulta direta à tabela alunos
-           * para liberar a sessão do portal.
-           */
-          await getStudentId(
-            authenticatedUser.id,
+        if (
+          authLoadingRef.current ||
+          (
+            authLoadFinishedRef.current &&
+            authUserIdRef.current === authenticatedUser.id
           )
+        ) {
+          return
+        }
 
-          if (!mounted) {
-            return
-          }
+        authLoadingRef.current = true
 
+        try {
+          await getStudentId(authenticatedUser.id)
+
+          if (!mounted) return
+
+          authUserIdRef.current = authenticatedUser.id
           setAuthError('')
           setUser(authenticatedUser)
           setLoading(false)
 
           await Promise.all([
-            loadStudentLessons(
-              authenticatedUser.id,
-            ),
-            loadStudentActivities(
-              authenticatedUser.id,
-            ),
-            loadStudentFinance(
-              authenticatedUser.id,
-            ),
+            loadStudentLessons(authenticatedUser.id),
+            loadStudentActivities(authenticatedUser.id),
+            loadStudentFinance(authenticatedUser.id),
           ])
 
-          // Solicitações é um módulo independente: uma falha
-          // de RLS/tabela/anexo não pode derrubar o portal inteiro.
-          void loadStudentRequests(
-            authenticatedUser.id,
-          )
+          // Solicitações é independente e nunca pode invalidar a sessão do portal.
+          void loadStudentRequests(authenticatedUser.id)
         } catch (error) {
           console.error(
             'Erro ao carregar acesso do aluno:',
             error,
           )
 
-          if (!mounted) {
-            return
-          }
+          if (!mounted) return
 
-          setUser(null)
-          setLoading(false)
-          setAuthError(
-            error instanceof Error
-              ? error.message
-              : 'Não foi possível validar o cadastro do aluno.',
-          )
+          /*
+           * Uma falha de módulo/RLS não deve ser interpretada como logout.
+           * Só a ausência real de sessão encerra a autenticação.
+           */
+          const { data: sessionData } =
+            await supabase.auth.getSession()
+
+          if (!sessionData.session?.user) {
+            authUserIdRef.current = null
+            studentIdRef.current = null
+            setUser(null)
+            setLoading(false)
+            setAuthError(
+              'Sua sessão expirou. Faça login novamente.',
+            )
+          } else {
+            setUser(sessionData.session.user)
+            setLoading(false)
+            setAuthError('')
+          }
+        } finally {
+          authLoadingRef.current = false
+          authLoadFinishedRef.current = true
         }
       }
 
     const loadUser = async () => {
       try {
         const {
-          data: { user: currentUser },
+          data: { session },
           error,
-        } = await supabase.auth.getUser()
+        } = await supabase.auth.getSession()
 
-        if (error) {
-          throw error
-        }
+        if (error) throw error
+        if (!mounted) return
 
-        if (!mounted) {
-          return
-        }
-
-        if (!currentUser) {
+        if (!session?.user) {
+          authUserIdRef.current = null
+          studentIdRef.current = null
           setUser(null)
           setLoading(false)
+          authLoadFinishedRef.current = true
           return
         }
 
-        await loadAuthenticatedUser(
-          currentUser,
-        )
+        await loadAuthenticatedUser(session.user)
       } catch (error) {
         console.error(
           'Erro ao carregar sessão do aluno:',
           error,
         )
 
-        if (!mounted) {
-          return
-        }
+        if (!mounted) return
 
-        setUser(null)
         setLoading(false)
         setAuthError(
-          'Não foi possível carregar sua sessão.',
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível carregar sua sessão.',
         )
       }
     }
@@ -1785,11 +1808,12 @@ function Aluno() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (event, session) => {
-        if (!mounted) {
-          return
-        }
+        if (!mounted) return
 
         if (event === 'SIGNED_OUT') {
+          authUserIdRef.current = null
+          studentIdRef.current = null
+          authLoadFinishedRef.current = false
           setUser(null)
           setLoading(false)
           setLessons([])
@@ -1799,23 +1823,26 @@ function Aluno() {
           return
         }
 
-        if (
-          (event === 'SIGNED_IN' ||
-            event === 'USER_UPDATED') &&
-          session?.user
-        ) {
+        if (event === 'SIGNED_IN' && session?.user) {
           /*
-           * Não fazemos consultas Supabase diretamente dentro
-           * do callback de autenticação. O setTimeout evita
-           * bloqueio/concorrência com a atualização da sessão.
+           * Exatamente como no Portal do Professor:
+           * SIGNED_IN repetido ao voltar para a aba não recarrega o portal.
            */
-          window.setTimeout(() => {
-            if (mounted) {
-              void loadAuthenticatedUser(
-                session.user,
-              )
-            }
-          }, 0)
+          if (
+            authLoadFinishedRef.current &&
+            authUserIdRef.current === session.user.id
+          ) {
+            return
+          }
+
+          void loadAuthenticatedUser(session.user)
+          return
+        }
+
+        if (event === 'USER_UPDATED' && session?.user) {
+          if (authUserIdRef.current === session.user.id) {
+            setUser(session.user)
+          }
         }
       },
     )
@@ -2449,6 +2476,9 @@ function Aluno() {
     async () => {
       await supabase.auth.signOut()
 
+      authUserIdRef.current = null
+      studentIdRef.current = null
+      authLoadFinishedRef.current = false
       setUser(null)
       setSection('inicio')
 
