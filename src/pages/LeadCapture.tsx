@@ -76,11 +76,8 @@ export default function LeadCapture() {
     if (!horarioId) return
     let active = true
     async function loadFormationSlot() {
-      const { data, error } = await supabase
-        .from('horarios_formacao_publicos')
-        .select('horario_id,idioma,dia_semana,hora_inicio,hora_fim,tipo_horario,interessados,quantidade_maxima')
-        .eq('horario_id', horarioId)
-        .maybeSingle()
+      const { data: response, error } = await supabase.functions.invoke('list-formation-slots', { body: { horario_id: horarioId } })
+      const data = response?.data?.[0]
       if (!active || error || !data) return
       setSelectedFormationSlot(data as typeof selectedFormationSlot)
       setForm(current => ({
