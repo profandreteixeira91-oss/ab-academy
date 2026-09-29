@@ -181,7 +181,7 @@ function renderTextWithLinks(value: string) {
     const trailing = trailingMatch?.[0] ?? ''
     const urlText = trailing ? raw.slice(0, -trailing.length) : raw
     if (index > lastIndex) parts.push(value.slice(lastIndex, index))
-    const href = /^https?:\\/\\//i.test(urlText) ? urlText : 'https://' + urlText
+    const href = /^https?:\/\//i.test(urlText) ? urlText : 'https://' + urlText
     parts.push(
       <a
         key={'activity-link-' + index + '-' + urlText}
