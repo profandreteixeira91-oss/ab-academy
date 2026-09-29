@@ -15,7 +15,17 @@ Deno.serve(async (req) => {
   if (!url || !key) return new Response(JSON.stringify({ error: 'Configuração indisponível.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   const admin = createClient(url, key)
-  const requestedId = new URL(req.url).searchParams.get('horario_id')
+  const urlRequestedId = new URL(req.url).searchParams.get('horario_id')
+  let bodyRequestedId: string | null = null
+  if (req.method === 'POST') {
+    try {
+      const body = await req.json()
+      bodyRequestedId = typeof body?.horario_id === 'string' ? body.horario_id : null
+    } catch {
+      // Corpo opcional.
+    }
+  }
+  const requestedId = urlRequestedId || bodyRequestedId
 
   const { data: slots, error } = await admin
     .from('horarios')
