@@ -1447,3 +1447,82 @@
     min-height: 76px;
   }
 }
+
+
+.collective-schedule-selector {
+  margin-bottom: 24px;
+  padding: 20px;
+  border: 1px solid rgba(20, 73, 153, 0.12);
+  border-radius: 18px;
+  background: #f8fbff;
+}
+
+.collective-schedule-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.collective-schedule-option {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  text-align: left;
+  padding: 16px;
+  border: 1px solid #d9e3f0;
+  border-radius: 14px;
+  background: #fff;
+  color: inherit;
+  cursor: pointer;
+  transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.collective-schedule-option:hover {
+  border-color: #7da5d8;
+  transform: translateY(-1px);
+}
+
+.collective-schedule-option.selected {
+  border-color: #1d5fbf;
+  box-shadow: 0 0 0 2px rgba(29, 95, 191, 0.1);
+}
+
+.collective-schedule-option strong {
+  font-size: 15px;
+}
+
+.collective-schedule-option span {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #637083;
+}
+
+.collective-schedule-notice {
+  margin-top: 14px;
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: #fff;
+  border-left: 3px solid #1d5fbf;
+}
+
+.collective-schedule-notice strong {
+  color: #174b91;
+}
+
+.collective-schedule-notice p {
+  margin: 5px 0 0;
+  color: #637083;
+  font-size: 13px;
+  line-height: 1.55;
+}
+
+@media (max-width: 700px) {
+  .collective-schedule-options {
+    grid-template-columns: 1fr;
+  }
+
+  .collective-schedule-selector {
+    padding: 16px;
+  }
+}
