@@ -22,6 +22,11 @@ import {
   Paperclip,
   Wallet,
   ReceiptText,
+  CreditCard,
+  QrCode,
+  Copy,
+  CheckCircle2 as PaymentCheck,
+  AlertCircle,
   Send,
   Video,
   Eye,
@@ -565,6 +570,26 @@ function Aluno() {
   const [financeEntries, setFinanceEntries] = useState<StudentFinanceEntry[]>([])
   const [financeLoading, setFinanceLoading] = useState(false)
   const [financeError, setFinanceError] = useState('')
+
+  const [paymentEntry, setPaymentEntry] = useState<StudentFinanceEntry | null>(null)
+  const [paymentMethod, setPaymentMethod] = useState<'pix' | 'cartao'>('pix')
+  const [paymentLoading, setPaymentLoading] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
+  const [paymentStatus, setPaymentStatus] = useState<'formulario' | 'aguardando' | 'confirmado'>('formulario')
+  const [paymentId, setPaymentId] = useState<string | null>(null)
+  const [paymentPix, setPaymentPix] = useState<{ qrCode: string | null; copiaCola: string | null } | null>(null)
+  const [paymentCard, setPaymentCard] = useState({
+    holderName: '',
+    number: '',
+    expiryMonth: '',
+    expiryYear: '',
+    ccv: '',
+    postalCode: '',
+    addressNumber: '',
+    addressComplement: '',
+    phone: '',
+  })
+  const paymentPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [requests, setRequests] = useState<StudentRequest[]>([])
   const [requestsLoading, setRequestsLoading] = useState(false)
@@ -2496,6 +2521,178 @@ function Aluno() {
       setAuthStep('email')
     }
 
+  const stopPaymentPolling = () => {
+    if (paymentPollRef.current) {
+      clearInterval(paymentPollRef.current)
+      paymentPollRef.current = null
+    }
+  }
+
+  const closePaymentScreen = () => {
+    stopPaymentPolling()
+    setPaymentEntry(null)
+    setPaymentLoading(false)
+    setPaymentError('')
+    setPaymentStatus('formulario')
+    setPaymentId(null)
+    setPaymentPix(null)
+  }
+
+  const openPaymentScreen = (entry: StudentFinanceEntry) => {
+    setPaymentEntry(entry)
+    setPaymentMethod('pix')
+    setPaymentLoading(false)
+    setPaymentError('')
+    setPaymentStatus('formulario')
+    setPaymentId(null)
+    setPaymentPix(null)
+    setPaymentCard({
+      holderName: name,
+      number: '',
+      expiryMonth: '',
+      expiryYear: '',
+      ccv: '',
+      postalCode: '',
+      addressNumber: '',
+      addressComplement: '',
+      phone: '',
+    })
+  }
+
+  const pollPaymentStatus = (pagamentoId: string) => {
+    stopPaymentPolling()
+
+    paymentPollRef.current = setInterval(async () => {
+      const { data, error } = await supabase
+        .from('pagamentos')
+        .select('status')
+        .eq('id', pagamentoId)
+        .maybeSingle()
+
+      if (error || !data) return
+
+      if (data.status === 'pago') {
+        stopPaymentPolling()
+        setPaymentStatus('confirmado')
+        setPaymentLoading(false)
+        await loadStudentFinance(user.id)
+        return
+      }
+
+      if (['cancelado', 'recusado', 'expirado', 'vencido'].includes(data.status)) {
+        stopPaymentPolling()
+        setPaymentLoading(false)
+        setPaymentError('O Asaas não confirmou este pagamento. Verifique os dados ou tente novamente.')
+      }
+    }, 4000)
+  }
+
+  const handleProcessPayment = async () => {
+    if (!paymentEntry) return
+
+    try {
+      setPaymentLoading(true)
+      setPaymentError('')
+
+      const { data: pagamentoIdData, error: intentError } = await supabase.rpc(
+        'criar_intencao_pagamento_mensalidade',
+        {
+          p_mensalidade_id: paymentEntry.id,
+          p_metodo: paymentMethod,
+        },
+      )
+
+      if (intentError || !pagamentoIdData) {
+        throw intentError ?? new Error('Não foi possível preparar o pagamento.')
+      }
+
+      const pagamentoId = String(pagamentoIdData)
+      setPaymentId(pagamentoId)
+
+      let body: Record<string, unknown> = {
+        pagamento_id: pagamentoId,
+        metodo: paymentMethod,
+      }
+
+      if (paymentMethod === 'cartao') {
+        const { data: alunoData, error: alunoError } = await supabase
+          .from('alunos')
+          .select('cpf, email, telefone, nome_completo')
+          .eq('user_id', user.id)
+          .single()
+
+        if (alunoError || !alunoData) {
+          throw alunoError ?? new Error('Não foi possível carregar os dados do aluno.')
+        }
+
+        if (
+          paymentCard.number.replace(/\D/g, '').length < 13 ||
+          !paymentCard.expiryMonth ||
+          !paymentCard.expiryYear ||
+          paymentCard.ccv.length < 3 ||
+          !paymentCard.postalCode ||
+          !paymentCard.addressNumber
+        ) {
+          throw new Error('Preencha todos os dados obrigatórios do cartão.')
+        }
+
+        body = {
+          ...body,
+          parcelas: 1,
+          credit_card: {
+            holder_name: paymentCard.holderName || alunoData.nome_completo,
+            number: paymentCard.number.replace(/\s/g, ''),
+            expiry_month: paymentCard.expiryMonth,
+            expiry_year: paymentCard.expiryYear,
+            ccv: paymentCard.ccv,
+          },
+          credit_card_holder_info: {
+            name: paymentCard.holderName || alunoData.nome_completo,
+            email: alunoData.email,
+            cpf_cnpj: String(alunoData.cpf ?? '').replace(/\D/g, ''),
+            postal_code: paymentCard.postalCode.replace(/\D/g, ''),
+            address_number: paymentCard.addressNumber,
+            address_complement: paymentCard.addressComplement,
+            phone: paymentCard.phone.replace(/\D/g, '') || String(alunoData.telefone ?? '').replace(/\D/g, ''),
+          },
+        }
+      }
+
+      const { data, error } = await supabase.functions.invoke('asaas-payment', {
+        body,
+      })
+
+      if (error) throw error
+      if (!data?.success) {
+        throw new Error(data?.error || 'Não foi possível processar o pagamento.')
+      }
+
+      if (paymentMethod === 'pix') {
+        setPaymentPix({
+          qrCode: data.pix_qr_code ?? null,
+          copiaCola: data.pix_copia_cola ?? null,
+        })
+        setPaymentStatus('aguardando')
+        pollPaymentStatus(pagamentoId)
+      } else if (data.status === 'pago') {
+        setPaymentStatus('confirmado')
+        await loadStudentFinance(user.id)
+      } else {
+        setPaymentStatus('aguardando')
+        pollPaymentStatus(pagamentoId)
+      }
+    } catch (error) {
+      console.error('Erro ao processar pagamento:', error)
+      setPaymentError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível processar o pagamento.',
+      )
+    } finally {
+      setPaymentLoading(false)
+    }
+  }
+
   const navigateTo = (
     nextSection: StudentSection,
   ) => {
@@ -2549,6 +2746,8 @@ function Aluno() {
     perfil: 'Meu perfil',
     solicitacoes: 'Minhas solicitações',
   }
+
+  useEffect(() => () => stopPaymentPolling(), [])
 
   /*
    * =========================================================
@@ -3332,6 +3531,21 @@ function Aluno() {
         </header>
 
         <section className="student-content">
+          {paymentEntry ? (
+            <PagamentoAluno
+              entry={paymentEntry}
+              method={paymentMethod}
+              status={paymentStatus}
+              loading={paymentLoading}
+              error={paymentError}
+              pix={paymentPix}
+              card={paymentCard}
+              onMethodChange={setPaymentMethod}
+              onCardChange={setPaymentCard}
+              onProcess={handleProcessPayment}
+              onClose={closePaymentScreen}
+            />
+          ) : (
           {section ===
             'inicio' && (
             <Inicio
@@ -3429,6 +3643,7 @@ function Aluno() {
               entries={financeEntries}
               loading={financeLoading}
               error={financeError}
+              onPay={openPaymentScreen}
             />
           )}
 
@@ -3465,6 +3680,8 @@ function Aluno() {
               name={name}
               avatar={avatar}
             />
+          )}
+
           )}
         <footer className="student-site-footer">
           <div className="student-site-footer-bottom">
@@ -3510,13 +3727,177 @@ function Aluno() {
   )
 }
 
+type PagamentoAlunoProps = {
+  entry: StudentFinanceEntry
+  method: 'pix' | 'cartao'
+  status: 'formulario' | 'aguardando' | 'confirmado'
+  loading: boolean
+  error: string
+  pix: { qrCode: string | null; copiaCola: string | null } | null
+  card: {
+    holderName: string
+    number: string
+    expiryMonth: string
+    expiryYear: string
+    ccv: string
+    postalCode: string
+    addressNumber: string
+    addressComplement: string
+    phone: string
+  }
+  onMethodChange: (value: 'pix' | 'cartao') => void
+  onCardChange: React.Dispatch<React.SetStateAction<PagamentoAlunoProps['card']>>
+  onProcess: () => void
+  onClose: () => void
+}
+
+function PagamentoAluno({
+  entry,
+  method,
+  status,
+  loading,
+  error,
+  pix,
+  card,
+  onMethodChange,
+  onCardChange,
+  onProcess,
+  onClose,
+}: PagamentoAlunoProps) {
+  const money = (value: number) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+  return (
+    <div className="student-payment-screen">
+      <button type="button" className="student-payment-back" onClick={onClose}>
+        <ChevronRight size={18} style={{ transform: 'rotate(180deg)' }} />
+        Voltar ao financeiro
+      </button>
+
+      <div className="student-payment-header">
+        <div>
+          <span>PAGAMENTO SEGURO</span>
+          <h2>Efetuar pagamento</h2>
+          <p>Pagamento processado diretamente pelo Asaas.</p>
+        </div>
+        <div className="student-payment-provider">ASAAS</div>
+      </div>
+
+      <div className="student-payment-grid">
+        <div className="student-payment-panel">
+          {status === 'confirmado' ? (
+            <div className="student-payment-confirmed">
+              <PaymentCheck size={58} />
+              <h3>Pagamento confirmado</h3>
+              <p>A mensalidade de {money(entry.valor)} foi confirmada pelo Asaas.</p>
+              <button type="button" className="student-payment-primary" onClick={onClose}>
+                Voltar ao financeiro
+              </button>
+            </div>
+          ) : status === 'aguardando' ? (
+            <div className="student-payment-waiting">
+              {method === 'pix' && pix?.qrCode ? (
+                <>
+                  <QrCode size={30} />
+                  <h3>Aguardando pagamento PIX</h3>
+                  <p>Escaneie o QR Code ou copie o código. A confirmação será atualizada automaticamente.</p>
+                  <img
+                    className="student-payment-pix"
+                    src={`data:image/png;base64,${pix.qrCode}`}
+                    alt="QR Code PIX"
+                  />
+                  {pix.copiaCola && (
+                    <div className="student-payment-copy">
+                      <input readOnly value={pix.copiaCola} />
+                      <button
+                        type="button"
+                        onClick={() => void navigator.clipboard?.writeText(pix.copiaCola!)}
+                        aria-label="Copiar código PIX"
+                      >
+                        <Copy size={18} />
+                      </button>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <Loader2 size={34} className="student-payment-spin" />
+                  <h3>Processando pagamento</h3>
+                  <p>O Asaas está processando sua transação. Esta tela será atualizada automaticamente.</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              <div className="student-payment-methods">
+                <button type="button" className={method === 'pix' ? 'active' : ''} onClick={() => onMethodChange('pix')}>
+                  <QrCode size={20} />
+                  <span>PIX</span>
+                </button>
+                <button type="button" className={method === 'cartao' ? 'active' : ''} onClick={() => onMethodChange('cartao')}>
+                  <CreditCard size={20} />
+                  <span>Cartão</span>
+                </button>
+              </div>
+
+              {method === 'pix' ? (
+                <div className="student-payment-method-info">
+                  <QrCode size={38} />
+                  <h3>Pagamento via PIX</h3>
+                  <p>O Asaas gerará o QR Code e o código PIX para você pagar com seu banco.</p>
+                </div>
+              ) : (
+                <div className="student-payment-card-form">
+                  <input placeholder="Nome impresso no cartão" value={card.holderName} onChange={e => onCardChange(v => ({ ...v, holderName: e.target.value }))} />
+                  <input placeholder="Número do cartão" inputMode="numeric" value={card.number} onChange={e => onCardChange(v => ({ ...v, number: e.target.value }))} />
+                  <div className="student-payment-fields-3">
+                    <input placeholder="Mês" maxLength={2} inputMode="numeric" value={card.expiryMonth} onChange={e => onCardChange(v => ({ ...v, expiryMonth: e.target.value }))} />
+                    <input placeholder="Ano" maxLength={4} inputMode="numeric" value={card.expiryYear} onChange={e => onCardChange(v => ({ ...v, expiryYear: e.target.value }))} />
+                    <input placeholder="CVV" maxLength={4} inputMode="numeric" value={card.ccv} onChange={e => onCardChange(v => ({ ...v, ccv: e.target.value }))} />
+                  </div>
+                  <div className="student-payment-fields-2">
+                    <input placeholder="CEP" inputMode="numeric" value={card.postalCode} onChange={e => onCardChange(v => ({ ...v, postalCode: e.target.value }))} />
+                    <input placeholder="Número do endereço" value={card.addressNumber} onChange={e => onCardChange(v => ({ ...v, addressNumber: e.target.value }))} />
+                  </div>
+                  <input placeholder="Complemento (opcional)" value={card.addressComplement} onChange={e => onCardChange(v => ({ ...v, addressComplement: e.target.value }))} />
+                  <input placeholder="Telefone" inputMode="tel" value={card.phone} onChange={e => onCardChange(v => ({ ...v, phone: e.target.value }))} />
+                </div>
+              )}
+
+              {error && (
+                <div className="student-payment-error">
+                  <AlertCircle size={18} />
+                  <span>{error}</span>
+                </div>
+              )}
+
+              <button type="button" className="student-payment-primary" onClick={onProcess} disabled={loading}>
+                {loading ? <><Loader2 size={18} className="student-payment-spin" /> Processando...</> : <>Efetuar pagamento <ChevronRight size={18} /></>}
+              </button>
+            </>
+          )}
+        </div>
+
+        <aside className="student-payment-summary">
+          <span>RESUMO</span>
+          <h3>Mensalidade</h3>
+          <strong>{money(entry.valor)}</strong>
+          <small>Vencimento: {new Date(entry.dataVencimento + 'T00:00:00').toLocaleDateString('pt-BR')}</small>
+          <div><Check size={16} /> Processamento seguro pelo Asaas</div>
+          <div><Check size={16} /> Confirmação automática</div>
+        </aside>
+      </div>
+    </div>
+  )
+}
+
 type FinanceiroProps = {
   entries: StudentFinanceEntry[]
   loading: boolean
   error: string
+  onPay: (entry: StudentFinanceEntry) => void
 }
 
-function Financeiro({ entries, loading, error }: FinanceiroProps) {
+function Financeiro({ entries, loading, error, onPay }: FinanceiroProps) {
   const paid = entries.filter((entry) => entry.status === 'pago')
   const open = entries.filter((entry) => entry.status === 'pendente')
   const overdue = entries.filter((entry) => entry.status === 'vencido')
@@ -3561,7 +3942,17 @@ function Financeiro({ entries, loading, error }: FinanceiroProps) {
                   <td>{date(entry.dataVencimento)}</td>
                   <td><strong>{money(entry.valor)}</strong></td>
                   <td><span>{date(entry.dataPagamento)}</span>{entry.metodoPagamento && <small>{entry.metodoPagamento}</small>}</td>
-                  <td><span className={`student-finance-status ${entry.status}`}>{entry.status === 'pago' ? 'Pago' : entry.status === 'pendente' ? 'Pendente' : entry.status === 'vencido' ? 'Vencido' : 'Cancelado'}</span></td>
+                  <td>
+                    <div className="student-finance-actions">
+                      <span className={`student-finance-status ${entry.status}`}>{entry.status === 'pago' ? 'Pago' : entry.status === 'pendente' ? 'Pendente' : entry.status === 'vencido' ? 'Vencido' : 'Cancelado'}</span>
+                      {(entry.status === 'pendente' || entry.status === 'vencido') && (
+                        <button type="button" className="student-finance-pay-button" onClick={() => onPay(entry)}>
+                          <CreditCard size={15} />
+                          Efetuar pagamento
+                        </button>
+                      )}
+                    </div>
+                  </td>
                 </tr>
               ))}</tbody>
             </table>
