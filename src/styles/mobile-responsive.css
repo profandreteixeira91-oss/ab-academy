@@ -667,13 +667,16 @@
 
   /* Elementos de mídia */
   img,
-  video,
   canvas,
-  iframe,
   embed,
   object {
     max-width: 100%;
     height: auto;
+  }
+
+  video,
+  iframe {
+    max-width: 100%;
   }
 
   iframe {
