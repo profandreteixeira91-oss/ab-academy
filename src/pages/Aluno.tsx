@@ -2723,12 +2723,12 @@ function Aluno() {
     })
   }
 
-  const pollPaymentStatus = (pagamentoId: string) => {
+  const pollPaymentStatus = (pagamentoId: string, mensalidadeId: string) => {
     stopPaymentPolling()
 
     paymentPollRef.current = setInterval(async () => {
       const { data: syncData } = await supabase.functions.invoke('asaas-sync-payment', {
-        body: { pagamento_id: pagamentoId },
+        body: { mensalidade_id: mensalidadeId },
       })
 
       const { data, error } = await supabase
@@ -2849,7 +2849,7 @@ function Aluno() {
           copiaCola: data.pix_copia_cola ?? null,
         })
         setPaymentStatus('aguardando')
-        pollPaymentStatus(pagamentoId)
+        pollPaymentStatus(pagamentoId, paymentEntry.id)
       } else if (data.status === 'pago') {
         setPaymentStatus('confirmado')
         await loadStudentFinance(user.id)
