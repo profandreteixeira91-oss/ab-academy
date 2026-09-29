@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from 'react'
+import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, CheckCircle2, Languages, MessageCircle } from 'lucide-react'
 import '../styles/lead-capture.css'
 import { supabase } from '../lib/supabase'
@@ -60,8 +60,60 @@ export default function LeadCapture() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
   const [error, setError] = useState('')
+  const [commercialPrice, setCommercialPrice] = useState<number | null>(null)
+  const [priceLoading, setPriceLoading] = useState(false)
 
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
+
+  useEffect(() => {
+    if (form.modalidade === 'individual') {
+      setCommercialPrice(null)
+      return
+    }
+
+    let active = true
+    async function loadCommercialPrice() {
+      setPriceLoading(true)
+      const aulasSemana = Number(form.aulas_semana)
+      const quantidade = Number(form.quantidade_participantes)
+      const { data: frequencia } = await supabase
+        .from('modalidade_frequencias')
+        .select('id')
+        .eq('idioma', form.idioma_interesse === 'ambos' ? 'ingles' : form.idioma_interesse)
+        .eq('modalidade', form.modalidade)
+        .eq('aulas_semana', aulasSemana)
+        .eq('ativo', true)
+        .maybeSingle()
+
+      if (!active) return
+      if (!frequencia) {
+        setCommercialPrice(null)
+        setPriceLoading(false)
+        return
+      }
+
+      if (form.modalidade === 'dupla') {
+        const { data } = await supabase.from('modalidade_frequencias').select('preco_mensal').eq('id', frequencia.id).maybeSingle()
+        if (active) setCommercialPrice(data?.preco_mensal ?? null)
+      } else {
+        const { data } = await supabase
+          .from('modalidade_frequencia_precos')
+          .select('preco_mensal')
+          .eq('frequencia_id', frequencia.id)
+          .eq('quantidade_participantes', quantidade)
+          .eq('ativo', true)
+          .maybeSingle()
+        if (active) setCommercialPrice(data?.preco_mensal ?? null)
+      }
+      if (active) setPriceLoading(false)
+    }
+    loadCommercialPrice()
+    return () => { active = false }
+  }, [form.modalidade, form.idioma_interesse, form.aulas_semana, form.quantidade_participantes])
+
+  function formatLeadPrice(value: number) {
+    return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value)
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -90,8 +142,8 @@ export default function LeadCapture() {
       setLoading(false)
       return
     }
-    if (form.modalidade === 'grupo' && (!quantidade || quantidade < 3 || quantidade > 50)) {
-      setError('Para aulas em grupo, informe entre 3 e 50 participantes.')
+    if (form.modalidade === 'grupo' && (!quantidade || quantidade < 3 || quantidade > 6)) {
+      setError('Para aulas em grupo, informe entre 3 e 6 participantes.')
       setLoading(false)
       return
     }
@@ -214,9 +266,17 @@ export default function LeadCapture() {
                   </select>
                 </label>
                 <label>Quantidade de participantes
-                  <input required min={form.modalidade === 'dupla' ? 2 : 3} max={form.modalidade === 'dupla' ? 2 : 50} type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
+                  <input required min={form.modalidade === 'dupla' ? 2 : 3} max={form.modalidade === 'dupla' ? 2 : 6} type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
                 </label>
               </div>
+              <div className="lead-commercial-price" aria-live="polite">
+                <span>Investimento estimado</span>
+                <strong>{priceLoading ? 'Calculando...' : commercialPrice !== null ? formatLeadPrice(commercialPrice) : 'A consultar'}</strong>
+                {commercialPrice !== null && <small>por aluno / mês · {form.aulas_semana}x por semana</small>}
+                {form.modalidade === 'grupo' && <small>Valor individual conforme o tamanho da turma (3 a 6 participantes).</small>}
+                {form.modalidade === 'dupla' && <small>Valor individual para a dupla.</small>}
+              </div>
+
               <label>Melhor horário
                 <input value={form.horario_preferido} onChange={(e) => setForm({ ...form, horario_preferido: e.target.value })} placeholder="Ex.: noites durante a semana ou sábados" />
               </label>
