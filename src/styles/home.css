@@ -246,8 +246,9 @@ h1, h2, h3 { font-family: var(--font-display); }
 }
 
 .home .hero-visual {
-  grid-area: visual;
-  align-self: center;
+  grid-area: card;
+  align-self: stretch;
+  justify-self: stretch;
   width: 100%;
 }
 
@@ -263,7 +264,7 @@ h1, h2, h3 { font-family: var(--font-display); }
     grid-template-areas:
       "logo"
       "content"
-      "visual";
+      "card";
     gap: 40px;
   }
 
