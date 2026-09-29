@@ -189,6 +189,7 @@ export default function Matricula() {
   const [writingLevel, setWritingLevel] = useState('')
   const [comprehensionLevel, setComprehensionLevel] = useState('')
   const [plan, setPlan] = useState<Plan | null>(null)
+  const [collectiveEnrollment, setCollectiveEnrollment] = useState<{ token: string; turmaId: string; participanteId: string; valorMensal: number; condicaoMeses: number | null; condicaoInicio: string | null; condicaoFim: string | null } | null>(null)
   const [availableSchedules, setAvailableSchedules] = useState<Horario[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<SelectedSchedule | null>(null)
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
@@ -261,8 +262,39 @@ export default function Matricula() {
     const diagnosticRequested = params.get('diagnostica') === '1'
     const requestedLanguage = params.get('idioma')
     const requestedPlanId = params.get('plano')
+    const turmaToken = params.get('turma_token')
+
+    const loadCollectiveEnrollment = async (token: string) => {
+      const { data, error } = await supabase
+        .from('turma_matriculas')
+        .select('token,turma_id,participante_id,valor_mensal,condicao_meses,condicao_inicio,condicao_fim,status,turma:turmas(id,idioma,aulas_semana,status),participante:turma_participantes(id,nome,email,status)')
+        .eq('token', token)
+        .eq('status', 'liberada')
+        .maybeSingle()
+      if (error || !data || !data.turma || !data.participante || data.turma.status !== 'pronta' || data.participante.status !== 'confirmado') {
+        setError('Este link de matrícula coletiva não está mais disponível.')
+        return false
+      }
+      const turma = data.turma as { id: string; idioma: Language; aulas_semana: number; status: string }
+      setCollectiveEnrollment({
+        token: data.token,
+        turmaId: data.turma_id,
+        participanteId: data.participante_id,
+        valorMensal: Number(data.valor_mensal),
+        condicaoMeses: data.condicao_meses,
+        condicaoInicio: data.condicao_inicio,
+        condicaoFim: data.condicao_fim,
+      })
+      setLanguage(turma.idioma)
+      setSuccess('Sua turma foi formada. Complete seus dados para iniciar a matrícula coletiva.')
+      return true
+    }
 
     const initializeEnrollment = async () => {
+      if (turmaToken) {
+        await loadCollectiveEnrollment(turmaToken)
+        return
+      }
       const selectedLanguage: Language =
         requestedLanguage === 'alemao' ? 'alemao' : 'ingles'
 
@@ -547,7 +579,7 @@ export default function Matricula() {
     setSuccess('')
 
     if (step === 1) {
-      if (!plan) {
+      if (!plan && !collectiveEnrollment) {
         setError('O plano selecionado não está disponível.')
         return
       }
@@ -668,7 +700,7 @@ export default function Matricula() {
       return
     }
 
-    if (!plan || !selectedSchedule || !language) {
+    if ((!plan && !collectiveEnrollment) || !selectedSchedule || !language) {
       setError(
         'Complete todas as etapas da matrícula.',
       )
@@ -712,9 +744,11 @@ export default function Matricula() {
       }
 
       const payload = {
-        plano_id: plan.id,
-        idioma: plan.idioma,
-        tipo_plano: plan.tipo,
+        plano_id: plan?.id ?? null,
+        idioma: language,
+        tipo_plano: plan?.tipo ?? 'mensal',
+        turma_token: collectiveEnrollment?.token ?? null,
+        turma_participante_id: collectiveEnrollment?.participanteId ?? null,
 
         objetivos: null,
 
@@ -735,10 +769,7 @@ export default function Matricula() {
               : Number(plan.preco) /
                 (plan.tipo === 'intensivo' ? 12 : plan.tipo === 'personalizado' ? 8 : 4),
 
-        valor_mensal:
-          plan.tipo === 'avulso' || plan.tipo === 'anual'
-            ? null
-            : Number(plan.preco),
+        valor_mensal: collectiveEnrollment?.valorMensal ?? (plan?.tipo === 'avulso' || plan?.tipo === 'anual' ? null : Number(plan?.preco ?? 0)),
 
         valor_anual:
           plan.tipo === 'anual'
@@ -755,7 +786,7 @@ export default function Matricula() {
 
         dados_aluno: dadosAluno,
 
-        valor: Number(plan.preco),
+        valor: collectiveEnrollment?.valorMensal ?? Number(plan?.preco ?? 0),
       }
 
       const {
