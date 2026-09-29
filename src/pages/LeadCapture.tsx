@@ -69,6 +69,18 @@ export default function LeadCapture() {
 
     const tracking = getTracking()
 
+    const quantidade = form.quantidade_participantes ? Number(form.quantidade_participantes) : null
+    if (form.modalidade === 'dupla' && quantidade !== 2) {
+      setError('Para aulas em dupla, informe exatamente 2 participantes.')
+      setLoading(false)
+      return
+    }
+    if (form.modalidade === 'grupo' && (!quantidade || quantidade < 3 || quantidade > 50)) {
+      setError('Para aulas em grupo, informe entre 3 e 50 participantes.')
+      setLoading(false)
+      return
+    }
+
     const { error: insertError } = await supabase.from('leads').insert({
       ...form,
       origem: tracking.source,
@@ -80,7 +92,7 @@ export default function LeadCapture() {
       content: tracking.content,
       referrer: document.referrer || null,
       modalidade: form.modalidade,
-      quantidade_participantes: form.quantidade_participantes ? Number(form.quantidade_participantes) : null,
+      quantidade_participantes: quantidade,
       horario_preferido: form.horario_preferido || null,
     })
 
@@ -170,33 +182,10 @@ export default function LeadCapture() {
           {(form.modalidade === 'dupla' || form.modalidade === 'grupo') && (
             <div className="lead-form-grid">
               <label>Quantidade de participantes
-                <input required min={form.modalidade === 'dupla' ? 2 : 3} max="50" type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
+                <input required min={form.modalidade === 'dupla' ? 2 : 3} max={form.modalidade === 'dupla' ? 2 : 50} type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
               </label>
-              <label>Melhor horário para o grupo
-                <input value={form.horario_preferido} onChange={(e) => setForm({ ...form, horario_preferido: e.target.value })} placeholder="Ex.: noites durante a semana" />
-              </label>
-            </div>
-          )}
-
-          <fieldset>
-            <legend>Como você quer estudar?</legend>
-            <div className="lead-language-options">
-              {(['individual','dupla','grupo'] as Modality[]).map((modality) => (
-                <label className={form.modalidade === modality ? 'selected' : ''} key={modality}>
-                  <input type="radio" name="modalidade" value={modality} checked={form.modalidade === modality} onChange={() => setForm({ ...form, modalidade: modality, quantidade_participantes: modality === 'dupla' ? '2' : '' })} />
-                  <span>{modality === 'individual' ? 'Individual' : modality === 'dupla' ? 'Dupla' : 'Grupo'}</span>
-                </label>
-              ))}
-            </div>
-          </fieldset>
-
-          {(form.modalidade === 'dupla' || form.modalidade === 'grupo') && (
-            <div className="lead-form-grid">
-              <label>Quantidade de participantes
-                <input required min={form.modalidade === 'dupla' ? 2 : 3} max="50" type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
-              </label>
-              <label>Melhor horário para o grupo
-                <input value={form.horario_preferido} onChange={(e) => setForm({ ...form, horario_preferido: e.target.value })} placeholder="Ex.: noites durante a semana" />
+              <label>Melhor horário
+                <input value={form.horario_preferido} onChange={(e) => setForm({ ...form, horario_preferido: e.target.value })} placeholder="Ex.: noites durante a semana ou sábados" />
               </label>
             </div>
           )}
