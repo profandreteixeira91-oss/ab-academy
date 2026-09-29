@@ -70,6 +70,8 @@ export default function LeadCapture() {
 
     const tracking = getTracking()
 
+    const aulasSemana = form.modalidade === 'individual' ? null : Number(form.aulas_semana)
+
     if (form.modalidade !== 'individual' && ![1, 2, 3].includes(aulasSemana || 0)) {
       setError('Selecione uma frequência semanal válida.')
       setLoading(false)
@@ -77,7 +79,6 @@ export default function LeadCapture() {
     }
 
     const quantidade = form.quantidade_participantes ? Number(form.quantidade_participantes) : null
-    const aulasSemana = form.modalidade === 'individual' ? null : Number(form.aulas_semana)
     if (form.modalidade === 'dupla' && quantidade !== 2) {
       setError('Para aulas em dupla, informe exatamente 2 participantes.')
       setLoading(false)
