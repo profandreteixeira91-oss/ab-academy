@@ -1991,7 +1991,16 @@ function Aluno() {
             target.alternativaIds = [
               answer.alternativa_id,
             ]
-          } else if (answer.resposta_texto) {
+          } else if (
+            answer.resposta_texto &&
+            isObjectiveType(
+              exercises.find(
+                (exercise) =>
+                  exercise.id ===
+                  answer.exercicio_id,
+              )?.tipo as ExerciseType,
+            )
+          ) {
             try {
               const parsed = JSON.parse(
                 answer.resposta_texto,
@@ -2006,7 +2015,7 @@ function Aluno() {
                 target.respostaTexto = ''
               }
             } catch {
-              // Resposta textual normal.
+              // Resposta objetiva não-JSON permanece intacta.
             }
           }
         }
