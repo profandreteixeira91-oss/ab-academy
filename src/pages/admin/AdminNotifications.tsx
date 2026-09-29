@@ -1,4 +1,4 @@
-import { Bell, BellOff, BriefcaseBusiness, CheckCheck, ClipboardList, MessageSquare, UserPlus, X } from 'lucide-react'
+import { Bell, BellOff, BriefcaseBusiness, Check, CheckCheck, ClipboardList, MessageSquare, Trash2, UserPlus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
@@ -236,6 +236,31 @@ export default function AdminNotifications({ onNavigate }: Props) {
     setSavingId(null)
   }
 
+  async function clearNotifications() {
+    if (!items.length || savingId) return
+
+    const confirmed = window.confirm(
+      'Deseja limpar todas as notificações? Esta ação não pode ser desfeita.',
+    )
+
+    if (!confirmed) return
+
+    setSavingId('clear')
+
+    const { error } = await supabase
+      .from('admin_notificacoes')
+      .delete()
+      .not('id', 'is', null)
+
+    if (error) {
+      console.error('Erro ao limpar notificações administrativas:', error)
+    } else {
+      setItems([])
+    }
+
+    setSavingId(null)
+  }
+
   function openNotification(item: Notification) {
     void markAsRead(item)
     setOpen(false)
@@ -304,10 +329,24 @@ export default function AdminNotifications({ onNavigate }: Props) {
                     type="button"
                     className="admin-notifications-mark-all"
                     onClick={() => void markAllAsRead()}
-                    disabled={savingId === 'all'}
+                    disabled={savingId === 'all' || savingId === 'clear'}
                   >
                     <CheckCheck size={15} />
                     Marcar todas como lidas
+                  </button>
+                )}
+
+                {items.length > 0 && (
+                  <button
+                    type="button"
+                    className="admin-notifications-clear"
+                    onClick={() => void clearNotifications()}
+                    disabled={savingId === 'clear' || savingId === 'all'}
+                    title="Limpar todas as notificações"
+                    aria-label="Limpar todas as notificações"
+                  >
+                    <Trash2 size={15} />
+                    <span>Limpar</span>
                   </button>
                 )}
 
@@ -338,26 +377,44 @@ export default function AdminNotifications({ onNavigate }: Props) {
                   const Icon = icons[item.tipo as keyof typeof icons] ?? Bell
 
                   return (
-                    <button
-                      type="button"
+                    <div
                       key={item.id}
                       className={`admin-notification-item ${item.lida ? 'read' : 'unread'}`}
-                      onClick={() => openNotification(item)}
-                      disabled={savingId === item.id}
                     >
-                      <span className={`admin-notification-icon admin-notification-icon-${item.tipo}`}>
-                        <Icon size={17} strokeWidth={1.9} />
-                      </span>
-
-                      <span className="admin-notification-copy">
-                        <span className="admin-notification-title-row">
-                          <strong>{item.titulo}</strong>
-                          {!item.lida && <i aria-label="Não lida" />}
+                      <button
+                        type="button"
+                        className="admin-notification-main"
+                        onClick={() => openNotification(item)}
+                        disabled={savingId === item.id || savingId === 'clear'}
+                        aria-label={item.lida ? `Abrir notificação: ${item.titulo}` : `Abrir e marcar como lida: ${item.titulo}`}
+                      >
+                        <span className={`admin-notification-icon admin-notification-icon-${item.tipo}`}>
+                          <Icon size={17} strokeWidth={1.9} />
                         </span>
-                        <span className="admin-notification-message">{item.mensagem}</span>
-                        <span className="admin-notification-time">{formatRelativeDate(item.created_at)}</span>
-                      </span>
-                    </button>
+
+                        <span className="admin-notification-copy">
+                          <span className="admin-notification-title-row">
+                            <strong>{item.titulo}</strong>
+                            {!item.lida && <i aria-label="Não lida" />}
+                          </span>
+                          <span className="admin-notification-message">{item.mensagem}</span>
+                          <span className="admin-notification-time">{formatRelativeDate(item.created_at)}</span>
+                        </span>
+                      </button>
+
+                      {!item.lida && (
+                        <button
+                          type="button"
+                          className="admin-notification-mark-read"
+                          onClick={() => void markAsRead(item)}
+                          disabled={savingId === item.id || savingId === 'clear'}
+                          title="Marcar como lida"
+                          aria-label={`Marcar como lida: ${item.titulo}`}
+                        >
+                          <Check size={15} />
+                        </button>
+                      )}
+                    </div>
                   )
                 })
               )}
