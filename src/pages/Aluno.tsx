@@ -429,7 +429,27 @@ function Aluno() {
     useState('')
 
   const [section, setSection] =
-    useState<StudentSection>('inicio')
+    useState<StudentSection>(() => {
+      try {
+        const saved = sessionStorage.getItem('abacademy_student_section')
+        if (
+          saved === 'inicio' ||
+          saved === 'aulas' ||
+          saved === 'materiais' ||
+          saved === 'atividades' ||
+          saved === 'progresso' ||
+          saved === 'financeiro' ||
+          saved === 'perfil' ||
+          saved === 'solicitacoes'
+        ) {
+          return saved
+        }
+      } catch {
+        // O portal continua funcionando mesmo sem sessionStorage.
+      }
+
+      return 'inicio'
+    })
 
   const [
     mobileMenuOpen,
@@ -2396,6 +2416,12 @@ function Aluno() {
 
       setUser(null)
       setSection('inicio')
+
+      try {
+        sessionStorage.removeItem('abacademy_student_section')
+      } catch {
+        // Ignora indisponibilidade do storage.
+      }
       setAuthError('')
       setAuthInfo('')
       setAuthEmail('')
@@ -2410,6 +2436,12 @@ function Aluno() {
   ) => {
     setSection(nextSection)
     setMobileMenuOpen(false)
+
+    try {
+      sessionStorage.setItem('abacademy_student_section', nextSection)
+    } catch {
+      // A navegação continua funcionando mesmo sem sessionStorage.
+    }
   }
 
   const pendingActivities =
