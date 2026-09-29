@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Plus, Users, XCircle } from 'lucide-react'
+import { CheckCircle2, Copy, Plus, Users, XCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 type Turma = { id: string; modalidade: 'dupla' | 'grupo'; idioma: 'ingles' | 'alemao'; aulas_semana: number; quantidade_minima: number; quantidade_maxima: number; horario_preferido: string | null; status: string; origem_lead_id: string | null; created_at: string }
@@ -16,6 +16,7 @@ export default function Turmas() {
   const [open, setOpen] = useState<string | null>(null)
   const [saving, setSaving] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, { nome: string; email: string; telefone: string }>>({})
+  const [releasedLinks, setReleasedLinks] = useState<Record<string, string>>({})
 
   useEffect(() => { void load() }, [])
 
@@ -52,6 +53,36 @@ export default function Turmas() {
     const { error } = await supabase.from('turma_participantes').update({ status }).eq('id', participant.id)
     if (error) window.alert(error.message || 'Não foi possível atualizar o participante.')
     else await load()
+  }
+
+  async function releaseEnrollment(turma: Turma, member: Participante) {
+    if (turma.status !== 'pronta' || member.status !== 'confirmado' || member.valor_coletivo === null) {
+      window.alert('A turma precisa estar pronta e o participante confirmado com valor coletivo definido.')
+      return
+    }
+    setSaving(member.id)
+    const { data: existing } = await supabase.from('turma_matriculas').select('token').eq('participante_id', member.id).maybeSingle()
+    let token = existing?.token ?? null
+    if (!token) {
+      const { data, error } = await supabase.from('turma_matriculas').insert({
+        turma_id: turma.id,
+        participante_id: member.id,
+        valor_mensal: member.valor_coletivo,
+        condicao_meses: member.condicao_meses,
+        condicao_inicio: member.condicao_inicio,
+        condicao_fim: member.condicao_fim,
+        status: 'liberada',
+      }).select('token').single()
+      if (error) {
+        window.alert(error.message || 'Não foi possível liberar a matrícula.')
+        setSaving(null)
+        return
+      }
+      token = data.token
+    }
+    const url = window.location.origin + '/matricula?turma_token=' + encodeURIComponent(token)
+    setReleasedLinks(x => ({ ...x, [member.id]: url }))
+    setSaving(null)
   }
 
   async function refreshTurmaStatus(turma: Turma) {
@@ -148,7 +179,7 @@ export default function Turmas() {
             </div>
             <div className="admin-turma-progress"><span style={{ width: Math.min(100, (confirmed / turma.quantidade_maxima) * 100) + '%' }} /></div>
             {isOpen && <div className="admin-turma-body">
-              <div className="admin-turma-members">{members.map(member => <div className="admin-turma-member" key={member.id}><div><strong>{member.nome}</strong><span>{member.email}{member.telefone ? ' · ' + member.telefone : ''}</span>{member.forma_inicio === 'individual_aguardando' && <small>Começou no individual · condição coletiva: {member.valor_coletivo ? 'R$ ' + Number(member.valor_coletivo).toFixed(2).replace('.', ',') + '/mês' : 'aguardando formação'} · {member.condicao_meses || 3} meses</small>}</div><div className="admin-turma-member-actions"><span className={'admin-turma-member-status status-' + member.status}>{member.status}</span>{member.status !== 'confirmado' && member.status !== 'cancelado' && <button type="button" title="Confirmar participante" onClick={() => void changeParticipantStatus(member, 'confirmado')}><CheckCircle2 size={16} /></button>}{member.status !== 'cancelado' && <button type="button" title="Cancelar participante" onClick={() => void changeParticipantStatus(member, 'cancelado')}><XCircle size={16} /></button>}</div></div>)}</div>
+              <div className="admin-turma-members">{members.map(member => <div className="admin-turma-member" key={member.id}><div><strong>{member.nome}</strong><span>{member.email}{member.telefone ? ' · ' + member.telefone : ''}</span>{member.forma_inicio === 'individual_aguardando' && <small>Começou no individual · condição coletiva: {member.valor_coletivo ? 'R$ ' + Number(member.valor_coletivo).toFixed(2).replace('.', ',') + '/mês' : 'aguardando formação'} · {member.condicao_meses || 3} meses</small>}</div><div className="admin-turma-member-actions"><span className={'admin-turma-member-status status-' + member.status}>{member.status}</span>{member.status !== 'confirmado' && member.status !== 'cancelado' && <button type="button" title="Confirmar participante" onClick={() => void changeParticipantStatus(member, 'confirmado')}><CheckCircle2 size={16} /></button>}{member.status !== 'cancelado' && <button type="button" title="Cancelar participante" onClick={() => void changeParticipantStatus(member, 'cancelado')}><XCircle size={16} /></button>}{turma.status === 'pronta' && member.status === 'confirmado' && member.valor_coletivo !== null && <button type="button" title="Liberar matrícula" onClick={() => void releaseEnrollment(turma, member)} disabled={saving === member.id}>Liberar matrícula</button>}</div>{releasedLinks[member.id] && <div className="admin-turma-release-link"><span>{releasedLinks[member.id]}</span><button type="button" onClick={() => void navigator.clipboard.writeText(releasedLinks[member.id])}><Copy size={15} /> Copiar</button></div>}</div>)}</div>
               <div className="admin-turma-add"><strong>Adicionar participante</strong><div className="admin-turma-add-grid"><input value={draft.nome} onChange={e => setDrafts(x => ({ ...x, [turma.id]: { ...draft, nome: e.target.value } }))} placeholder="Nome completo" /><input value={draft.email} onChange={e => setDrafts(x => ({ ...x, [turma.id]: { ...draft, email: e.target.value } }))} type="email" placeholder="E-mail" /><input value={draft.telefone} onChange={e => setDrafts(x => ({ ...x, [turma.id]: { ...draft, telefone: e.target.value } }))} placeholder="WhatsApp" /><button type="button" disabled={saving === turma.id} onClick={() => void addParticipant(turma)}><Plus size={16} />{saving === turma.id ? 'Adicionando...' : 'Adicionar'}</button></div></div>
               <button type="button" className="admin-turma-ready" onClick={() => void refreshTurmaStatus(turma)}><CheckCircle2 size={16} /> Atualizar status da turma</button>
             </div>}
