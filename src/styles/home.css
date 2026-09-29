@@ -280,9 +280,10 @@ h1, h2, h3 { font-family: var(--font-display); }
   }
 
   .home .hero-main-logo img {
-    width: min(100%, 420px);
+    width: 100%;
+    max-width: none;
     height: auto;
-    max-height: 120px;
+    max-height: 140px;
   }
 
   .home .hero-card {
@@ -294,9 +295,10 @@ h1, h2, h3 { font-family: var(--font-display); }
 
 @media (max-width: 700px) {
   .home .hero-main-logo img {
-    width: min(100%, 360px);
+    width: 100%;
+    max-width: none;
     height: auto;
-    max-height: 112px;
+    max-height: 125px;
   }
 }
 
@@ -306,17 +308,19 @@ h1, h2, h3 { font-family: var(--font-display); }
   }
 
   .home .hero-main-logo img {
-    width: min(100%, 340px);
+    width: 100%;
+    max-width: none;
     height: auto;
-    max-height: 104px;
+    max-height: 118px;
   }
 }
 
 @media (max-width: 380px) {
   .home .hero-main-logo img {
-    width: min(100%, 300px);
+    width: 100%;
+    max-width: none;
     height: auto;
-    max-height: 96px;
+    max-height: 108px;
   }
 }
 
