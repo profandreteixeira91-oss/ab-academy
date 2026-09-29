@@ -4,7 +4,7 @@ create index if not exists leads_horario_id_idx on public.leads(horario_id);
 create index if not exists turmas_horario_id_idx on public.turmas(horario_id);
 
 create or replace view public.horarios_formacao_publicos
-with (security_invoker = true) as
+as
 select h.id as horario_id,h.idioma,h.dia_semana,h.hora_inicio,h.hora_fim,h.tipo_horario,h.disponivel,
        coalesce(t.id,null) as turma_id,coalesce(t.status,'em_formacao') as turma_status,
        coalesce(t.quantidade_minima,case when h.tipo_horario='dupla' then 2 else 3 end) as quantidade_minima,
