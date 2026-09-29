@@ -196,6 +196,7 @@ export default function Matricula() {
   const [selectedSchedule, setSelectedSchedule] = useState<SelectedSchedule | null>(null)
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
   const [collectiveScheduleMode, setCollectiveScheduleMode] = useState<'existing' | 'waiting'>('existing')
+  const [waitingIndividualPlan, setWaitingIndividualPlan] = useState<Plan | null>(null)
   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
 
@@ -210,9 +211,13 @@ export default function Matricula() {
   const isWaitingFormation = waitingFormation || (isCollectivePlan && collectiveScheduleMode === 'waiting' && !formationSlotId)
 
   const selectedPlanPrice = useMemo(() => {
-    const price = plan?.preco ?? 0
-    return isWaitingFormation ? Math.round(price * 0.9 * 100) / 100 : price
-  }, [plan, isWaitingFormation])
+    const basePrice = isWaitingFormation
+      ? Number(waitingIndividualPlan?.preco ?? plan?.preco ?? 0)
+      : Number(plan?.preco ?? 0)
+    return isWaitingFormation ? Math.round(basePrice * 0.9 * 100) / 100 : basePrice
+  }, [plan, waitingIndividualPlan, isWaitingFormation])
+
+  const effectivePlan = isWaitingFormation && waitingIndividualPlan ? waitingIndividualPlan : plan
 
   useEffect(() => {
     let mounted = true
@@ -374,6 +379,30 @@ export default function Matricula() {
   useEffect(() => {
     if (language) loadSchedules(language)
   }, [language, plan?.modalidade, formationSlotId, waitingFormation, collectiveScheduleMode])
+
+  useEffect(() => {
+    if (!language || !isWaitingFormation) {
+      setWaitingIndividualPlan(null)
+      return
+    }
+
+    const loadWaitingIndividualPlan = async () => {
+      const { data } = await supabase
+        .from('planos')
+        .select('id, idioma, tipo, modalidade, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at')
+        .eq('idioma', language)
+        .eq('modalidade', 'individual')
+        .eq('tipo', 'mensal')
+        .eq('ativo', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      setWaitingIndividualPlan(data ? data as Plan : null)
+    }
+
+    void loadWaitingIndividualPlan()
+  }, [language, isWaitingFormation])
 
   const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
     const { data, error: planError } = await supabase
@@ -829,9 +858,9 @@ export default function Matricula() {
       }
 
       const payload = {
-        plano_id: plan?.id ?? null,
+        plano_id: effectivePlan?.id ?? null,
         idioma: language,
-        tipo_plano: plan?.tipo ?? 'mensal',
+        tipo_plano: effectivePlan?.tipo ?? 'mensal',
         turma_token: collectiveEnrollment?.token ?? null,
         turma_participante_id: collectiveEnrollment?.participanteId ?? null,
         horario_formacao_id: isWaitingFormation ? (formationSlotId || selectedSchedule.id) : null,
@@ -839,13 +868,13 @@ export default function Matricula() {
 
         objetivos: null,
 
-        aulas_semana: collectiveEnrollment ? null : plan?.tipo === 'avulso' ? null : plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1,
+        aulas_semana: collectiveEnrollment ? null : effectivePlan?.tipo === 'avulso' ? null : effectivePlan?.tipo === 'intensivo' ? 3 : effectivePlan?.tipo === 'personalizado' ? 2 : 1,
 
-        valor_aula: collectiveEnrollment ? null : plan?.tipo === 'avulso' ? Number(plan.preco) : plan?.tipo === 'anual' ? null : Number(plan?.preco ?? 0) / (plan?.tipo === 'intensivo' ? 12 : plan?.tipo === 'personalizado' ? 8 : 4),
+        valor_aula: collectiveEnrollment ? null : effectivePlan?.tipo === 'avulso' ? Number(effectivePlan.preco) : effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0) / (effectivePlan?.tipo === 'intensivo' ? 12 : effectivePlan?.tipo === 'personalizado' ? 8 : 4),
 
-        valor_mensal: collectiveEnrollment?.valorMensal ?? (isWaitingFormation ? Math.round(Number(plan?.preco ?? 0) * 0.9 * 100) / 100 : (plan?.tipo === 'avulso' || plan?.tipo === 'anual' ? null : Number(plan?.preco ?? 0))),
+        valor_mensal: collectiveEnrollment?.valorMensal ?? (isWaitingFormation ? selectedPlanPrice : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0))),
 
-        valor_anual: collectiveEnrollment ? null : plan?.tipo === 'anual' ? Number(plan.preco) : null,
+        valor_anual: collectiveEnrollment ? null : effectivePlan?.tipo === 'anual' ? Number(effectivePlan.preco) : null,
 
         horario_ids: [
           selectedSchedule.id,
@@ -857,7 +886,7 @@ export default function Matricula() {
 
         dados_aluno: dadosAluno,
 
-        valor: collectiveEnrollment?.valorMensal ?? (isWaitingFormation ? Math.round(Number(plan?.preco ?? 0) * 0.9 * 100) / 100 : Number(plan?.preco ?? 0)),
+        valor: collectiveEnrollment?.valorMensal ?? selectedPlanPrice,
       }
 
       const {
