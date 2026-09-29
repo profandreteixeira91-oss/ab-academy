@@ -1897,6 +1897,7 @@
 }
 
 .admin-notifications-mark-all,
+.admin-notifications-clear,
 .admin-notifications-close {
   border: 0;
   background: transparent;
@@ -1904,7 +1905,8 @@
   cursor: pointer;
 }
 
-.admin-notifications-mark-all {
+.admin-notifications-mark-all,
+.admin-notifications-clear {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1912,11 +1914,24 @@
   border-radius: 8px;
   font-size: 11px;
   font-weight: 650;
+  white-space: nowrap;
 }
 
 .admin-notifications-mark-all:hover {
   background: #f5f8fc;
   color: #1d4ed8;
+}
+
+.admin-notifications-clear:hover {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.admin-notifications-mark-all:disabled,
+.admin-notifications-clear:disabled,
+.admin-notification-mark-read:disabled {
+  opacity: .55;
+  cursor: wait;
 }
 
 .admin-notifications-close {
@@ -1942,18 +1957,55 @@
   width: 100%;
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  padding: 14px 18px;
-  border: 0;
+  gap: 8px;
+  padding: 8px 10px 8px 18px;
   border-bottom: 1px solid #f0f3f7;
   background: #fff;
-  text-align: left;
-  cursor: pointer;
   transition: background .16s ease;
 }
 
 .admin-notification-item:hover {
   background: #f8fafc;
+}
+
+.admin-notification-main {
+  min-width: 0;
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-notification-main:disabled {
+  cursor: wait;
+}
+
+.admin-notification-mark-read {
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #dbe5f1;
+  border-radius: 8px;
+  background: #fff;
+  color: #64748b;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, color .16s ease;
+}
+
+.admin-notification-mark-read:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #2563eb;
 }
 
 .admin-notification-item.unread {
@@ -2081,13 +2133,26 @@
     padding: 16px;
   }
 
+  .admin-notifications-header-actions {
+    gap: 4px;
+  }
+
+  .admin-notifications-mark-all,
+  .admin-notifications-clear {
+    padding: 6px;
+  }
+
   .admin-notifications-mark-all {
     max-width: 135px;
     text-align: right;
   }
 
+  .admin-notifications-clear span {
+    display: none;
+  }
+
   .admin-notification-item {
-    padding: 13px 15px;
+    padding: 7px 10px 7px 15px;
   }
 }
 
