@@ -2090,3 +2090,41 @@
     padding: 13px 15px;
   }
 }
+
+
+.admin-notifications-enable {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 9px;
+  border: 1px solid #dbe5f1;
+  border-radius: 8px;
+  background: #f8fbff;
+  color: #2563eb;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.admin-notifications-enable:hover {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+
+.admin-notifications-permission-denied {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  color: #94a3b8;
+}
+
+@media (max-width: 600px) {
+  .admin-notifications-enable {
+    max-width: 120px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
