@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
   ArrowLeft, BookOpen, CheckCircle2, ChevronRight, CircleHelp,
@@ -80,26 +80,82 @@ function CentralAtividades() {
   const [activityStats, setActivityStats] = useState({ completed: 0, correct: 0 })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
+  const authUserIdRef = useRef<string | null>(null)
+  const authLoadFinishedRef = useRef(false)
+  const authLoadingRef = useRef(false)
+
   useEffect(() => {
     let mounted = true
-    async function loadSession() {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!mounted) return
-      if (!session?.user) {
-        window.location.replace('/aluno')
-        return
+
+    const loadSession = async () => {
+      if (authLoadingRef.current) return
+      authLoadingRef.current = true
+
+      try {
+        const { data: { session }, error } = await supabase.auth.getSession()
+
+        if (error) throw error
+        if (!mounted) return
+
+        if (!session?.user) {
+          authUserIdRef.current = null
+          setUser(null)
+          setLoadingAuth(false)
+          return
+        }
+
+        authUserIdRef.current = session.user.id
+        setUser(session.user)
+        setLoadingAuth(false)
+        authLoadFinishedRef.current = true
+      } catch (error) {
+        console.error('[CentralAtividades] Erro ao recuperar sessão:', error)
+        if (!mounted) return
+        setLoadingAuth(false)
+      } finally {
+        authLoadingRef.current = false
       }
-      setUser(session.user)
-      setLoadingAuth(false)
     }
+
     void loadSession()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!session?.user) {
-        window.location.replace('/aluno')
-        return
-      }
-      setUser(session.user)
-    })
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        if (!mounted) return
+
+        if (event === 'SIGNED_OUT') {
+          authUserIdRef.current = null
+          authLoadFinishedRef.current = false
+          setUser(null)
+          setLoadingAuth(false)
+          return
+        }
+
+        if (event === 'SIGNED_IN' && session?.user) {
+          // SIGNED_IN pode ser emitido novamente quando a aba volta a ficar ativa.
+          // Se for a mesma sessão já carregada, não desmontamos nem redirecionamos.
+          if (
+            authLoadFinishedRef.current &&
+            authUserIdRef.current === session.user.id
+          ) {
+            return
+          }
+
+          authUserIdRef.current = session.user.id
+          setUser(session.user)
+          setLoadingAuth(false)
+          authLoadFinishedRef.current = true
+          return
+        }
+
+        if (event === 'USER_UPDATED' && session?.user) {
+          if (authUserIdRef.current === session.user.id) {
+            setUser(session.user)
+          }
+        }
+      },
+    )
+
     return () => {
       mounted = false
       subscription.unsubscribe()
