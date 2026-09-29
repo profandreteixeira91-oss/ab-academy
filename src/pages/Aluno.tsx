@@ -3546,7 +3546,8 @@ function Aluno() {
               onClose={closePaymentScreen}
             />
           ) : (
-          section ===
+            <>
+              {section ===
             'inicio' && (
             <Inicio
               name={firstName}
@@ -3682,6 +3683,7 @@ function Aluno() {
             />
           )}
 
+            </>
           )}
         <footer className="student-site-footer">
           <div className="student-site-footer-bottom">
