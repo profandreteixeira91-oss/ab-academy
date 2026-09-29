@@ -170,6 +170,34 @@ const tipoConteudoLabels: Record<TipoConteudo, string> = {
   imagem: 'Imagem',
 }
 
+function renderTextWithLinks(value: string) {
+  const urlPattern = /(?:https?:\\/\\/|www\\.)[^\\s<]+/gi
+  const parts: React.ReactNode[] = []
+  let lastIndex = 0
+  for (const match of value.matchAll(urlPattern)) {
+    const raw = match[0]
+    const index = match.index ?? 0
+    const trailingMatch = raw.match(/[),.;!?]+$/)
+    const trailing = trailingMatch?.[0] ?? ''
+    const urlText = trailing ? raw.slice(0, -trailing.length) : raw
+    if (index > lastIndex) parts.push(value.slice(lastIndex, index))
+    const href = /^https?:\\/\\//i.test(urlText) ? urlText : 'https://' + urlText
+    parts.push(
+      <a
+        key={'activity-link-' + index + '-' + urlText}
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        {urlText}
+      </a>,
+    )
+    if (trailing) parts.push(trailing)
+    lastIndex = index + raw.length
+  }
+  if (lastIndex < value.length) parts.push(value.slice(lastIndex))
+  return parts
+}
 function createId() {
   return crypto.randomUUID()
 }
@@ -3081,7 +3109,7 @@ export default function Atividades({
               {content.tipo ===
                 'texto' && (
                 <div>
-                  {content.conteudo}
+                  {renderTextWithLinks(content.conteudo)}
                 </div>
               )}
 
@@ -4422,9 +4450,9 @@ export default function Atividades({
                                       4
                                     }
                                     placeholder="Digite o enunciado da questão..."
-                                    value={
-                                      exercise.enunciado
-                                    }
+                                    value={renderTextWithLinks(
+                                    exercise.enunciado,
+                                  )}
                                     onChange={(
                                       event,
                                     ) =>
