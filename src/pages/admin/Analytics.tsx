@@ -7,6 +7,8 @@ import {
   Eye,
   Globe2,
   Monitor,
+  Target,
+  UserCheck,
   RefreshCw,
   Smartphone,
   Tablet,
@@ -31,6 +33,21 @@ type DailyRow = {
   visitors: number
 }
 
+type ConversionSummary = {
+  leads: number
+  contacted: number
+  diagnostico: number
+  proposta_enviada: number
+  negociacao: number
+  matriculado: number
+  perdido: number
+  lead_rate: number
+  enrollment_rate: number
+  lead_to_enrollment: number
+  funnel: { stage: string; total: number }[]
+  sources: { source: string; leads: number; enrolled: number }[]
+}
+
 type AnalyticsSummary = {
   visits: number
   unique_visitors: number
@@ -40,6 +57,7 @@ type AnalyticsSummary = {
   devices: Row[]
   campaigns: Row[]
   daily: DailyRow[]
+  conversion: ConversionSummary
 }
 
 const ranges: { id: RangeKey; label: string; days: number }[] = [
@@ -58,6 +76,10 @@ const emptySummary: AnalyticsSummary = {
   devices: [],
   campaigns: [],
   daily: [],
+  conversion: {
+    leads: 0, contacted: 0, diagnostico: 0, proposta_enviada: 0, negociacao: 0, matriculado: 0, perdido: 0,
+    lead_rate: 0, enrollment_rate: 0, lead_to_enrollment: 0, funnel: [], sources: [],
+  },
 }
 
 function formatNumber(value: number) {
@@ -240,6 +262,21 @@ export default function Analytics() {
         </article>
       </div>
 
+      <div className="admin-analytics-conversion">
+        <div className="admin-analytics-section-heading">
+          <div><span className="admin-section-eyebrow">CONVERSÃO</span><h3>Da audiência ao resultado comercial</h3><p>Relacione o volume de visitantes com os leads e o avanço no funil comercial.</p></div>
+          <Target size={19} />
+        </div>
+        <div className="admin-analytics-conversion-kpis">
+          <article><div className="admin-analytics-kpi-icon"><UserCheck size={18} /></div><span>Leads</span><strong>{loading ? '—' : formatNumber(summary.conversion.leads)}</strong><small>{summary.conversion.lead_rate.toFixed(2)}% dos visitantes</small></article>
+          <article><div className="admin-analytics-kpi-icon"><Target size={18} /></div><span>Matriculados</span><strong>{loading ? '—' : formatNumber(summary.conversion.matriculado)}</strong><small>{summary.conversion.enrollment_rate.toFixed(2)}% dos visitantes</small></article>
+          <article><div className="admin-analytics-kpi-icon"><ArrowUp size={18} /></div><span>Lead → matrícula</span><strong>{loading ? '—' : `${summary.conversion.lead_to_enrollment.toFixed(1)}%`}</strong><small>dos leads do período</small></article>
+        </div>
+        <div className="admin-analytics-conversion-grid">
+          <div className="admin-analytics-funnel">{summary.conversion.funnel.map((item, index) => { const first = summary.conversion.leads || 1; const width = index === 0 ? 100 : Math.max((item.total / first) * 100, item.total ? 8 : 0); return <div className="admin-analytics-funnel-row" key={item.stage}><div className="admin-analytics-funnel-label"><strong>{item.stage}</strong><span>{formatNumber(item.total)}</span></div><div className="admin-analytics-progress"><i style={{ width: `${width}%` }} /></div></div> })}{summary.conversion.funnel.length === 0 && <div className="admin-analytics-list-empty">Sem leads no período.</div>}</div>
+          <div className="admin-analytics-card-inner"><div className="admin-analytics-card-header"><div><h3>Origem dos leads</h3><p>Quais fontes geraram contatos comerciais.</p></div><Globe2 size={18} /></div><div className="admin-analytics-list">{summary.conversion.sources.length === 0 && <div className="admin-analytics-list-empty">Sem leads no período.</div>}{summary.conversion.sources.map((item, index) => <div className="admin-analytics-list-row" key={item.source}><div className="admin-analytics-list-rank">{index + 1}</div><div className="admin-analytics-list-content compact"><strong>{formatSource(item.source)}</strong><span>{formatNumber(item.leads)} leads · {formatNumber(item.enrolled)} matriculados</span></div></div>)}</div></div>
+        </div>
+      </div>
       <div className="admin-analytics-grid admin-analytics-grid-main">
         <section className="admin-analytics-card admin-analytics-chart-card">
           <div className="admin-analytics-card-header">
