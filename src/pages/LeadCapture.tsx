@@ -5,7 +5,6 @@ import { supabase } from '../lib/supabase'
 
 type Language = 'ingles' | 'alemao' | 'ambos'
 type Modality = 'individual' | 'dupla' | 'grupo'
-type Modality = 'individual' | 'dupla' | 'grupo'
 
 const languageLabels: Record<Language, string> = {
   ingles: 'Inglês',
@@ -36,11 +35,6 @@ function getTracking() {
 }
 
 export default function LeadCapture() {
-  const initialModality = useMemo<Modality>(() => {
-    const value = new URLSearchParams(window.location.search).get('modalidade')
-    return value === 'dupla' || value === 'grupo' ? value : 'individual'
-  }, [])
-
   const initialModality = useMemo<Modality>(() => {
     const value = new URLSearchParams(window.location.search).get('modalidade')
     return value === 'dupla' || value === 'grupo' ? value : 'individual'
