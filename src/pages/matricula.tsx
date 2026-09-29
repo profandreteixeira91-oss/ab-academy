@@ -665,8 +665,8 @@ export default function Matricula() {
     }
 
     const requestedType: Horario['tipo_horario'] =
-      waitingFormation && plan?.modalidade === 'individual'
-        ? 'dupla'
+      waitingFormation
+        ? (horario.tipo_horario === 'grupo' ? 'grupo' : 'dupla')
         : plan?.modalidade || 'individual'
 
     setLoadingSchedules(true)
