@@ -207,7 +207,6 @@ h1, h2, h3 { font-family: var(--font-display); }
   display: block;
   width: min(100%, 620px);
   height: auto;
-  max-height: 220px;
   object-fit: contain;
 }
 
