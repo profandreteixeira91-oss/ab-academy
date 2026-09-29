@@ -206,8 +206,9 @@ export default function Matricula() {
         : ''
 
   const selectedPlanPrice = useMemo(() => {
-    return plan?.preco ?? 0
-  }, [plan])
+    const price = plan?.preco ?? 0
+    return waitingFormation ? Math.round(price * 0.9 * 100) / 100 : price
+  }, [plan, waitingFormation])
 
   useEffect(() => {
     let mounted = true
@@ -301,6 +302,18 @@ export default function Matricula() {
       }
       const selectedLanguage: Language =
         requestedLanguage === 'alemao' ? 'alemao' : 'ingles'
+
+      if (waitingFormation && requestedPlanId) {
+        const { data: waitingPlan } = await supabase
+          .from('planos')
+          .select('tipo')
+          .eq('id', requestedPlanId)
+          .maybeSingle()
+        if (waitingPlan?.tipo !== 'mensal') {
+          setError('A condição de 10% para aguardar a formação está disponível no plano mensal.')
+          return
+        }
+      }
 
       if (diagnosticRequested) {
         setLanguage(selectedLanguage)
