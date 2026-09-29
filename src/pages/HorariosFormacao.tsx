@@ -33,17 +33,12 @@ export default function HorariosFormacao() {
   useEffect(() => {
     async function load() {
       setLoading(true)
-      const { data, error } = await supabase
-        .from('horarios_formacao_publicos')
-        .select('horario_id,idioma,dia_semana,hora_inicio,hora_fim,tipo_horario,turma_status,quantidade_minima,quantidade_maxima,interessados')
-        .order('idioma')
-        .order('dia_semana')
-        .order('hora_inicio')
+      const { data: response, error } = await supabase.functions.invoke('list-formation-slots')
       if (error) {
         console.error('Erro ao carregar horários em formação:', error)
         setItems([])
       } else {
-        setItems((data || []) as Opportunity[])
+        setItems((response?.data || []) as Opportunity[])
       }
       setLoading(false)
     }
