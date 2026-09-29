@@ -160,6 +160,16 @@ function Professor() {
   const loadingProfessorRef = useRef(false)
 
   /*
+   * Mantém o estado de autenticação fora do closure do listener do
+   * Supabase. O useEffect de autenticação é registrado uma única vez,
+   * portanto ler "professor" diretamente dentro dele pode usar o valor
+   * inicial (null) e provocar um novo carregamento quando o navegador
+   * apenas sincroniza a sessão ao voltar para a aba.
+   */
+  const professorUserIdRef = useRef<string | null>(null)
+  const initialAuthLoadFinishedRef = useRef(false)
+
+  /*
    * ============================================================
    * CARREGAR PROFESSOR
    * ============================================================
@@ -181,6 +191,7 @@ function Professor() {
       } = await supabase.auth.getSession()
 
       if (!session?.user) {
+        professorUserIdRef.current = null
         setProfessor(null)
         setIdiomas([])
         setHorarios([])
@@ -260,6 +271,7 @@ function Professor() {
         return
       }
 
+      professorUserIdRef.current = session.user.id
       setProfessor(professorData)
 
       await loadProfessorData(professorData.id)
@@ -277,6 +289,7 @@ function Professor() {
     } finally {
       setLoading(false)
       loadingProfessorRef.current = false
+      initialAuthLoadFinishedRef.current = true
     }
   }
 
@@ -592,13 +605,41 @@ function Professor() {
          * a troca de abas não dispara nova consulta nem reset de estado.
          */
         if (event === 'SIGNED_IN') {
-          if (!professor && !loadingProfessorRef.current) {
-            void loadProfessor()
+          /*
+           * Primeiro login: carregar o portal.
+           *
+           * Sessão já conhecida: não fazer absolutamente nada. O
+           * Supabase pode emitir SIGNED_IN novamente durante a
+           * sincronização automática da sessão quando uma aba volta
+           * a ficar ativa. Isso não é um novo login e não deve resetar
+           * loading, consultas, seção ativa ou qualquer tarefa em curso.
+           */
+          if (loadingProfessorRef.current) {
+            return
           }
+
+          void supabase.auth.getSession().then(({ data }) => {
+            const userId = data.session?.user?.id ?? null
+
+            if (!userId) {
+              return
+            }
+
+            if (
+              initialAuthLoadFinishedRef.current &&
+              professorUserIdRef.current === userId
+            ) {
+              return
+            }
+
+            void loadProfessor()
+          })
+
           return
         }
 
         if (event === 'SIGNED_OUT') {
+          professorUserIdRef.current = null
           setProfessor(null)
           setIdiomas([])
           setHorarios([])
@@ -711,6 +752,7 @@ function Professor() {
         throw logoutError
       }
 
+      professorUserIdRef.current = null
       setProfessor(null)
       setIdiomas([])
       setHorarios([])
