@@ -821,6 +821,11 @@ export default function Matricula() {
       return
     }
 
+    if (isWaitingFormation && !waitingIndividualPlan) {
+      setError('Não foi possível carregar o plano individual necessário para esta condição. Tente novamente.')
+      return
+    }
+
     setLoading(true)
     setError('')
     setSuccess('')
