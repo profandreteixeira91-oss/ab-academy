@@ -3546,7 +3546,7 @@ function Aluno() {
               onClose={closePaymentScreen}
             />
           ) : (
-          {section ===
+          section ===
             'inicio' && (
             <Inicio
               name={firstName}
