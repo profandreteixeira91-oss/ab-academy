@@ -104,8 +104,8 @@ export default function AdminNotifications({ onNavigate }: Props) {
           ) {
             const nativeNotification = new Notification(notification.titulo, {
               body: notification.mensagem,
-              icon: '/pwa-192x192.png',
-              badge: '/pwa-192x192.png',
+              icon: '/icons/icon-192.svg',
+              badge: '/icons/icon-192.svg',
               tag: `admin-notificacao-${notification.id}`,
             })
 
@@ -139,8 +139,8 @@ export default function AdminNotifications({ onNavigate }: Props) {
     if (permission === 'granted') {
       new Notification('Notificações ativadas', {
         body: 'A AB Academy avisará você sobre novos eventos administrativos.',
-        icon: '/pwa-192x192.png',
-        badge: '/pwa-192x192.png',
+        icon: '/icons/icon-192.svg',
+        badge: '/icons/icon-192.svg',
         tag: 'admin-notificacoes-ativadas',
       })
     }
