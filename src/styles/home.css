@@ -292,6 +292,18 @@ h1, h2, h3 { font-family: var(--font-display); }
   }
 }
 
+
+@media (max-width: 900px) {
+  .home .hero-main-logo {
+    display: none;
+  }
+
+  .home .hero-container {
+    grid-template-areas: "content" "card";
+    gap: 40px;
+  }
+}
+
 @media (max-width: 700px) {
   .home .hero-main-logo img {
     width: 100%;
