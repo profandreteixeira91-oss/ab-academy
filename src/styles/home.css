@@ -223,14 +223,21 @@ h1, h2, h3 { font-family: var(--font-display); }
 .home .hero-container {
   position: relative;
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(260px, 0.72fr) minmax(0, 1.28fr);
   grid-template-areas:
-    "content visual"
+    "logo content"
     "card card";
   align-items: center;
   gap: 48px 70px;
   padding-top: 72px;
   padding-bottom: 72px;
+}
+
+.home .hero-main-logo {
+  grid-area: logo;
+  align-self: center;
+  justify-content: center;
+  margin-bottom: 0;
 }
 
 .home .hero-content {
@@ -254,6 +261,7 @@ h1, h2, h3 { font-family: var(--font-display); }
   .home .hero-container {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
+      "logo"
       "content"
       "visual";
     gap: 40px;
