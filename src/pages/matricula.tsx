@@ -388,14 +388,10 @@ export default function Matricula() {
     setError('')
 
     if (formationSlotId && waitingFormation) {
-      const { data, error: formationError } = await supabase
-        .from('horarios_formacao_publicos')
-        .select('horario_id,idioma,dia_semana,hora_inicio,hora_fim,tipo_horario')
-        .eq('horario_id', formationSlotId)
-        .eq('idioma', selectedLanguage)
-        .maybeSingle()
+      const { data: response, error: formationError } = await supabase.functions.invoke('list-formation-slots', { body: { horario_id: formationSlotId } })
+      const data = response?.data?.[0]
 
-      if (formationError || !data) {
+      if (formationError || !data || data.idioma !== selectedLanguage) {
         setError('O horário de formação selecionado não está mais disponível.')
         setAvailableSchedules([])
         setLoadingSchedules(false)
