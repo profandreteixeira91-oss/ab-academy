@@ -283,7 +283,7 @@ export default function LeadCapture() {
                     )}
                   </select>
                 </label>
-                <label>Quantidade de participantes
+                <label>{form.modalidade === 'dupla' ? 'Quantidade de participantes' : formacaoTurma === 'ja_tenho_participantes' ? 'Participantes da turma' : 'Tamanho desejado da turma'}
                   <input required min={form.modalidade === 'dupla' ? 2 : 3} max={form.modalidade === 'dupla' ? 2 : 6} type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
                 </label>
               </div>
@@ -308,8 +308,8 @@ export default function LeadCapture() {
 
               <div className="lead-commercial-price" aria-live="polite">
                 <span>Investimento estimado</span>
-                <strong>{priceLoading ? 'Calculando...' : commercialPrice !== null ? formatLeadPrice(commercialPrice) : 'A consultar'}</strong>
-                {commercialPrice !== null && <small>por aluno / mês · {form.aulas_semana}x por semana</small>}
+                <strong>{formacaoTurma === 'preciso_formar_turma' ? 'A definir' : priceLoading ? 'Calculando...' : commercialPrice !== null ? formatLeadPrice(commercialPrice) : 'A consultar'}</strong>
+                {commercialPrice !== null && formacaoTurma === 'ja_tenho_participantes' && <small>por aluno / mês · {form.aulas_semana}x por semana</small>}
                 {form.modalidade === 'grupo' && <small>Valor individual conforme o tamanho da turma (3 a 6 participantes).</small>}
                 {form.modalidade === 'dupla' && <small>Valor individual para a dupla.</small>}
                 <small>O valor exibido é uma referência comercial. A matrícula só é liberada após a confirmação dos participantes.</small>
