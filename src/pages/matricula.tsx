@@ -752,29 +752,13 @@ export default function Matricula() {
 
         objetivos: null,
 
-        aulas_semana:
-          plan.tipo === 'avulso'
-            ? null
-            : plan.tipo === 'intensivo'
-              ? 3
-              : plan.tipo === 'personalizado'
-                ? 2
-                : 1,
+        aulas_semana: collectiveEnrollment ? null : plan?.tipo === 'avulso' ? null : plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1,
 
-        valor_aula:
-          plan.tipo === 'avulso'
-            ? Number(plan.preco)
-            : plan.tipo === 'anual'
-              ? null
-              : Number(plan.preco) /
-                (plan.tipo === 'intensivo' ? 12 : plan.tipo === 'personalizado' ? 8 : 4),
+        valor_aula: collectiveEnrollment ? null : plan?.tipo === 'avulso' ? Number(plan.preco) : plan?.tipo === 'anual' ? null : Number(plan?.preco ?? 0) / (plan?.tipo === 'intensivo' ? 12 : plan?.tipo === 'personalizado' ? 8 : 4),
 
         valor_mensal: collectiveEnrollment?.valorMensal ?? (plan?.tipo === 'avulso' || plan?.tipo === 'anual' ? null : Number(plan?.preco ?? 0)),
 
-        valor_anual:
-          plan.tipo === 'anual'
-            ? Number(plan.preco)
-            : null,
+        valor_anual: collectiveEnrollment ? null : plan?.tipo === 'anual' ? Number(plan.preco) : null,
 
         horario_ids: [
           selectedSchedule.id,
