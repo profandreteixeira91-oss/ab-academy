@@ -255,7 +255,7 @@ export default function LeadCapture() {
             Recebemos seu interesse em {languageLabels[form.idioma_interesse]}. {form.modalidade === 'individual' ? 'A equipe da AB Academy entrará em contato para orientar seus próximos passos.' : formacaoTurma === 'iniciar_individual' ? 'Você escolheu começar no plano individual. A equipe poderá acompanhar a formação da sua dupla ou turma e registrar a migração quando ela estiver pronta.' : 'Para duplas e grupos, a equipe confirmará os participantes e a formação da turma antes de liberar a matrícula.'}
           </p>
           <div className="lead-success-actions">
-            {formacaoTurma === 'iniciar_individual' && form.idioma_interesse !== 'ambos' && <a href={`/planos?modalidade=individual&idioma=${form.idioma_interesse}`} className="lead-primary-button">Começar no plano individual <ArrowRight size={17} /></a>}
+            {formacaoTurma === 'iniciar_individual' && form.idioma_interesse !== 'ambos' && <a href={`/planos?modalidade=individual&idioma=${form.idioma_interesse}${selectedFormationSlot ? `&horario_id=${encodeURIComponent(selectedFormationSlot.horario_id)}` : ''}`} className="lead-primary-button">Começar no plano individual <ArrowRight size={17} /></a>}
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="lead-whatsapp-button">
               <MessageCircle size={17} /> Falar pelo WhatsApp
             </a>
