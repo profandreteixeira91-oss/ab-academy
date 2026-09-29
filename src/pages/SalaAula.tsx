@@ -816,6 +816,43 @@ function ClassroomControls({
 }
 
 /* =========================================================
+   INICIALIZAÇÃO INDEPENDENTE DE ÁUDIO E VÍDEO
+   ========================================================= */
+
+function MediaBootstrap({
+  onMediaError,
+}: {
+  onMediaError: (kind: 'microphone' | 'camera', error: unknown) => void
+}) {
+  const { localParticipant } = useLocalParticipant()
+  const room = useRoomContext()
+  const [initialized, setInitialized] = useState(false)
+
+  useEffect(() => {
+    if (initialized || room.state !== 'connected') return
+    setInitialized(true)
+
+    // Captura cada dispositivo em separado: falha de câmera não
+    // deve impedir o áudio, e falha de microfone não deve impedir vídeo.
+    void (async () => {
+      try {
+        await localParticipant.setMicrophoneEnabled(true)
+      } catch (error) {
+        onMediaError('microphone', error)
+      }
+
+      try {
+        await localParticipant.setCameraEnabled(true)
+      } catch (error) {
+        onMediaError('camera', error)
+      }
+    })()
+  }, [initialized, room.state, localParticipant, onMediaError])
+
+  return null
+}
+
+/* =========================================================
    SALA LIVEKIT
    ========================================================= */
 
@@ -832,6 +869,7 @@ function LiveClassroom({
     useState(false)
 
   const [mediaWarning, setMediaWarning] = useState('')
+  const [mediaDetails, setMediaDetails] = useState<string[]>([])
   const [chatOpen, setChatOpen] = useState(false)
 
   useEffect(() => {
@@ -859,8 +897,8 @@ function LiveClassroom({
         token={livekit.token}
         serverUrl={livekit.url}
         connect={true}
-        audio={true}
-        video={true}
+        audio={false}
+        video={false}
         onConnected={() =>
           setConnected(true)
         }
@@ -885,12 +923,33 @@ function LiveClassroom({
       >
         <RoomAudioRenderer />
 
+        <MediaBootstrap
+          onMediaError={(kind, error) => {
+            console.error(`Falha ao iniciar ${kind}:`, error)
+            const device = kind === 'microphone' ? 'microfone' : 'câmera'
+            const detail = String((error as Error)?.message || '').toLowerCase()
+            const guidance = detail.includes('notallowed') || detail.includes('permission') || detail.includes('denied')
+              ? `Permissão do ${device} bloqueada. Libere o acesso nas configurações do navegador e do aparelho.`
+              : detail.includes('notfound') || detail.includes('device')
+                ? `Nenhum ${device} disponível. Confira se o dispositivo existe e não está sendo usado por outro aplicativo.`
+                : `Não foi possível iniciar o ${device}. Use os controles da sala para tentar novamente.`
+            setMediaDetails((previous) => previous.includes(guidance) ? previous : [...previous, guidance])
+            setMediaWarning(`A sala foi aberta, mas houve uma falha no ${device}. Confira as orientações abaixo.`)
+          }}
+        />
+
         <StartAudio label="Ativar áudio da aula" />
 
         {mediaWarning && (
           <div className="academy-media-warning" role="alert">
-            <strong>Problema com o áudio</strong>
+            <strong>Problema com câmera ou microfone</strong>
             <span>{mediaWarning}</span>
+            {mediaDetails.map((detail) => <span key={detail}>{detail}</span>)}
+            <button type="button" onClick={() => {
+              setMediaDetails([])
+              setMediaWarning('')
+              window.location.reload()
+            }}>Tentar novamente</button>
           </div>
         )}
 
