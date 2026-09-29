@@ -235,7 +235,7 @@ h1, h2, h3 { font-family: var(--font-display); }
 
 .home .hero-main-logo {
   grid-area: logo;
-  align-self: center;
+  align-self: start;
   justify-content: center;
   margin-bottom: 0;
 }
