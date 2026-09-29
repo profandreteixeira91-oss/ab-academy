@@ -3,7 +3,7 @@ import { CheckCircle2, Plus, Users, XCircle } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 
 type Turma = { id: string; modalidade: 'dupla' | 'grupo'; idioma: 'ingles' | 'alemao'; aulas_semana: number; quantidade_minima: number; quantidade_maxima: number; horario_preferido: string | null; status: string; origem_lead_id: string | null; created_at: string }
-type Participante = { id: string; turma_id: string; nome: string; email: string; telefone: string | null; papel: 'organizador' | 'participante'; status: 'convidado' | 'confirmado' | 'recusado' | 'cancelado' }
+type Participante = { id: string; turma_id: string; nome: string; email: string; telefone: string | null; papel: 'organizador' | 'participante'; status: 'convidado' | 'confirmado' | 'recusado' | 'cancelado'; forma_inicio: 'coletivo' | 'individual_aguardando'; valor_individual: number | null; valor_coletivo: number | null; condicao_meses: number | null; condicao_inicio: string | null; condicao_fim: string | null }
 
 const statusLabel: Record<string, string> = { em_formacao: 'Em formação', aguardando_confirmacoes: 'Aguardando confirmações', pronta: 'Pronta para matrícula', ativa: 'Ativa', encerrada: 'Encerrada', cancelada: 'Cancelada' }
 const langLabel: Record<string, string> = { ingles: 'Inglês', alemao: 'Alemão' }
@@ -55,8 +55,76 @@ export default function Turmas() {
   }
 
   async function refreshTurmaStatus(turma: Turma) {
-    const members = participantes.filter(p => p.turma_id === turma.id && p.status === 'confirmado').length
-    const nextStatus = members >= turma.quantidade_minima ? 'pronta' : 'aguardando_confirmacoes'
+    const confirmedParticipants = participantes.filter(p => p.turma_id === turma.id && p.status === 'confirmado')
+    const confirmed = confirmedParticipants.length
+    const nextStatus = confirmed >= turma.quantidade_minima ? 'pronta' : 'aguardando_confirmacoes'
+
+    if (nextStatus === 'pronta') {
+      const { data: frequency } = await supabase
+        .from('modalidade_frequencias')
+        .select('id, preco_mensal')
+        .eq('idioma', turma.idioma)
+        .eq('modalidade', turma.modalidade)
+        .eq('aulas_semana', turma.aulas_semana)
+        .eq('ativo', true)
+        .maybeSingle()
+
+      let collectivePrice: number | null = null
+      if (frequency) {
+        if (turma.modalidade === 'dupla') {
+          collectivePrice = frequency.preco_mensal
+        } else {
+          const { data: tier } = await supabase
+            .from('modalidade_frequencia_precos')
+            .select('preco_mensal')
+            .eq('frequencia_id', frequency.id)
+            .eq('quantidade_participantes', confirmed)
+            .eq('ativo', true)
+            .maybeSingle()
+          collectivePrice = tier?.preco_mensal ?? null
+        }
+      }
+
+      if (collectivePrice !== null) {
+        const start = new Date()
+        const conditionStart = new Date(start.getFullYear(), start.getMonth() + 1, 1)
+        const conditionEnd = new Date(conditionStart.getFullYear(), conditionStart.getMonth() + 3, 0)
+        const iso = (value: Date) => {
+          const y = value.getFullYear()
+          const m = String(value.getMonth() + 1).padStart(2, '0')
+          const d = String(value.getDate()).padStart(2, '0')
+          return y + '-' + m + '-' + d
+        }
+
+        const waitingIds = confirmedParticipants
+          .filter(p => p.forma_inicio === 'individual_aguardando')
+          .map(p => p.id)
+
+        if (waitingIds.length) {
+          await supabase
+            .from('turma_participantes')
+            .update({
+              valor_coletivo: collectivePrice,
+              condicao_meses: 3,
+              condicao_inicio: iso(conditionStart),
+              condicao_fim: iso(conditionEnd),
+            })
+            .in('id', waitingIds)
+        }
+
+        const directIds = confirmedParticipants
+          .filter(p => p.forma_inicio === 'coletivo')
+          .map(p => p.id)
+
+        if (directIds.length) {
+          await supabase
+            .from('turma_participantes')
+            .update({ valor_coletivo: collectivePrice })
+            .in('id', directIds)
+        }
+      }
+    }
+
     const { error } = await supabase.from('turmas').update({ status: nextStatus }).eq('id', turma.id)
     if (error) window.alert(error.message || 'Não foi possível atualizar a turma.')
     else await load()
@@ -64,10 +132,10 @@ export default function Turmas() {
 
   return (
     <div className="admin-turmas">
-      <div className="admin-turmas-header"><div><span className="admin-turmas-eyebrow">Formação de turmas</span><h2>Duplas e grupos</h2><p>Confirme quem realmente fará parte da turma antes de liberar a matrícula e a condição comercial.</p></div>
+      <div className="admin-turmas-header"><div><span className="admin-turmas-eyebrow">Formação de turmas</span><h2>Duplas e grupos</h2><p>Confirme quem realmente fará parte da turma. Quem começou no individual migra para o valor coletivo a partir do próximo ciclo, com condição especial por 3 meses.</p></div>
         <div className="admin-turmas-summary"><div><strong>{counts.formacao}</strong><span>em formação</span></div><div><strong>{counts.prontas}</strong><span>prontas</span></div><div><strong>{counts.ativas}</strong><span>ativas</span></div></div>
       </div>
-      <div className="admin-turmas-rule"><Users size={18} /><div><strong>Regra comercial</strong><span>Dupla exige 2 participantes confirmados. Grupo exige no mínimo 3. A quantidade confirmada é a que define a faixa de preço.</span></div></div>
+      <div className="admin-turmas-rule"><Users size={18} /><div><strong>Regra comercial</strong><span>Dupla exige 2 participantes confirmados. Grupo exige no mínimo 3. A quantidade confirmada é a que define a faixa de preço. Para quem iniciou no individual, a condição coletiva começa no ciclo seguinte à formação.</span></div></div>
       {loading ? <div className="admin-turmas-empty">Carregando turmas...</div> : !turmas.length ? <div className="admin-turmas-empty"><Users size={28} /><strong>Nenhuma turma em formação.</strong><span>Duplas e grupos iniciados a partir dos leads aparecerão aqui.</span></div> :
         <div className="admin-turmas-list">{turmas.map(turma => {
           const members = participantes.filter(p => p.turma_id === turma.id)
@@ -80,7 +148,7 @@ export default function Turmas() {
             </div>
             <div className="admin-turma-progress"><span style={{ width: Math.min(100, (confirmed / turma.quantidade_maxima) * 100) + '%' }} /></div>
             {isOpen && <div className="admin-turma-body">
-              <div className="admin-turma-members">{members.map(member => <div className="admin-turma-member" key={member.id}><div><strong>{member.nome}</strong><span>{member.email}{member.telefone ? ' · ' + member.telefone : ''}</span></div><div className="admin-turma-member-actions"><span className={'admin-turma-member-status status-' + member.status}>{member.status}</span>{member.status !== 'confirmado' && member.status !== 'cancelado' && <button type="button" title="Confirmar participante" onClick={() => void changeParticipantStatus(member, 'confirmado')}><CheckCircle2 size={16} /></button>}{member.status !== 'cancelado' && <button type="button" title="Cancelar participante" onClick={() => void changeParticipantStatus(member, 'cancelado')}><XCircle size={16} /></button>}</div></div>)}</div>
+              <div className="admin-turma-members">{members.map(member => <div className="admin-turma-member" key={member.id}><div><strong>{member.nome}</strong><span>{member.email}{member.telefone ? ' · ' + member.telefone : ''}</span>{member.forma_inicio === 'individual_aguardando' && <small>Começou no individual · condição coletiva: {member.valor_coletivo ? 'R$ ' + Number(member.valor_coletivo).toFixed(2).replace('.', ',') + '/mês' : 'aguardando formação'} · {member.condicao_meses || 3} meses</small>}</div><div className="admin-turma-member-actions"><span className={'admin-turma-member-status status-' + member.status}>{member.status}</span>{member.status !== 'confirmado' && member.status !== 'cancelado' && <button type="button" title="Confirmar participante" onClick={() => void changeParticipantStatus(member, 'confirmado')}><CheckCircle2 size={16} /></button>}{member.status !== 'cancelado' && <button type="button" title="Cancelar participante" onClick={() => void changeParticipantStatus(member, 'cancelado')}><XCircle size={16} /></button>}</div></div>)}</div>
               <div className="admin-turma-add"><strong>Adicionar participante</strong><div className="admin-turma-add-grid"><input value={draft.nome} onChange={e => setDrafts(x => ({ ...x, [turma.id]: { ...draft, nome: e.target.value } }))} placeholder="Nome completo" /><input value={draft.email} onChange={e => setDrafts(x => ({ ...x, [turma.id]: { ...draft, email: e.target.value } }))} type="email" placeholder="E-mail" /><input value={draft.telefone} onChange={e => setDrafts(x => ({ ...x, [turma.id]: { ...draft, telefone: e.target.value } }))} placeholder="WhatsApp" /><button type="button" disabled={saving === turma.id} onClick={() => void addParticipant(turma)}><Plus size={16} />{saving === turma.id ? 'Adicionando...' : 'Adicionar'}</button></div></div>
               <button type="button" className="admin-turma-ready" onClick={() => void refreshTurmaStatus(turma)}><CheckCircle2 size={16} /> Atualizar status da turma</button>
             </div>}
