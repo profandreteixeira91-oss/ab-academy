@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { useEffect } from 'react'
 import './styles/mobile-responsive.css'
 
 import Home from './pages/Home'
@@ -39,6 +40,7 @@ import Diagnostica from './pages/Diagnostica'
 import LeadCapture from './pages/LeadCapture'
 import LanguageLanding from './pages/LanguageLanding'
 import SiteFooter from './components/SiteFooter'
+import { trackPublicPageView } from './lib/analytics'
 
 function App() {
   const withFooter = (content: ReactNode) => (
@@ -94,6 +96,10 @@ function App() {
     path === '/politica-privacidade' ? 'Política de Privacidade' :
     path === '/termos-de-servico' ? 'Termos de Serviço' :
     'Página não encontrada'
+
+  useEffect(() => {
+    trackPublicPageView(path, pageTitle)
+  }, [path, pageTitle])
 
   const pageDescriptions: Record<string, string> = {
     '/': 'Aprenda inglês e alemão com a AB Academy. Metodologia prática, acompanhamento especializado e plataforma completa para sua evolução.',
