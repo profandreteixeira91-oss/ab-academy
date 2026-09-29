@@ -197,7 +197,7 @@ function Planos() {
         const dataNovo = plano.created_at ? Date.parse(plano.created_at) : 0
 
         if (dataNovo >= dataAtual) {
-          unicos.set(plano.tipo, plano)
+          unicos.set(key, plano)
         }
       }
 
