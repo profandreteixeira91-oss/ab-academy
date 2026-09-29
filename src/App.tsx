@@ -39,6 +39,8 @@ import Planos from './pages/Planos'
 import Diagnostica from './pages/Diagnostica'
 import LeadCapture from './pages/LeadCapture'
 import LanguageLanding from './pages/LanguageLanding'
+import Aulas from './pages/Aulas'
+import AulaModalidade from './pages/AulaModalidade'
 import SiteFooter from './components/SiteFooter'
 import { trackPublicPageView } from './lib/analytics'
 
@@ -80,6 +82,10 @@ function App() {
     path === '/planos' ? 'Planos' :
     path === '/diagnostica' ? 'Aula diagnóstica' :
     path === '/quero-aprender' ? 'Fale com a AB Academy' :
+    path === '/aulas' ? 'Formatos de aulas' :
+    path === '/aulas/individuais' ? 'Aulas individuais' :
+    path === '/aulas/duplas' ? 'Aulas em duplas' :
+    path === '/aulas/grupos' ? 'Aulas em grupos' :
     path === '/ingles' ? 'Curso de Inglês' :
     path === '/alemao' ? 'Curso de Alemão' :
     path === '/enterprise' ? 'AB Academy Enterprise' :
@@ -106,6 +112,10 @@ function App() {
     '/planos': 'Conheça os planos de inglês e alemão da AB Academy e escolha a opção ideal para seus objetivos.',
     '/diagnostica': 'Faça sua aula diagnóstica de inglês ou alemão e descubra o melhor caminho para sua evolução.',
     '/quero-aprender': 'Fale com a AB Academy e descubra como começar a estudar inglês ou alemão.',
+    '/aulas': 'Conheça as modalidades de aulas da AB Academy: individuais, duplas e grupos.',
+    '/aulas/individuais': 'Aulas individuais de inglês e alemão na AB Academy.',
+    '/aulas/duplas': 'Aulas em duplas de inglês e alemão na AB Academy.',
+    '/aulas/grupos': 'Aulas em grupos de inglês e alemão na AB Academy.',
     '/ingles': 'Curso de inglês da AB Academy com metodologia prática e acompanhamento especializado.',
     '/alemao': 'Curso de alemão da AB Academy com metodologia prática e acompanhamento especializado.',
     '/enterprise': 'Inglês e alemão para empresas. Conheça as soluções corporativas da AB Academy Enterprise.',
@@ -201,6 +211,22 @@ function App() {
 
   if (path === '/quero-aprender') {
     return <LeadCapture />
+  }
+
+  if (path === '/aulas') {
+    return <Aulas />
+  }
+
+  if (path === '/aulas/individuais') {
+    return <AulaModalidade modality="individual" />
+  }
+
+  if (path === '/aulas/duplas') {
+    return <AulaModalidade modality="dupla" />
+  }
+
+  if (path === '/aulas/grupos') {
+    return <AulaModalidade modality="grupo" />
   }
 
   if (path === '/ingles') {
