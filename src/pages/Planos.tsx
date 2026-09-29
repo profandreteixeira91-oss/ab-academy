@@ -139,7 +139,7 @@ function ModalidadeCard({
   )
 }
 
-function PlanoCard({ plano }: { plano: Plano }) {
+function PlanoCard({ plano, horarioId }: { plano: Plano; horarioId?: string | null }) {
   const price = getPlanPrice(plano)
 
   return (
@@ -179,7 +179,7 @@ function PlanoCard({ plano }: { plano: Plano }) {
       )}
 
       <a
-        href={'/matricula?idioma=' + plano.idioma + '&plano=' + plano.id}
+        href={'/matricula?idioma=' + plano.idioma + '&plano=' + plano.id + (horarioId ? '&horario_id=' + encodeURIComponent(horarioId) + '&aguardando_formacao=1' : '')}
         className="btn btn-primary planos-detail-cta"
       >
         {getPlanCta(plano.tipo, plano.idioma)}
@@ -202,6 +202,7 @@ function Planos() {
     return idioma === 'alemao' ? 'alemao' : 'ingles'
   })
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const [horarioId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -430,7 +431,7 @@ function Planos() {
               {modalidadeSelecionada === 'individual' ? (
                 idiomaSelecionado === 'ingles' ? (
                   <div className="planos-language planos-language--stacked"><div className="planos-grid">
-                    {planosPorIdioma.ingles.filter((plano) => plano.modalidade === 'individual').map((plano) => <PlanoCard key={plano.id} plano={plano} />)}
+                    {planosPorIdioma.ingles.filter((plano) => plano.modalidade === 'individual').map((plano) => <PlanoCard key={plano.id} plano={plano} horarioId={horarioId} />)}
                   </div></div>
                 ) : (
                   <div className="planos-language planos-language--stacked"><div className="planos-grid">
