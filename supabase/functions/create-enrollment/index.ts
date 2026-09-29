@@ -44,6 +44,8 @@ type EnrollmentRequest = {
   valor: number
   turma_token?: string | null
   turma_participante_id?: string | null
+  horario_formacao_id?: string | null
+  aguardando_formacao?: boolean
 }
 
 function jsonResponse(
@@ -401,7 +403,8 @@ Deno.serve(async (req) => {
             disponivel,
             aluno_id,
             dia_semana,
-            idioma
+            idioma,
+            tipo_horario
           `,
         )
         .in(
@@ -649,7 +652,24 @@ Deno.serve(async (req) => {
         )
       }
 
-      if (Math.abs(Number(plano.preco) - Number(body.valor)) > 0.01) {
+      const isWaitingFormation = Boolean(body.aguardando_formacao && body.horario_formacao_id)
+
+      if (isWaitingFormation) {
+        const { data: formationSlot, error: formationSlotError } = await supabaseAdmin
+          .from('horarios')
+          .select('id, idioma, disponivel, aluno_id, tipo_horario')
+          .eq('id', body.horario_formacao_id)
+          .maybeSingle()
+
+        if (formationSlotError || !formationSlot || formationSlot.idioma !== body.idioma || !formationSlot.disponivel || formationSlot.aluno_id || !['dupla', 'grupo'].includes(formationSlot.tipo_horario)) {
+          return jsonResponse({ error: 'O horário escolhido para formação não está mais disponível.' }, 409)
+        }
+
+        const discountedPrice = Math.round(Number(plano.preco) * 0.9 * 100) / 100
+        if (Math.abs(discountedPrice - Number(body.valor)) > 0.01) {
+          return jsonResponse({ error: 'O valor inicial deve corresponder ao plano individual com 10% de desconto enquanto a formação estiver pendente.' }, 409)
+        }
+      } else if (Math.abs(Number(plano.preco) - Number(body.valor)) > 0.01) {
         return jsonResponse(
           {
             error:
@@ -691,6 +711,7 @@ Deno.serve(async (req) => {
       condicao_meses: collectiveEnrollment?.condicao_meses ?? null,
       condicao_inicio: collectiveEnrollment?.condicao_inicio ?? null,
       condicao_fim: collectiveEnrollment?.condicao_fim ?? null,
+      horario_formacao_id: body.aguardando_formacao ? body.horario_formacao_id ?? null : null,
 
       idioma:
         body.idioma,
@@ -883,6 +904,9 @@ Deno.serve(async (req) => {
 
           turma_participante_id:
             collectiveEnrollment?.participante_id ?? null,
+
+          horario_formacao_id:
+            body.aguardando_formacao ? body.horario_formacao_id ?? null : null,
 
           idioma:
             body.idioma,
