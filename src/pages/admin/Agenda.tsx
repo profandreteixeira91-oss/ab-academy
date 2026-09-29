@@ -766,6 +766,10 @@ export default function Agenda() {
         )
       }
 
+      if (form.aluno_id && form.tipo_horario !== 'individual') {
+        throw new Error('Um horário já matriculado individualmente deve permanecer como Individual. Para transformá-lo em dupla ou grupo, primeiro remova a matrícula deste horário.')
+      }
+
       const conflict =
         getConflictingHorario(
           form.dia_semana,
