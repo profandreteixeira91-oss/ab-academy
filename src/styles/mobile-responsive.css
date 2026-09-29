@@ -604,3 +604,301 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+   MOBILE SYSTEM STANDARD — TODAS AS PÁGINAS
+   Regra: o conteúdo acompanha a largura da viewport como a
+   Home. Nenhum componente interno cria uma segunda largura.
+========================================================= */
+
+@media (max-width: 900px) {
+  /* Base estrutural */
+  *,
+  *::before,
+  *::after {
+    min-width: 0;
+  }
+
+  html,
+  body,
+  #root,
+  #root > * {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  body {
+    min-width: 320px;
+  }
+
+  main,
+  header,
+  footer,
+  section,
+  article,
+  aside,
+  form {
+    max-width: 100%;
+  }
+
+  /* O mesmo comportamento de container da Home */
+  .container,
+  [class$="-container"],
+  [class*="-container "] {
+    max-width: 100%;
+  }
+
+  /* Tipografia nunca deve aumentar a viewport */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  p,
+  span,
+  strong,
+  small,
+  label,
+  a,
+  button {
+    overflow-wrap: anywhere;
+  }
+
+  /* Elementos de mídia */
+  img,
+  video,
+  canvas,
+  iframe,
+  embed,
+  object {
+    max-width: 100%;
+    height: auto;
+  }
+
+  iframe {
+    width: 100%;
+  }
+
+  /* Campos e botões */
+  input,
+  select,
+  textarea,
+  button {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Flex/grid: os filhos podem encolher */
+  [style*="display: flex"],
+  [style*="display:flex"],
+  [style*="display: grid"],
+  [style*="display:grid"] {
+    min-width: 0;
+  }
+
+  /* Conteúdo longo deve rolar dentro do próprio componente */
+  pre,
+  code {
+    max-width: 100%;
+  }
+
+  pre {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* Grades de conteúdo: fluxo vertical no telefone */
+  .hero-container,
+  .founder-grid,
+  .courses-grid,
+  .features-grid,
+  .enterprise-hero-container,
+  .enterprise-hero-grid,
+  .enterprise-lead-grid,
+  .language-landing-hero-grid,
+  .language-landing-info-grid,
+  .language-landing-outcomes,
+  .lead-form-grid,
+  .enterprise-form-grid,
+  .careers-form-grid,
+  .enrollment-layout,
+  .diagnostic-container,
+  .admin-module-grid,
+  .admin-summary-grid,
+  .admin-content-grid,
+  .student-dashboard-grid,
+  .student-content-grid,
+  .central-summary-grid,
+  .central-activity-grid,
+  .academy-main-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  /* Barras/ações que costumam causar overflow */
+  .hero-actions,
+  .header-actions,
+  .enrollment-actions,
+  .enterprise-hero-actions,
+  .enterprise-cta-actions,
+  .lead-actions,
+  .careers-actions,
+  .student-actions,
+  .admin-actions,
+  .central-actions {
+    min-width: 0;
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .hero-actions > *,
+  .enrollment-actions > *,
+  .enterprise-hero-actions > *,
+  .enterprise-cta-actions > *,
+  .lead-actions > *,
+  .careers-actions > *,
+  .student-actions > *,
+  .admin-actions > *,
+  .central-actions > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  /* Cards e painéis nunca ultrapassam o conteúdo */
+  .card,
+  [class*="-card"],
+  [class*="-panel"],
+  [class*="-modal"] {
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Menus/painéis flutuantes respeitam a viewport */
+  [role="dialog"],
+  [role="menu"],
+  [role="listbox"] {
+    max-width: calc(100vw - 24px);
+  }
+
+  /* Tabelas continuam legíveis sem criar overflow na página */
+  .table-responsive,
+  .table-container,
+  .admin-table-wrapper,
+  .admin-data-table-wrapper,
+  .leads-table-wrapper,
+  .enterprise-table-wrapper,
+  .data-table-wrapper {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+  }
+
+  .table-responsive > table,
+  .table-container > table,
+  .admin-table-wrapper > table,
+  .admin-data-table-wrapper > table,
+  .leads-table-wrapper > table,
+  .enterprise-table-wrapper > table,
+  .data-table-wrapper > table {
+    min-width: max-content;
+  }
+
+  /* Portais: conteúdo sempre parte da viewport, nunca da sidebar */
+  .student-main,
+  .student-content,
+  .admin-main,
+  .admin-content,
+  .admin-page,
+  .central-page,
+  .central-main,
+  .professor-page,
+  .professor-main,
+  .virtual-classroom-page,
+  .academy-live-page {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  /* Rodapé acompanha exatamente a largura disponível */
+  .site-footer,
+  .site-footer-container,
+  .student-site-footer,
+  .student-site-footer-bottom,
+  .central-page-footer {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+}
+
+@media (max-width: 600px) {
+  /* Espaçamento lateral único: mesma lógica visual da Home */
+  .container {
+    width: calc(100% - 28px);
+    max-width: 100%;
+  }
+
+  /* Ações empilhadas quando duas colunas não forem confortáveis */
+  .hero-actions,
+  .enrollment-actions,
+  .enterprise-hero-actions,
+  .enterprise-cta-actions,
+  .lead-actions,
+  .careers-actions,
+  .student-actions,
+  .admin-actions,
+  .central-actions {
+    width: 100%;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .hero-actions > a,
+  .enrollment-actions > button,
+  .enrollment-actions > a,
+  .enterprise-hero-actions > *,
+  .enterprise-cta-actions > *,
+  .lead-actions > *,
+  .careers-actions > *,
+  .student-actions > *,
+  .admin-actions > *,
+  .central-actions > * {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  /* Títulos longos seguem o eixo vertical sem cortar */
+  h1,
+  h2,
+  h3 {
+    max-width: 100%;
+  }
+
+  /* Salas de aula: vídeos em coluna e controles acessíveis */
+  .academy-video-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .academy-controls {
+    max-width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .academy-chat-input {
+    min-width: 0;
+  }
+
+  .academy-chat-input input {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 380px) {
+  .container {
+    width: calc(100% - 22px);
+  }
+}
+
