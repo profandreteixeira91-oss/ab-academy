@@ -76,7 +76,7 @@ export default function LeadCapture() {
     if (!horarioId) return
     let active = true
     async function loadFormationSlot() {
-      const { data: response, error } = await supabase.functions.invoke('list-formation-slots', { body: { horario_id: horarioId } })
+      const { data: response, error } = await supabase.functions.invoke('list-formation-slots', { body: { horario_id: horarioId, modalidade: initialModality } })
       const data = response?.data?.[0]
       if (!active || error || !data) return
       setSelectedFormationSlot(data as typeof selectedFormationSlot)
