@@ -561,7 +561,7 @@ Deno.serve(async (req) => {
         await supabaseAdmin
           .from('planos')
           .select(
-            'id, idioma, tipo, preco, ativo',
+            'id, idioma, tipo, preco, ativo, modalidade',
           )
           .eq(
             'id',
@@ -616,6 +616,26 @@ Deno.serve(async (req) => {
               'O plano selecionado não corresponde ao idioma escolhido.',
           },
           400,
+        )
+      }
+
+      if (plano.modalidade !== 'individual') {
+        return jsonResponse(
+          {
+            error:
+              'Este plano pertence a uma dupla ou grupo. A matrícula precisa ser liberada a partir de uma turma confirmada.',
+          },
+          409,
+        )
+      }
+
+      if (Math.abs(Number(plano.preco) - Number(body.valor)) > 0.01) {
+        return jsonResponse(
+          {
+            error:
+              'O valor enviado não corresponde ao valor oficial do plano.',
+          },
+          409,
         )
       }
 
