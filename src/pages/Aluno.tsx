@@ -1509,6 +1509,52 @@ function Aluno() {
     }
   }, [user])
 
+  useEffect(() => {
+    if (!user) return
+
+    let channel: ReturnType<typeof supabase.channel> | null = null
+    let mounted = true
+
+    const subscribeToFinance = async () => {
+      try {
+        const studentId = await getStudentId(user.id)
+        if (!mounted) return
+
+        channel = supabase
+          .channel('student-finance-' + studentId)
+          .on(
+            'postgres_changes',
+            {
+              event: 'UPDATE',
+              schema: 'public',
+              table: 'mensalidades',
+              filter: 'aluno_id=eq.' + studentId,
+            },
+            () => {
+              void loadStudentFinance(user.id)
+            },
+          )
+          .subscribe()
+      } catch (error) {
+        console.error('Erro ao acompanhar atualizações financeiras:', error)
+      }
+    }
+
+    void subscribeToFinance()
+
+    const interval = window.setInterval(() => {
+      void loadStudentFinance(user.id)
+    }, 15000)
+
+    return () => {
+      mounted = false
+      window.clearInterval(interval)
+      if (channel) {
+        void supabase.removeChannel(channel)
+      }
+    }
+  }, [user])
+
   /*
    * =========================================================
    * CARREGAR ATIVIDADES
