@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 
 type Language = 'ingles' | 'alemao' | 'ambos'
 type Modality = 'individual' | 'dupla' | 'grupo'
+type Modality = 'individual' | 'dupla' | 'grupo'
 
 const languageLabels: Record<Language, string> = {
   ingles: 'Inglês',
@@ -35,6 +36,11 @@ function getTracking() {
 }
 
 export default function LeadCapture() {
+  const initialModality = useMemo<Modality>(() => {
+    const value = new URLSearchParams(window.location.search).get('modalidade')
+    return value === 'dupla' || value === 'grupo' ? value : 'individual'
+  }, [])
+
   const initialModality = useMemo<Modality>(() => {
     const value = new URLSearchParams(window.location.search).get('modalidade')
     return value === 'dupla' || value === 'grupo' ? value : 'individual'
@@ -154,6 +160,29 @@ export default function LeadCapture() {
             <label>E-mail<input required type="email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="voce@email.com" /></label>
             <label>WhatsApp<input required type="tel" value={form.telefone} onChange={(e) => setForm({ ...form, telefone: e.target.value })} placeholder="(00) 00000-0000" /></label>
           </div>
+
+          <fieldset>
+            <legend>Como você quer estudar?</legend>
+            <div className="lead-language-options">
+              {(['individual','dupla','grupo'] as Modality[]).map((modality) => (
+                <label className={form.modalidade === modality ? 'selected' : ''} key={modality}>
+                  <input type="radio" name="modalidade" value={modality} checked={form.modalidade === modality} onChange={() => setForm({ ...form, modalidade: modality, quantidade_participantes: modality === 'dupla' ? '2' : '' })} />
+                  <span>{modality === 'individual' ? 'Individual' : modality === 'dupla' ? 'Dupla' : 'Grupo'}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+
+          {(form.modalidade === 'dupla' || form.modalidade === 'grupo') && (
+            <div className="lead-form-grid">
+              <label>Quantidade de participantes
+                <input required min={form.modalidade === 'dupla' ? 2 : 3} max="50" type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
+              </label>
+              <label>Melhor horário para o grupo
+                <input value={form.horario_preferido} onChange={(e) => setForm({ ...form, horario_preferido: e.target.value })} placeholder="Ex.: noites durante a semana" />
+              </label>
+            </div>
+          )}
 
           <fieldset>
             <legend>Como você quer estudar?</legend>
