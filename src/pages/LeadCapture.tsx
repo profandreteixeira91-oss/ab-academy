@@ -72,8 +72,14 @@ export default function LeadCapture() {
 
     const aulasSemana = form.modalidade === 'individual' ? null : Number(form.aulas_semana)
 
-    if (form.modalidade !== 'individual' && ![1, 2, 3].includes(aulasSemana || 0)) {
-      setError('Selecione uma frequência semanal válida.')
+    if (form.modalidade === 'dupla' && ![1, 2].includes(aulasSemana || 0)) {
+      setError('Selecione uma frequência semanal válida para aulas em dupla.')
+      setLoading(false)
+      return
+    }
+
+    if (form.modalidade === 'grupo' && ![2, 3].includes(aulasSemana || 0)) {
+      setError('Selecione uma frequência semanal válida para aulas em grupo.')
       setLoading(false)
       return
     }
@@ -198,8 +204,7 @@ export default function LeadCapture() {
                       <>
                         <option value="1">1 aula por semana</option>
                         <option value="2">2 aulas por semana</option>
-                        <option value="3">3 aulas por semana</option>
-                      </>
+                        </> 
                     ) : (
                       <>
                         <option value="2">2 aulas por semana</option>
