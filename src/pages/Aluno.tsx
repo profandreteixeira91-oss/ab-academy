@@ -1654,17 +1654,44 @@ function Aluno() {
     }
   }
 
-  async function loadStudentFinance(userId: string) {
+  async function loadStudentFinance(userId: string, syncAsaas = false) {
     try {
       setFinanceLoading(true)
       setFinanceError('')
       const studentId = await getStudentId(userId)
-      const { data, error } = await supabase
+      let { data, error } = await supabase
         .from('mensalidades')
         .select('id, competencia, data_vencimento, data_pagamento, valor, status, metodo_pagamento, numero_parcela, total_parcelas, observacoes')
         .eq('aluno_id', studentId)
         .order('data_vencimento', { ascending: false })
       if (error) throw error
+
+      if (syncAsaas) {
+        const pendentes = (data ?? []).filter((entry) =>
+          entry.status === 'pendente' || entry.status === 'vencido',
+        )
+
+        if (pendentes.length > 0) {
+          await Promise.allSettled(
+            pendentes.map((entry) =>
+              supabase.functions.invoke('asaas-sync-payment', {
+                body: { mensalidade_id: entry.id },
+              }),
+            ),
+          )
+
+          const refreshed = await supabase
+            .from('mensalidades')
+            .select('id, competencia, data_vencimento, data_pagamento, valor, status, metodo_pagamento, numero_parcela, total_parcelas, observacoes')
+            .eq('aluno_id', studentId)
+            .order('data_vencimento', { ascending: false })
+
+          if (!refreshed.error) {
+            data = refreshed.data
+          }
+        }
+      }
+
       setFinanceEntries((data ?? []).map((entry) => ({
         id: entry.id,
         competencia: entry.competencia,
@@ -1877,7 +1904,7 @@ function Aluno() {
           await Promise.all([
             loadStudentLessons(authenticatedUser.id),
             loadStudentActivities(authenticatedUser.id),
-            loadStudentFinance(authenticatedUser.id),
+            loadStudentFinance(authenticatedUser.id, true),
           ])
 
           // Solicitações é independente e nunca pode invalidar a sessão do portal.
@@ -2700,11 +2727,23 @@ function Aluno() {
     stopPaymentPolling()
 
     paymentPollRef.current = setInterval(async () => {
+      const { data: syncData } = await supabase.functions.invoke('asaas-sync-payment', {
+        body: { pagamento_id: pagamentoId },
+      })
+
       const { data, error } = await supabase
         .from('pagamentos')
         .select('status')
         .eq('id', pagamentoId)
         .maybeSingle()
+
+      if (syncData?.status === 'pago') {
+        stopPaymentPolling()
+        setPaymentStatus('confirmado')
+        setPaymentLoading(false)
+        await loadStudentFinance(user.id)
+        return
+      }
 
       if (error || !data) return
 
