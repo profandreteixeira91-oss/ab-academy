@@ -135,6 +135,12 @@ export default function LeadCapture() {
 
     const aulasSemana = form.modalidade === 'individual' ? null : Number(form.aulas_semana)
 
+    if (form.modalidade !== 'individual' && form.idioma_interesse === 'ambos') {
+      setError('Para duplas e grupos, escolha um único idioma para a formação da turma.')
+      setLoading(false)
+      return
+    }
+
     if (form.modalidade === 'dupla' && ![1, 2].includes(aulasSemana || 0)) {
       setError('Selecione uma frequência semanal válida para aulas em dupla.')
       setLoading(false)
