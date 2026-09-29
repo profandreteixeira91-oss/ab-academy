@@ -55,6 +55,7 @@ export default function LeadCapture() {
     modalidade: initialModality as Modality,
     quantidade_participantes: initialModality === 'dupla' ? '2' : '',
     horario_preferido: '',
+    aulas_semana: initialModality === 'dupla' ? '1' : '2',
   })
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -69,7 +70,14 @@ export default function LeadCapture() {
 
     const tracking = getTracking()
 
+    if (form.modalidade !== 'individual' && ![1, 2, 3].includes(aulasSemana || 0)) {
+      setError('Selecione uma frequência semanal válida.')
+      setLoading(false)
+      return
+    }
+
     const quantidade = form.quantidade_participantes ? Number(form.quantidade_participantes) : null
+    const aulasSemana = form.modalidade === 'individual' ? null : Number(form.aulas_semana)
     if (form.modalidade === 'dupla' && quantidade !== 2) {
       setError('Para aulas em dupla, informe exatamente 2 participantes.')
       setLoading(false)
@@ -92,6 +100,7 @@ export default function LeadCapture() {
       content: tracking.content,
       referrer: document.referrer || null,
       modalidade: form.modalidade,
+      aulas_semana: aulasSemana,
       quantidade_participantes: quantidade,
       horario_preferido: form.horario_preferido || null,
     })
@@ -172,7 +181,7 @@ export default function LeadCapture() {
             <div className="lead-language-options">
               {(['individual','dupla','grupo'] as Modality[]).map((modality) => (
                 <label className={form.modalidade === modality ? 'selected' : ''} key={modality}>
-                  <input type="radio" name="modalidade" value={modality} checked={form.modalidade === modality} onChange={() => setForm({ ...form, modalidade: modality, quantidade_participantes: modality === 'dupla' ? '2' : '' })} />
+                  <input type="radio" name="modalidade" value={modality} checked={form.modalidade === modality} onChange={() => setForm({ ...form, modalidade: modality, quantidade_participantes: modality === 'dupla' ? '2' : '', aulas_semana: modality === 'dupla' ? '1' : modality === 'grupo' ? '2' : '' })} />
                   <span>{modality === 'individual' ? 'Individual' : modality === 'dupla' ? 'Dupla' : 'Grupo'}</span>
                 </label>
               ))}
@@ -180,14 +189,32 @@ export default function LeadCapture() {
           </fieldset>
 
           {(form.modalidade === 'dupla' || form.modalidade === 'grupo') && (
-            <div className="lead-form-grid">
-              <label>Quantidade de participantes
-                <input required min={form.modalidade === 'dupla' ? 2 : 3} max={form.modalidade === 'dupla' ? 2 : 50} type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
-              </label>
+            <>
+              <div className="lead-form-grid">
+                <label>Frequência semanal
+                  <select required value={form.aulas_semana} onChange={(e) => setForm({ ...form, aulas_semana: e.target.value })}>
+                    {form.modalidade === 'dupla' ? (
+                      <>
+                        <option value="1">1 aula por semana</option>
+                        <option value="2">2 aulas por semana</option>
+                        <option value="3">3 aulas por semana</option>
+                      </>
+                    ) : (
+                      <>
+                        <option value="2">2 aulas por semana</option>
+                        <option value="3">3 aulas por semana</option>
+                      </>
+                    )}
+                  </select>
+                </label>
+                <label>Quantidade de participantes
+                  <input required min={form.modalidade === 'dupla' ? 2 : 3} max={form.modalidade === 'dupla' ? 2 : 50} type="number" value={form.quantidade_participantes} onChange={(e) => setForm({ ...form, quantidade_participantes: e.target.value })} placeholder={form.modalidade === 'dupla' ? '2' : 'Ex.: 5'} />
+                </label>
+              </div>
               <label>Melhor horário
                 <input value={form.horario_preferido} onChange={(e) => setForm({ ...form, horario_preferido: e.target.value })} placeholder="Ex.: noites durante a semana ou sábados" />
               </label>
-            </div>
+            </>
           )}
 
           <fieldset>
