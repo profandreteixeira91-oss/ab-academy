@@ -212,7 +212,7 @@ export default function LeadCapture() {
       return
     }
 
-    const { error: insertError } = await supabase.from('leads').insert({
+    const { data: createdLead, error: insertError } = await supabase.from('leads').insert({
       ...form,
       origem: tracking.source,
       landing_page: new URLSearchParams(window.location.search).get('landing_page') || window.location.pathname,
@@ -228,13 +228,33 @@ export default function LeadCapture() {
       aulas_semana: aulasSemana,
       quantidade_participantes: quantidade,
       horario_preferido: form.horario_preferido || null,
-    })
+    }).select('id').single()
 
-    if (insertError) {
+    if (insertError || !createdLead) {
       console.error('Erro ao registrar lead:', insertError)
       setError('Não foi possível enviar seus dados agora. Tente novamente em instantes.')
       setLoading(false)
       return
+    }
+
+    if (
+      form.modalidade !== 'individual' &&
+      selectedFormationSlot?.horario_id
+    ) {
+      const { error: formationError } = await supabase.rpc(
+        'vincular_lead_formacao',
+        {
+          p_lead_id: createdLead.id,
+          p_horario_id: selectedFormationSlot.horario_id,
+        },
+      )
+
+      if (formationError) {
+        console.error('Erro ao vincular formação:', formationError)
+        setError('Seu interesse foi registrado, mas não foi possível vincular automaticamente a formação deste horário. A equipe poderá concluir o vínculo pelo Admin.')
+        setLoading(false)
+        return
+      }
     }
 
     setSuccess(true)
