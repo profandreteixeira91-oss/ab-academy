@@ -179,7 +179,7 @@ function PlanoCard({ plano, horarioId }: { plano: Plano; horarioId?: string | nu
       )}
 
       <a
-        href={'/matricula?idioma=' + plano.idioma + '&plano=' + plano.id + (horarioId ? '&horario_id=' + encodeURIComponent(horarioId) + '&aguardando_formacao=1' : '')}
+        href={'/matricula?idioma=' + plano.idioma + '&plano=' + plano.id + (horarioId && plano.tipo === 'mensal' ? '&horario_id=' + encodeURIComponent(horarioId) + '&aguardando_formacao=1' : '')}
         className="btn btn-primary planos-detail-cta"
       >
         {getPlanCta(plano.tipo, plano.idioma)}
