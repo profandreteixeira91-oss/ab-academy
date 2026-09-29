@@ -212,6 +212,10 @@ function Home() {
         <section className="hero" id="inicio">
           <div className="container hero-container">
             <div className="hero-content">
+              <div className="hero-main-logo" aria-label="AB Academy">
+                <img src={logo} alt="AB Academy" />
+              </div>
+
               <div className="section-label">
                 <Languages size={16} />
                 Inglês e Alemão
