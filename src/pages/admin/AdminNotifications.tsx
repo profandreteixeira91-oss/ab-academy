@@ -1,4 +1,4 @@
-import { Bell, BriefcaseBusiness, CheckCheck, ClipboardList, MessageSquare, UserPlus, X } from 'lucide-react'
+import { Bell, BellOff, BriefcaseBusiness, CheckCheck, ClipboardList, MessageSquare, UserPlus, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 
@@ -46,6 +46,9 @@ export default function AdminNotifications({ onNavigate }: Props) {
   const [items, setItems] = useState<Notification[]>([])
   const [loading, setLoading] = useState(false)
   const [savingId, setSavingId] = useState<string | null>(null)
+  const [browserPermission, setBrowserPermission] = useState<NotificationPermission | 'unsupported'>(() =>
+    'Notification' in window ? Notification.permission : 'unsupported',
+  )
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -72,6 +75,76 @@ export default function AdminNotifications({ onNavigate }: Props) {
 
     return () => window.clearInterval(interval)
   }, [load])
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-notificacoes-realtime')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'admin_notificacoes',
+        },
+        (payload) => {
+          const notification = payload.new as Notification
+
+          setItems((current) => {
+            if (current.some((item) => item.id === notification.id)) {
+              return current
+            }
+
+            return [notification, ...current].slice(0, 50)
+          })
+
+          if (
+            'Notification' in window &&
+            Notification.permission === 'granted' &&
+            document.visibilityState !== 'visible'
+          ) {
+            const nativeNotification = new Notification(notification.titulo, {
+              body: notification.mensagem,
+              icon: '/pwa-192x192.png',
+              badge: '/pwa-192x192.png',
+              tag: `admin-notificacao-${notification.id}`,
+            })
+
+            nativeNotification.onclick = () => {
+              window.focus()
+              nativeNotification.close()
+            }
+          }
+        },
+      )
+      .subscribe((status) => {
+        if (status !== 'SUBSCRIBED') {
+          console.warn('Status da central de notificações em tempo real:', status)
+        }
+      })
+
+    return () => {
+      void supabase.removeChannel(channel)
+    }
+  }, [])
+
+  async function enableBrowserNotifications() {
+    if (!('Notification' in window)) {
+      setBrowserPermission('unsupported')
+      return
+    }
+
+    const permission = await Notification.requestPermission()
+    setBrowserPermission(permission)
+
+    if (permission === 'granted') {
+      new Notification('Notificações ativadas', {
+        body: 'A AB Academy avisará você sobre novos eventos administrativos.',
+        icon: '/pwa-192x192.png',
+        badge: '/pwa-192x192.png',
+        tag: 'admin-notificacoes-ativadas',
+      })
+    }
+  }
 
   const unreadCount = useMemo(
     () => items.filter((item) => !item.lida).length,
@@ -165,6 +238,24 @@ export default function AdminNotifications({ onNavigate }: Props) {
               </div>
 
               <div className="admin-notifications-header-actions">
+                {browserPermission === 'default' && (
+                  <button
+                    type="button"
+                    className="admin-notifications-enable"
+                    onClick={() => void enableBrowserNotifications()}
+                    title="Ativar notificações do navegador"
+                  >
+                    <Bell size={14} />
+                    Ativar no navegador
+                  </button>
+                )}
+
+                {browserPermission === 'denied' && (
+                  <span className="admin-notifications-permission-denied" title="As notificações estão bloqueadas no navegador">
+                    <BellOff size={14} />
+                  </span>
+                )}
+
                 {unreadCount > 0 && (
                   <button
                     type="button"
