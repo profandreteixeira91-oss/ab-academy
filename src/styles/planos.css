@@ -1144,3 +1144,23 @@
 .planos-modality-note{max-width:760px;margin:0 auto 28px;padding:12px 16px;border:1px solid #dce7f7;border-radius:12px;background:#f7faff;color:#5d6d86;font-size:12px;line-height:1.6;text-align:center}
 .planos-detail-card--dupla,.planos-detail-card--grupo{border-color:#dce7f7}
 @media(max-width:720px){.planos-modality-switch{grid-template-columns:1fr}.planos-modality-switch .planos-language-switch-button{min-height:76px}.planos-modality-note{margin-bottom:22px}}
+
+
+/* Preços de duplas e grupos */
+.planos-frequency-list{display:flex;flex-direction:column;gap:12px;margin-top:20px}
+.planos-frequency-card{padding:15px;border:1px solid #e2e9f4;border-radius:14px;background:#f8faff}
+.planos-frequency-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+.planos-frequency-heading strong{font-size:14px;color:var(--planos-ink)}
+.planos-frequency-heading>span{font-size:20px;font-weight:800;color:var(--planos-primary);white-space:nowrap}
+.planos-frequency-heading small,.planos-group-price-row small{margin-left:4px;color:var(--planos-muted);font-size:10px;font-weight:700}
+.planos-frequency-card>p{margin:6px 0 0;color:var(--planos-muted);font-size:11px;line-height:1.5}
+.planos-group-prices{display:flex;flex-direction:column;margin-top:8px}
+.planos-group-price-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 0;border-top:1px solid #e5ebf4}
+.planos-group-price-row:first-child{border-top:0}
+.planos-group-price-row span{color:#53627a;font-size:12px;font-weight:600}
+.planos-group-price-row strong{color:var(--planos-primary);font-size:16px}
+@media(max-width:600px){
+  .planos-frequency-heading{align-items:flex-start;flex-direction:column;gap:4px}
+  .planos-frequency-heading>span{font-size:19px}
+  .planos-group-price-row{padding:8px 0}
+}
