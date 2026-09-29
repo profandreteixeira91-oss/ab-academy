@@ -2293,3 +2293,11 @@
 .admin-analytics-funnel-label{display:flex;justify-content:space-between;gap:12px;margin-bottom:7px}
 .admin-analytics-funnel-label strong{font-size:13px;color:#26384f}
 .admin-analytics-funnel-label span{font-size:12px;color:#7b899a}
+
+
+@media (max-width: 900px){
+  .admin-analytics-conversion{padding:18px;border-radius:16px}
+  .admin-analytics-conversion-kpis{grid-template-columns:1fr}
+  .admin-analytics-conversion-grid{grid-template-columns:1fr}
+  .admin-analytics-section-heading{margin-bottom:16px}
+}
