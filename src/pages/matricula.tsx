@@ -449,7 +449,6 @@ export default function Matricula() {
         .eq('idioma', selectedLanguage)
         .eq('disponivel', true)
         .is('aluno_id', null)
-        .eq('tipo_horario', plan?.modalidade || 'individual')
         .order('dia_semana', {
           ascending: true,
         })
@@ -655,31 +654,59 @@ export default function Matricula() {
     }
   }
 
-  const handleSelectSchedule = (
+  const handleSelectSchedule = async (
     horario: Horario,
   ) => {
     setError('')
 
-    if (
-      selectedSchedule?.id === horario.id
-    ) {
+    if (selectedSchedule?.id === horario.id) {
       setSelectedSchedule(null)
       return
     }
 
-    const schedule: SelectedSchedule = {
-      id: horario.id,
-      date: getDateForWeekday(
-        horario.dia_semana,
-      ),
-      weekday: horario.dia_semana,
-      hora_inicio: horario.hora_inicio,
-      hora_fim: horario.hora_fim,
-      meet_url: horario.meet_url,
-      meet_space_name:
-        horario.meet_space_name,
+    const requestedType: Horario['tipo_horario'] =
+      waitingFormation && plan?.modalidade === 'individual'
+        ? 'dupla'
+        : plan?.modalidade || 'individual'
+
+    setLoadingSchedules(true)
+
+    const { data: selected, error: selectionError } =
+      await supabase.rpc('selecionar_horario_matricula', {
+        p_horario_id: horario.id,
+        p_idioma: language,
+        p_tipo_horario: requestedType,
+      })
+
+    setLoadingSchedules(false)
+
+    if (selectionError || !selected) {
+      console.error('Erro ao selecionar horário:', selectionError)
+      setError(
+        selectionError?.message ||
+          'Este horário não está mais disponível. Escolha outro horário.',
+      )
+      if (language) await loadSchedules(language)
+      return
     }
 
+    const schedule: SelectedSchedule = {
+      id: selected.id,
+      date: getDateForWeekday(selected.dia_semana),
+      weekday: selected.dia_semana,
+      hora_inicio: selected.hora_inicio,
+      hora_fim: selected.hora_fim,
+      meet_url: selected.meet_url,
+      meet_space_name: selected.meet_space_name,
+    }
+
+    setAvailableSchedules((current) =>
+      current.map((item) =>
+        item.id === selected.id
+          ? { ...item, tipo_horario: selected.tipo_horario }
+          : item,
+      ),
+    )
     setSelectedSchedule(schedule)
   }
 
