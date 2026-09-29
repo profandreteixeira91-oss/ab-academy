@@ -33,6 +33,7 @@ import Candidaturas from './admin/Candidaturas'
 import EnterpriseLeads from './admin/EnterpriseLeads'
 import Leads from './admin/Leads'
 import AdminNotifications from './admin/AdminNotifications'
+import Analytics from './admin/Analytics'
 
 import '../styles/admin.css'
 import '../styles/central-admin.css'
@@ -178,6 +179,11 @@ const navigation = [
         id: 'dashboard',
         label: 'Dashboard',
         icon: LayoutDashboard,
+      },
+      {
+        id: 'analytics',
+        label: 'Analytics',
+        icon: BarChart3,
       },
       {
         id: 'agenda',
@@ -365,6 +371,8 @@ export default function Admin() {
   const activeTitle =
     activeModule === 'dashboard'
       ? 'Dashboard'
+      : activeModule === 'analytics'
+        ? 'Analytics'
       : activeModuleData?.title ||
         'Administração'
 
@@ -530,6 +538,10 @@ export default function Admin() {
         <section className="admin-content">
           {activeModule === 'dashboard' && (
             <Dashboard onNavigate={handleNavigation} />
+          )}
+
+          {activeModule === 'analytics' && (
+            <Analytics />
           )}
 
           {activeModule === 'agenda' && (
