@@ -4494,3 +4494,50 @@ body {
     top: 36px;
   }
 }
+
+
+.student-finance-actions{display:flex;flex-direction:column;align-items:flex-start;gap:8px}
+.student-finance-pay-button{display:inline-flex;align-items:center;gap:7px;border:0;border-radius:10px;padding:9px 12px;background:#0f4cdb;color:#fff;font:600 12px Montserrat,sans-serif;cursor:pointer;white-space:nowrap}
+.student-finance-pay-button:hover{filter:brightness(.96)}
+.student-payment-screen{width:100%;max-width:1180px;margin:0 auto;padding:8px 0 30px}
+.student-payment-back{display:inline-flex;align-items:center;gap:7px;border:0;background:transparent;color:#475569;font:600 13px Montserrat,sans-serif;cursor:pointer;padding:8px 0 22px}
+.student-payment-header{display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:24px}
+.student-payment-header span,.student-payment-summary>span{font:700 11px Montserrat,sans-serif;letter-spacing:.12em;color:#64748b}
+.student-payment-header h2{margin:6px 0 6px;font:800 30px Montserrat,sans-serif;color:#0f172a}
+.student-payment-header p{margin:0;color:#64748b}
+.student-payment-provider{padding:10px 15px;border-radius:12px;background:#eef4ff;color:#0f4cdb;font:800 13px Montserrat,sans-serif;letter-spacing:.08em}
+.student-payment-grid{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:20px}
+.student-payment-panel,.student-payment-summary{background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:24px;box-shadow:0 10px 30px rgba(15,23,42,.06)}
+.student-payment-methods{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:22px}
+.student-payment-methods button{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;border:1px solid #dbe3ef;background:#fff;border-radius:12px;color:#475569;font:700 13px Montserrat,sans-serif;cursor:pointer}
+.student-payment-methods button.active{border-color:#0f4cdb;background:#eef4ff;color:#0f4cdb}
+.student-payment-method-info,.student-payment-waiting,.student-payment-confirmed{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 12px}
+.student-payment-method-info h3,.student-payment-waiting h3,.student-payment-confirmed h3{margin:12px 0 7px;font:800 21px Montserrat,sans-serif;color:#0f172a}
+.student-payment-method-info p,.student-payment-waiting p,.student-payment-confirmed p{max-width:520px;margin:0 0 20px;color:#64748b;line-height:1.6}
+.student-payment-card-form{display:flex;flex-direction:column;gap:10px}
+.student-payment-card-form input,.student-payment-copy input{width:100%;box-sizing:border-box;border:1px solid #dbe3ef;border-radius:10px;padding:12px 13px;font:500 13px Montserrat,sans-serif;color:#0f172a;outline:none}
+.student-payment-fields-2,.student-payment-fields-3{display:grid;gap:10px}
+.student-payment-fields-2{grid-template-columns:1fr 1fr}
+.student-payment-fields-3{grid-template-columns:1fr 1fr 1fr}
+.student-payment-card-form input:focus{border-color:#0f4cdb;box-shadow:0 0 0 3px rgba(15,76,219,.08)}
+.student-payment-error{display:flex;gap:8px;align-items:flex-start;margin:16px 0;padding:12px;border-radius:10px;background:#fff1f2;color:#be123c;font-size:13px;line-height:1.5}
+.student-payment-primary{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:18px;padding:13px 16px;border:0;border-radius:11px;background:#0f4cdb;color:#fff;font:700 13px Montserrat,sans-serif;cursor:pointer}
+.student-payment-primary:disabled{opacity:.65;cursor:not-allowed}
+.student-payment-summary h3{margin:10px 0 4px;font:800 17px Montserrat,sans-serif;color:#0f172a}
+.student-payment-summary>strong{display:block;margin:8px 0;font:800 28px Montserrat,sans-serif;color:#0f4cdb}
+.student-payment-summary>small{color:#64748b}
+.student-payment-summary>div{display:flex;align-items:center;gap:7px;margin-top:18px;color:#475569;font-size:12px}
+.student-payment-summary svg{color:#16a34a}
+.student-payment-pix{width:250px;height:250px;object-fit:contain;margin:8px auto 18px;border:8px solid #fff;box-shadow:0 5px 20px rgba(15,23,42,.1)}
+.student-payment-copy{display:flex;width:min(100%,520px);gap:8px}
+.student-payment-copy button{width:48px;border:0;border-radius:10px;background:#0f4cdb;color:#fff;cursor:pointer}
+.student-payment-spin{animation:student-payment-spin 1s linear infinite}
+@keyframes student-payment-spin{to{transform:rotate(360deg)}}
+.student-payment-confirmed svg{color:#16a34a}
+@media (max-width:800px){
+  .student-payment-grid{grid-template-columns:1fr}
+  .student-payment-header h2{font-size:24px}
+  .student-payment-provider{display:none}
+  .student-payment-panel,.student-payment-summary{padding:18px}
+  .student-finance-actions{align-items:flex-start}
+}
