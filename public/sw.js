@@ -24,6 +24,51 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+self.addEventListener('push', (event) => {
+  event.waitUntil((async () => {
+    let data = { title: 'AB Academy', body: 'Você tem uma nova notificação administrativa.' }
+
+    try {
+      if (event.data) {
+        data = { ...data, ...event.data.json() }
+      }
+    } catch {
+      if (event.data) {
+        data.body = event.data.text()
+      }
+    }
+
+    const notification = await self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon || '/icons/icon-192.svg',
+      badge: data.badge || '/icons/icon-192.svg',
+      tag: data.tag || 'admin-notificacao',
+      data: { url: data.url || '/admin' },
+      requireInteraction: false,
+    })
+
+    return notification
+  })())
+})
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close()
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {
+      const targetUrl = event.notification.data?.url || '/admin'
+      const existing = clientList.find((client) => 'focus' in client)
+
+      if (existing) {
+        existing.navigate(targetUrl)
+        return existing.focus()
+      }
+
+      return clients.openWindow(targetUrl)
+    }),
+  )
+})
+
 self.addEventListener('fetch', (event) => {
   const request = event.request
 
