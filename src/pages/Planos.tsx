@@ -17,6 +17,9 @@ type Plano = {
   parcelas: number | null
   valor_parcela: number | null
   ativo: boolean
+  modalidade: 'individual' | 'dupla' | 'grupo'
+  min_alunos: number | null
+  max_alunos: number | null
   created_at?: string | null
 }
 
@@ -52,6 +55,27 @@ function getPlanPrice(plano: Plano) {
     suffix: '/mês',
     detail: 'Cobrança mensal',
   }
+}
+
+function ModalidadeCard({ modalidade }: { modalidade: 'dupla' | 'grupo' }) {
+  const dupla = modalidade === 'dupla'
+  return (
+    <article className={'planos-detail-card planos-detail-card--' + modalidade}>
+      <span className="planos-detail-tag">{dupla ? 'A partir de 1x por semana' : 'A partir de 2x por semana'}</span>
+      <h3>{dupla ? 'Aulas em dupla' : 'Aulas em grupo'}</h3>
+      <div className="planos-detail-price">
+        <span>Investimento</span><strong>Personalizado</strong>
+        <em>{dupla ? 'Definido conforme idioma e frequência' : 'Definido conforme idioma, frequência e tamanho do grupo'}</em>
+      </div>
+      <p className="planos-detail-description">{dupla ? 'Estude com outra pessoa, com acompanhamento do professor e frequência a partir de uma aula por semana.' : 'Organize seu grupo e estude com frequência a partir de duas aulas por semana, conforme o perfil dos participantes.'}</p>
+      <ul className="planos-detail-features">
+        <li><CheckCircle2 size={17} /> Diagnóstico e orientação inicial</li>
+        <li><CheckCircle2 size={17} /> Organização conforme nível e objetivo</li>
+        <li><CheckCircle2 size={17} /> Acompanhamento da AB Academy</li>
+      </ul>
+      <a href={'/quero-aprender?modalidade=' + modalidade} className="btn btn-primary planos-detail-cta">{dupla ? 'Quero montar uma dupla' : 'Quero montar meu grupo'} <ArrowRight size={17} /></a>
+    </article>
+  )
 }
 
 function PlanoCard({ plano }: { plano: Plano }) {
@@ -106,6 +130,10 @@ function PlanoCard({ plano }: { plano: Plano }) {
 
 function Planos() {
   const [planos, setPlanos] = useState<Plano[]>([])
+  const [modalidadeSelecionada, setModalidadeSelecionada] = useState<'individual' | 'dupla' | 'grupo'>(() => {
+    const modalidade = new URLSearchParams(window.location.search).get('modalidade')
+    return modalidade === 'dupla' || modalidade === 'grupo' ? modalidade : 'individual'
+  })
   const [idiomaSelecionado, setIdiomaSelecionado] = useState<'ingles' | 'alemao'>(() => {
     const idioma = new URLSearchParams(window.location.search).get('idioma')
     return idioma === 'alemao' ? 'alemao' : 'ingles'
@@ -123,7 +151,7 @@ function Planos() {
 
       const { data, error: queryError } = await supabase
         .from('planos')
-        .select('id, idioma, tipo, nome, descricao, beneficios, preco, parcelas, valor_parcela, ativo, created_at')
+        .select('id, idioma, tipo, nome, descricao, beneficios, preco, parcelas, valor_parcela, ativo, modalidade, min_alunos, max_alunos, created_at')
         .eq('ativo', true)
 
       if (!active) return
@@ -154,13 +182,14 @@ function Planos() {
      * Quando houver data de criação, o registro mais recente é mantido.
      */
     const semDuplicados = (items: Plano[]) => {
-      const unicos = new Map<Plano['tipo'], Plano>()
+      const unicos = new Map<string, Plano>()
 
       for (const plano of items) {
-        const atual = unicos.get(plano.tipo)
+        const key = plano.tipo + ':' + plano.modalidade
+        const atual = unicos.get(key)
 
         if (!atual) {
-          unicos.set(plano.tipo, plano)
+          unicos.set(key, plano)
           continue
         }
 
@@ -267,6 +296,18 @@ function Planos() {
           {!loading && !error && (
             <>
               <div className="planos-language-switch">
+                <p className="planos-language-switch-label">Como você quer estudar?</p>
+                <div className="planos-language-switch-buttons planos-modality-switch" role="tablist">
+                  {(['individual', 'dupla', 'grupo'] as const).map((modalidade) => (
+                    <button key={modalidade} type="button" role="tab" aria-selected={modalidadeSelecionada === modalidade}
+                      className={'planos-language-switch-button' + (modalidadeSelecionada === modalidade ? ' active' : '')}
+                      onClick={() => setModalidadeSelecionada(modalidade)}>
+                      <h2>{modalidade === 'individual' ? 'Individual' : modalidade === 'dupla' ? 'Dupla' : 'Grupo'}</h2>
+                      <span>{modalidade === 'individual' ? 'Planos e frequências' : modalidade === 'dupla' ? 'A partir de 1x/semana' : 'A partir de 2x/semana'}</span>
+                    </button>
+                  ))}
+                </div>
+                {modalidadeSelecionada !== 'individual' && <p className="planos-modality-note">{modalidadeSelecionada === 'dupla' ? 'As aulas em dupla começam a partir de uma aula por semana. O investimento é definido conforme idioma e frequência.' : 'As aulas em grupo começam a partir de duas aulas por semana. O investimento é definido conforme idioma, frequência e tamanho do grupo.'}</p>}
                 <p className="planos-language-switch-label">Selecione o curso desejado</p>
 
                 <div className="planos-language-switch-buttons" role="tablist" aria-label="Selecione o curso">
@@ -294,22 +335,20 @@ function Planos() {
                 </div>
               </div>
 
-              {idiomaSelecionado === 'ingles' ? (
-                <div className="planos-language planos-language--stacked">
-                  <div className="planos-grid">
-                    {planosPorIdioma.ingles.map((plano) => (
-                      <PlanoCard key={plano.id} plano={plano} />
-                    ))}
-                  </div>
-                </div>
+              {modalidadeSelecionada === 'individual' ? (
+                idiomaSelecionado === 'ingles' ? (
+                  <div className="planos-language planos-language--stacked"><div className="planos-grid">
+                    {planosPorIdioma.ingles.filter((plano) => plano.modalidade === 'individual').map((plano) => <PlanoCard key={plano.id} plano={plano} />)}
+                  </div></div>
+                ) : (
+                  <div className="planos-language planos-language--stacked"><div className="planos-grid">
+                    {planosPorIdioma.alemao.filter((plano) => plano.modalidade === 'individual').map((plano) => <PlanoCard key={plano.id} plano={plano} />)}
+                  </div></div>
+                )
               ) : (
-                <div className="planos-language planos-language--stacked">
-                  <div className="planos-grid">
-                    {planosPorIdioma.alemao.map((plano) => (
-                      <PlanoCard key={plano.id} plano={plano} />
-                    ))}
-                  </div>
-                </div>
+                <div className="planos-language planos-language--stacked"><div className="planos-grid">
+                  <ModalidadeCard modalidade={modalidadeSelecionada} />
+                </div></div>
               )}
 
               <div className="planos-diagnostic">
