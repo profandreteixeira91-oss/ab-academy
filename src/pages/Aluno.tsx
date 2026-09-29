@@ -225,7 +225,7 @@ const languageLabels = {
 }
 
 function renderTextWithLinks(value: string) {
-  const urlPattern = /(?:https?:\\/\\/|www\\.)[^\\s<]+/gi
+  const urlPattern = /(?:https?:\/\/|www\.)[^\s<]+/gi
   const parts: React.ReactNode[] = []
   let lastIndex = 0
 
