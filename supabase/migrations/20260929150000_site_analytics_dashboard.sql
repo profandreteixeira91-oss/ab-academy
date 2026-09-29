@@ -105,7 +105,56 @@ as $$
           group by (created_at at time zone 'America/Sao_Paulo')::date
           order by day asc
         ) x
-      ), '[]'::jsonb)
+      ), '[]'::jsonb),
+      'conversion', jsonb_build_object(
+        'leads', (select count(*) from public.leads where created_at >= p_start and created_at < p_end),
+        'contacted', (select count(*) from public.leads where created_at >= p_start and created_at < p_end and status = 'contatado'),
+        'diagnostico', (select count(*) from public.leads where created_at >= p_start and created_at < p_end and status = 'diagnostico'),
+        'proposta_enviada', (select count(*) from public.leads where created_at >= p_start and created_at < p_end and status = 'proposta_enviada'),
+        'negociacao', (select count(*) from public.leads where created_at >= p_start and created_at < p_end and status = 'negociacao'),
+        'matriculado', (select count(*) from public.leads where created_at >= p_start and created_at < p_end and status = 'matriculado'),
+        'perdido', (select count(*) from public.leads where created_at >= p_start and created_at < p_end and status = 'perdido'),
+        'lead_rate', case
+          when (select count(distinct session_id) from public.site_analytics_events where created_at >= p_start and created_at < p_end) = 0 then 0
+          else round(((select count(*)::numeric from public.leads where created_at >= p_start and created_at < p_end) / (select count(distinct session_id)::numeric from public.site_analytics_events where created_at >= p_start and created_at < p_end)) * 100, 2)
+        end,
+        'enrollment_rate', case
+          when (select count(distinct session_id) from public.site_analytics_events where created_at >= p_start and created_at < p_end) = 0 then 0
+          else round(((select count(*)::numeric from public.leads where created_at >= p_start and created_at < p_end and status = 'matriculado') / (select count(distinct session_id)::numeric from public.site_analytics_events where created_at >= p_start and created_at < p_end)) * 100, 2)
+        end,
+        'lead_to_enrollment', case
+          when (select count(*) from public.leads where created_at >= p_start and created_at < p_end) = 0 then 0
+          else round(((select count(*)::numeric from public.leads where created_at >= p_start and created_at < p_end and status = 'matriculado') / (select count(*)::numeric from public.leads where created_at >= p_start and created_at < p_end)) * 100, 2)
+        end,
+        'funnel', coalesce((
+          select jsonb_agg(to_jsonb(x) order by x.position)
+          from (
+            select 1 as position, 'Leads' as stage, count(*)::integer as total from public.leads where created_at >= p_start and created_at < p_end
+            union all
+            select 2, 'Contatados', count(*)::integer from public.leads where created_at >= p_start and created_at < p_end and status in ('contatado','diagnostico','proposta_enviada','negociacao','matriculado')
+            union all
+            select 3, 'Diagnóstico', count(*)::integer from public.leads where created_at >= p_start and created_at < p_end and status in ('diagnostico','proposta_enviada','negociacao','matriculado')
+            union all
+            select 4, 'Proposta', count(*)::integer from public.leads where created_at >= p_start and created_at < p_end and status in ('proposta_enviada','negociacao','matriculado')
+            union all
+            select 5, 'Negociação', count(*)::integer from public.leads where created_at >= p_start and created_at < p_end and status in ('negociacao','matriculado')
+            union all
+            select 6, 'Matriculados', count(*)::integer from public.leads where created_at >= p_start and created_at < p_end and status = 'matriculado'
+          ) x
+        ), '[]'::jsonb),
+        'sources', coalesce((
+          select jsonb_agg(to_jsonb(x) order by x.leads desc)
+          from (
+            select coalesce(nullif(source, ''), nullif(origem, ''), 'site') as source,
+                   count(*)::integer as leads,
+                   count(*) filter (where status = 'matriculado')::integer as enrolled
+            from public.leads
+            where created_at >= p_start and created_at < p_end
+            group by coalesce(nullif(source, ''), nullif(origem, ''), 'site')
+            order by count(*) desc limit 8
+          ) x
+        ), '[]'::jsonb)
+      )
     )
   end;
 $$;
