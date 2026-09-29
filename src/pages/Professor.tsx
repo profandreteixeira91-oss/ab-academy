@@ -133,7 +133,24 @@ function Professor() {
     useState<string | null>(null)
 
   const [activeSection, setActiveSection] =
-    useState<PortalSection>('dashboard')
+    useState<PortalSection>(() => {
+      try {
+        const saved = sessionStorage.getItem('abacademy_professor_section')
+        if (
+          saved === 'dashboard' ||
+          saved === 'agenda' ||
+          saved === 'aulas' ||
+          saved === 'alunos' ||
+          saved === 'atividades'
+        ) {
+          return saved
+        }
+      } catch {
+        // A indisponibilidade do storage nunca deve impedir o portal de abrir.
+      }
+
+      return 'dashboard'
+    })
 
   const [email, setEmail] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -564,6 +581,9 @@ function Professor() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
       (event) => {
+        // Trocar de aba do navegador não deve disparar recarregamento
+        // nem reconstrução do portal. Apenas mudanças reais de autenticação
+        // atualizam o estado do professor.
         if (
           event === 'SIGNED_IN' ||
           event === 'SIGNED_OUT'
@@ -573,8 +593,16 @@ function Professor() {
       },
     )
 
+    const handleVisibilityChange = () => {
+      // Intencionalmente não chamamos loadProfessor() aqui.
+      // O retorno à aba deve preservar a tarefa em andamento.
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
     return () => {
       subscription.unsubscribe()
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
     }
   }, [])
 
@@ -1055,6 +1083,12 @@ function Professor() {
     section: PortalSection,
   ) {
     setActiveSection(section)
+
+    try {
+      sessionStorage.setItem('abacademy_professor_section', section)
+    } catch {
+      // A navegação interna continua funcionando mesmo sem sessionStorage.
+    }
   }
 
   /*
