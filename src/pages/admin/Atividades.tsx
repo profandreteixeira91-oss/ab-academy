@@ -2394,22 +2394,30 @@ export default function Atividades({
   }
 
   function getStudentTextAnswer(
-    answer: CorrecaoResposta | null,
+    exercise: CorrecaoExercicio,
   ) {
+    const answer = exercise.resposta
+
     if (!answer?.resposta_texto) {
       return ''
     }
 
-    try {
-      const parsed = JSON.parse(
-        answer.resposta_texto,
-      )
+    // Somente respostas objetivas de múltipla seleção usam JSON
+    // para armazenar vários IDs. Respostas textuais devem ser
+    // exibidas exatamente como foram enviadas, inclusive se o
+    // conteúdo digitado pelo aluno for um JSON válido.
+    if (isObjectiveType(exercise.tipo)) {
+      try {
+        const parsed = JSON.parse(
+          answer.resposta_texto,
+        )
 
-      if (Array.isArray(parsed)) {
-        return ''
+        if (Array.isArray(parsed)) {
+          return ''
+        }
+      } catch {
+        // Valor não-JSON: mantém a resposta original.
       }
-    } catch {
-      // resposta textual normal
     }
 
     return answer.resposta_texto
@@ -3230,7 +3238,7 @@ export default function Atividades({
 
     const textAnswer =
       getStudentTextAnswer(
-        exercise.resposta,
+        exercise,
       )
 
     return (
