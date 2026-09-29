@@ -855,7 +855,7 @@ function Aluno() {
       return
     }
 
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       setAuthError('Informe um e-mail válido.')
       return
     }
