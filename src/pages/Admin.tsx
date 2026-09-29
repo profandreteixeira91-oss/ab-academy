@@ -2,7 +2,6 @@ import {
   Activity,
   BarChart3,
   BriefcaseBusiness,
-  Bell,
   BookOpen,
   Sparkles,
   CalendarDays,
@@ -33,6 +32,7 @@ import Comunicacao from './admin/Comunicacao'
 import Candidaturas from './admin/Candidaturas'
 import EnterpriseLeads from './admin/EnterpriseLeads'
 import Leads from './admin/Leads'
+import AdminNotifications from './admin/AdminNotifications'
 
 import '../styles/admin.css'
 import '../styles/central-admin.css'
@@ -523,16 +523,7 @@ export default function Admin() {
           </div>
 
           <div className="admin-header-right">
-            <button
-              type="button"
-              className="admin-header-action"
-              aria-label="Notificações"
-            >
-              <Bell
-                size={19}
-                strokeWidth={1.9}
-              />
-            </button>
+            <AdminNotifications onNavigate={handleNavigation} />
           </div>
         </header>
 
