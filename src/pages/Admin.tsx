@@ -305,7 +305,13 @@ const navigation = [
 
 export default function Admin() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [activeModule, setActiveModule] = useState('dashboard')
+  const [activeModule, setActiveModule] = useState(() => {
+    try {
+      return sessionStorage.getItem('abacademy_admin_module') || 'dashboard'
+    } catch {
+      return 'dashboard'
+    }
+  })
   const [enterpriseNewLeadCount, setEnterpriseNewLeadCount] = useState(0)
   const [newLeadCount, setNewLeadCount] = useState(0)
 
@@ -375,6 +381,12 @@ export default function Admin() {
   const handleNavigation = (id: string) => {
     setActiveModule(id)
     setSidebarOpen(false)
+
+    try {
+      sessionStorage.setItem('abacademy_admin_module', id)
+    } catch {
+      // A navegação continua funcionando mesmo sem sessionStorage.
+    }
   }
 
   const activeModuleData =
