@@ -41,6 +41,7 @@ import LeadCapture from './pages/LeadCapture'
 import LanguageLanding from './pages/LanguageLanding'
 import Aulas from './pages/Aulas'
 import AulaModalidade from './pages/AulaModalidade'
+import HorariosFormacao from './pages/HorariosFormacao'
 import SiteFooter from './components/SiteFooter'
 import { trackPublicPageView } from './lib/analytics'
 
@@ -82,6 +83,7 @@ function App() {
     path === '/planos' ? 'Planos' :
     path === '/diagnostica' ? 'Aula diagnóstica' :
     path === '/quero-aprender' ? 'Fale com a AB Academy' :
+    path === '/horarios' ? 'Horários em formação' :
     path === '/aulas' ? 'Formatos de aulas' :
     path === '/aulas/individuais' ? 'Aulas individuais' :
     path === '/aulas/duplas' ? 'Aulas em duplas' :
@@ -211,6 +213,10 @@ function App() {
 
   if (path === '/quero-aprender') {
     return <LeadCapture />
+  }
+
+  if (path === '/horarios') {
+    return <HorariosFormacao />
   }
 
   if (path === '/aulas') {
