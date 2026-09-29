@@ -42,6 +42,8 @@ type EnrollmentRequest = {
   }
 
   valor: number
+  turma_token?: string | null
+  turma_participante_id?: string | null
 }
 
 function jsonResponse(
@@ -547,13 +549,31 @@ Deno.serve(async (req) => {
       )
     }
 
+    let collectiveEnrollment: { turma_id: string; participante_id: string; valor_mensal: number; condicao_meses: number | null; condicao_inicio: string | null; condicao_fim: string | null } | null = null
+
+    if (body.turma_token) {
+      const { data: collective, error: collectiveError } = await supabaseAdmin
+        .from('turma_matriculas')
+        .select('id,turma_id,participante_id,valor_mensal,condicao_meses,condicao_inicio,condicao_fim,status,turma:turmas(id,idioma,status,aulas_semana),participante:turma_participantes(id,status)')
+        .eq('token', body.turma_token)
+        .eq('status', 'liberada')
+        .maybeSingle()
+
+      if (collectiveError || !collective) return jsonResponse({ error: 'O link de matrícula coletiva não está mais disponível.' }, 409)
+      if (!collective.turma || collective.turma.status !== 'pronta' || !collective.participante || collective.participante.status !== 'confirmado') return jsonResponse({ error: 'A turma ainda não está pronta para matrícula.' }, 409)
+      if (body.turma_participante_id !== collective.participante_id) return jsonResponse({ error: 'O participante não corresponde ao link de matrícula.' }, 403)
+      if (collective.turma.idioma !== body.idioma) return jsonResponse({ error: 'O idioma da turma não corresponde à matrícula.' }, 400)
+      if (Math.abs(Number(collective.valor_mensal) - Number(body.valor)) > 0.01) return jsonResponse({ error: 'O valor coletivo não corresponde à condição liberada.' }, 409)
+      collectiveEnrollment = { turma_id: collective.turma_id, participante_id: collective.participante_id, valor_mensal: Number(collective.valor_mensal), condicao_meses: collective.condicao_meses, condicao_inicio: collective.condicao_inicio, condicao_fim: collective.condicao_fim }
+    }
+
     /*
      * =====================================================
      * VERIFICAR PLANO
      * =====================================================
      */
 
-    if (body.plano_id) {
+    if (body.plano_id && !collectiveEnrollment) {
       const {
         data: plano,
         error: planoError,
@@ -664,6 +684,13 @@ Deno.serve(async (req) => {
 
       plano_id:
         body.plano_id,
+
+      turma_id: collectiveEnrollment?.turma_id ?? null,
+      turma_participante_id: collectiveEnrollment?.participante_id ?? null,
+      valor_coletivo: collectiveEnrollment?.valor_mensal ?? null,
+      condicao_meses: collectiveEnrollment?.condicao_meses ?? null,
+      condicao_inicio: collectiveEnrollment?.condicao_inicio ?? null,
+      condicao_fim: collectiveEnrollment?.condicao_fim ?? null,
 
       idioma:
         body.idioma,
@@ -851,6 +878,12 @@ Deno.serve(async (req) => {
           plano_id:
             body.plano_id,
 
+          turma_id:
+            collectiveEnrollment?.turma_id ?? null,
+
+          turma_participante_id:
+            collectiveEnrollment?.participante_id ?? null,
+
           idioma:
             body.idioma,
 
@@ -865,6 +898,12 @@ Deno.serve(async (req) => {
 
           valor:
             body.valor,
+
+          turma_id:
+            collectiveEnrollment?.turma_id ?? null,
+
+          turma_participante_id:
+            collectiveEnrollment?.participante_id ?? null,
 
           parcelas:
             null,
@@ -927,6 +966,10 @@ Deno.serve(async (req) => {
       'Pagamento criado:',
       pagamento.id,
     )
+
+    if (collectiveEnrollment) {
+      await supabaseAdmin.from('turma_matriculas').update({ status: 'pagamento_pendente', matricula_id: matricula.id, pagamento_id: pagamento.id }).eq('participante_id', collectiveEnrollment.participante_id)
+    }
 
     return jsonResponse({
       success: true,
