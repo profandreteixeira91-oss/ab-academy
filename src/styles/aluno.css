@@ -4541,3 +4541,26 @@ body {
   .student-payment-panel,.student-payment-summary{padding:18px}
   .student-finance-actions{align-items:flex-start}
 }
+
+
+.student-auth-forgot-link {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 6px 0;
+  border: 0;
+  background: transparent;
+  color: #1649a0;
+  font: 600 12px Montserrat, sans-serif;
+  text-align: center;
+  cursor: pointer;
+}
+
+.student-auth-forgot-link:hover {
+  text-decoration: underline;
+}
+
+.student-auth-forgot-link:disabled {
+  opacity: .6;
+  cursor: not-allowed;
+}
