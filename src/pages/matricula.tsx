@@ -19,6 +19,7 @@ type Plan = {
   id: string
   idioma: Language
   tipo: 'mensal' | 'anual' | 'personalizado' | 'intensivo' | 'avulso'
+  modalidade: 'individual' | 'dupla' | 'grupo'
   nome: string
   descricao: string | null
   preco: number
@@ -31,6 +32,7 @@ type Plan = {
 
 type Horario = {
   id: string
+  tipo_horario: 'individual' | 'dupla' | 'grupo'
   idioma: Language
   dia_semana: number
   hora_inicio: string
@@ -306,7 +308,7 @@ export default function Matricula() {
         } else {
           const { data, error: diagnosticError } = await supabase
             .from('planos')
-            .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at')
+            .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, modalidade')
             .eq('idioma', selectedLanguage)
             .eq('tipo', 'avulso')
             .eq('ativo', true)
@@ -352,7 +354,7 @@ export default function Matricula() {
 
   useEffect(() => {
     if (language) loadSchedules(language)
-  }, [language])
+  }, [language, plan?.modalidade])
 
   const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
     const { data, error: planError } = await supabase
@@ -389,6 +391,7 @@ export default function Matricula() {
         .select(
           `
             id,
+            tipo_horario,
             idioma,
             dia_semana,
             hora_inicio,
@@ -403,6 +406,7 @@ export default function Matricula() {
         .eq('idioma', selectedLanguage)
         .eq('disponivel', true)
         .is('aluno_id', null)
+        .eq('tipo_horario', plan?.modalidade || 'individual')
         .order('dia_semana', {
           ascending: true,
         })
