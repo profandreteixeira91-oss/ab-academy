@@ -57,6 +57,8 @@ type AuthStep =
   | 'email'
   | 'password'
   | 'create-password'
+  | 'forgot-password'
+  | 'reset-password'
 
 type LessonStatus =
   | 'agendada'
@@ -844,6 +846,84 @@ function Aluno() {
    * LOGIN DO ALUNO
    * =========================================================
    */
+
+  async function handleForgotPassword() {
+    const email = authEmail.trim().toLowerCase()
+
+    if (!email) {
+      setAuthError('Informe seu e-mail.')
+      return
+    }
+
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+      setAuthError('Informe um e-mail válido.')
+      return
+    }
+
+    try {
+      setAuthLoading(true)
+      setAuthError('')
+      setAuthInfo('')
+
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: window.location.origin + '/aluno',
+      })
+
+      if (error) throw error
+
+      setAuthInfo('Se o e-mail estiver cadastrado, enviaremos um link para redefinição da senha. Verifique também sua caixa de spam.')
+    } catch (error) {
+      console.error('Erro ao solicitar redefinição de senha:', error)
+      setAuthError('Não foi possível enviar o link de redefinição. Tente novamente.')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
+
+  async function handleResetPassword() {
+    if (!authPassword) {
+      setAuthError('Digite uma nova senha.')
+      return
+    }
+
+    const passwordError = validatePassword(authPassword)
+    if (passwordError) {
+      setAuthError(passwordError)
+      return
+    }
+
+    if (authPassword !== authPasswordConfirmation) {
+      setAuthError('As senhas não coincidem.')
+      return
+    }
+
+    try {
+      setAuthLoading(true)
+      setAuthError('')
+      setAuthInfo('')
+
+      const { error } = await supabase.auth.updateUser({
+        password: authPassword,
+      })
+
+      if (error) throw error
+
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession()
+      if (sessionError) throw sessionError
+      if (!sessionData.session?.user) throw new Error('A sessão de recuperação expirou.')
+
+      setAuthPassword('')
+      setAuthPasswordConfirmation('')
+      setAuthStep('password')
+      setAuthInfo('Senha redefinida com sucesso. Faça login com sua nova senha.')
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Erro ao redefinir senha do aluno:', error)
+      setAuthError(error instanceof Error ? error.message : 'Não foi possível redefinir sua senha.')
+    } finally {
+      setAuthLoading(false)
+    }
+  }
 
   async function handleStudentLogin() {
     const email =
@@ -1835,6 +1915,17 @@ function Aluno() {
       (event, session) => {
         if (!mounted) return
 
+        if (event === 'PASSWORD_RECOVERY') {
+          setUser(null)
+          setLoading(false)
+          setAuthError('')
+          setAuthInfo('Crie uma nova senha para continuar.')
+          setAuthPassword('')
+          setAuthPasswordConfirmation('')
+          setAuthStep('reset-password')
+          return
+        }
+
         if (event === 'SIGNED_OUT') {
           authUserIdRef.current = null
           studentIdRef.current = null
@@ -2799,6 +2890,112 @@ function Aluno() {
           </span>
 
           {authStep ===
+            'forgot-password' && (
+            <>
+              <h1>Esqueci minha senha</h1>
+
+              <p>
+                Informe seu e-mail e enviaremos um link seguro para criar uma nova senha.
+              </p>
+
+              <div className="student-login-field">
+                <label htmlFor="student-email-forgot">E-mail</label>
+                <input
+                  id="student-email-forgot"
+                  type="email"
+                  value={authEmail}
+                  onChange={(event) => {
+                    setAuthEmail(event.target.value)
+                    setAuthError('')
+                  }}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') void handleForgotPassword()
+                  }}
+                  placeholder="seu@email.com"
+                  autoComplete="email"
+                  disabled={authLoading}
+                />
+              </div>
+
+              <button
+                type="button"
+                className="student-primary-button student-auth-button"
+                onClick={handleForgotPassword}
+                disabled={authLoading}
+              >
+                {authLoading ? 'Enviando...' : 'Enviar link de redefinição'}
+              </button>
+
+              <button
+                type="button"
+                className="student-primary-button student-auth-button"
+                onClick={() => {
+                  setAuthStep('password')
+                  setAuthError('')
+                  setAuthInfo('')
+                }}
+                disabled={authLoading}
+              >
+                ← Voltar para o login
+              </button>
+            </>
+          )}
+
+          {authStep ===
+            'reset-password' && (
+            <>
+              <h1>Redefinir senha</h1>
+
+              <p>Crie uma nova senha para acessar o portal do aluno.</p>
+
+              <div className="student-login-field">
+                <label htmlFor="student-reset-password">Nova senha</label>
+                <input
+                  id="student-reset-password"
+                  type={showNewPassword ? 'text' : 'password'}
+                  value={authPassword}
+                  onChange={(event) => {
+                    setAuthPassword(event.target.value)
+                    setAuthError('')
+                  }}
+                  autoComplete="new-password"
+                  disabled={authLoading}
+                />
+                <button type="button" className="auth-password-toggle" onClick={() => setShowNewPassword(!showNewPassword)} aria-label={showNewPassword ? 'Ocultar senha' : 'Visualizar senha'} title={showNewPassword ? 'Ocultar senha' : 'Visualizar senha'}>
+                  {showNewPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              <div className="student-login-field">
+                <label htmlFor="student-reset-confirmation">Confirmar nova senha</label>
+                <input
+                  id="student-reset-confirmation"
+                  type={showPasswordConfirmation ? 'text' : 'password'}
+                  value={authPasswordConfirmation}
+                  onChange={(event) => {
+                    setAuthPasswordConfirmation(event.target.value)
+                    setAuthError('')
+                  }}
+                  autoComplete="new-password"
+                  disabled={authLoading}
+                />
+                <button type="button" className="auth-password-toggle" onClick={() => setShowPasswordConfirmation(!showPasswordConfirmation)} aria-label={showPasswordConfirmation ? 'Ocultar senha' : 'Visualizar senha'} title={showPasswordConfirmation ? 'Ocultar senha' : 'Visualizar senha'}>
+                  {showPasswordConfirmation ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+
+              <button
+                type="button"
+                className="student-primary-button student-auth-button"
+                onClick={handleResetPassword}
+                disabled={authLoading}
+              >
+                {authLoading ? 'Salvando...' : 'Salvar nova senha'}
+              </button>
+            </>
+          )}
+
+          {authStep ===
             'email' && (
             <>
               <h1>
@@ -3039,6 +3236,19 @@ function Aluno() {
                 }
               >
                 ← Usar outro e-mail
+              </button>
+
+              <button
+                type="button"
+                className="student-auth-forgot-link"
+                onClick={() => {
+                  setAuthStep('forgot-password')
+                  setAuthError('')
+                  setAuthInfo('')
+                }}
+                disabled={authLoading}
+              >
+                Esqueci minha senha
               </button>
             </>
           )}
