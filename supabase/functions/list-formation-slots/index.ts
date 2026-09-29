@@ -15,28 +15,24 @@ Deno.serve(async (req) => {
   if (!url || !key) return new Response(JSON.stringify({ error: 'Configuração indisponível.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } })
 
   const admin = createClient(url, key)
-  const urlRequestedId = new URL(req.url).searchParams.get('horario_id')
+  const urlParams = new URL(req.url).searchParams
+  const urlRequestedId = urlParams.get('horario_id')
   let bodyRequestedId: string | null = null
+  let requestedModality: 'dupla' | 'grupo' | null = null
+  const queryModality = urlParams.get('modalidade')
+  if (queryModality === 'dupla' || queryModality === 'grupo') requestedModality = queryModality
+
   if (req.method === 'POST') {
     try {
       const body = await req.json()
       bodyRequestedId = typeof body?.horario_id === 'string' ? body.horario_id : null
-    } catch {
-      // Corpo opcional.
-    }
-  }
-  const requestedId = urlRequestedId || bodyRequestedId
-  let requestedModality: 'dupla' | 'grupo' | null = null
-  const queryModality = new URL(req.url).searchParams.get('modalidade')
-  if (queryModality === 'dupla' || queryModality === 'grupo') requestedModality = queryModality
-  if (req.method === 'POST') {
-    try {
-      const body = await req.json()
       if (body?.modalidade === 'dupla' || body?.modalidade === 'grupo') requestedModality = body.modalidade
     } catch {
       // Corpo opcional.
     }
   }
+
+  const requestedId = urlRequestedId || bodyRequestedId
 
   const { data: slots, error } = await admin
     .from('horarios')
