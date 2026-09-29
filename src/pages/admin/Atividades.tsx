@@ -3244,7 +3244,14 @@ export default function Atividades({
     return (
       <div className="atividades-correcao-text-answer">
         {textAnswer ? (
-          <div className="atividades-correcao-student-answer">
+          <div
+            className="atividades-correcao-student-answer"
+            style={{
+              whiteSpace: 'pre-wrap',
+              overflowWrap: 'anywhere',
+              wordBreak: 'break-word',
+            }}
+          >
             {textAnswer}
           </div>
         ) : (
