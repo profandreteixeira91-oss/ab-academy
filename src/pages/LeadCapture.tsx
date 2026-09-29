@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 
 type Language = 'ingles' | 'alemao' | 'ambos'
 type Modality = 'individual' | 'dupla' | 'grupo'
+type FormacaoTurma = 'ja_tenho_participantes' | 'preciso_formar_turma' | 'iniciar_individual'
 
 const languageLabels: Record<Language, string> = {
   ingles: 'Inglês',
@@ -62,9 +63,10 @@ export default function LeadCapture() {
   const [error, setError] = useState('')
   const [commercialPrice, setCommercialPrice] = useState<number | null>(null)
   const [priceLoading, setPriceLoading] = useState(false)
-  const [formacaoTurma, setFormacaoTurma] = useState<'ja_tenho_participantes' | 'preciso_formar_turma'>(
+  const [formacaoTurma, setFormacaoTurma] = useState<FormacaoTurma>(
     initialModality === 'individual' ? 'ja_tenho_participantes' : 'preciso_formar_turma',
   )
+  const [individualStartPrice, setIndividualStartPrice] = useState<number | null>(null)
 
   const whatsappUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
@@ -113,6 +115,29 @@ export default function LeadCapture() {
     loadCommercialPrice()
     return () => { active = false }
   }, [form.modalidade, form.idioma_interesse, form.aulas_semana, form.quantidade_participantes])
+
+  useEffect(() => {
+    if (form.modalidade === 'individual' || form.idioma_interesse === 'ambos') {
+      setIndividualStartPrice(null)
+      return
+    }
+    let active = true
+    async function loadIndividualStartPrice() {
+      const { data } = await supabase
+        .from('planos')
+        .select('preco')
+        .eq('idioma', form.idioma_interesse)
+        .eq('modalidade', 'individual')
+        .eq('tipo', 'mensal')
+        .eq('ativo', true)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+      if (active) setIndividualStartPrice(data?.preco ?? null)
+    }
+    void loadIndividualStartPrice()
+    return () => { active = false }
+  }, [form.modalidade, form.idioma_interesse])
 
   useEffect(() => {
     if (form.modalidade === 'individual') {
@@ -201,9 +226,10 @@ export default function LeadCapture() {
           <span className="lead-eyebrow">Cadastro recebido</span>
           <h1>Obrigado, {form.nome.split(' ')[0] || 'por seu interesse'}.</h1>
           <p>
-            Recebemos seu interesse em {languageLabels[form.idioma_interesse]}. {form.modalidade === 'individual' ? 'A equipe da AB Academy entrará em contato para orientar seus próximos passos.' : 'Para duplas e grupos, a equipe confirmará os participantes e a formação da turma antes de liberar a matrícula.'}
+            Recebemos seu interesse em {languageLabels[form.idioma_interesse]}. {form.modalidade === 'individual' ? 'A equipe da AB Academy entrará em contato para orientar seus próximos passos.' : formacaoTurma === 'iniciar_individual' ? 'Você escolheu começar no plano individual. A equipe poderá acompanhar a formação da sua dupla ou turma e registrar a migração quando ela estiver pronta.' : 'Para duplas e grupos, a equipe confirmará os participantes e a formação da turma antes de liberar a matrícula.'}
           </p>
           <div className="lead-success-actions">
+            {formacaoTurma === 'iniciar_individual' && form.idioma_interesse !== 'ambos' && <a href={`/planos?modalidade=individual&idioma=${form.idioma_interesse}`} className="lead-primary-button">Começar no plano individual <ArrowRight size={17} /></a>}
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="lead-whatsapp-button">
               <MessageCircle size={17} /> Falar pelo WhatsApp
             </a>
@@ -296,23 +322,31 @@ export default function LeadCapture() {
                   </label>
                   <label className={formacaoTurma === 'preciso_formar_turma' ? 'selected' : ''}>
                     <input type="radio" name="formacao_turma" value="preciso_formar_turma" checked={formacaoTurma === 'preciso_formar_turma'} onChange={() => setFormacaoTurma('preciso_formar_turma')} />
-                    <span>Não, preciso de ajuda para formar</span>
+                    <span>Quero aguardar a formação</span>
+                  </label>
+                  <label className={formacaoTurma === 'iniciar_individual' ? 'selected' : ''}>
+                    <input type="radio" name="formacao_turma" value="iniciar_individual" checked={formacaoTurma === 'iniciar_individual'} onChange={() => setFormacaoTurma('iniciar_individual')} />
+                    <span>Quero começar agora no individual</span>
                   </label>
                 </div>
                 <p className="lead-group-formation-note">
                   {formacaoTurma === 'ja_tenho_participantes'
                     ? 'A AB Academy confirmará os participantes, nível e disponibilidade antes de liberar a matrícula e o valor da modalidade.'
-                    : 'A AB Academy poderá ajudar a formar uma turma compatível. O valor promocional de dupla ou grupo não é uma matrícula individual.'}
+                    : formacaoTurma === 'preciso_formar_turma'
+                      ? 'A AB Academy poderá ajudar a formar uma turma compatível. Você aguarda a formação antes de iniciar.'
+                      : 'Você pode começar imediatamente no plano individual. Quando uma dupla ou turma compatível for formada, a migração para a modalidade coletiva será registrada para os meses seguintes.'}
                 </p>
               </fieldset>
 
               <div className="lead-commercial-price" aria-live="polite">
                 <span>Investimento estimado</span>
-                <strong>{formacaoTurma === 'preciso_formar_turma' ? 'A definir' : priceLoading ? 'Calculando...' : commercialPrice !== null ? formatLeadPrice(commercialPrice) : 'A consultar'}</strong>
+                <strong>{formacaoTurma === 'iniciar_individual' ? (individualStartPrice !== null ? formatLeadPrice(individualStartPrice) : 'A consultar') : formacaoTurma === 'preciso_formar_turma' ? 'A definir' : priceLoading ? 'Calculando...' : commercialPrice !== null ? formatLeadPrice(commercialPrice) : 'A consultar'}</strong>
+                {formacaoTurma === 'iniciar_individual' && individualStartPrice !== null && <small>plano individual · por mês</small>}
                 {commercialPrice !== null && formacaoTurma === 'ja_tenho_participantes' && <small>por aluno / mês · {form.aulas_semana}x por semana</small>}
                 {form.modalidade === 'grupo' && <small>Valor individual conforme o tamanho da turma (3 a 6 participantes).</small>}
                 {form.modalidade === 'dupla' && <small>Valor individual para a dupla.</small>}
-                <small>O valor exibido é uma referência comercial. A matrícula só é liberada após a confirmação dos participantes.</small>
+                {formacaoTurma === 'iniciar_individual' && <small>Você começa agora no plano individual e, quando a turma for formada, migra para o valor coletivo durante a condição especial definida pela AB Academy.</small>}
+                <small>O valor exibido é uma referência comercial. A condição coletiva só começa após a confirmação da turma.</small>
               </div>
 
               <label>Melhor horário
