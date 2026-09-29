@@ -208,7 +208,7 @@ function App() {
   }
 
   if (path === '/trabalhe-conosco') {
-    return <TrabalheConosco />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><TrabalheConosco /></>
   }
 
   if (path === '/planos') {
@@ -303,11 +303,11 @@ function App() {
       )
     }
 
-    return withFooter(
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(
       <Checkout
         pagamentoId={pagamentoId}
       />,
-    )
+    )}</>
   }
 
   /*
@@ -376,9 +376,12 @@ function App() {
 
   if (path.startsWith('/admin/aula/')) {
     return (
-      <AdminAccess>
-        <SalaProfessor />
-      </AdminAccess>
+      <>
+        <MobileSystemHeader title={pageHeaderTitle} />
+        <AdminAccess>
+          <SalaProfessor />
+        </AdminAccess>
+      </>
     )
   }
 
@@ -414,9 +417,12 @@ function App() {
 
   if (path === '/admin') {
     return (
-      <AdminAccess>
-        <Admin />
-      </AdminAccess>
+      <>
+        <MobileSystemHeader title={pageHeaderTitle} />
+        <AdminAccess>
+          <Admin />
+        </AdminAccess>
+      </> 
     )
   }
 
