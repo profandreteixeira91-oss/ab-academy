@@ -43,6 +43,7 @@ import Aulas from './pages/Aulas'
 import AulaModalidade from './pages/AulaModalidade'
 import HorariosFormacao from './pages/HorariosFormacao'
 import SiteFooter from './components/SiteFooter'
+import MobileSystemHeader from './components/MobileSystemHeader'
 import { trackPublicPageView } from './lib/analytics'
 
 function App() {
@@ -133,6 +134,8 @@ function App() {
 
   document.title = pageTitle + ' - AB Academy Idiomas'
 
+  const pageHeaderTitle = pageTitle === 'Página não encontrada' ? 'AB Academy' : pageTitle
+
   if (isPublicPage) {
     const description = pageDescriptions[path] ?? pageDescriptions['/']
     const canonicalUrl = `https://abacademyidiomas.com.br${path === '/' ? '/' : path}`
@@ -186,7 +189,12 @@ function App() {
    */
 
   if (path === '/') {
-    return withFooter(<Home />)
+    return (
+      <>
+        <MobileSystemHeader title={pageHeaderTitle} />
+        {withFooter(<Home />)}
+      </>
+    )
   }
 
   /*
@@ -196,7 +204,7 @@ function App() {
    */
 
   if (path === '/enterprise') {
-    return withFooter(<Enterprise />)
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<Enterprise />)}</>
   }
 
   if (path === '/trabalhe-conosco') {
@@ -204,47 +212,47 @@ function App() {
   }
 
   if (path === '/planos') {
-    return withFooter(<Planos />)
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<Planos />)}</>
   }
 
   if (path === '/diagnostica') {
-    return withFooter(<Diagnostica />)
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<Diagnostica />)}</>
   }
 
   if (path === '/quero-aprender') {
-    return <LeadCapture />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><LeadCapture /></>
   }
 
   if (path === '/horarios') {
-    return <HorariosFormacao />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><HorariosFormacao /></>
   }
 
   if (path === '/aulas') {
-    return <Aulas />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><Aulas /></>
   }
 
   if (path === '/aulas/individuais') {
-    return <AulaModalidade modality="individual" />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><AulaModalidade modality="individual" /></>
   }
 
   if (path === '/aulas/duplas') {
-    return <AulaModalidade modality="dupla" />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><AulaModalidade modality="dupla" /></>
   }
 
   if (path === '/aulas/grupos') {
-    return <AulaModalidade modality="grupo" />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><AulaModalidade modality="grupo" /></>
   }
 
   if (path === '/ingles') {
-    return <LanguageLanding language="ingles" />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><LanguageLanding language="ingles" /></>
   }
 
   if (path === '/alemao') {
-    return <LanguageLanding language="alemao" />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><LanguageLanding language="alemao" /></>
   }
 
   if (path === '/matricula') {
-    return withFooter(<Matricula />)
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<Matricula />)}</>
   }
 
   /*
@@ -309,7 +317,7 @@ function App() {
    */
 
   if (path === '/aluno') {
-    return <Aluno />
+    return <><MobileSystemHeader title={pageHeaderTitle} /><Aluno /></>
   }
 
   /*
@@ -321,6 +329,7 @@ function App() {
   if (path === '/aluno/central') {
     return (
       <>
+        <MobileSystemHeader title={pageHeaderTitle} />
         <CentralAtividades />
         <div className="central-page-footer">
           <SiteFooter />
@@ -336,7 +345,7 @@ function App() {
    */
 
   if (path.startsWith('/aluno/central/atividade/')) {
-    return withFooter(<CentralAtividade />)
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<CentralAtividade />)}</>
   }
 
   /*
@@ -380,7 +389,7 @@ function App() {
    */
 
   if (path.startsWith('/aluno/aula/')) {
-    return withFooter(<SalaAula />)
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<SalaAula />)}</>
   }
 
   /*
@@ -418,7 +427,7 @@ function App() {
    */
 
   if (path === '/politica-privacidade') {
-    return withFooter(<PoliticaPrivacidade />)
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<PoliticaPrivacidade />)}</>
   }
 
   /*
@@ -428,7 +437,7 @@ function App() {
    */
 
   if (path === '/termos-de-servico') {
-    return withFooter(<TermosServico />)
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<TermosServico />)}</>
   }
 
   /*
@@ -438,7 +447,7 @@ function App() {
    */
 
   if (path === '/professor') {
-    return withFooter(<Professor />)
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<Professor />)}</>
   }
 
   /*
@@ -447,7 +456,7 @@ function App() {
    * =========================================================
    */
 
-  return <Error404 />
+  return <><MobileSystemHeader title={pageHeaderTitle} /><Error404 /></>
 }
 
 export default App
