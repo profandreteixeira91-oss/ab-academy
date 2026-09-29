@@ -4,3 +4,9 @@
 .lead-commercial-price span{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:#61718a}
 .lead-commercial-price strong{font-size:24px;line-height:1.2;color:#0b63ce}
 .lead-commercial-price small{font-size:11px;line-height:1.45;color:#718097}
+
+
+.lead-group-formation{margin:0;padding:16px;border:1px solid #d9e5f5;border-radius:14px;background:#fbfcff}
+.lead-group-formation legend{padding:0 5px;font-size:13px;font-weight:800;color:#26364d}
+.lead-group-formation-note{margin:10px 0 0;font-size:11px;line-height:1.5;color:#718097}
+.lead-group-formation .lead-language-options{margin-top:4px}
