@@ -867,6 +867,17 @@ function LiveClassroom({
         onDisconnected={() =>
           setConnected(false)
         }
+        onError={(mediaError) => {
+          console.error('Erro de mídia/conexão LiveKit:', mediaError)
+          const message = String(mediaError?.message || '').toLowerCase()
+          if (message.includes('permission') || message.includes('denied') || message.includes('notallowed')) {
+            setMediaWarning('O navegador bloqueou câmera ou microfone. Toque no cadeado ao lado do endereço do site, permita Câmera e Microfone para abacademyidiomas.com.br e recarregue a aula. Se estiver no celular, confira também as permissões do aplicativo/navegador nas configurações do aparelho.')
+          } else if (message.includes('device') || message.includes('notfound') || message.includes('track')) {
+            setMediaWarning('Não foi possível iniciar um dos dispositivos. Feche outros aplicativos que estejam usando câmera/microfone, selecione o dispositivo correto e tente novamente.')
+          } else {
+            setMediaWarning('Houve uma falha ao iniciar áudio ou vídeo. Confira as permissões do navegador e tente novamente. Você pode continuar na sala e ligar câmera/microfone pelos controles.')
+          }
+        }}
         style={{
           width: '100%',
           height: '100%',
@@ -1219,31 +1230,12 @@ export default function SalaAula() {
         return
       }
 
-      // Testa o microfone antes de solicitar o token LiveKit.
-      // O áudio é obrigatório para a aula; a câmera é opcional.
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('Este navegador não oferece suporte ao acesso ao microfone.')
-      }
-
-      let microphoneStream: MediaStream | null = null
-      try {
-        microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      } catch (mediaError) {
-        console.error('Permissão do microfone recusada:', mediaError)
-        throw new Error('Não foi possível acessar o microfone. Permita o uso do microfone no navegador e tente novamente.')
-      } finally {
-        microphoneStream?.getTracks().forEach((track) => track.stop())
-      }
-
-      // Solicita a câmera separadamente. Se ela for bloqueada,
-      // a aula continua funcionando normalmente com áudio.
-      let cameraStream: MediaStream | null = null
-      try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true })
-      } catch (cameraError) {
-        console.warn('Câmera não disponível ou sem permissão:', cameraError)
-      } finally {
-        cameraStream?.getTracks().forEach((track) => track.stop())
+      // Não abrir e encerrar getUserMedia antes da sala: em celulares isso
+      // pode liberar o dispositivo e fazer o LiveKit falhar na segunda captura.
+      // A própria sala solicita as permissões e mantém os tracks ativos.
+      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
+        setError('Para usar câmera e microfone, abra a aula pelo site seguro (HTTPS) em um navegador atualizado, como Chrome ou Safari.')
+        return
       }
 
       try {
