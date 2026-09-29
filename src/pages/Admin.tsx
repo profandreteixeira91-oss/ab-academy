@@ -151,6 +151,13 @@ const modules: AdminModule[] = [
     icon: UserPlus,
   },
   {
+    id: 'turmas',
+    title: 'Duplas e Grupos',
+    description:
+      'Forme turmas, confirme participantes e controle a liberação comercial.',
+    icon: Users,
+  },
+  {
     id: 'enterprise',
     title: 'AB Enterprise',
     description:
@@ -279,8 +286,7 @@ const navigation = [
       },
       {
         id: 'turmas',
-        title: 'Duplas e Grupos',
-        description: 'Forme turmas, confirme participantes e controle a liberação comercial.',
+        label: 'Duplas e Grupos',
         icon: Users,
       },
       {
