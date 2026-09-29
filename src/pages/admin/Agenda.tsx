@@ -2067,6 +2067,9 @@ export default function Agenda() {
                               horario.idioma,
                             )}
                           </span>
+                          <span className="agenda-language">
+                            {horario.tipo_horario === 'dupla' ? 'Dupla' : horario.tipo_horario === 'grupo' ? 'Grupo' : 'Individual'}
+                          </span>
 
                           <span
                             className={`agenda-status ${
