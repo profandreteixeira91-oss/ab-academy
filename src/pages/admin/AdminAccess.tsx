@@ -57,17 +57,24 @@ export default function AdminAccess({ children }: AdminAccessProps) {
     void checkSession()
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        if (!session?.user) {
+      (event, session) => {
+        // Troca de aba/token refresh não deve reconstruir o acesso administrativo.
+        // Só mudanças reais de autenticação devem alterar o estado do portal.
+        if (event === 'SIGNED_OUT') {
           setAuthorized(false)
           setCheckingSession(false)
           return
         }
 
-        void verifyAdmin(session.user.id).then((isAdmin) => {
-          setAuthorized(isAdmin)
-          setCheckingSession(false)
-        })
+        if (
+          (event === 'SIGNED_IN' || event === 'USER_UPDATED') &&
+          session?.user
+        ) {
+          void verifyAdmin(session.user.id).then((isAdmin) => {
+            setAuthorized(isAdmin)
+            setCheckingSession(false)
+          })
+        }
       },
     )
 
