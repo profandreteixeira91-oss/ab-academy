@@ -2298,8 +2298,7 @@ function Aluno() {
                         answer.alternativaIds,
                       )
                     : null
-                  : answer.respostaTexto.trim() ||
-                    null,
+                  : answer.respostaTexto || null,
               alternativa_id:
                 isObjectiveType(exercise.tipo) &&
                 isSingleChoiceType(exercise.tipo)
