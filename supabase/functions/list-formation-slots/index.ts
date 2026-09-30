@@ -70,16 +70,42 @@ Deno.serve(async (req) => {
   const results: Array<Record<string, unknown>> = []
 
   for (const slot of filtered) {
-    const { data: turma } = await admin
+    const turmaSelect = 'id,idioma,modalidade,aulas_semana,data_inicio,status,fixa,professor_id,nivel_referencia,quantidade_minima,quantidade_maxima'
+
+    const { data: directTurma } = await admin
       .from('turmas')
-      .select('id,idioma,modalidade,aulas_semana,data_inicio,status,fixa,professor_id,nivel_referencia,quantidade_minima,quantidade_maxima')
-      .or(`horario_id.eq.${slot.id},id.in.(select turma_id from turma_horarios where horario_id.eq.${slot.id})`)
+      .select(turmaSelect)
+      .eq('horario_id', slot.id)
       .eq('fixa', true)
       .in('status', ['em_formacao', 'aguardando_confirmacoes'])
       .gte('data_inicio', new Date().toISOString().slice(0, 10))
       .order('created_at', { ascending: false })
       .limit(1)
       .maybeSingle()
+
+    let turma = directTurma
+
+    if (!turma) {
+      const { data: relation } = await admin
+        .from('turma_horarios')
+        .select('turma_id')
+        .eq('horario_id', slot.id)
+        .limit(1)
+        .maybeSingle()
+
+      if (relation?.turma_id) {
+        const { data: relationTurma } = await admin
+          .from('turmas')
+          .select(turmaSelect)
+          .eq('id', relation.turma_id)
+          .eq('fixa', true)
+          .in('status', ['em_formacao', 'aguardando_confirmacoes'])
+          .gte('data_inicio', new Date().toISOString().slice(0, 10))
+          .maybeSingle()
+
+        turma = relationTurma
+      }
+    }
 
     if (!turma) continue
 
