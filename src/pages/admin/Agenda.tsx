@@ -247,7 +247,9 @@ export default function Agenda() {
 
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
   const [rescheduleSource, setRescheduleSource] = useState<Horario | null>(null)
+  const [rescheduleMode, setRescheduleMode] = useState<'permanente' | 'reposicao'>('reposicao')
   const [rescheduleDate, setRescheduleDate] = useState('')
+  const [reschedulePermanentDay, setReschedulePermanentDay] = useState<number>(selectedDay)
   const [rescheduleStart, setRescheduleStart] = useState('')
   const [rescheduleEnd, setRescheduleEnd] = useState('')
   const [bulkReorganizeOpen, setBulkReorganizeOpen] = useState(false)
@@ -622,7 +624,9 @@ export default function Agenda() {
     )
 
     setRescheduleSource(horario)
+    setRescheduleMode('reposicao')
     setRescheduleDate(dateKey(occurrence.startAt))
+    setReschedulePermanentDay(horario.dia_semana)
     setRescheduleStart(formatHour(horario.hora_inicio))
     setRescheduleEnd(formatHour(horario.hora_fim))
     setRescheduleOpen(true)
@@ -632,7 +636,9 @@ export default function Agenda() {
     if (saving) return
     setRescheduleOpen(false)
     setRescheduleSource(null)
+    setRescheduleMode('reposicao')
     setRescheduleDate('')
+    setReschedulePermanentDay(selectedDay)
     setRescheduleStart('')
     setRescheduleEnd('')
   }
@@ -640,9 +646,9 @@ export default function Agenda() {
   async function handleReschedule() {
     if (
       !rescheduleSource ||
-      !rescheduleDate ||
       !rescheduleStart ||
-      !rescheduleEnd
+      !rescheduleEnd ||
+      (rescheduleMode === 'reposicao' && !rescheduleDate)
     ) {
       return
     }
@@ -663,20 +669,81 @@ export default function Agenda() {
         rescheduleSource.hora_fim,
       )
 
-      if (sourceOccurrence.startAt.getTime() <= Date.now()) {
-        throw new Error('A próxima ocorrência desta aula já começou ou terminou.')
+      const targetDay =
+        rescheduleMode === 'permanente'
+          ? reschedulePermanentDay
+          : new Date(rescheduleDate + 'T' + rescheduleStart + ':00').getDay()
+
+      if (rescheduleMode === 'reposicao') {
+        const targetDateObject = new Date(
+          rescheduleDate + 'T' + rescheduleStart + ':00',
+        )
+
+        if (Number.isNaN(targetDateObject.getTime())) {
+          throw new Error('A data escolhida é inválida.')
+        }
+
+        if (targetDateObject.getTime() <= Date.now()) {
+          throw new Error('Escolha uma data e horário futuros.')
+        }
       }
 
-      const targetDateObject = new Date(rescheduleDate + 'T' + rescheduleStart + ':00')
-      if (Number.isNaN(targetDateObject.getTime())) {
-        throw new Error('A data escolhida é inválida.')
-      }
+      if (rescheduleMode === 'permanente') {
+        const conflictingHorario = horarios.find((horario) => {
+          if (
+            horario.id === rescheduleSource.id ||
+            horario.dia_semana !== targetDay ||
+            horario.professor_id !== rescheduleSource.professor_id ||
+            horario.idioma !== rescheduleSource.idioma
+          ) {
+            return false
+          }
 
-      if (targetDateObject.getTime() <= Date.now()) {
-        throw new Error('Escolha uma data e horário futuros.')
-      }
+          const existingStart = timeToMinutes(horario.hora_inicio.slice(0, 5))
+          const existingEnd = timeToMinutes(horario.hora_fim.slice(0, 5))
 
-      const targetDay = targetDateObject.getDay()
+          return (
+            startMinutes < existingEnd &&
+            endMinutes > existingStart
+          )
+        })
+
+        if (conflictingHorario) {
+          throw new Error(
+            'O professor já possui um horário cadastrado no período escolhido: ' +
+              formatHour(conflictingHorario.hora_inicio) +
+              '–' +
+              formatHour(conflictingHorario.hora_fim) +
+              '.',
+          )
+        }
+
+        const { error } = await supabase
+          .from('horarios')
+          .update({
+            dia_semana: targetDay,
+            hora_inicio: rescheduleStart,
+            hora_fim: rescheduleEnd,
+          })
+          .eq('id', rescheduleSource.id)
+
+        if (error) throw error
+
+        closeRescheduleModal()
+        await loadAgenda()
+
+        window.alert(
+          'Horário alterado definitivamente para ' +
+            getDayLabel(targetDay) +
+            ' das ' +
+            rescheduleStart +
+            ' às ' +
+            rescheduleEnd +
+            '.',
+        )
+
+        return
+      }
 
       const isFreeHorario = (horario: Horario) =>
         horario.aluno_id === null && horario.disponivel === true
@@ -691,9 +758,6 @@ export default function Agenda() {
               return false
             }
 
-            // Um horário já cadastrado pode ser usado no reagendamento
-            // quando estiver efetivamente livre. Apenas horários ocupados
-            // ou marcados como indisponíveis bloqueiam a operação.
             if (isFreeHorario(horario)) {
               return false
             }
@@ -827,7 +891,7 @@ export default function Agenda() {
       await loadAgenda()
 
       window.alert(
-        'Aula reagendada para ' +
+        'Reposição agendada para ' +
           formatDateKey(rescheduleDate) +
           ' das ' +
           rescheduleStart +
@@ -836,9 +900,9 @@ export default function Agenda() {
           '. O horário recorrente original não foi alterado.',
       )
     } catch (err) {
-      console.error('Erro ao reagendar aula:', err)
+      console.error('Erro ao ajustar aula:', err)
       window.alert(
-        'Não foi possível reagendar a aula.\\n\\n' +
+        'Não foi possível ajustar a aula.\\n\\n' +
           getErrorMessage(err),
       )
     } finally {
@@ -3042,8 +3106,9 @@ export default function Agenda() {
                 </span>
                 <h2>Reagendar aula</h2>
                 <p>
-                  Escolha qualquer data e horário livre. O horário recorrente
-                  original continuará intacto.
+                  {rescheduleMode === 'permanente'
+                    ? 'Altere definitivamente o dia e o horário desta aula.'
+                    : 'Escolha a data e o horário da reposição. O horário recorrente original continuará intacto.'}
                 </p>
               </div>
 
@@ -3058,6 +3123,28 @@ export default function Agenda() {
             </div>
 
             <div className="agenda-form">
+              <div className="agenda-reschedule-modes">
+                <button
+                  type="button"
+                  className={`agenda-reschedule-mode ${rescheduleMode === 'permanente' ? 'active' : ''}`}
+                  onClick={() => setRescheduleMode('permanente')}
+                  disabled={saving}
+                >
+                  <strong>Opção 1 · Reagendamento permanente</strong>
+                  <span>O dia e horário desta aula mudam definitivamente.</span>
+                </button>
+
+                <button
+                  type="button"
+                  className={`agenda-reschedule-mode ${rescheduleMode === 'reposicao' ? 'active' : ''}`}
+                  onClick={() => setRescheduleMode('reposicao')}
+                  disabled={saving}
+                >
+                  <strong>Opção 2 · Reposição de aula</strong>
+                  <span>Muda somente uma ocorrência. O horário recorrente permanece.</span>
+                </button>
+              </div>
+
               <div className="agenda-reschedule-summary">
                 <div className="agenda-reschedule-summary-icon">
                   <UserRound size={18} />
@@ -3083,15 +3170,33 @@ export default function Agenda() {
               </div>
 
               <div className="agenda-reschedule-fields">
-                <div className="agenda-form-field">
-                  <label>Nova data</label>
-                  <input
-                    type="date"
-                    value={rescheduleDate}
-                    min={dateKey(new Date())}
-                    onChange={(event) => setRescheduleDate(event.target.value)}
-                  />
-                </div>
+                {rescheduleMode === 'permanente' ? (
+                  <div className="agenda-form-field">
+                    <label>Novo dia da semana</label>
+                    <select
+                      value={reschedulePermanentDay}
+                      onChange={(event) =>
+                        setReschedulePermanentDay(Number(event.target.value))
+                      }
+                    >
+                      {diasSemana.map((dia) => (
+                        <option key={dia.value} value={dia.value}>
+                          {dia.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="agenda-form-field">
+                    <label>Nova data da reposição</label>
+                    <input
+                      type="date"
+                      value={rescheduleDate}
+                      min={dateKey(new Date())}
+                      onChange={(event) => setRescheduleDate(event.target.value)}
+                    />
+                  </div>
+                )}
 
                 <div className="agenda-form-field">
                   <label>Horário inicial</label>
@@ -3117,8 +3222,9 @@ export default function Agenda() {
                 <div>
                   <strong>Validação automática</strong>
                   <span>
-                    O sistema verifica conflito com a agenda do professor e
-                    com outras aulas reagendadas antes de salvar.
+                    {rescheduleMode === 'permanente'
+                      ? 'O sistema verifica conflitos do professor antes de alterar o horário recorrente.'
+                      : 'O sistema verifica conflito com a agenda do professor e com outras reposições antes de salvar.'}
                   </span>
                 </div>
               </div>
