@@ -59,167 +59,113 @@ function getPlanPrice(plano: Plano) {
   }
 }
 
+type HorarioColetivo = {
+  id: string
+  idioma: 'ingles' | 'alemao'
+  dia_semana: number
+  hora_inicio: string
+  hora_fim: string
+  disponivel: boolean
+  aluno_id: string | null
+  professor_id: string | null
+  tipo_horario: 'dupla' | 'grupo'
+  nivel_referencia: string | null
+  professor?: { nome_completo: string | null } | null
+}
+
+const WEEKDAYS = [
+  { value: 0, short: 'Dom' }, { value: 1, short: 'Seg' }, { value: 2, short: 'Ter' },
+  { value: 3, short: 'Qua' }, { value: 4, short: 'Qui' }, { value: 5, short: 'Sex' }, { value: 6, short: 'Sáb' },
+]
+
+const NIVEIS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
+
+function formatTime(value: string) { return value.slice(0, 5) }
+function getWeekdayLabel(value: number) { return WEEKDAYS.find((day) => day.value === value)?.short ?? '—' }
+
 function ModalidadeCard({
-  modalidade,
-  idioma,
-  planos,
+  modalidade, idioma, planos, horarios, nivel,
 }: {
   modalidade: 'dupla' | 'grupo'
   idioma: 'ingles' | 'alemao'
   planos: Plano[]
+  horarios: HorarioColetivo[]
+  nivel: string
 }) {
-  const individual1x = planos
-    .filter(
-      (plano) =>
-        plano.idioma === idioma &&
-        plano.modalidade === 'individual' &&
-        plano.tipo === 'mensal' &&
-        plano.aulas_semana === 1,
-    )
-    .sort((a, b) => Number(a.preco) - Number(b.preco))[0]
-
-  const valorFormacao = individual1x
-    ? Number((Number(individual1x.preco) * (1 - DESCONTO_FORMACAO_COLETIVA)).toFixed(2))
-    : null
-
-  const regulares = planos
-    .filter(
-      (plano) =>
-        plano.idioma === idioma &&
-        plano.modalidade === modalidade &&
-        plano.tipo === 'mensal',
-    )
+  const planosColetivos = planos
+    .filter((plano) => plano.idioma === idioma && plano.modalidade === modalidade && plano.tipo === 'mensal')
     .sort((a, b) => (a.aulas_semana ?? 0) - (b.aulas_semana ?? 0))
 
-  const capacidadeTexto = modalidade === 'dupla' ? '2 participantes' : '3 participantes'
+  const filtrados = nivel ? horarios.filter((horario) => horario.nivel_referencia === nivel) : horarios
 
   return (
     <article className={'planos-detail-card planos-detail-card--' + modalidade}>
-      <span className="planos-detail-tag">
-        {modalidade === 'dupla' ? '2 participantes' : '3 participantes'}
-      </span>
-
+      <span className="planos-detail-tag">{modalidade === 'dupla' ? 'Até 2 participantes' : 'Até 3 participantes'}</span>
       <h3>{modalidade === 'dupla' ? 'Aulas em dupla' : 'Aulas em grupo / trio'}</h3>
-
       <p className="planos-detail-description">
-        {modalidade === 'dupla'
-          ? 'Escolha entre entrar em uma dupla já formada ou iniciar uma nova dupla no horário que deseja.'
-          : 'Entre em um grupo/trio já formado ou inicie uma nova turma. O preço de formação é temporário e não representa o valor definitivo da modalidade.'}
+        Escolha um horário disponível na agenda. O preço exibido é sempre o valor atual cadastrado pelo administrador.
       </p>
 
       <div className="planos-collective-section">
         <div className="planos-collective-section-heading">
-          <span className="planos-collective-kicker">Modalidade formada</span>
-          <strong>{modalidade === 'dupla' ? 'Dupla já formada' : 'Grupo já formado'}</strong>
-          <p>
-            {modalidade === 'dupla'
-              ? 'Valor regular por aluno para entrar em uma dupla que já possui outro participante.'
-              : 'Valor regular por aluno para entrar em um grupo/trio já formado, enquanto houver vaga.'}
-          </p>
+          <span className="planos-collective-kicker">Horários disponíveis</span>
+          <strong>{nivel ? 'Nível ' + nivel : 'Todos os níveis configurados'}</strong>
+          <p>Os horários são carregados diretamente da agenda e os preços diretamente dos planos ativos.</p>
         </div>
 
         <div className="planos-frequency-list">
-          {regulares.length > 0 ? (
-            regulares.map((plano) => (
-              <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id}>
+          {planosColetivos.flatMap((plano) => {
+            const frequencia = plano.aulas_semana ?? 1
+            const candidatos = filtrados.filter((horario) => horario.disponivel)
+            const combinacoes: HorarioColetivo[][] = []
+
+            if (frequencia === 1) {
+              candidatos.forEach((horario) => combinacoes.push([horario]))
+            } else {
+              for (let i = 0; i < candidatos.length; i += 1) {
+                for (let j = i + 1; j < candidatos.length; j += 1) {
+                  const a = candidatos[i], b = candidatos[j]
+                  if (a.professor_id === b.professor_id && a.hora_inicio === b.hora_inicio && a.hora_fim === b.hora_fim && a.dia_semana !== b.dia_semana) {
+                    combinacoes.push([a, b])
+                  }
+                }
+              }
+            }
+
+            return combinacoes.map((opcao) => (
+              <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id + ':' + opcao.map((item) => item.id).join('-')}>
                 <div className="planos-frequency-heading">
-                  <strong>{plano.aulas_semana ?? 1}x por semana</strong>
-                  <span>
-                    {formatCurrency(Number(plano.preco))}
-                    <small>/aluno/mês</small>
-                  </span>
+                  <strong>{frequencia}x por semana</strong>
+                  <span>{formatCurrency(Number(plano.preco))}<small>/aluno/mês</small></span>
+                </div>
+                <div className="planos-schedule-list">
+                  {opcao.map((horario) => (
+                    <div className="planos-schedule-row" key={horario.id}>
+                      <strong>{getWeekdayLabel(horario.dia_semana)}</strong>
+                      <span>{formatTime(horario.hora_inicio)}–{formatTime(horario.hora_fim)}</span>
+                    </div>
+                  ))}
                 </div>
                 <p>
-                  {modalidade === 'dupla'
-                    ? 'Dupla já formada.'
-                    : `${capacidadeTexto} — valor regular da turma formada.`}
+                  {opcao[0]?.professor?.nome_completo ? 'Professor: ' + opcao[0].professor.nome_completo : 'Professor a confirmar'}
+                  {' · '}{nivel || opcao[0]?.nivel_referencia || 'Nível a confirmar'}
                 </p>
-                <a
-                  href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id}
-                  className="btn btn-outline planos-collective-cta"
-                >
-                  Encontrar meu horário <ArrowRight size={16} />
+                <a href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(opcao[0].id)} className="btn btn-outline planos-collective-cta">
+                  Escolher este horário <ArrowRight size={16} />
                 </a>
               </div>
             ))
-          ) : (
-            <div className="planos-empty-collective">Nenhum plano regular disponível no momento.</div>
-          )}
+          })}
+
+          {planosColetivos.length === 0 && <div className="planos-empty-collective">Nenhum plano coletivo ativo foi cadastrado para esta modalidade e idioma.</div>}
+          {planosColetivos.length > 0 && filtrados.length === 0 && <div className="planos-empty-collective">Nenhum horário disponível foi configurado para este filtro no momento.</div>}
         </div>
       </div>
-
-      <div className="planos-collective-formation">
-        <span className="planos-collective-kicker">Nova turma</span>
-        <h4>{modalidade === 'dupla' ? 'Comece uma nova dupla' : 'Comece um novo grupo'}</h4>
-        <p>
-          {modalidade === 'dupla'
-            ? 'Não encontrou uma dupla no horário que deseja? Você pode iniciar uma nova dupla.'
-            : 'Você pode iniciar uma nova turma no horário que deseja.'}
-        </p>
-
-        <div className="planos-formation-price">
-          <span>Valor durante a formação</span>
-          <strong>
-            {valorFormacao !== null ? formatCurrency(valorFormacao) : 'Consulte'}
-            <small>/mês</small>
-          </strong>
-          {individual1x && (
-            <em>Valor individual de 1 aula por semana com 10% de desconto.</em>
-          )}
-        </div>
-
-        <div className="planos-formation-explanation">
-          <strong>Depois que a turma for formada:</strong>
-          <p>
-            {modalidade === 'dupla'
-              ? 'quando outro aluno entrar, sua dupla estará formada e, a partir do próximo ciclo de cobrança, será aplicado o valor regular da dupla.'
-              : 'quando a turma atingir a quantidade mínima definida, a partir do próximo ciclo de cobrança será aplicado o valor regular do grupo.'}
-          </p>
-        </div>
-
-        <div className="planos-formation-actions">
-          {regulares.length > 0 ? regulares.map((plano) => (
-            <a
-              key={plano.id}
-              href={'/matricula?idioma=' + idioma + '&plano=' + plano.id}
-              className="btn btn-primary planos-detail-cta"
-            >
-              {modalidade === 'dupla' ? 'Começar nova dupla — ' : 'Começar novo grupo — '}
-              {plano.aulas_semana ?? 1}x por semana
-              <ArrowRight size={17} />
-            </a>
-          )) : (
-            <div className="planos-empty-collective">Nenhum plano de formação disponível no momento.</div>
-          )}
-        </div>
-      </div>
-
-      {individual1x && (
-        <div className="planos-formation-example">
-          <span>Exemplo explicativo</span>
-          <strong>Como funciona o valor de formação</strong>
-          <div className="planos-example-row">
-            <span>Individual 1x/semana</span>
-            <strong>{formatCurrency(Number(individual1x.preco))}</strong>
-          </div>
-          <div className="planos-example-row">
-            <span>10% de desconto</span>
-            <strong>- {formatCurrency(Number(individual1x.preco) * DESCONTO_FORMACAO_COLETIVA)}</strong>
-          </div>
-          <div className="planos-example-row planos-example-row--total">
-            <span>Durante a formação</span>
-            <strong>{formatCurrency(valorFormacao ?? 0)}</strong>
-          </div>
-          <p>
-            Este valor é temporário. Ele existe exclusivamente enquanto a turma está sendo formada.
-          </p>
-        </div>
-      )}
 
       <ul className="planos-detail-features">
         <li>Diagnóstico e orientação inicial</li>
-        <li>Organização conforme nível e objetivo</li>
-        <li>Acompanhamento da AB Academy</li>
+        <li>Horários definidos pela agenda da AB Academy</li>
+        <li>Preço atualizado diretamente pelo Admin</li>
       </ul>
     </article>
   )
@@ -284,6 +230,8 @@ function Planos() {
     const idioma = new URLSearchParams(window.location.search).get('idioma')
     return idioma === 'alemao' ? 'alemao' : 'ingles'
   })
+  const [nivelSelecionado, setNivelSelecionado] = useState(() => new URLSearchParams(window.location.search).get('nivel') || '')
+  const [horariosColetivos, setHorariosColetivos] = useState<HorarioColetivo[]>([])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [horarioId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [loading, setLoading] = useState(true)
@@ -296,29 +244,26 @@ function Planos() {
       setLoading(true)
       setError('')
 
-      const { data, error: planosError } = await supabase
-        .from('planos')
-        .select('id, idioma, tipo, nome, descricao, beneficios, preco, parcelas, valor_parcela, ativo, modalidade, min_alunos, max_alunos, created_at, aulas_semana')
-        .eq('ativo', true)
+      const [{ data: planosData, error: planosError }, { data: horariosData, error: horariosError }] = await Promise.all([
+        supabase.from('planos').select('id, idioma, tipo, nome, descricao, beneficios, preco, parcelas, valor_parcela, ativo, modalidade, min_alunos, max_alunos, created_at, aulas_semana').eq('ativo', true),
+        supabase.from('horarios').select('id, idioma, dia_semana, hora_inicio, hora_fim, disponivel, aluno_id, professor_id, tipo_horario, nivel_referencia, professor:professores(nome_completo)').eq('disponivel', true).in('tipo_horario', ['dupla', 'grupo']),
+      ])
 
       if (!active) return
-
-      if (planosError) {
-        console.error('Erro ao carregar planos:', planosError)
-        setError('Não foi possível carregar os planos no momento.')
+      if (planosError || horariosError) {
+        console.error('Erro ao carregar dados dos planos/horários:', planosError || horariosError)
+        setError('Não foi possível carregar os planos e horários no momento.')
         setLoading(false)
         return
       }
 
-      setPlanos((data || []) as Plano[])
+      setPlanos((planosData || []) as Plano[])
+      setHorariosColetivos((horariosData || []) as HorarioColetivo[])
       setLoading(false)
     }
 
     loadPlanos()
-
-    return () => {
-      active = false
-    }
+    return () => { active = false }
   }, [])
 
   const planosPorIdioma = useMemo(() => {
@@ -493,28 +438,20 @@ function Planos() {
                   </div></div>
                 )
               ) : (
-                <div className="planos-language planos-language--stacked"><div className="planos-grid">
-                  <ModalidadeCard
-                    modalidade={modalidadeSelecionada}
-                    idioma={idiomaSelecionado}
-                    planos={planos}
-                  />
-                </div></div>
+                <>
+                  <div className="planos-level-switch" role="tablist" aria-label="Selecione o nível">
+                    <button type="button" className={'planos-level-option' + (!nivelSelecionado ? ' active' : '')} aria-selected={!nivelSelecionado} onClick={() => setNivelSelecionado('')}>Todos</button>
+                    {NIVEIS.map((nivel) => (
+                      <button key={nivel} type="button" className={'planos-level-option' + (nivelSelecionado === nivel ? ' active' : '')} aria-selected={nivelSelecionado === nivel} onClick={() => setNivelSelecionado(nivel)}>{nivel}</button>
+                    ))}
+                  </div>
+                  <div className="planos-language planos-language--stacked"><div className="planos-grid">
+                    <ModalidadeCard modalidade={modalidadeSelecionada} idioma={idiomaSelecionado} planos={planos} horarios={horariosColetivos.filter((horario) => horario.idioma === idiomaSelecionado && horario.tipo_horario === modalidadeSelecionada)} nivel={nivelSelecionado} />
+                  </div></div>
+                </>
               )}
 
-              {modalidadeSelecionada !== 'individual' && (
-                <section className="planos-formation-rules" aria-labelledby="planos-formation-rules-title">
-                  <span className="planos-collective-kicker">Transparência no investimento</span>
-                  <h2 id="planos-formation-rules-title">Como funciona a formação de uma dupla ou grupo?</h2>
-                  <div className="planos-formation-rules-grid">
-                    <div><strong>1.</strong><p>Você escolhe o idioma, a frequência e o horário.</p></div>
-                    <div><strong>2.</strong><p>Se já houver uma turma compatível com vaga, você entra pelo valor regular da modalidade.</p></div>
-                    <div><strong>3.</strong><p>Se não houver uma turma formada, você pode iniciar uma nova turma.</p></div>
-                    <div><strong>4.</strong><p>Enquanto estiver em formação, você paga o valor individual de 1 aula por semana com 10% de desconto.</p></div>
-                    <div><strong>5.</strong><p>Quando a turma atingir a quantidade necessária, o valor passa ao preço regular no próximo ciclo de cobrança.</p></div>
-                  </div>
-                </section>
-              )}
+
 
               <div className="planos-diagnostic">
                 <div className="planos-diagnostic-icon"><Clock3 size={24} /></div>
