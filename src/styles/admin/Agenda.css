@@ -2455,7 +2455,7 @@
 
 @media (max-width: 900px) {
   .agenda-day-selector {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 5px;
   }
 
@@ -2482,7 +2482,7 @@
 
 @media (max-width: 600px) {
   .agenda-day-selector {
-    grid-template-columns: repeat(7, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .agenda-day-button {
