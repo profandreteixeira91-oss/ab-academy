@@ -26,3 +26,6 @@ entrypoint = "./functions/google-meet-callback/index.ts"
 enabled = true
 verify_jwt = false
 entrypoint = "./functions/gerar-central-atividades/index.ts"
+
+[functions.create-enrollment]
+verify_jwt = false
