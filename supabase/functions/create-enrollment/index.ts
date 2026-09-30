@@ -332,7 +332,12 @@ Deno.serve(async (req) => {
      */
 
     const isCollectiveRequest =
-      Boolean(body.turma_id && body.turma_participante_id)
+      Boolean(
+        body.modalidade &&
+        ['dupla', 'grupo'].includes(body.modalidade) &&
+        body.turma_id &&
+        body.turma_participante_id,
+      )
 
     let freshSlots: Array<{
       id: string
@@ -639,7 +644,8 @@ Deno.serve(async (req) => {
           .in('status', ['convidado','confirmado'])
 
         const participantTotal = participantesCount ?? 1
-        const { data: valorData, error: valorError } = participantTotal <= 1
+        const capacidadeDaTurma = turma.quantidade_maxima
+        const { data: valorData, error: valorError } = participantTotal < capacidadeDaTurma
           ? await supabaseAdmin.rpc('preco_formacao_coletiva', {
               p_idioma: body.idioma,
               p_modalidade: turma.modalidade,
