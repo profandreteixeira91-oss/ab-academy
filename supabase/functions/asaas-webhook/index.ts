@@ -32,6 +32,13 @@ const supabaseAdmin = createClient(
 type AsaasWebhookPayload = {
   event?: string
 
+  transfer?: {
+    id?: string
+    status?: string
+    externalReference?: string | null
+    failReason?: string | null
+  }
+
   payment?: {
     id?: string
     customer?: string
@@ -1815,6 +1822,45 @@ Deno.serve(async (req) => {
           body.payment?.billingType,
       },
     )
+
+    const transfer = body.transfer
+
+    if (transfer?.id) {
+      const transferStatus =
+        body.event === 'TRANSFER_DONE'
+          ? 'DONE'
+          : body.event === 'TRANSFER_FAILED'
+            ? 'FAILED'
+            : body.event === 'TRANSFER_CANCELLED'
+              ? 'CANCELLED'
+              : transfer.status || 'PENDING'
+
+      const transferUpdate: Record<string, unknown> = {
+        status: transferStatus,
+        fail_reason: transfer.failReason ?? null,
+        updated_at: new Date().toISOString(),
+      }
+
+      if (transfer.externalReference) {
+        transferUpdate.id = transfer.externalReference
+      }
+
+      const { error: transferError } = await supabaseAdmin
+        .from('asaas_transferencias')
+        .update(transferUpdate)
+        .eq('asaas_transfer_id', transfer.id)
+
+      if (transferError) {
+        console.error('Erro ao atualizar transferência Asaas:', transferError)
+      }
+
+      return jsonResponse({
+        received: true,
+        event: body.event,
+        transfer_id: transfer.id,
+        status: transferStatus,
+      })
+    }
 
     const payment =
       body.payment
