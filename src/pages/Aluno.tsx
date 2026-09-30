@@ -594,6 +594,13 @@ function Aluno() {
     phone: '',
   })
   const [cardHolderIsThirdParty, setCardHolderIsThirdParty] = useState(false)
+  const [recurringAuthorized, setRecurringAuthorized] = useState(false)
+  const studentPaymentDefaultsRef = useRef({
+    name: '',
+    cpf: '',
+    email: '',
+    phone: '',
+  })
   const paymentPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [requests, setRequests] = useState<StudentRequest[]>([])
@@ -2732,10 +2739,18 @@ function Aluno() {
     setPaymentId(null)
     setPaymentPix(null)
     setCardHolderIsThirdParty(false)
+    setRecurringAuthorized(false)
+    const defaults = {
+      name,
+      cpf: '',
+      email: user?.email ?? '',
+      phone: '',
+    }
+    studentPaymentDefaultsRef.current = defaults
     setPaymentCard({
-      holderName: name,
-      holderCpf: '',
-      holderEmail: '',
+      holderName: defaults.name,
+      holderCpf: defaults.cpf,
+      holderEmail: defaults.email,
       number: '',
       expiryMonth: '',
       expiryYear: '',
@@ -2743,8 +2758,31 @@ function Aluno() {
       postalCode: '',
       addressNumber: '',
       addressComplement: '',
-      phone: '',
+      phone: defaults.phone,
     })
+
+    void supabase
+      .from('alunos')
+      .select('cpf, email, telefone, nome_completo')
+      .eq('user_id', user?.id ?? '')
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!data) return
+        const nextDefaults = {
+          name: String(data.nome_completo ?? name),
+          cpf: String(data.cpf ?? '').replace(/\D/g, ''),
+          email: String(data.email ?? user?.email ?? '').trim(),
+          phone: String(data.telefone ?? '').replace(/\D/g, ''),
+        }
+        studentPaymentDefaultsRef.current = nextDefaults
+        setPaymentCard(current => ({
+          ...current,
+          holderName: cardHolderIsThirdParty ? current.holderName : nextDefaults.name,
+          holderCpf: cardHolderIsThirdParty ? current.holderCpf : nextDefaults.cpf,
+          holderEmail: cardHolderIsThirdParty ? current.holderEmail : nextDefaults.email,
+          phone: cardHolderIsThirdParty ? current.phone : nextDefaults.phone,
+        }))
+      })
   }
 
   const pollPaymentStatus = (pagamentoId: string, mensalidadeId: string) => {
@@ -2799,6 +2837,8 @@ function Aluno() {
         {
           p_mensalidade_id: paymentEntry.id,
           p_metodo: paymentMethod,
+          p_recorrencia_autorizada:
+            paymentMethod === 'cartao' && recurringAuthorized,
         },
       )
 
@@ -2825,28 +2865,36 @@ function Aluno() {
           throw alunoError ?? new Error('Não foi possível carregar os dados do aluno.')
         }
 
+        const cardNumber = paymentCard.number.replace(/\D/g, '')
+        const expiryMonth = paymentCard.expiryMonth.replace(/\D/g, '')
+        const expiryYear = paymentCard.expiryYear.replace(/\D/g, '')
+        const ccv = paymentCard.ccv.replace(/\D/g, '')
+        const postalCode = paymentCard.postalCode.replace(/\D/g, '')
+        const addressNumber = paymentCard.addressNumber.trim()
+        const holderName = paymentCard.holderName.trim() || alunoData.nome_completo
+        const holderCpf = paymentCard.holderCpf.replace(/\D/g, '')
+        const holderEmail = paymentCard.holderEmail.trim()
+        const holderPhone = paymentCard.phone.replace(/\D/g, '')
+
         if (
-          paymentCard.number.replace(/\D/g, '').length < 13 ||
-          !paymentCard.expiryMonth ||
-          !paymentCard.expiryYear ||
-          paymentCard.ccv.length < 3 ||
-          !paymentCard.postalCode ||
-          !paymentCard.addressNumber
+          cardNumber.length < 13 ||
+          !/^\d{2}$/.test(expiryMonth) ||
+          !/^\d{4}$/.test(expiryYear) ||
+          !/^\d{3,4}$/.test(ccv) ||
+          postalCode.length !== 8 ||
+          !addressNumber ||
+          !holderName ||
+          !/^(\d{11}|\d{14})$/.test(holderCpf) ||
+          !holderEmail ||
+          !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(holderEmail) ||
+          holderPhone.length < 10 ||
+          holderPhone.length > 11
         ) {
-          throw new Error('Preencha todos os dados obrigatórios do cartão.')
+          throw new Error('Preencha todos os dados obrigatórios do cartão e do titular.')
         }
 
-        const holderName = paymentCard.holderName.trim() || alunoData.nome_completo
-        const holderCpf = cardHolderIsThirdParty
-          ? paymentCard.holderCpf.replace(/\D/g, '')
-          : String(alunoData.cpf ?? '').replace(/\D/g, '')
-        const holderEmail = cardHolderIsThirdParty
-          ? paymentCard.holderEmail.trim()
-          : alunoData.email
-        const holderPhone = paymentCard.phone.replace(/\D/g, '') || String(alunoData.telefone ?? '').replace(/\D/g, '')
-
-        if (cardHolderIsThirdParty && (!holderName || holderCpf.length !== 11 && holderCpf.length !== 14 || !holderEmail)) {
-          throw new Error('Preencha nome, CPF/CNPJ e e-mail do titular do cartão.')
+        if (cardHolderIsThirdParty && !recurringAuthorized && paymentEntry.status === 'pago') {
+          throw new Error('A mensalidade já está paga.')
         }
 
         body = {
@@ -2854,18 +2902,18 @@ function Aluno() {
           parcelas: 1,
           credit_card: {
             holder_name: holderName,
-            number: paymentCard.number.replace(/\s/g, ''),
-            expiry_month: paymentCard.expiryMonth,
-            expiry_year: paymentCard.expiryYear,
-            ccv: paymentCard.ccv,
+            number: cardNumber,
+            expiry_month: expiryMonth,
+            expiry_year: expiryYear,
+            ccv,
           },
           credit_card_holder_info: {
             name: holderName,
             email: holderEmail,
             cpf_cnpj: holderCpf,
-            postal_code: paymentCard.postalCode.replace(/\D/g, ''),
-            address_number: paymentCard.addressNumber,
-            address_complement: paymentCard.addressComplement,
+            postal_code: postalCode,
+            address_number: addressNumber,
+            address_complement: paymentCard.addressComplement.trim() || '',
             phone: holderPhone,
           },
         }
@@ -3877,13 +3925,17 @@ function Aluno() {
               pix={paymentPix}
               card={paymentCard}
               cardHolderIsThirdParty={cardHolderIsThirdParty}
+              recurringAuthorized={recurringAuthorized}
+              onRecurringChange={setRecurringAuthorized}
               onThirdPartyChange={(value) => {
                 setCardHolderIsThirdParty(value)
+                const defaults = studentPaymentDefaultsRef.current
                 setPaymentCard(current => ({
                   ...current,
-                  holderName: value ? '' : name,
-                  holderCpf: '',
-                  holderEmail: '',
+                  holderName: value ? '' : defaults.name,
+                  holderCpf: value ? '' : defaults.cpf,
+                  holderEmail: value ? '' : defaults.email,
+                  phone: value ? '' : defaults.phone,
                 }))
               }}
               onMethodChange={setPaymentMethod}
@@ -4096,8 +4148,10 @@ type PagamentoAlunoProps = {
     phone: string
   }
   cardHolderIsThirdParty: boolean
+  recurringAuthorized: boolean
   onMethodChange: (value: 'pix' | 'cartao') => void
   onThirdPartyChange: (value: boolean) => void
+  onRecurringChange: (value: boolean) => void
   onCardChange: React.Dispatch<React.SetStateAction<PagamentoAlunoProps['card']>>
   onProcess: () => void
   onClose: () => void
@@ -4112,8 +4166,10 @@ function PagamentoAluno({
   pix,
   card,
   cardHolderIsThirdParty,
+  recurringAuthorized,
   onMethodChange,
   onThirdPartyChange,
+  onRecurringChange,
   onCardChange,
   onProcess,
   onClose,
