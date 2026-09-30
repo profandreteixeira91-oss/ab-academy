@@ -3,6 +3,8 @@ import {
   ArrowRight,
   ChevronLeft,
   ShieldCheck,
+  ExternalLink,
+  FileText,
 } from 'lucide-react'
 
 import '../styles/matricula.css'
@@ -50,6 +52,7 @@ type Horario = {
   status_formacao: string | null
   tipo_valor: 'individual' | 'coletiva_formada' | 'coletiva_em_formacao' | null
   professor_id: string | null
+  nivel_referencia: string | null
 }
 
 type SelectedSchedule = {
@@ -68,6 +71,7 @@ type SelectedSchedule = {
   status_formacao: string | null
   tipo_valor: 'individual' | 'coletiva_formada' | 'coletiva_em_formacao' | null
   professor_id: string | null
+  nivel_referencia: string | null
 }
 
 type StudentData = {
@@ -201,10 +205,9 @@ export default function Matricula() {
   const [conversationLevel, setConversationLevel] = useState('')
   const [writingLevel, setWritingLevel] = useState('')
   const [comprehensionLevel, setComprehensionLevel] = useState('')
-  const [levelMethod, setLevelMethod] = useState<'informar' | 'teste' | ''>('')
-  const [levelTestStarted, setLevelTestStarted] = useState(false)
-  const [levelTestAnswers, setLevelTestAnswers] = useState<Record<number, string>>({})
-  const [levelTestResult, setLevelTestResult] = useState('')
+  const [proficiencyFile, setProficiencyFile] = useState<File | null>(null)
+  const [proficiencyProcessing, setProficiencyProcessing] = useState(false)
+  const [proficiencyResult, setProficiencyResult] = useState<{ nivel_geral: string | null; nivel_conversacao: string | null; nivel_escrita: string | null; nivel_compreensao: string | null; observacoes?: string } | null>(null)
   const [contractAccepted, setContractAccepted] = useState(false)
   const [contractSignatureStatus, setContractSignatureStatus] = useState<'pending' | 'signed'>('pending')
   const [signatureName, setSignatureName] = useState('')
@@ -232,6 +235,7 @@ export default function Matricula() {
         : ''
 
   const isCollectivePlan = plan?.modalidade === 'dupla' || plan?.modalidade === 'grupo'
+  const proficiencyTestUrl = import.meta.env.VITE_PROFICIENCY_TEST_URL as string | undefined
   const isWaitingFormation = waitingFormation
   const effectivePlan = plan
 
@@ -497,25 +501,20 @@ export default function Matricula() {
       const aulasSemana = plan.aulas_semana ?? (plan.tipo === 'intensivo' ? 3 : plan.tipo === 'personalizado' ? 2 : 1)
 
       if (isCollectivePlan) {
-        const { data: compatibleTurmas, error: compatibilityError } = await supabase.rpc('buscar_turmas_compativeis_matricula', {
+        const { data: fixedSchedules, error: collectiveError } = await supabase.rpc('listar_horarios_coletivos_matricula', {
           p_idioma: selectedLanguage,
           p_modalidade: modalidade,
           p_aulas_semana: aulasSemana,
-          p_dias: withAvailability && availabilityMode !== 'flexible'
-            ? availabilityDays.map(String)
+          p_dias: withAvailability && availabilityMode !== 'flexible' ? availabilityDays : null,
+          p_periodos: withAvailability && availabilityMode === 'periods' ? availabilityPeriods : null,
+          p_disponibilidade: withAvailability && availabilityMode === 'ranges' && Object.keys(availabilityRanges).length > 0
+            ? availabilityRanges
             : null,
-          p_periodos: withAvailability && availabilityMode === 'periods'
-            ? availabilityPeriods
-            : null,
-          p_professor_id: null,
-          p_nivel_conversacao: conversationLevel || null,
-          p_nivel_escrita: writingLevel || null,
-          p_nivel_compreensao: comprehensionLevel || null,
         })
 
-        if (compatibilityError) {
-          console.error('Erro ao buscar turmas compatíveis:', compatibilityError)
-          setError('Não foi possível analisar as turmas compatíveis.')
+        if (collectiveError) {
+          console.error('Erro ao buscar horários coletivos fixos:', collectiveError)
+          setError('Não foi possível consultar os horários coletivos disponíveis.')
           setAvailableSchedules([])
           return false
         }
@@ -526,87 +525,79 @@ export default function Matricula() {
           p_aulas_semana: aulasSemana,
         })
         const formationPrice = Number(formationPriceResponse.data ?? 0)
-
         const regularPriceCache = new Map<number, number>()
-        const getRegularPrice = async (capacity: number) => {
-          if (regularPriceCache.has(capacity)) {
-            return regularPriceCache.get(capacity) as number
-          }
 
+        const getRegularPrice = async (participants: number) => {
+          if (regularPriceCache.has(participants)) return regularPriceCache.get(participants) as number
           const { data: price, error: priceError } = await supabase.rpc('preco_coletivo', {
             p_idioma: selectedLanguage,
             p_modalidade: modalidade,
             p_aulas_semana: aulasSemana,
-            p_quantidade_alunos: capacity,
+            p_quantidade_alunos: participants,
           })
-
           if (priceError) {
             console.error('Erro ao consultar preço coletivo:', priceError)
             return null
           }
-
           const value = Number(price ?? 0)
-          regularPriceCache.set(capacity, value)
+          regularPriceCache.set(participants, value)
           return value
         }
 
         const schedules: Horario[] = []
+        const turmaIds = new Set<string>()
 
-        for (const turma of compatibleTurmas ?? []) {
-          const encontros = Array.isArray(turma.encontros) ? turma.encontros : []
-          const participantes = Number(turma.participantes ?? 0)
-          const capacidade = Number(turma.capacidade ?? (modalidade === 'dupla' ? 2 : 3))
-          const formsOnJoin = participantes + 1 >= capacidade
+        for (const item of fixedSchedules ?? []) {
+          const participantes = Number(item.participantes ?? 0)
+          const capacidade = Number(item.capacidade ?? (modalidade === 'dupla' ? 2 : 6))
+          const formsOnJoin = participantes === 0
           const valorMensal = formsOnJoin
-            ? await getRegularPrice(capacidade)
-            : formationPrice
+            ? formationPrice
+            : await getRegularPrice(Math.min(participantes + 1, capacidade))
 
-          for (const encontro of encontros) {
-            if (availabilityMode === 'ranges' && Object.keys(availabilityRanges).length > 0) {
-              const range = availabilityRanges[Number(encontro.dia_semana)]
-              if (!range) continue
-
-              const inicio = String(encontro.hora_inicio).slice(0, 5)
-              const fim = String(encontro.hora_fim).slice(0, 5)
-              if (inicio < range.start || fim > range.end) continue
-            }
-
-            schedules.push({
-              id: String(encontro.horario_id),
-              tipo_horario: modalidade,
-              idioma: selectedLanguage,
-              dia_semana: Number(encontro.dia_semana),
-              hora_inicio: String(encontro.hora_inicio),
-              hora_fim: String(encontro.hora_fim),
-              disponivel: true,
-              aluno_id: null,
-              created_at: '',
-              meet_url: null,
-              meet_space_name: null,
-              turma_id: turma.turma_id,
-              participante_id: null,
-              participantes,
-              capacidade,
-              vagas_restantes: Number(turma.vagas_restantes ?? 0),
-              valor_mensal: valorMensal > 0 ? valorMensal : null,
-              status_formacao: formsOnJoin
-                ? (modalidade === 'dupla' ? 'dupla_formada' : 'grupo_formado')
-                : (modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao'),
-              tipo_valor: formsOnJoin ? 'coletiva_formada' : 'coletiva_em_formacao',
-              professor_id: turma.professor_id ?? null,
-            })
-          }
+          schedules.push({
+            id: String(item.horario_id),
+            tipo_horario: modalidade,
+            idioma: selectedLanguage,
+            dia_semana: Number(item.dia_semana),
+            hora_inicio: String(item.hora_inicio),
+            hora_fim: String(item.hora_fim),
+            disponivel: true,
+            aluno_id: null,
+            created_at: '',
+            meet_url: null,
+            meet_space_name: null,
+            turma_id: String(item.turma_id),
+            participante_id: null,
+            participantes,
+            capacidade,
+            vagas_restantes: Number(item.vagas_restantes ?? 0),
+            valor_mensal: valorMensal > 0 ? valorMensal : null,
+            status_formacao: String(item.status_formacao ?? ''),
+            tipo_valor: formsOnJoin ? 'coletiva_em_formacao' : 'coletiva_formada',
+            professor_id: item.professor_id ?? null,
+            nivel_referencia: item.nivel_referencia ?? null,
+          })
+          turmaIds.add(String(item.turma_id))
         }
 
         if (schedules.length === 0) {
-          setError('Não encontramos uma turma coletiva compatível com os dias e horários informados.')
+          setError('Não encontramos horários coletivos fixos compatíveis com os dias e períodos informados.')
           setAvailableSchedules([])
           return false
         }
 
-        setAvailableSchedules(schedules)
-        return true
+        // Mantém apenas encontros de turmas completas para a frequência escolhida.
+        const completeTurmaIds = new Set<string>()
+        for (const turmaId of turmaIds) {
+          const count = schedules.filter((item) => item.turma_id === turmaId).length
+          if (count === aulasSemana) completeTurmaIds.add(turmaId)
+        }
+        const filtered = schedules.filter((item) => completeTurmaIds.has(item.turma_id || ''))
+        setAvailableSchedules(filtered)
+        return filtered.length > 0
       }
+
       const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula_inteligente', {
         p_idioma: selectedLanguage,
         p_modalidade: modalidade,
@@ -801,6 +792,51 @@ export default function Matricula() {
     return true
   }
 
+  const processProficiencyDocument = async () => {
+    setError('')
+    setSuccess('')
+
+    if (!proficiencyFile) {
+      setError('Anexe o documento gerado pelo teste de proficiência.')
+      return
+    }
+    if (!proficiencyTestUrl) {
+      setError('O link externo do teste de proficiência ainda não foi configurado pela AB Academy.')
+      return
+    }
+
+    setProficiencyProcessing(true)
+    try {
+      const formData = new FormData()
+      formData.append('reserva_token', reservaToken)
+      formData.append('idioma', language)
+      formData.append('arquivo', proficiencyFile)
+
+      const { data, error: functionError } = await supabase.functions.invoke('processar-teste-proficiencia', {
+        body: formData,
+      })
+
+      if (functionError) throw new Error(functionError.message || 'Não foi possível analisar o documento.')
+      if (!data?.success || !data?.resultado) throw new Error(data?.error || 'O documento não apresentou um resultado de proficiência utilizável.')
+
+      const result = data.resultado
+      setProficiencyResult(result)
+      setConversationLevel(result.nivel_conversacao || result.nivel_geral || '')
+      setWritingLevel(result.nivel_escrita || result.nivel_geral || '')
+      setComprehensionLevel(result.nivel_compreensao || result.nivel_geral || '')
+      setSuccess('Teste de proficiência analisado com sucesso.')
+    } catch (processingError) {
+      console.error('Erro ao processar proficiência:', processingError)
+      setProficiencyResult(null)
+      setConversationLevel('')
+      setWritingLevel('')
+      setComprehensionLevel('')
+      setError(processingError instanceof Error ? processingError.message : 'Não foi possível analisar o documento.')
+    } finally {
+      setProficiencyProcessing(false)
+    }
+  }
+
   const signContractInternally = async () => {
     setError('')
     setSuccess('')
@@ -877,21 +913,10 @@ export default function Matricula() {
     }
 
     if (step === 2) {
-      if (!conversationLevel && !writingLevel && !comprehensionLevel) {
-        setError('Informe seu nível ou faça o teste de proficiência antes de continuar.')
-        return
-      }
-      setStep(3)
-      return
-    }
-
-    if (step === 3) {
       if (availabilityMode !== 'flexible' && availabilityDays.length !== requiredWeeklyLessons) {
-        setError(
-          requiredWeeklyLessons === 1
-            ? 'Escolha exatamente 1 dia da semana para sua aula.'
-            : `Este plano tem ${requiredWeeklyLessons} aulas por semana. Escolha exatamente ${requiredWeeklyLessons} dias diferentes.`,
-        )
+        setError(requiredWeeklyLessons === 1
+          ? 'Escolha exatamente 1 dia da semana para sua aula.'
+          : `Este plano tem ${requiredWeeklyLessons} aulas por semana. Escolha exatamente ${requiredWeeklyLessons} dias diferentes.`)
         return
       }
       if (availabilityMode === 'periods' && availabilityPeriods.length === 0) {
@@ -910,37 +935,42 @@ export default function Matricula() {
       if (!schedulesLoaded) return
       setAvailabilityReady(true)
       setSelectedWeekday(null)
+      setStep(3)
+      return
+    }
+
+    if (step === 3) {
+      if (!validateSchedule()) return
       setStep(4)
       return
     }
 
     if (step === 4) {
-      if (!validateSchedule()) return
+      if (!proficiencyResult || !conversationLevel || !writingLevel || !comprehensionLevel) {
+        setError('Conclua o teste de proficiência e envie o documento para análise antes de continuar.')
+        return
+      }
+
+      if (isCollectivePlan) {
+        const selectedTurma = selectedSchedule?.turma_id
+          ? availableSchedules.find((item) => item.turma_id === selectedSchedule.turma_id)
+          : null
+        const referenceLevel = selectedTurma?.nivel_referencia
+        const studentLevel = conversationLevel || writingLevel || comprehensionLevel
+        if (referenceLevel && referenceLevel.toUpperCase() !== studentLevel.toUpperCase()) {
+          setError(`O horário selecionado está definido para o nível ${referenceLevel}. O resultado do seu teste foi ${studentLevel}. Escolha outro horário compatível.`)
+          setStep(3)
+          return
+        }
+      }
+
       setStep(5)
       return
     }
 
-    if (step === 7) {
+    if (step === 5) {
       if (!validatePersonalData()) return
       setStep(6)
-      return
-    }
-
-    if (step === 6) {
-      if (!contractAccepted || contractSignatureStatus !== 'signed') {
-        setError('O contrato precisa ser aceito e assinado antes da finalização.')
-        return
-      }
-      setLoadingSchedules(true)
-      const reserved = await reserveSelectedSchedules()
-      if (!reserved) {
-        setLoadingSchedules(false)
-        return
-      }
-      const confirmed = await verifyScheduleAgain()
-      setLoadingSchedules(false)
-      if (!confirmed) return
-      setStep(7)
     }
   }
 
@@ -1009,6 +1039,7 @@ export default function Matricula() {
       status_formacao: horario.status_formacao ?? null,
       tipo_valor: horario.tipo_valor ?? null,
       professor_id: horario.professor_id ?? null,
+      nivel_referencia: horario.nivel_referencia ?? null,
     }
 
     const next = [...selectedSchedules, schedule]
@@ -1028,52 +1059,59 @@ export default function Matricula() {
       return false
     }
 
-    const reservedSchedules: SelectedSchedule[] = []
-
-    for (const current of selectedSchedules) {
-      const { data, error: selectionError } = await supabase.rpc('selecionar_horario_matricula_publico', {
-        p_horario_id: current.id,
-        p_idioma: language,
-        p_modalidade: modalidade,
-        p_aulas_semana: aulasSemana,
-        p_turma_id: current.turma_id ?? null,
-        p_reserva_token: reservaToken,
-        p_nome: name.trim(),
-        p_email: email.trim().toLowerCase(),
-      })
-
-      if (selectionError || !data) {
-        const message = selectionError?.message || 'Este horário acabou de ser preenchido.'
-        setError(message.toLowerCase().includes('preenchido') || message.toLowerCase().includes('completa')
-          ? 'Este horário acabou de ser preenchido. Encontramos novas opções para você.'
-          : message)
-        await loadSchedules(language)
-        setSelectedSchedule(null)
-        setSelectedSchedules([])
-        return false
-      }
-
-      reservedSchedules.push({
-        id: data.id,
-        date: getDateForWeekday(Number(data.dia_semana)),
-        weekday: Number(data.dia_semana),
-        hora_inicio: data.hora_inicio,
-        hora_fim: data.hora_fim,
-        meet_url: data.meet_url ?? null,
-        meet_space_name: data.meet_space_name ?? null,
-        turma_id: data.turma_id ?? null,
-        participante_id: data.participante_id ?? null,
-        valor_mensal: data.valor_mensal != null ? Number(data.valor_mensal) : null,
-        participantes: data.participantes != null ? Number(data.participantes) : null,
-        capacidade: data.capacidade != null ? Number(data.capacidade) : null,
-        status_formacao: data.status_formacao ?? null,
-        tipo_valor: data.tipo_valor ?? null,
-        professor_id: data.professor_id ?? null,
-      })
+    const turmaId = selectedSchedules[0]?.turma_id
+    if (!turmaId || selectedSchedules.some((item) => item.turma_id !== turmaId)) {
+      setError('Todos os encontros devem pertencer à mesma turma fixa.')
+      return false
     }
 
-    setSelectedSchedules(reservedSchedules)
-    setSelectedSchedule(reservedSchedules[0] ?? null)
+    const { data, error: selectionError } = await supabase.rpc('reservar_turma_matricula_publico', {
+      p_turma_id: turmaId,
+      p_horario_ids: selectedSchedules.map((item) => item.id),
+      p_idioma: language,
+      p_modalidade: modalidade,
+      p_aulas_semana: aulasSemana,
+      p_nivel_conversacao: conversationLevel,
+      p_nivel_escrita: writingLevel,
+      p_nivel_compreensao: comprehensionLevel,
+      p_reserva_token: reservaToken,
+      p_nome: name.trim(),
+      p_email: email.trim().toLowerCase(),
+    })
+
+    if (selectionError || !data) {
+      const message = selectionError?.message || 'Esta turma acabou de ser preenchida.'
+      setError(message)
+      await loadSchedules(language, true)
+      setSelectedSchedule(null)
+      setSelectedSchedules([])
+      return false
+    }
+
+    const participantId = data.participante_id ?? null
+    const participants = Number(data.participantes ?? 0)
+    const capacity = Number(data.capacidade ?? (modalidade === 'dupla' ? 2 : 6))
+    const value = data.valor_mensal != null ? Number(data.valor_mensal) : null
+
+    setSelectedSchedules((current) => current.map((item) => ({
+      ...item,
+      participante_id: participantId,
+      participantes: participants,
+      capacidade: capacity,
+      valor_mensal: value,
+      status_formacao: data.status_formacao ?? item.status_formacao,
+      tipo_valor: data.tipo_valor ?? item.tipo_valor,
+    })))
+    setSelectedSchedule((current) => current ? {
+      ...current,
+      participante_id: participantId,
+      participantes: participants,
+      capacidade: capacity,
+      valor_mensal: value,
+      status_formacao: data.status_formacao ?? current.status_formacao,
+      tipo_valor: data.tipo_valor ?? current.tipo_valor,
+    } : current)
+
     return true
   }
 
@@ -1134,6 +1172,12 @@ export default function Matricula() {
     setSuccess('')
 
     try {
+      const reserved = await reserveSelectedSchedules()
+      if (!reserved) {
+        setLoading(false)
+        return
+      }
+
       const freshSchedules = await verifyScheduleAgain()
 
       if (!freshSchedules) {
@@ -1263,9 +1307,7 @@ export default function Matricula() {
     }
   }
 
-  const levelTestQuestions = language === 'alemao'
-    ? [
-        { id: 1, text: 'Wie würden Sie sich auf Deutsch vorstellen?', options: ['Ich heiße Anna und komme aus Brasilien.', 'Ich bin Name Anna Brasilien.', 'Anna ich sein Brasilien.', 'Ich heiße sein Anna.'] },
+,
         { id: 2, text: 'Welche Antwort passt? „Wie geht es dir?“', options: ['Danke, gut!', 'Ich bin aus Brasilien.', 'Ich habe zwanzig Jahre.', 'Morgen um acht.'] },
         { id: 3, text: 'Welche frase está correta?', options: ['Ich habe gestern gearbeitet.', 'Ich gestern habe gearbeitet.', 'Gestern ich gearbeitet habe.', 'Ich gearbeitet gestern habe.'] },
         { id: 4, text: 'Qual opção expressa uma hipótese?', options: ['Wenn ich Zeit hätte, würde ich reisen.', 'Ich reise gestern.', 'Ich bin gerade angekommen.', 'Ich werde morgen arbeiten.'] },
@@ -1279,15 +1321,7 @@ export default function Matricula() {
         { id: 5, text: 'Which sentence uses a more advanced structure?', options: ['Although it was raining, we went for a walk.', 'I go home.', 'I study English.', 'This is my book.'] },
       ]
 
-  const calculateLevelTest = () => {
-    const correct = language === 'alemao' ? ['0','0','0','0','0'] : ['0','0','0','0','0']
-    const score = levelTestQuestions.reduce((total, question) => total + (levelTestAnswers[question.id] === correct[question.id - 1] ? 1 : 0), 0)
-    const level = score <= 1 ? 'A1' : score === 2 ? 'A2' : score === 3 ? 'B1' : score === 4 ? 'B2' : 'C1'
-    setLevelTestResult(level)
-    setConversationLevel(level)
-    setWritingLevel(level)
-    setComprehensionLevel(level)
-  }
+
 
   return (
     <div className="enrollment-page">
@@ -1330,12 +1364,12 @@ export default function Matricula() {
           <div className="enrollment-progress">
             {[
               'Plano selecionado',
-              'Nível',
+              'Plano',
+              'Horários',
               'Disponibilidade',
-              'Horário',
+              'Proficiência',
               'Dados pessoais',
               'Contrato',
-              'Pagamento',
             ].map(
               (label, index) => {
                 const number =
@@ -1360,7 +1394,7 @@ export default function Matricula() {
                       {label}
                     </span>
 
-                    {number < 5 && (
+                    {number < 6 && (
                       <div className="enrollment-progress-line" />
                     )}
                   </div>
@@ -1382,22 +1416,19 @@ export default function Matricula() {
                       'Plano selecionado'}
 
                     {step === 2 &&
-                      'Identificação do seu nível'}
+                      'Seleção inteligente de horários'}
 
                     {step === 3 &&
-                      'Quando você pode estudar?'}
+                      'Horários compatíveis com você'}
 
                     {step === 4 &&
-                      'Horários compatíveis com você'}
+                      'Teste de proficiência'}
 
                     {step === 5 &&
                       'Seus dados pessoais'}
 
                     {step === 6 &&
                       'Contrato de matrícula'}
-
-                    {step === 7 &&
-                      'Finalização e pagamento'}
                   </h2>
 
                   <p>
@@ -1405,22 +1436,19 @@ export default function Matricula() {
                       'Confira o plano escolhido na página de planos.'}
 
                     {step === 2 &&
-                      'Informe seu nível ou faça um breve teste de proficiência.'}
+                      'Informe quando você pode estudar e encontre os horários fixos disponíveis.'}
 
                     {step === 3 &&
-                      'Escolha uma única forma de informar sua disponibilidade.'}
+                      'Escolha os encontros compatíveis encontrados pelo sistema.'}
 
                     {step === 4 &&
-                      'Veja primeiro as turmas já formadas e compatíveis com seu nível.'}
+                      'Faça o teste externo, anexe o documento e deixe o sistema analisar seu resultado.'}
 
                     {step === 5 &&
                       'Informe os dados necessários para sua matrícula.'}
 
                     {step === 6 &&
-                      'Leia o contrato e conclua a assinatura eletrônica.'}
-
-                    {step === 7 &&
-                      'Matrícula pronta para a etapa de pagamento.'}
+                      'Leia o contrato e conclua a assinatura eletrônica. Depois, você seguirá para o pagamento.'}
                   </p>
                 </div>
               </div>
@@ -1480,42 +1508,52 @@ export default function Matricula() {
                 </div>
               )}
 
-              {step === 2 && (
-                <div className="level-section">
-                  <div className="selection-heading"><div><h3>Qual é o seu nível?</h3><p>Você pode informar seu nível atual ou fazer um breve teste de proficiência.</p></div></div>
-                  <div className="availability-mode-selector">
-                    <strong>Como deseja identificar seu nível?</strong>
-                    <div className="availability-mode-options">
-                      <button type="button" className={'availability-mode-option ' + (levelMethod === 'informar' ? 'selected' : '')} onClick={() => setLevelMethod('informar')}>
-                        <span>Eu sei meu nível</span><small>Selecione o nível que melhor representa seu conhecimento.</small>
-                      </button>
-                      <button type="button" className={'availability-mode-option ' + (levelMethod === 'teste' ? 'selected' : '')} onClick={() => { setLevelMethod('teste'); setLevelTestStarted(true) }}>
-                        <span>Fazer teste de proficiência</span><small>Teste rápido para estimar seu nível.</small>
-                      </button>
+              {step === 4 && (
+                <div className="proficiency-section">
+                  <div className="selection-heading">
+                    <div>
+                      <h3>Teste de proficiência</h3>
+                      <p>O teste será realizado em uma página externa. Depois, anexe aqui o documento gerado para que o sistema leia e registre seu nível.</p>
                     </div>
                   </div>
-                  {levelMethod === 'informar' && (
-                    <div className="level-fields">
-                      {(['A1','A2','B1','B2','C1','C2'] as const).map((level) => (
-                        <button type="button" key={level} className={'availability-mode-option ' + (conversationLevel === level ? 'selected' : '')} onClick={() => { setConversationLevel(level); setWritingLevel(level); setComprehensionLevel(level) }}>
-                          <span>{level}</span><small>{level === 'A1' ? 'Iniciante' : level === 'A2' ? 'Básico' : level === 'B1' ? 'Intermediário' : level === 'B2' ? 'Intermediário superior' : level === 'C1' ? 'Avançado' : 'Proficiente'}</small>
-                        </button>
-                      ))}
+
+                  <div className="proficiency-card">
+                    <div className="proficiency-card-icon"><FileText size={22} /></div>
+                    <strong>1. Faça o teste</strong>
+                    <p>Abra o teste externo, conclua a avaliação e gere o documento com seu resultado.</p>
+                    {proficiencyTestUrl ? (
+                      <a className="enrollment-secondary-button" href={proficiencyTestUrl} target="_blank" rel="noopener noreferrer">
+                        Abrir teste de proficiência <ExternalLink size={17} />
+                      </a>
+                    ) : (
+                      <div className="enrollment-empty">O link externo ainda não foi configurado.</div>
+                    )}
+                  </div>
+
+                  <div className="proficiency-card">
+                    <div className="proficiency-card-icon"><FileText size={22} /></div>
+                    <strong>2. Anexe o resultado</strong>
+                    <p>Envie o PDF gerado pelo teste. O sistema analisará o documento e identificará A1, A2, B1, B2, C1 ou C2.</p>
+                    <input type="file" accept="application/pdf,.pdf" onChange={(event) => setProficiencyFile(event.target.files?.[0] ?? null)} />
+                    {proficiencyFile && <small>{proficiencyFile.name}</small>}
+                    <button type="button" className="enrollment-primary-button" onClick={() => void processProficiencyDocument()} disabled={!proficiencyFile || proficiencyProcessing || !proficiencyTestUrl}>
+                      {proficiencyProcessing ? 'Analisando documento...' : 'Analisar resultado'}
+                      {!proficiencyProcessing && <ArrowRight size={18} />}
+                    </button>
+                  </div>
+
+                  {proficiencyResult && (
+                    <div className="proficiency-result">
+                      <strong>Resultado identificado</strong>
+                      <span>Nível geral: <b>{proficiencyResult.nivel_geral || '—'}</b></span>
+                      <span>Conversação: <b>{proficiencyResult.nivel_conversacao || '—'}</b></span>
+                      <span>Escrita: <b>{proficiencyResult.nivel_escrita || '—'}</b></span>
+                      <span>Compreensão: <b>{proficiencyResult.nivel_compreensao || '—'}</b></span>
+                      {proficiencyResult.observacoes && <small>{proficiencyResult.observacoes}</small>}
                     </div>
                   )}
-                  {levelMethod === 'teste' && levelTestStarted && (
-                    <div className="level-test">
-                      {levelTestQuestions.map((question) => (
-                        <div className="level-test-question" key={question.id}>
-                          <strong>{question.id}. {question.text}</strong>
-                          <div>{question.options.map((option, index) => <button type="button" key={option} className={levelTestAnswers[question.id] === String(index) ? 'selected' : ''} onClick={() => setLevelTestAnswers((current) => ({ ...current, [question.id]: String(index) }))}>{option}</button>)}</div>
-                        </div>
-                      ))}
-                      <button type="button" className="enrollment-primary-button" onClick={calculateLevelTest} disabled={Object.keys(levelTestAnswers).length !== levelTestQuestions.length}>Calcular meu nível</button>
-                      {levelTestResult && <div className="enrollment-success">Nível estimado: <strong>{levelTestResult}</strong></div>}
-                    </div>
-                  )}
-                  <div className="availability-actions"><button type="button" className="enrollment-primary-button" onClick={nextStep}>Continuar <ArrowRight size={18} /></button></div>
+
+                  <div className="availability-actions"><button type="button" className="enrollment-primary-button" onClick={nextStep} disabled={!proficiencyResult}>Continuar <ArrowRight size={18} /></button></div>
                 </div>
               )}
 
@@ -1594,7 +1632,7 @@ export default function Matricula() {
             </div>
           )}
 
-          {step === 4 && (
+          {step === 3 && (
             <div className="schedule-section">
               <div className="selection-heading">
                 <div>
@@ -1793,319 +1831,6 @@ export default function Matricula() {
                   </div>
                 </div>
               )}
-
-              {step === 7 && (
-                <div className="review-section">
-                  <div className="selection-heading"><div><h3>Finalização e pagamento</h3><p>Confira o resumo e prossiga para o checkout.</p></div></div>
-                  <div className="availability-selection-summary"><strong>Contrato assinado e matrícula pronta para pagamento.</strong><span>Nível: {conversationLevel || 'não informado'}</span><span>Horário principal: {selectedSchedule ? formatTime(selectedSchedule.hora_inicio) + ' - ' + formatTime(selectedSchedule.hora_fim) : 'não selecionado'}</span></div>
-                </div>
-              )}
-
-              {step === 5 && (
-                <div className="enrollment-fields">
-                  <div className="enrollment-field">
-                    <label>
-                      Nome completo *
-                    </label>
-
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(event) =>
-                        setName(
-                          event.target.value,
-                        )
-                      }
-                      placeholder="Seu nome completo"
-                    />
-                  </div>
-
-                  <div className="enrollment-field">
-                    <label>
-                      CPF *
-                    </label>
-
-                    <input
-                      type="text"
-                      value={cpf}
-                      onChange={(event) =>
-                        setCpf(
-                          formatCpf(
-                            event.target.value,
-                          ),
-                        )
-                      }
-                      placeholder="000.000.000-00"
-                      maxLength={14}
-                    />
-                  </div>
-
-                  <div className="enrollment-field">
-                    <label>
-                      E-mail *
-                    </label>
-
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(event) =>
-                        setEmail(
-                          event.target.value,
-                        )
-                      }
-                      placeholder="seu@email.com"
-                    />
-                  </div>
-
-                  <div className="enrollment-field">
-                    <label>
-                      Data de nascimento *
-                    </label>
-
-                    <input
-                      type="date"
-                      value={birthDate}
-                      onChange={(event) =>
-                        setBirthDate(
-                          event.target.value,
-                        )
-                      }
-                    />
-                  </div>
-
-                  <div className="enrollment-field">
-                    <label>
-                      WhatsApp / Telefone *
-                    </label>
-
-                    <input
-                      type="tel"
-                      value={phone}
-                      onChange={(event) =>
-                        setPhone(
-                          formatPhone(
-                            event.target.value,
-                          ),
-                        )
-                      }
-                      placeholder="(00) 00000-0000"
-                    />
-                  </div>
-
-                  <div className="enrollment-field">
-                    <label>
-                      Nome do responsável
-                    </label>
-
-                    <input
-                      type="text"
-                      value={
-                        responsibleName
-                      }
-                      onChange={(event) =>
-                        setResponsibleName(
-                          event.target.value,
-                        )
-                      }
-                      placeholder="Se aplicável"
-                    />
-                  </div>
-
-                  <div className="enrollment-field">
-                    <label>
-                      WhatsApp do responsável
-                    </label>
-
-                    <input
-                      type="tel"
-                      value={
-                        responsiblePhone
-                      }
-                      onChange={(event) =>
-                        setResponsiblePhone(
-                          formatPhone(
-                            event.target.value,
-                          ),
-                        )
-                      }
-                      placeholder="(00) 00000-0000"
-                    />
-                  </div>
-                </div>
-              )}
-          {step === 5 && (
-                <div className="schedule-confirmation">
-                  <div className="selection-heading">
-                    <ShieldCheck
-                      size={24}
-                    />
-
-                    <div>
-                      <h3>
-                        Tudo pronto
-                      </h3>
-
-                      <p>
-                        Confira os dados da sua matrícula antes de prosseguir.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="enrollment-summary-item">
-                    <div>
-                      <span>
-                        Aluno:{' '}
-                      </span>
-
-                      <strong>
-                        {name}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        E-mail: {' '}
-                      </span>
-
-                      <strong>
-                        {email}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        Idioma:{' '}
-                      </span>
-
-                      <strong>
-                        {selectedLanguageLabel}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        {plan?.tipo === 'avulso' ? 'Serviço: ' : 'Plano: '}
-                      </span>
-
-                      <strong>
-                        {plan?.nome ||
-                          'Não selecionado'}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        Tipo: {' '}
-                      </span>
-
-                      <strong>
-                        {plan?.tipo === 'avulso'
-                          ? 'Pagamento único'
-                          : plan
-                            ? getPlanTypeLabel(plan.tipo)
-                            : '—'}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        Horário:{' '}
-                      </span>
-
-                      <strong>
-                        {selectedSchedule
-                          ? `${formatTime(
-                              selectedSchedule.hora_inicio,
-                            )} - ${formatTime(
-                              selectedSchedule.hora_fim,
-                            )}`
-                          : 'Não selecionado'}
-                      </strong>
-                    </div>
-
-                    <div>
-                      <span>
-                        {isCollectivePlan ? 'Investimento atual:' : 'Valor:'}{' '}
-                      </span>
-                      <strong>
-                        {selectedSchedule?.valor_mensal != null
-                          ? formatCurrency(selectedSchedule.valor_mensal) + (isCollectivePlan ? '/mês' : '')
-                          : '—'}
-                      </strong>
-                    </div>
-                    {isCollectivePlan && selectedSchedule && (
-                      <div>
-                        <span>Situação:</span>
-                        <strong>
-                          {selectedSchedule.status_formacao === 'dupla_formada'
-                            ? 'Dupla já formada'
-                            : selectedSchedule.status_formacao === 'grupo_formado'
-                              ? 'Grupo já formado'
-                              : selectedSchedule.status_formacao === 'dupla_em_formacao'
-                                ? 'Nova dupla em formação'
-                                : 'Grupo em formação'}
-                        </strong>
-                      </div>
-                    )}
-                    {isCollectivePlan && selectedSchedule?.tipo_valor === 'coletiva_em_formacao' && (
-                      <div className="collective-formation-note">
-                        <strong>Valor durante a formação</strong>
-                        <p>
-                          Este valor corresponde ao valor individual de 1 aula por semana com 10% de desconto enquanto a turma estiver em formação.
-                          Quando a turma atingir sua capacidade, o valor regular da modalidade será aplicado somente a partir do próximo ciclo de cobrança, sem cobrança retroativa.
-                        </p>
-                      </div>
-                    )}
-
-                    {plan?.tipo ===
-                      'anual' &&
-                      plan.parcelas &&
-                      plan.valor_parcela && (
-                        <div>
-                          <span>
-                            Parcelamento
-                          </span>
-
-                          <strong>
-                            {plan.parcelas}x de{' '}
-                            {formatCurrency(
-                              plan.valor_parcela,
-                            )}
-                          </strong>
-                        </div>
-                      )}
-                  </div>
-
-                  {selectedSchedules.length > 0 && (
-                    <div className="schedule-selected-summary">
-                      <strong>Horários ({selectedSchedules.length}/{requiredWeeklyLessons})</strong>
-                      <div>
-                        {selectedSchedules
-                          .slice()
-                          .sort((a, b) => a.weekday - b.weekday || a.hora_inicio.localeCompare(b.hora_inicio))
-                          .map((schedule) => (
-                            <span key={schedule.id}>
-                              {WEEKDAYS.find((day) => day.value === schedule.weekday)?.label} • {formatTime(schedule.hora_inicio)} - {formatTime(schedule.hora_fim)} • {formatDate(schedule.date)}
-                            </span>
-                          ))}
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="enrollment-security">
-                    <ShieldCheck
-                      size={20}
-                    />
-
-                    <p>
-                      {plan?.tipo === 'avulso'
-                        ? <>Seu agendamento será criado como <strong>pendente</strong>. A aula diagnóstica será confirmada após o pagamento.</>
-                        : <>Sua matrícula será criada como <strong>pendente</strong>. O cadastro do aluno somente será criado após a confirmação do pagamento.</>}
-                    </p>
-                  </div>
-                </div>
-              )}
-
               <div className="enrollment-actions">
                 {step > 1 && (
                   <button type="button" className="enrollment-back-button" onClick={previousStep} disabled={loading}>
@@ -2114,7 +1839,7 @@ export default function Matricula() {
                   </button>
                 )}
                 <div />
-                {step < 5 ? (
+                {step < 6 ? (
                   <button type="button" className="enrollment-submit" onClick={nextStep} disabled={loading || (step === 1 && !plan)}>
                     Continuar
                     <ArrowRight size={18} />
