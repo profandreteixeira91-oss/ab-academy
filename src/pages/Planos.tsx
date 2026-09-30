@@ -25,8 +25,6 @@ type Plano = {
 }
 
 const ordemTipos: Plano['tipo'][] = ['mensal', 'anual', 'personalizado', 'intensivo']
-const DESCONTO_FORMACAO_COLETIVA = 0.10
-
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
     style: 'currency',
@@ -83,6 +81,27 @@ const NIVEIS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
 function formatTime(value: string) { return value.slice(0, 5) }
 function getWeekdayLabel(value: number) { return WEEKDAYS.find((day) => day.value === value)?.short ?? '—' }
 
+function buildScheduleCombinations(candidatos: HorarioColetivo[], frequencia: number) {
+  const resultado: HorarioColetivo[][] = []
+  function visit(start: number, atual: HorarioColetivo[]) {
+    if (atual.length === frequencia) {
+      resultado.push([...atual])
+      return
+    }
+    for (let index = start; index < candidatos.length; index += 1) {
+      const candidato = candidatos[index]
+      if (atual.some((item) => item.dia_semana === candidato.dia_semana)) continue
+      if (atual.length > 0) {
+        const referencia = atual[0]
+        if (referencia.professor_id !== candidato.professor_id || referencia.hora_inicio !== candidato.hora_inicio || referencia.hora_fim !== candidato.hora_fim) continue
+      }
+      visit(index + 1, [...atual, candidato])
+    }
+  }
+  visit(0, [])
+  return resultado
+}
+
 function ModalidadeCard({
   modalidade, idioma, planos, horarios, nivel,
 }: {
@@ -97,6 +116,13 @@ function ModalidadeCard({
     .sort((a, b) => (a.aulas_semana ?? 0) - (b.aulas_semana ?? 0))
 
   const filtrados = nivel ? horarios.filter((horario) => horario.nivel_referencia === nivel) : horarios
+
+  const opcoes = planosColetivos.flatMap((plano) =>
+    buildScheduleCombinations(
+      filtrados.filter((horario) => horario.disponivel),
+      plano.aulas_semana ?? 1,
+    ).map((horariosDaOpcao) => ({ plano, horariosDaOpcao })),
+  )
 
   return (
     <article className={'planos-detail-card planos-detail-card--' + modalidade}>
@@ -114,32 +140,16 @@ function ModalidadeCard({
         </div>
 
         <div className="planos-frequency-list">
-          {planosColetivos.flatMap((plano) => {
+          {opcoes.map(({ plano, horariosDaOpcao }) => {
             const frequencia = plano.aulas_semana ?? 1
-            const candidatos = filtrados.filter((horario) => horario.disponivel)
-            const combinacoes: HorarioColetivo[][] = []
-
-            if (frequencia === 1) {
-              candidatos.forEach((horario) => combinacoes.push([horario]))
-            } else {
-              for (let i = 0; i < candidatos.length; i += 1) {
-                for (let j = i + 1; j < candidatos.length; j += 1) {
-                  const a = candidatos[i], b = candidatos[j]
-                  if (a.professor_id === b.professor_id && a.hora_inicio === b.hora_inicio && a.hora_fim === b.hora_fim && a.dia_semana !== b.dia_semana) {
-                    combinacoes.push([a, b])
-                  }
-                }
-              }
-            }
-
-            return combinacoes.map((opcao) => (
-              <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id + ':' + opcao.map((item) => item.id).join('-')}>
+            return (
+              <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')}>
                 <div className="planos-frequency-heading">
                   <strong>{frequencia}x por semana</strong>
                   <span>{formatCurrency(Number(plano.preco))}<small>/aluno/mês</small></span>
                 </div>
                 <div className="planos-schedule-list">
-                  {opcao.map((horario) => (
+                  {horariosDaOpcao.map((horario) => (
                     <div className="planos-schedule-row" key={horario.id}>
                       <strong>{getWeekdayLabel(horario.dia_semana)}</strong>
                       <span>{formatTime(horario.hora_inicio)}–{formatTime(horario.hora_fim)}</span>
@@ -147,18 +157,18 @@ function ModalidadeCard({
                   ))}
                 </div>
                 <p>
-                  {opcao[0]?.professor?.nome_completo ? 'Professor: ' + opcao[0].professor.nome_completo : 'Professor a confirmar'}
-                  {' · '}{nivel || opcao[0]?.nivel_referencia || 'Nível a confirmar'}
+                  {horariosDaOpcao[0]?.professor?.nome_completo ? 'Professor: ' + horariosDaOpcao[0].professor.nome_completo : 'Professor a confirmar'}
+                  {' · '}{nivel || horariosDaOpcao[0]?.nivel_referencia || 'Nível a confirmar'}
                 </p>
-                <a href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(opcao[0].id)} className="btn btn-outline planos-collective-cta">
+                <a href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id)} className="btn btn-outline planos-collective-cta">
                   Escolher este horário <ArrowRight size={16} />
                 </a>
               </div>
-            ))
+            )
           })}
 
           {planosColetivos.length === 0 && <div className="planos-empty-collective">Nenhum plano coletivo ativo foi cadastrado para esta modalidade e idioma.</div>}
-          {planosColetivos.length > 0 && filtrados.length === 0 && <div className="planos-empty-collective">Nenhum horário disponível foi configurado para este filtro no momento.</div>}
+          {planosColetivos.length > 0 && opcoes.length === 0 && <div className="planos-empty-collective">Nenhum horário disponível foi configurado para este filtro no momento.</div>}
         </div>
       </div>
 
@@ -399,7 +409,7 @@ function Planos() {
                     </button>
                   ))}
                 </div>
-                {modalidadeSelecionada !== 'individual' && <p className="planos-modality-note">{modalidadeSelecionada === 'dupla' ? 'A dupla tem preço regular quando já está formada. Se você iniciar uma nova dupla, paga temporariamente o valor individual de 1 aula por semana com 10% de desconto.' : 'O grupo/trio tem preço regular quando já está formado. Se você iniciar uma nova turma, paga temporariamente o valor individual de 1 aula por semana com 10% de desconto.'}</p>}
+                {modalidadeSelecionada !== 'individual' && <p className="planos-modality-note">Escolha a modalidade, o idioma e o nível para visualizar os horários coletivos disponíveis e os valores atuais cadastrados pelo Admin.</p>}
                 <p className="planos-language-switch-label">Selecione o curso desejado</p>
 
                 <div className="planos-language-switch-buttons" role="tablist" aria-label="Selecione o curso">
