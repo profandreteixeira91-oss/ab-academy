@@ -341,45 +341,15 @@ export default function Checkout({
          * neste momento.
          */
 
-        const {
-          data,
-          error: pagamentoError,
-        } =
-          await supabase
-            .from('pagamentos')
-            .select(`
-              id,
-              user_id,
-              idioma,
-              tipo_plano,
-              valor,
-              status,
-              matricula_id,
-              plano_id,
-              dados_matricula
-            `)
-            .eq(
-              'id',
-              pagamentoId,
-            )
-            .eq(
-              'user_id',
-              user.id,
-            )
-            .single()
+        const { data: pagamentoRows, error: pagamentoError } = await supabase.rpc('obter_pagamento_checkout', {
+          p_pagamento_id: pagamentoId,
+        })
 
-        if (
-          pagamentoError ||
-          !data
-        ) {
-          console.error(
-            'Erro ao carregar pagamento:',
-            pagamentoError,
-          )
+        const data = Array.isArray(pagamentoRows) ? pagamentoRows[0] : pagamentoRows
 
-          throw new Error(
-            'Não foi possível carregar a intenção de pagamento.',
-          )
+        if (pagamentoError || !data) {
+          console.error('Erro ao carregar pagamento:', pagamentoError)
+          throw new Error('Não foi possível carregar a intenção de pagamento.')
         }
 
         /*
