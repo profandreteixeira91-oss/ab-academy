@@ -2855,7 +2855,7 @@ function Aluno() {
         await loadStudentFinance(user.id)
       } else {
         setPaymentStatus('aguardando')
-        pollPaymentStatus(pagamentoId)
+        pollPaymentStatus(pagamentoId, paymentEntry.id)
       }
     } catch (error) {
       console.error('Erro ao processar pagamento:', error)
