@@ -1406,13 +1406,33 @@ Deno.serve(
             pagamento.plano_id,
           )
 
-        valor =
-          Number(
-            plano.preco,
-          )
+        if (pagamento.turma_id && (plano.modalidade === 'dupla' || plano.modalidade === 'grupo')) {
+          const { data: turma, error: turmaError } = await supabaseAdmin
+            .from('turmas')
+            .select('id,idioma,modalidade,aulas_semana')
+            .eq('id', pagamento.turma_id)
+            .maybeSingle()
 
-        planoNome =
-          plano.nome
+          const { count: participantesCount } = await supabaseAdmin
+            .from('turma_participantes')
+            .select('id', { count: 'exact', head: true })
+            .eq('turma_id', pagamento.turma_id)
+            .in('status', ['convidado','confirmado'])
+
+          if (turmaError || !turma) throw new Error('Turma coletiva não encontrada.')
+          const { data: valorColetivo, error: valorError } = await supabaseAdmin.rpc('preco_coletivo', {
+            p_idioma: turma.idioma,
+            p_modalidade: turma.modalidade,
+            p_aulas_semana: turma.aulas_semana,
+            p_participantes: participantesCount ?? 1,
+          })
+          if (valorError || valorColetivo == null) throw new Error('Não foi possível calcular o valor da turma.')
+          valor = Number(valorColetivo)
+        } else {
+          valor = Number(plano.preco)
+        }
+
+        planoNome = plano.nome
       } else {
         const dados =
           pagamento.dados_matricula
