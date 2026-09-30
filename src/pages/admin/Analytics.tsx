@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 
 import { supabase } from '../../lib/supabase'
+import '../../styles/admin/Analytics.css'
 
 type RangeKey = '7d' | '30d' | '90d' | '365d'
 
@@ -46,6 +47,18 @@ type ConversionSummary = {
   lead_to_enrollment: number
   funnel: { stage: string; total: number }[]
   sources: { source: string; leads: number; enrolled: number }[]
+}
+
+type ActiveVisitor = {
+  session_id: string
+  path: string
+  page_title: string | null
+  referrer_domain: string | null
+  device_type: string | null
+  browser: string | null
+  os: string | null
+  first_seen_at: string
+  last_seen_at: string
 }
 
 type AnalyticsSummary = {
@@ -123,6 +136,20 @@ export default function Analytics() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [previousVisits, setPreviousVisits] = useState<number | null>(null)
+  const [activeVisitors, setActiveVisitors] = useState<ActiveVisitor[]>([])
+  const [activeVisitorsLoading, setActiveVisitorsLoading] = useState(true)
+
+  const loadActiveVisitors = async () => {
+    const cutoff = new Date(Date.now() - 60_000).toISOString()
+    const { data, error } = await supabase
+      .from('site_active_visitors')
+      .select('session_id,path,page_title,referrer_domain,device_type,browser,os,first_seen_at,last_seen_at')
+      .gte('last_seen_at', cutoff)
+      .order('last_seen_at', { ascending: false })
+
+    if (!error) setActiveVisitors((data || []) as ActiveVisitor[])
+    setActiveVisitorsLoading(false)
+  }
 
   const load = async () => {
     setLoading(true)
@@ -176,6 +203,30 @@ export default function Analytics() {
     void load()
   }, [range])
 
+  useEffect(() => {
+    void loadActiveVisitors()
+
+    const interval = window.setInterval(() => {
+      void loadActiveVisitors()
+    }, 15000)
+
+    const channel = supabase
+      .channel('admin-active-visitors')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'site_active_visitors',
+      }, () => {
+        void loadActiveVisitors()
+      })
+      .subscribe()
+
+    return () => {
+      window.clearInterval(interval)
+      void supabase.removeChannel(channel)
+    }
+  }, [])
+
   const variation = useMemo(() => {
     if (previousVisits === null || previousVisits === 0) return null
     return ((summary.visits - previousVisits) / previousVisits) * 100
@@ -222,6 +273,43 @@ export default function Analytics() {
       </div>
 
       {error && <div className="admin-analytics-error">{error}</div>}
+
+      <section className="admin-analytics-live">
+        <div className="admin-analytics-live-header">
+          <div>
+            <span className="admin-section-eyebrow">TEMPO REAL</span>
+            <h3>Visitantes no site agora</h3>
+            <p>Visitantes ativos nos últimos 60 segundos, atualizados automaticamente.</p>
+          </div>
+          <div className="admin-analytics-live-count">
+            <i />
+            <strong>{activeVisitorsLoading ? '—' : formatNumber(activeVisitors.length)}</strong>
+            <span>online</span>
+          </div>
+        </div>
+
+        <div className="admin-analytics-live-list">
+          {activeVisitors.length === 0 && !activeVisitorsLoading ? (
+            <div className="admin-analytics-live-empty">Nenhum visitante ativo neste momento.</div>
+          ) : (
+            activeVisitors.map((visitor) => (
+              <article className="admin-analytics-live-row" key={visitor.session_id}>
+                <div className="admin-analytics-live-device">
+                  {visitor.device_type === 'mobile' ? <Smartphone size={17} /> : visitor.device_type === 'tablet' ? <Tablet size={17} /> : <Monitor size={17} />}
+                </div>
+                <div className="admin-analytics-live-main">
+                  <strong>{formatPath(visitor.path)}</strong>
+                  <span>{visitor.page_title || 'Página pública'}</span>
+                </div>
+                <div className="admin-analytics-live-meta">
+                  <span>{visitor.referrer_domain ? formatSource(visitor.referrer_domain) : 'Acesso direto'}</span>
+                  <small>{visitor.device_type === 'mobile' ? 'Celular' : visitor.device_type === 'tablet' ? 'Tablet' : 'Desktop'} · {visitor.browser || 'Navegador'}</small>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
+      </section>
 
       <div className="admin-analytics-kpis">
         <article className="admin-analytics-kpi">
