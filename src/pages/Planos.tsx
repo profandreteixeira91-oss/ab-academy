@@ -118,10 +118,12 @@ function ModalidadeCard({
     .sort((a, b) => (a.aulas_semana ?? 0) - (b.aulas_semana ?? 0))
 
   const filtrados = nivel ? horarios.filter((horario) => horario.nivel_referencia === nivel) : horarios
+  const horariosDisponiveis = filtrados.filter((horario) => horario.disponivel)
+  const horariosIndisponiveis = filtrados.filter((horario) => !horario.disponivel)
 
   const opcoes = planosColetivos.flatMap((plano) =>
     buildScheduleCombinations(
-      filtrados.filter((horario) => horario.disponivel),
+      horariosDisponiveis,
       plano.aulas_semana ?? 1,
     ).map((horariosDaOpcao) => ({ plano, horariosDaOpcao })),
   )
@@ -174,6 +176,33 @@ function ModalidadeCard({
               </div>
             )
           })}
+
+          {horariosIndisponiveis.length > 0 && (
+            <div className="planos-unavailable-schedules">
+              <div className="planos-unavailable-schedules-heading">
+                <strong>Horários cadastrados, mas temporariamente indisponíveis</strong>
+                <span>O horário permanece visível porque foi configurado pelo administrador, mas não pode ser reservado enquanto houver conflito ou outra indisponibilidade.</span>
+              </div>
+              {horariosIndisponiveis.map((horario) => (
+                <div className="planos-frequency-card planos-frequency-card--unavailable" key={'indisponivel:' + horario.id}>
+                  <div className="planos-frequency-heading">
+                    <strong>{getWeekdayLabel(horario.dia_semana)} · {formatTime(horario.hora_inicio)}–{formatTime(horario.hora_fim)}</strong>
+                    <span>Indisponível</span>
+                  </div>
+                  <div className="planos-schedule-list">
+                    <div className="planos-schedule-row">
+                      <strong>Nível</strong>
+                      <span>{NIVEL_LABELS[(horario.nivel_referencia || nivel || '') as keyof typeof NIVEL_LABELS] || horario.nivel_referencia || nivel || 'A confirmar'}</span>
+                    </div>
+                  </div>
+                  <p>
+                    {horario.professor_nome ? 'Professor: ' + horario.professor_nome + ' · ' : ''}
+                    Este horário não pode ser reservado neste momento.
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
 
           {planosColetivos.length === 0 && <div className="planos-empty-collective">Nenhum plano coletivo ativo foi cadastrado para esta modalidade e idioma.</div>}
           {planosColetivos.length > 0 && opcoes.length === 0 && <div className="planos-empty-collective">Nenhum horário disponível foi configurado para este filtro no momento.</div>}
