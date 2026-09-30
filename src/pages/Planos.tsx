@@ -6,20 +6,6 @@ import logo from '../assets/logo_abacademy.png'
 import usaFlag from '../assets/flag-usa.svg'
 import germanyFlag from '../assets/flag-germany.svg'
 
-type ModalidadeFrequencia = {
-  id: string
-  idioma: 'ingles' | 'alemao'
-  modalidade: 'dupla' | 'grupo'
-  aulas_semana: number
-  preco_mensal: number | null
-}
-
-type ModalidadeFaixaPreco = {
-  frequencia_id: string
-  quantidade_participantes: number
-  preco_mensal: number
-}
-
 type Plano = {
   id: string
   idioma: 'ingles' | 'alemao'
@@ -281,8 +267,6 @@ function PlanoCard({ plano, horarioId }: { plano: Plano; horarioId?: string | nu
 
 function Planos() {
   const [planos, setPlanos] = useState<Plano[]>([])
-  const [modalidadeFrequencias, setModalidadeFrequencias] = useState<ModalidadeFrequencia[]>([])
-  const [modalidadeFaixas, setModalidadeFaixas] = useState<ModalidadeFaixaPreco[]>([])
   const [modalidadeSelecionada, setModalidadeSelecionada] = useState<'individual' | 'dupla' | 'grupo'>(() => {
     const modalidade = new URLSearchParams(window.location.search).get('modalidade')
     return modalidade === 'dupla' || modalidade === 'grupo' ? modalidade : 'individual'
@@ -303,50 +287,21 @@ function Planos() {
       setLoading(true)
       setError('')
 
-      const [planosResult, frequenciasResult] = await Promise.all([
-        supabase
-          .from('planos')
-          .select('id, idioma, tipo, nome, descricao, beneficios, preco, parcelas, valor_parcela, ativo, modalidade, min_alunos, max_alunos, created_at')
-          .eq('ativo', true),
-        supabase
-          .from('modalidade_frequencias')
-          .select('id, idioma, modalidade, aulas_semana, preco_mensal')
-          .eq('ativo', true),
-      ])
+      const { data, error: planosError } = await supabase
+        .from('planos')
+        .select('id, idioma, tipo, nome, descricao, beneficios, preco, parcelas, valor_parcela, ativo, modalidade, min_alunos, max_alunos, created_at, aulas_semana')
+        .eq('ativo', true)
 
       if (!active) return
 
-      if (planosResult.error || frequenciasResult.error) {
-        console.error('Erro ao carregar ofertas:', planosResult.error || frequenciasResult.error)
+      if (planosError) {
+        console.error('Erro ao carregar planos:', planosError)
         setError('Não foi possível carregar os planos no momento.')
         setLoading(false)
         return
       }
 
-      const frequencias = (frequenciasResult.data || []) as ModalidadeFrequencia[]
-      const grupoFrequenciaIds = frequencias.filter((item) => item.modalidade === 'grupo').map((item) => item.id)
-      let faixas: ModalidadeFaixaPreco[] = []
-
-      if (grupoFrequenciaIds.length > 0) {
-        const { data: faixaData, error: faixaError } = await supabase
-          .from('modalidade_frequencia_precos')
-          .select('frequencia_id, quantidade_participantes, preco_mensal')
-          .eq('ativo', true)
-          .in('frequencia_id', grupoFrequenciaIds)
-
-        if (faixaError) {
-          console.error('Erro ao carregar preços de grupo:', faixaError)
-          setError('Não foi possível carregar os preços de grupo no momento.')
-          setLoading(false)
-          return
-        }
-
-        faixas = (faixaData || []) as ModalidadeFaixaPreco[]
-      }
-
-      setPlanos((planosResult.data || []) as Plano[])
-      setModalidadeFrequencias(frequencias)
-      setModalidadeFaixas(faixas)
+      setPlanos((data || []) as Plano[])
       setLoading(false)
     }
 
@@ -486,11 +441,11 @@ function Planos() {
                       className={'planos-language-switch-button' + (modalidadeSelecionada === modalidade ? ' active' : '')}
                       onClick={() => setModalidadeSelecionada(modalidade)}>
                       <h2>{modalidade === 'individual' ? 'Individual' : modalidade === 'dupla' ? 'Dupla' : 'Grupo'}</h2>
-                      <span>{modalidade === 'individual' ? 'Planos e frequências' : modalidade === 'dupla' ? 'A partir de 1x/semana' : 'A partir de 2x/semana'}</span>
+                      <span>{modalidade === 'individual' ? 'Planos e frequências' : modalidade === 'dupla' ? 'Preço regular + formação' : 'Preço regular + formação'}</span>
                     </button>
                   ))}
                 </div>
-                {modalidadeSelecionada !== 'individual' && <p className="planos-modality-note">{modalidadeSelecionada === 'dupla' ? 'As aulas em dupla começam a partir de uma aula por semana. O investimento é definido conforme idioma e frequência.' : 'As aulas em grupo começam a partir de duas aulas por semana. O investimento é definido conforme idioma, frequência e tamanho do grupo.'}</p>}
+                {modalidadeSelecionada !== 'individual' && <p className="planos-modality-note">{modalidadeSelecionada === 'dupla' ? 'A dupla tem preço regular quando já está formada. Se você iniciar uma nova dupla, paga temporariamente o valor individual de 1 aula por semana com 10% de desconto.' : 'O grupo/trio tem preço regular quando já está formado. Se você iniciar uma nova turma, paga temporariamente o valor individual de 1 aula por semana com 10% de desconto.'}</p>}
                 <p className="planos-language-switch-label">Selecione o curso desejado</p>
 
                 <div className="planos-language-switch-buttons" role="tablist" aria-label="Selecione o curso">
@@ -533,8 +488,7 @@ function Planos() {
                   <ModalidadeCard
                     modalidade={modalidadeSelecionada}
                     idioma={idiomaSelecionado}
-                    frequencias={modalidadeFrequencias.filter((frequencia) => frequencia.idioma === idiomaSelecionado)}
-                    faixas={modalidadeFaixas}
+                    planos={planos}
                   />
                 </div></div>
               )}
