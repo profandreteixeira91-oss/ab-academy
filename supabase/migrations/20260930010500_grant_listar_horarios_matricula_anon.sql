@@ -1,0 +1,1 @@
+grant execute on function public.listar_horarios_matricula(text,text,integer) to anon;
