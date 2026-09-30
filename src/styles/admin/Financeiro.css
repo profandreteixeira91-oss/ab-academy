@@ -1110,3 +1110,40 @@
   .financeiro-asaas-actions { justify-content: stretch; }
   .financeiro-asaas-actions button { flex: 1; }
 }
+
+
+.financeiro-transfer-confirmation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.financeiro-transfer-confirmation-grid > div {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #e5eaf2;
+  border-radius: 12px;
+  background: #f8fafc;
+}
+
+.financeiro-transfer-confirmation-grid span {
+  display: block;
+  margin-bottom: 5px;
+  color: #64748b;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.financeiro-transfer-confirmation-grid strong {
+  display: block;
+  color: #0f172a;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .financeiro-transfer-confirmation-grid {
+    grid-template-columns: 1fr;
+  }
+}
