@@ -74,71 +74,161 @@ function getPlanPrice(plano: Plano) {
 function ModalidadeCard({
   modalidade,
   idioma,
-  frequencias,
-  faixas,
+  planos,
 }: {
   modalidade: 'dupla' | 'grupo'
   idioma: 'ingles' | 'alemao'
-  frequencias: ModalidadeFrequencia[]
-  faixas: ModalidadeFaixaPreco[]
+  planos: Plano[]
 }) {
-  const dupla = modalidade === 'dupla'
-  const frequenciasVisiveis = frequencias
-    .filter((frequencia) => frequencia.modalidade === modalidade && (dupla ? frequencia.preco_mensal !== null : true))
-    .sort((a, b) => a.aulas_semana - b.aulas_semana)
+  const individual1x = planos
+    .filter(
+      (plano) =>
+        plano.idioma === idioma &&
+        plano.modalidade === 'individual' &&
+        plano.tipo === 'mensal' &&
+        plano.aulas_semana === 1,
+    )
+    .sort((a, b) => Number(a.preco) - Number(b.preco))[0]
+
+  const valorFormacao = individual1x
+    ? Number((Number(individual1x.preco) * 0.9).toFixed(2))
+    : null
+
+  const regulares = planos
+    .filter(
+      (plano) =>
+        plano.idioma === idioma &&
+        plano.modalidade === modalidade &&
+        plano.tipo === 'mensal' &&
+        (modalidade === 'dupla' || (plano.aulas_semana ?? 0) >= 2),
+    )
+    .sort((a, b) => (a.aulas_semana ?? 0) - (b.aulas_semana ?? 0))
+
+  const capacidadeTexto = modalidade === 'dupla' ? '2 participantes' : '3 participantes'
 
   return (
     <article className={'planos-detail-card planos-detail-card--' + modalidade}>
-      <span className="planos-detail-tag">{dupla ? 'A partir de 1x por semana' : 'A partir de 2x por semana'}</span>
-      <h3>{dupla ? 'Aulas em dupla' : 'Aulas em grupo'}</h3>
+      <span className="planos-detail-tag">
+        {modalidade === 'dupla' ? '2 participantes' : '3 participantes'}
+      </span>
+
+      <h3>{modalidade === 'dupla' ? 'Aulas em dupla' : 'Aulas em grupo / trio'}</h3>
+
       <p className="planos-detail-description">
-        {dupla
-          ? 'Estude com outra pessoa, em uma turma real de 2 participantes, com acompanhamento do professor e valor individual por participante.'
-          : 'Monte uma turma real com 3 a 6 participantes. Quanto maior a turma, menor o investimento individual. A modalidade não funciona como desconto para matrícula individual.'}
+        {modalidade === 'dupla'
+          ? 'Escolha entre entrar em uma dupla já formada ou iniciar uma nova dupla no horário que deseja.'
+          : 'Entre em um grupo/trio já formado ou inicie uma nova turma. O preço de formação é temporário e não representa o valor definitivo da modalidade.'}
       </p>
 
-      <div className="planos-frequency-list">
-        {frequenciasVisiveis.map((frequencia) => {
-          const preco = frequencia.preco_mensal
-          const precosGrupo = faixas
-            .filter((faixa) => faixa.frequencia_id === frequencia.id)
-            .sort((a, b) => a.quantidade_participantes - b.quantidade_participantes)
+      <div className="planos-collective-section">
+        <div className="planos-collective-section-heading">
+          <span className="planos-collective-kicker">Modalidade formada</span>
+          <strong>{modalidade === 'dupla' ? 'Dupla já formada' : 'Grupo já formado'}</strong>
+          <p>
+            {modalidade === 'dupla'
+              ? 'Valor regular por aluno para entrar em uma dupla que já possui outro participante.'
+              : 'Valor regular por aluno para entrar em um grupo/trio já formado, enquanto houver vaga.'}
+          </p>
+        </div>
 
-          return (
-            <div className="planos-frequency-card" key={frequencia.id}>
-              <div className="planos-frequency-heading">
-                <strong>{frequencia.aulas_semana}x por semana</strong>
-                {dupla && preco !== null && <span>{formatCurrency(Number(preco))}<small>/aluno/mês</small></span>}
-              </div>
-              {dupla ? (
-                <p>Valor por aluno, com 2 participantes na turma.</p>
-              ) : (
-                <div className="planos-group-prices">
-                  {precosGrupo.map((faixa) => (
-                    <div key={faixa.quantidade_participantes} className="planos-group-price-row">
-                      <span>{faixa.quantidade_participantes} participantes</span>
-                      <strong>{formatCurrency(Number(faixa.preco_mensal))}<small>/aluno/mês</small></strong>
-                    </div>
-                  ))}
+        <div className="planos-frequency-list">
+          {regulares.length > 0 ? (
+            regulares.map((plano) => (
+              <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id}>
+                <div className="planos-frequency-heading">
+                  <strong>{plano.aulas_semana ?? 1}x por semana</strong>
+                  <span>
+                    {formatCurrency(Number(plano.preco))}
+                    <small>/aluno/mês</small>
+                  </span>
                 </div>
-              )}
-            </div>
-          )
-        })}
+                <p>
+                  {modalidade === 'dupla'
+                    ? 'Dupla já formada.'
+                    : `${capacidadeTexto} — valor regular da turma formada.`}
+                </p>
+                <a
+                  href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma}
+                  className="btn btn-outline planos-collective-cta"
+                >
+                  Encontrar meu horário <ArrowRight size={16} />
+                </a>
+              </div>
+            ))
+          ) : (
+            <div className="planos-empty-collective">Nenhum plano regular disponível no momento.</div>
+          )}
+        </div>
       </div>
+
+      <div className="planos-collective-formation">
+        <span className="planos-collective-kicker">Nova turma</span>
+        <h4>{modalidade === 'dupla' ? 'Comece uma nova dupla' : 'Comece um novo grupo'}</h4>
+        <p>
+          {modalidade === 'dupla'
+            ? 'Não encontrou uma dupla no horário que deseja? Você pode iniciar uma nova dupla.'
+            : 'Você pode iniciar uma nova turma no horário que deseja.'}
+        </p>
+
+        <div className="planos-formation-price">
+          <span>Valor durante a formação</span>
+          <strong>
+            {valorFormacao !== null ? formatCurrency(valorFormacao) : 'Consulte'}
+            <small>/mês</small>
+          </strong>
+          {individual1x && (
+            <em>Valor individual de 1 aula por semana com 10% de desconto.</em>
+          )}
+        </div>
+
+        <div className="planos-formation-explanation">
+          <strong>Depois que a turma for formada:</strong>
+          <p>
+            {modalidade === 'dupla'
+              ? 'quando outro aluno entrar, sua dupla estará formada e, a partir do próximo ciclo de cobrança, será aplicado o valor regular da dupla.'
+              : 'quando a turma atingir a quantidade mínima definida, a partir do próximo ciclo de cobrança será aplicado o valor regular do grupo.'}
+          </p>
+        </div>
+
+        <a
+          href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&formacao=1'}
+          className="btn btn-primary planos-detail-cta"
+        >
+          {modalidade === 'dupla' ? 'Começar uma nova dupla' : 'Começar um novo grupo'}
+          <ArrowRight size={17} />
+        </a>
+      </div>
+
+      {individual1x && (
+        <div className="planos-formation-example">
+          <span>Exemplo explicativo</span>
+          <strong>Como funciona o valor de formação</strong>
+          <div className="planos-example-row">
+            <span>Individual 1x/semana</span>
+            <strong>{formatCurrency(Number(individual1x.preco))}</strong>
+          </div>
+          <div className="planos-example-row">
+            <span>10% de desconto</span>
+            <strong>- {formatCurrency(Number(individual1x.preco) * 0.1)}</strong>
+          </div>
+          <div className="planos-example-row planos-example-row--total">
+            <span>Durante a formação</span>
+            <strong>{formatCurrency(valorFormacao ?? 0)}</strong>
+          </div>
+          <p>
+            Este valor é temporário. Ele existe exclusivamente enquanto a turma está sendo formada.
+          </p>
+        </div>
+      )}
 
       <ul className="planos-detail-features">
         <li>Diagnóstico e orientação inicial</li>
         <li>Organização conforme nível e objetivo</li>
         <li>Acompanhamento da AB Academy</li>
       </ul>
-      <a href={'/quero-aprender?modalidade=' + modalidade + '&idioma=' + idioma} className="btn btn-primary planos-detail-cta">
-        {dupla ? 'Quero montar uma dupla' : 'Quero montar meu grupo'} <ArrowRight size={17} />
-      </a>
     </article>
   )
 }
-
 function PlanoCard({ plano, horarioId }: { plano: Plano; horarioId?: string | null }) {
   const price = getPlanPrice(plano)
 
