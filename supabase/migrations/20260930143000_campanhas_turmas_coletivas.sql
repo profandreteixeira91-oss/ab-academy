@@ -43,8 +43,8 @@ with check (
       and t.status not in ('cancelada','encerrada')
       and t.data_inicio is not null
       and t.data_inicio >= current_date
-      and t.modalidade = modalidade
-      and t.idioma = idioma_interesse
+      and t.modalidade = public.leads.modalidade
+      and t.idioma = public.leads.idioma_interesse
   )
 );
 
