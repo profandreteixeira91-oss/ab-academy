@@ -14,7 +14,7 @@ const PUBLIC_PATHS = new Set([
   '/termos-de-servico',
 ])
 
-function getSessionId() {
+export function getAnalyticsSessionId() {
   try {
     const key = 'abacademy_analytics_session'
     const existing = sessionStorage.getItem(key)
@@ -79,7 +79,7 @@ export function trackPublicPageView(path: string, pageTitle: string) {
   const referrer = document.referrer || null
 
   void supabase.from('site_analytics_events').insert({
-    session_id: getSessionId(),
+    session_id: getAnalyticsSessionId(),
     event_type: 'page_view',
     path,
     page_title: pageTitle,
@@ -113,9 +113,9 @@ export type ActiveVisitor = {
 }
 
 export function trackActiveVisitor(path: string, pageTitle: string) {
-  if (!PUBLIC_PATHS.has(path)) return ()
+  if (!PUBLIC_PATHS.has(path)) return
 
-  const sessionId = getSessionId()
+  const sessionId = getAnalyticsSessionId()
   const params = new URLSearchParams(window.location.search)
   const payload = {
     session_id: sessionId,
