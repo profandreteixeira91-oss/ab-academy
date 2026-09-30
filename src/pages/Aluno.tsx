@@ -3934,7 +3934,12 @@ function Aluno() {
                   phone: value ? '' : defaults.phone,
                 }))
               }}
-              onMethodChange={setPaymentMethod}
+              onMethodChange={(value) => {
+                setPaymentMethod(value)
+                if (value === 'pix') {
+                  setRecurringAuthorized(false)
+                }
+              }}
               onCardChange={setPaymentCard}
               onProcess={handleProcessPayment}
               onClose={closePaymentScreen}
