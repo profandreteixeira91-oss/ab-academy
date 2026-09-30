@@ -58,6 +58,7 @@ type HorarioForm = {
 }
 
 type BulkCreateForm = {
+  tipo_horario: 'individual' | 'dupla' | 'grupo'
   idioma: 'ingles' | 'alemao'
   dias: number[]
   hora_inicio: string
@@ -155,6 +156,7 @@ const initialForm: HorarioForm = {
 }
 
 const initialBulkCreateForm: BulkCreateForm = {
+  tipo_horario: 'individual',
   idioma: 'ingles',
   dias: [1],
   hora_inicio: '08:00',
@@ -209,6 +211,9 @@ export default function Agenda() {
 
   const [selectedIds, setSelectedIds] =
     useState<string[]>([])
+
+  const [filterTipo, setFilterTipo] = useState<'' | 'individual' | 'dupla' | 'grupo'>('')
+  const [filterProfessor, setFilterProfessor] = useState('')
 
   /*
    * MODAIS EM MASSA
@@ -355,14 +360,16 @@ export default function Agenda() {
     return horarios
       .filter(
         (horario) =>
-          horario.dia_semana === selectedDay,
+          horario.dia_semana === selectedDay &&
+          (filterTipo === '' || horario.tipo_horario === filterTipo) &&
+          (filterProfessor === '' || horario.professor_id === filterProfessor),
       )
       .sort((a, b) =>
         a.hora_inicio.localeCompare(
           b.hora_inicio,
         ),
       )
-  }, [horarios, selectedDay])
+  }, [horarios, selectedDay, filterTipo, filterProfessor]
 
   /*
    * =======================================================
@@ -534,6 +541,7 @@ export default function Agenda() {
     ignoredIds: string[] = [],
     idioma?: 'ingles' | 'alemao',
     professorId?: string | null,
+    tipoHorario?: 'individual' | 'dupla' | 'grupo',
   ) {
     const startMinutes = timeToMinutes(start)
     const endMinutes = timeToMinutes(end)
@@ -957,6 +965,7 @@ export default function Agenda() {
       }
 
       const newSlots: {
+        tipo_horario: 'individual' | 'dupla' | 'grupo'
         idioma:
           | 'ingles'
           | 'alemao'
@@ -1000,6 +1009,7 @@ export default function Agenda() {
               [],
               bulkCreateForm.idioma,
               bulkCreateForm.professor_id || null,
+              bulkCreateForm.tipo_horario,
             )
 
           if (conflict) {
@@ -1010,6 +1020,7 @@ export default function Agenda() {
             )
           } else {
             newSlots.push({
+              tipo_horario: bulkCreateForm.tipo_horario,
               idioma:
                 bulkCreateForm.idioma,
               dia_semana: day,
@@ -1635,6 +1646,14 @@ export default function Agenda() {
         </div>
       )}
 
+      {/* FILTROS */}
+
+      <div className="agenda-filters">
+        <div className="agenda-form-field"><label>Tipo de horário</label><select value={filterTipo} onChange={(event) => { setFilterTipo(event.target.value as '' | 'individual' | 'dupla' | 'grupo'); clearSelection() }}><option value="">Todos os tipos</option><option value="individual">Individual</option><option value="dupla">Dupla</option><option value="grupo">Grupo</option></select></div>
+        <div className="agenda-form-field"><label>Professor</label><select value={filterProfessor} onChange={(event) => { setFilterProfessor(event.target.value); clearSelection() }}><option value="">Todos os professores</option>{professores.map((professor) => <option key={professor.id} value={professor.id}>{professor.nome_completo}</option>)}</select></div>
+        {(filterTipo || filterProfessor) && <button type="button" className="agenda-secondary-button" onClick={() => { setFilterTipo(''); setFilterProfessor(''); clearSelection() }}>Limpar filtros</button>}
+      </div>
+
       {/* DIAS */}
 
       <div className="agenda-day-selector">
@@ -1648,8 +1667,9 @@ export default function Agenda() {
             const count =
               horarios.filter(
                 (horario) =>
-                  horario.dia_semana ===
-                  dia.value,
+                  horario.dia_semana === dia.value &&
+                  (filterTipo === '' || horario.tipo_horario === filterTipo) &&
+                  (filterProfessor === '' || horario.professor_id === filterProfessor),
               ).length
 
             return (
@@ -2735,6 +2755,8 @@ export default function Agenda() {
             </div>
 
             <div className="agenda-form">
+
+              <div className="agenda-form-field"><label>Tipo de horário</label><select value={bulkCreateForm.tipo_horario} onChange={(event) => setBulkCreateForm((current) => ({ ...current, tipo_horario: event.target.value as 'individual' | 'dupla' | 'grupo' }))}><option value="individual">Individual</option><option value="dupla">Dupla</option><option value="grupo">Grupo</option></select></div>
 
               <div className="agenda-form-field">
 
