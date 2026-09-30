@@ -1572,8 +1572,11 @@ Deno.serve(
       }
 
       if (
-        pagamento.tipo_plano === 'mensalidade' &&
-        pagamento.recorrencia_autorizada
+        pagamento.tipo_plano === 'mensal' ||
+        (
+          pagamento.tipo_plano === 'mensalidade' &&
+          pagamento.recorrencia_autorizada
+        )
       ) {
         const nextDueDate = new Date().toISOString().slice(0, 10)
         const subscription = await asaasRequest('/subscriptions', {
