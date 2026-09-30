@@ -200,7 +200,6 @@ function ModalidadeCard({
       setReserveMessage('Não foi possível registrar sua reserva. Tente novamente.')
     } else {
       setReserveMessage('Sua solicitação foi registrada. A equipe da AB Academy entrará em contato para confirmar a turma.')
-      setReserveTarget(null)
       setReserveName('')
       setReserveEmail('')
       setReservePhone('')
