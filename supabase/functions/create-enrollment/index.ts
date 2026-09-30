@@ -600,6 +600,7 @@ Deno.serve(async (req) => {
 
       if (!plano.ativo) return jsonResponse({ error: 'O plano selecionado não está disponível.' }, 400)
       if (plano.idioma !== body.idioma) return jsonResponse({ error: 'O plano selecionado não corresponde ao idioma escolhido.' }, 400)
+      if (plano.modalidade !== body.modalidade) return jsonResponse({ error: 'A modalidade selecionada não corresponde ao plano.' }, 400)
 
       const isCollective = plano.modalidade === 'dupla' || plano.modalidade === 'grupo'
 
@@ -872,7 +873,7 @@ Deno.serve(async (req) => {
         body.valor_aula,
 
       valor_mensal:
-        body.valor_mensal,
+        body.modalidade !== 'individual' ? valorFinal : body.valor_mensal,
 
       valor_anual:
         body.valor_anual,
