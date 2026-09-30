@@ -248,7 +248,7 @@ export default function Turmas() {
         <button type="button" className="admin-turmas-create-fixed" onClick={() => setFixedOpen((current) => !current)}><Clock3 size={17} /> {fixedOpen ? 'Fechar criação' : 'Criar horário fixo'}</button>
       {fixedOpen && (
         <section className="admin-turmas-fixed-form">
-          <div><span className="admin-turmas-eyebrow">HORÁRIOS FIXOS</span><h3>Nova turma coletiva</h3><p>Crie os encontros recorrentes que serão oferecidos no seletor inteligente da matrícula. O primeiro aluno definirá o nível da turma.</p></div>
+          <div><span className="admin-turmas-eyebrow">HORÁRIOS FIXOS</span><h3>Nova turma coletiva</h3><p>Crie os encontros recorrentes que serão oferecidos no seletor inteligente da matrícula. O primeiro aluno definirá o nível da turma. O mesmo professor pode ter individual, dupla e grupo cadastrados no mesmo horário; a reserva de qualquer modalidade ocupa o intervalo para as demais.</p></div>
           <div className="admin-turmas-fixed-grid">
             <label>Idioma<select value={fixedIdioma} onChange={e => setFixedIdioma(e.target.value as 'ingles' | 'alemao')}><option value="ingles">Inglês</option><option value="alemao">Alemão</option></select></label>
             <label>Modalidade<select value={fixedModalidade} onChange={e => setFixedModalidade(e.target.value as 'dupla' | 'grupo')}><option value="dupla">Dupla · até 2</option><option value="grupo">Grupo · até 6</option></select></label>
