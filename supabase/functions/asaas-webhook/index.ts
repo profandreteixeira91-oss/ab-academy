@@ -945,38 +945,14 @@ async function createOrUpdateAluno(
   if (!email) throw new Error('E-mail do aluno não informado.')
   if (cpf && cpf.length !== 11) throw new Error('CPF do aluno inválido.')
 
-  let userId = pagamento.user_id
-
-  if (!userId) {
-    const { data: usersPage, error: usersError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 })
-    if (usersError) throw new Error('Não foi possível localizar o acesso do aluno.')
-
-    let authUser = usersPage.users.find(user => user.email?.toLowerCase() === email)
-    if (!authUser) {
-      const temporaryPassword = crypto.randomUUID() + 'Aa1!'
-      const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
-        email,
-        password: temporaryPassword,
-        email_confirm: true,
-        user_metadata: { nome_completo: nome },
-      })
-      if (createError || !created?.user) throw new Error('Não foi possível criar o acesso ao Portal do Aluno.')
-      authUser = created.user
-    }
-
-    userId = authUser.id
-
-    const { error: paymentUserError } = await supabaseAdmin
-      .from('pagamentos')
-      .update({ user_id: userId, updated_at: new Date().toISOString() })
-      .eq('id', pagamento.id)
-
-    if (paymentUserError) throw new Error('Não foi possível vincular o acesso do aluno ao pagamento.')
-    pagamento.user_id = userId
-  }
-
+  /*
+   * O pagamento confirmado cria o cadastro acadêmico, mas NÃO
+   * cria uma senha nem uma conta Auth. O primeiro acesso ao
+   * Portal do Aluno usa o student-auth para o próprio aluno
+   * definir a senha.
+   */
   const alunoData = {
-    user_id: userId,
+    user_id: pagamento.user_id ?? null,
     nome_completo: nome,
     cpf: cpf || null,
     email,
@@ -991,18 +967,39 @@ async function createOrUpdateAluno(
     updated_at: new Date().toISOString(),
   }
 
-  const alunoExistente = await getAlunoByUserId(userId)
+  const { data: alunoExistente, error: alunoBuscaError } = await supabaseAdmin
+    .from('alunos')
+    .select('id,user_id')
+    .ilike('email', email)
+    .maybeSingle()
+
+  if (alunoBuscaError) throw new Error('Não foi possível localizar o cadastro do aluno.')
 
   if (alunoExistente) {
-    const { data, error } = await supabaseAdmin.from('alunos').update(alunoData).eq('id', alunoExistente.id).select('id').single()
+    const nextData = {
+      ...alunoData,
+      user_id: alunoExistente.user_id ?? alunoData.user_id,
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('alunos')
+      .update(nextData)
+      .eq('id', alunoExistente.id)
+      .select('id')
+      .single()
+
     if (error || !data) throw new Error('Não foi possível atualizar o aluno.')
     return data.id
   }
 
-  const { data, error } = await supabaseAdmin.from('alunos').insert({
-    ...alunoData,
-    created_at: new Date().toISOString(),
-  }).select('id').single()
+  const { data, error } = await supabaseAdmin
+    .from('alunos')
+    .insert({
+      ...alunoData,
+      created_at: new Date().toISOString(),
+    })
+    .select('id')
+    .single()
 
   if (error || !data) throw new Error('Não foi possível criar o aluno.')
   return data.id
