@@ -119,6 +119,23 @@ type FormationSlot = {
   }>
 }
 
+type CollectiveScheduleResponse = {
+  turma_id: string
+  horario_id: string
+  idioma: Language
+  modalidade: 'dupla' | 'grupo'
+  aulas_semana: number
+  dia_semana: number
+  hora_inicio: string
+  hora_fim: string
+  professor_id: string | null
+  participantes: number
+  capacidade: number
+  vagas_restantes: number
+  nivel_referencia: string | null
+  status_formacao: string
+}
+
 type StudentData = {
   nome_completo: string
   cpf: string
@@ -273,6 +290,7 @@ export default function Matricula() {
   const [availabilityPeriods, setAvailabilityPeriods] = useState<string[]>([])
   const [availabilityRanges, setAvailabilityRanges] = useState<Record<number, { start: string; end: string }>>({})
   const [availabilityReady, setAvailabilityReady] = useState(false)
+  const [scheduleLockedFromPlanos, setScheduleLockedFromPlanos] = useState(false)
   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
   const [reservaToken] = useState(() => crypto.randomUUID())
@@ -342,6 +360,11 @@ export default function Matricula() {
     const requestedLanguage = params.get('idioma')
     const requestedPlanId = params.get('plano')
     const requestedModality = params.get('modalidade')
+    const requestedTurmaId = params.get('turma_id')
+    const requestedHorarioIds = Array.from(new Set([
+      ...((params.get('horario_ids') ?? '').split(',').map((id) => id.trim()).filter(Boolean)),
+      ...(params.get('horario_id') ? [params.get('horario_id') as string] : []),
+    ]))
     const turmaToken = params.get('turma_token')
 
     const loadCollectiveEnrollment = async (token: string) => {
@@ -435,11 +458,22 @@ export default function Matricula() {
       if (requestedPlanId) {
         const loadedPlan = await loadSelectedPlan(requestedLanguage, requestedPlanId)
 
-        if (waitingFormation && loadedPlan) {
+        if (!loadedPlan) return
+
+        if (waitingFormation) {
           await initializeIndividualFormationFromUrl(
             loadedPlan,
             formationSlotId,
-            params.get('turma_id'),
+            requestedTurmaId,
+          )
+          return
+        }
+
+        if (loadedPlan.modalidade === 'dupla' || loadedPlan.modalidade === 'grupo') {
+          await initializeCollectiveScheduleFromPlanos(
+            loadedPlan,
+            requestedTurmaId,
+            requestedHorarioIds,
           )
         }
 
@@ -612,6 +646,107 @@ export default function Matricula() {
       setStep(1)
       setSuccess(
         `Você poderá iniciar individualmente com a condição especial de formação: ${formatCurrency(Number(discountedPrice))}/mês.`,
+      )
+    } finally {
+      setLoadingSchedules(false)
+    }
+  }
+
+  const initializeCollectiveScheduleFromPlanos = async (
+    selectedPlan: Plan,
+    requestedTurmaId: string | null,
+    requestedHorarioIds: string[],
+  ) => {
+    if (selectedPlan.modalidade !== 'dupla' && selectedPlan.modalidade !== 'grupo') {
+      return
+    }
+
+    if (requestedHorarioIds.length === 0) {
+      setError('O horário coletivo não foi informado. Volte à página de planos e escolha uma turma.')
+      return
+    }
+
+    setLoadingSchedules(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const aulasSemana = selectedPlan.aulas_semana ?? (selectedPlan.modalidade === 'dupla' ? 1 : 2)
+      const { data, error: schedulesError } = await supabase.rpc('listar_horarios_coletivos_matricula', {
+        p_idioma: selectedPlan.idioma,
+        p_modalidade: selectedPlan.modalidade,
+        p_aulas_semana: aulasSemana,
+        p_dias: null,
+        p_periodos: null,
+        p_disponibilidade: null,
+      })
+
+      if (schedulesError) {
+        console.error('Erro ao recuperar horário escolhido em Planos:', schedulesError)
+        setError('Não foi possível recuperar a turma escolhida em Planos. Volte e tente novamente.')
+        return
+      }
+
+      const rows = (data ?? []) as CollectiveScheduleResponse[]
+      const firstRequestedId = requestedHorarioIds[0]
+      const firstCandidate = rows.find((row) =>
+        row.horario_id === firstRequestedId
+        && (!requestedTurmaId || row.turma_id === requestedTurmaId),
+      )
+
+      if (!firstCandidate) {
+        setError('A turma escolhida em Planos não está mais disponível. Volte a Planos e escolha outra.')
+        return
+      }
+
+      const turmaId = requestedTurmaId ?? firstCandidate.turma_id
+      const selectedRows = rows
+        .filter((row) => row.turma_id === turmaId)
+        .sort((a, b) => a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio))
+
+      if (selectedRows.length !== aulasSemana) {
+        setError('A turma escolhida não possui todos os encontros semanais configurados. Volte a Planos e escolha outra.')
+        return
+      }
+
+      const selectedIds = new Set(requestedHorarioIds)
+      if (requestedHorarioIds.length !== aulasSemana || selectedRows.some((row) => !selectedIds.has(row.horario_id))) {
+        setError('Os horários enviados por Planos não correspondem à composição completa da turma.')
+        return
+      }
+
+      if (firstCandidate.participantes >= firstCandidate.capacidade) {
+        setError('A turma escolhida acabou de ser preenchida. Volte a Planos e escolha outra.')
+        return
+      }
+
+      const mappedSchedules: SelectedSchedule[] = selectedRows.map((row) => ({
+        id: row.horario_id,
+        date: getDateForWeekday(row.dia_semana),
+        weekday: row.dia_semana,
+        hora_inicio: row.hora_inicio,
+        hora_fim: row.hora_fim,
+        meet_url: null,
+        meet_space_name: null,
+        turma_id: row.turma_id,
+        participante_id: null,
+        valor_mensal: Number(selectedPlan.preco),
+        participantes: row.participantes,
+        capacidade: row.capacidade,
+        status_formacao: row.status_formacao,
+        tipo_valor: 'coletiva_formada',
+        professor_id: row.professor_id,
+        nivel_referencia: row.nivel_referencia,
+      }))
+
+      setSelectedSchedules(mappedSchedules)
+      setSelectedSchedule(mappedSchedules[0] ?? null)
+      setScheduleLockedFromPlanos(true)
+      setAvailabilityReady(true)
+      setSelectedWeekday(mappedSchedules[0]?.weekday ?? null)
+      setStep(4)
+      setSuccess(
+        `Turma confirmada a partir de Planos. O valor regular da modalidade é ${formatCurrency(Number(selectedPlan.preco))}/mês.`,
       )
     } finally {
       setLoadingSchedules(false)
@@ -1144,7 +1279,11 @@ export default function Matricula() {
       }
 
       if (isCollectivePlan) {
-        setError('Escolha uma turma disponível ou opte por iniciar individualmente.')
+        if (!scheduleLockedFromPlanos || !validateSchedule()) {
+          setError('Escolha uma turma e horário em Planos antes de continuar.')
+          return
+        }
+        setStep(4)
         return
       }
 
@@ -1217,6 +1356,11 @@ export default function Matricula() {
   const previousStep = () => {
     setError('')
     setSuccess('')
+
+    if (scheduleLockedFromPlanos && step === 4) {
+      setStep(3)
+      return
+    }
 
     if (step > 1) {
       setStep(step - 1)
@@ -2101,7 +2245,31 @@ export default function Matricula() {
             </div>
           )}
 
-          {step === 3 && !isIndividualFormationFlow && (
+          {step === 3 && !isIndividualFormationFlow && scheduleLockedFromPlanos && (
+            <div className="schedule-section">
+              <div className="selection-heading">
+                <div>
+                  <h3>Horário definido em Planos</h3>
+                  <p>Esta modalidade coletiva utiliza horários fixos. A turma e todos os encontros semanais foram trazidos da página Planos.</p>
+                </div>
+                <a href="/planos" className="availability-edit-button">Alterar em Planos</a>
+              </div>
+              <div className="availability-selection-summary">
+                <strong>Turma selecionada</strong>
+                {selectedSchedules
+                  .slice()
+                  .sort((a, b) => a.weekday - b.weekday || a.hora_inicio.localeCompare(b.hora_inicio))
+                  .map((schedule) => (
+                    <span key={schedule.id}>
+                      {WEEKDAYS.find((day) => day.value === schedule.weekday)?.label}: {formatTime(schedule.hora_inicio)} — {formatTime(schedule.hora_fim)}
+                    </span>
+                  ))}
+                <span>Valor regular: {formatCurrency(Number(plan?.preco ?? 0))}/mês</span>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && !isIndividualFormationFlow && !scheduleLockedFromPlanos && (
             <div className="schedule-section">
               <div className="selection-heading">
                 <div>
