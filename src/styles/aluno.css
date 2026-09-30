@@ -4574,3 +4574,118 @@ body {
   opacity: .6;
   cursor: not-allowed;
 }
+
+
+/* =========================================================
+   PAGAMENTO — CAMPOS OBRIGATÓRIOS E RECORRÊNCIA
+   ========================================================= */
+
+.student-payment-field {
+  min-width: 0;
+}
+
+.student-payment-field label {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin: 0 0 6px;
+  color: var(--student-text-secondary);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: .03em;
+}
+
+.student-payment-field label strong {
+  color: var(--student-primary);
+}
+
+.student-payment-field input {
+  box-sizing: border-box;
+}
+
+.student-payment-card-form > .student-payment-field,
+.student-payment-card-form > .student-payment-fields-2,
+.student-payment-card-form > .student-payment-fields-3 {
+  width: 100%;
+}
+
+.student-payment-card-form .student-payment-fields-2,
+.student-payment-card-form .student-payment-fields-3 {
+  align-items: start;
+}
+
+.student-payment-recurring {
+  display: grid;
+  grid-template-columns: 18px 30px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  margin-top: 4px;
+  padding: 14px;
+  border: 1px solid var(--student-border);
+  border-radius: 12px;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease;
+}
+
+.student-payment-recurring.active {
+  border-color: rgba(22, 73, 160, .35);
+  background: var(--student-primary-light);
+  box-shadow: 0 0 0 2px rgba(22, 73, 160, .06);
+}
+
+.student-payment-recurring input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.student-payment-recurring-check {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  background: #fff;
+  color: #fff;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.student-payment-recurring.active .student-payment-recurring-check {
+  border-color: var(--student-primary);
+  background: var(--student-primary);
+}
+
+.student-payment-recurring > span:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.student-payment-recurring strong {
+  color: var(--student-text);
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.student-payment-recurring small {
+  color: var(--student-text-secondary);
+  font-size: 10px;
+  line-height: 1.5;
+}
+
+@media (max-width: 600px) {
+  .student-payment-card-form .student-payment-fields-2,
+  .student-payment-card-form .student-payment-fields-3 {
+    grid-template-columns: 1fr;
+  }
+
+  .student-payment-recurring {
+    grid-template-columns: 18px 28px minmax(0, 1fr);
+    padding: 12px;
+  }
+}
