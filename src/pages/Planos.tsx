@@ -143,6 +143,7 @@ function ModalidadeCard({
         <div className="planos-frequency-list">
           {opcoes.map(({ plano, horariosDaOpcao }) => {
             const frequencia = plano.aulas_semana ?? 1
+            const vagasRestantes = Math.min(...horariosDaOpcao.map((horario) => horario.vagas_restantes))
             return (
               <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')}>
                 <div className="planos-frequency-heading">
@@ -160,6 +161,7 @@ function ModalidadeCard({
                 <p>
                   {horariosDaOpcao[0]?.professor_nome ? 'Professor: ' + horariosDaOpcao[0].professor_nome : 'Professor a confirmar'}
                   {' · '}{nivel || horariosDaOpcao[0]?.nivel_referencia || 'Nível a confirmar'}
+                  {' · '}{vagasRestantes} {vagasRestantes === 1 ? 'vaga disponível' : 'vagas disponíveis'}
                 </p>
                 <a href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id)} className="btn btn-outline planos-collective-cta">
                   Escolher este horário <ArrowRight size={16} />
