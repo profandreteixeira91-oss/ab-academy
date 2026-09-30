@@ -643,6 +643,10 @@ export default function Matricula() {
 
     if (step === 4) {
       if (!validateSchedule()) return
+      setLoadingSchedules(true)
+      const confirmed = await verifyScheduleAgain()
+      setLoadingSchedules(false)
+      if (!confirmed) return
       setStep(5)
     }
   }
