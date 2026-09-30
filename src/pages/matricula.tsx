@@ -680,7 +680,7 @@ export default function Matricula() {
       const schedulesLoaded = await loadSchedules(language, true)
       if (!schedulesLoaded) return
       setAvailabilityReady(true)
-      setSelectedWeekday(availabilityDays[0] ?? null)
+      setSelectedWeekday(null)
       setStep(3)
       return
     }
@@ -1327,16 +1327,19 @@ export default function Matricula() {
                       })}
                   </div>
 
-                  {selectedSchedule && (
+                  {selectedSchedules.length > 0 && (
                     <div className="availability-selection-summary">
-                      <strong>Sua escolha</strong>
-                      <span>Dia: {WEEKDAYS.find((day) => day.value === selectedSchedule.weekday)?.label}</span>
-                      <span>Horário: {formatTime(selectedSchedule.hora_inicio)} — {formatTime(selectedSchedule.hora_fim)}</span>
-                      {isCollectivePlan && (
-                        <>
-                          <span>Situação: {selectedSchedule.status_formacao === 'dupla_formada' ? 'Dupla já formada' : selectedSchedule.status_formacao === 'grupo_formado' ? 'Grupo já formado' : selectedSchedule.status_formacao === 'dupla_em_formacao' ? 'Nova dupla em formação' : 'Grupo em formação'}</span>
-                          <span>Alunos na turma: {selectedSchedule.participantes ?? '—'} de {selectedSchedule.capacidade ?? '—'}</span>
-                        </>
+                      <strong>Horários escolhidos ({selectedSchedules.length}/{requiredWeeklyLessons})</strong>
+                      {selectedSchedules
+                        .slice()
+                        .sort((a, b) => a.weekday - b.weekday || a.hora_inicio.localeCompare(b.hora_inicio))
+                        .map((schedule) => (
+                          <span key={schedule.id}>
+                            {WEEKDAYS.find((day) => day.value === schedule.weekday)?.label}: {formatTime(schedule.hora_inicio)} — {formatTime(schedule.hora_fim)}
+                          </span>
+                        ))}
+                      {isCollectivePlan && selectedSchedule && (
+                        <span>Situação do primeiro horário: {selectedSchedule.status_formacao === 'dupla_formada' ? 'Dupla já formada' : selectedSchedule.status_formacao === 'grupo_formado' ? 'Grupo já formado' : selectedSchedule.status_formacao === 'dupla_em_formacao' ? 'Nova dupla em formação' : 'Grupo em formação'}</span>
                       )}
                     </div>
                   )}
@@ -1627,38 +1630,18 @@ export default function Matricula() {
                       )}
                   </div>
 
-                  {selectedSchedule && (
+                  {selectedSchedules.length > 0 && (
                     <div className="schedule-selected-summary">
-                      <strong>
-                        Horário
-                      </strong>
-
+                      <strong>Horários ({selectedSchedules.length}/{requiredWeeklyLessons})</strong>
                       <div>
-                        <span>
-                          {
-                            WEEKDAYS.find(
-                              (day) =>
-                                day.value ===
-                                selectedSchedule.weekday,
-                            )?.label
-                          }
-                        </span>
-
-                        <span>
-                          {formatTime(
-                            selectedSchedule.hora_inicio,
-                          )}{' '}
-                          -{' '}
-                          {formatTime(
-                            selectedSchedule.hora_fim,
-                          )}
-                        </span>
-
-                        <span>
-                          {formatDate(
-                            selectedSchedule.date,
-                          )}
-                        </span>
+                        {selectedSchedules
+                          .slice()
+                          .sort((a, b) => a.weekday - b.weekday || a.hora_inicio.localeCompare(b.hora_inicio))
+                          .map((schedule) => (
+                            <span key={schedule.id}>
+                              {WEEKDAYS.find((day) => day.value === schedule.weekday)?.label} • {formatTime(schedule.hora_inicio)} - {formatTime(schedule.hora_fim)} • {formatDate(schedule.date)}
+                            </span>
+                          ))}
                       </div>
                     </div>
                   )}
