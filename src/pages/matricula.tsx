@@ -226,8 +226,7 @@ export default function Matricula() {
   const selectedPlanPrice = useMemo(() => {
     const basePrice = Number(waitingIndividualPlan?.preco ?? plan?.preco ?? 0)
     if (isCollectivePlan && collectivePricingMode === 'formation') {
-      const discount = plan?.modalidade === 'grupo' ? 0.85 : 0.90
-      return Math.round(basePrice * discount * 100) / 100
+      return Math.round(basePrice * 0.90 * 100) / 100
     }
     if (isWaitingFormation) return Math.round(basePrice * 0.9 * 100) / 100
     return Number(plan?.preco ?? 0)
