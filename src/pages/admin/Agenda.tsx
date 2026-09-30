@@ -2136,12 +2136,7 @@ export default function Agenda() {
                   dia.value
                 }
                 type="button"
-                className={`agenda-day-button ${
-                  dia.value === agendaToday ? 'today ' : ''
-                  active
-                    ? 'active'
-                    : ''
-                }`}
+                className={`agenda-day-button ${dia.value === agendaToday ? 'today ' : ''}${active ? 'active' : ''}`}
                 onClick={() => {
                   setSelectedDay(
                     dia.value,
@@ -2535,13 +2530,7 @@ export default function Agenda() {
                       key={
                         horario.id
                       }
-                      className={`agenda-item ${
-                        horario.id === horarioAtualId ? 'current ' : ''
-                        horario.id === proximoHorarioId ? 'next ' : ''
-                        ocupado
-                          ? 'occupied'
-                          : 'available'
-                      } ${
+                      className={`agenda-item ${horario.id === horarioAtualId ? 'current ' : ''}${horario.id === proximoHorarioId ? 'next ' : ''}${ocupado ? 'occupied' : 'available'} ${
                         selected
                           ? 'selected'
                           : ''
