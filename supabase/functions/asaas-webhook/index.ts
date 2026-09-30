@@ -933,192 +933,105 @@ async function getAlunoByUserId(
 async function createOrUpdateAluno(
   pagamento: Pagamento,
 ) {
-  if (!pagamento.user_id) {
-    throw new Error(
-      'Pagamento não possui user_id.',
-    )
-  }
+  const dados = pagamento.dados_matricula
+  if (!dados || typeof dados !== 'object') throw new Error('Dados da matrícula não encontrados.')
 
-  const dados =
-    pagamento.dados_matricula
+  const nome = String(dados.nome_completo ?? '').trim()
+  const cpf = String(dados.cpf ?? '').replace(/\D/g, '')
+  const email = String(dados.email ?? '').trim().toLowerCase()
+  const telefone = String(dados.telefone ?? '').replace(/\D/g, '')
 
-  if (
-    !dados ||
-    typeof dados !== 'object'
-  ) {
-    throw new Error(
-      'Dados da matrícula não encontrados.',
-    )
-  }
+  if (!nome) throw new Error('Nome do aluno não informado.')
+  if (!email) throw new Error('E-mail do aluno não informado.')
+  if (cpf && cpf.length !== 11) throw new Error('CPF do aluno inválido.')
 
-  const nome =
-    String(
-      dados.nome_completo ?? '',
-    ).trim()
+  let userId = pagamento.user_id
 
-  const cpf =
-    String(
-      dados.cpf ?? '',
-    ).replace(/\D/g, '')
+  if (!userId) {
+    let authUser = null
 
-  const email =
-    String(
-      dados.email ?? '',
-    ).trim()
+    const { data: invited, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
+      data: { nome_completo: nome },
+    })
 
-  const telefone =
-    String(
-      dados.telefone ?? '',
-    ).replace(/\D/g, '')
+    if (!inviteError && invited?.user) {
+      authUser = invited.user
+    } else {
+      const { data: usersPage, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      })
 
-  if (!nome) {
-    throw new Error(
-      'Nome do aluno não informado.',
-    )
-  }
+      if (usersError) {
+        console.error('Erro ao localizar usuário existente:', usersError)
+        throw new Error('Não foi possível criar o acesso ao Portal do Aluno.')
+      }
 
-  if (!email) {
-    throw new Error(
-      'E-mail do aluno não informado.',
-    )
-  }
+      authUser = usersPage.users.find(user => user.email?.toLowerCase() === email) ?? null
 
-  if (
-    cpf &&
-    cpf.length !== 11
-  ) {
-    throw new Error(
-      'CPF do aluno inválido.',
-    )
+      if (!authUser) {
+        const temporaryPassword = crypto.randomUUID() + 'Aa1!'
+        const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+          email,
+          password: temporaryPassword,
+          email_confirm: true,
+          user_metadata: { nome_completo: nome },
+        })
+
+        if (createError || !created?.user) {
+          console.error('Erro ao criar usuário após pagamento:', createError)
+          throw new Error('Não foi possível criar o acesso ao Portal do Aluno.')
+        }
+
+        authUser = created.user
+      }
+    }
+
+    userId = authUser.id
+
+    const { error: paymentUserError } = await supabaseAdmin
+      .from('pagamentos')
+      .update({ user_id: userId, updated_at: new Date().toISOString() })
+      .eq('id', pagamento.id)
+
+    if (paymentUserError) {
+      console.error('Erro ao vincular usuário ao pagamento:', paymentUserError)
+      throw new Error('Não foi possível vincular o acesso do aluno ao pagamento.')
+    }
+
+    pagamento.user_id = userId
   }
 
   const alunoData = {
-    user_id:
-      pagamento.user_id,
-
-    nome_completo:
-      nome,
-
-    cpf:
-      cpf || null,
-
-    email:
-      email,
-
-    data_nascimento:
-      dados.data_nascimento
-        ? String(
-            dados.data_nascimento,
-          )
-        : null,
-
-    telefone:
-      telefone || null,
-
-    responsavel_nome:
-      dados.responsavel_nome
-        ? String(
-            dados.responsavel_nome,
-          )
-        : null,
-
-    responsavel_contato:
-      dados.responsavel_contato
-        ? String(
-            dados.responsavel_contato,
-          )
-        : null,
-
-    idioma:
-      String(
-        dados.idioma ??
-          pagamento.idioma ??
-          '',
-      ),
-
-    nivel_conversacao:
-      dados.nivel_conversacao
-        ? String(
-            dados.nivel_conversacao,
-          )
-        : null,
-
-    nivel_escrita:
-      dados.nivel_escrita
-        ? String(
-            dados.nivel_escrita,
-          )
-        : null,
-
-    nivel_compreensao:
-      dados.nivel_compreensao
-        ? String(
-            dados.nivel_compreensao,
-          )
-        : null,
-
-    updated_at:
-      new Date().toISOString(),
+    user_id: userId,
+    nome_completo: nome,
+    cpf: cpf || null,
+    email,
+    data_nascimento: dados.data_nascimento ? String(dados.data_nascimento) : null,
+    telefone: telefone || null,
+    responsavel_nome: dados.responsavel_nome ? String(dados.responsavel_nome) : null,
+    responsavel_contato: dados.responsavel_contato ? String(dados.responsavel_contato) : null,
+    idioma: String(dados.idioma ?? pagamento.idioma ?? ''),
+    nivel_conversacao: dados.nivel_conversacao ? String(dados.nivel_conversacao) : null,
+    nivel_escrita: dados.nivel_escrita ? String(dados.nivel_escrita) : null,
+    nivel_compreensao: dados.nivel_compreensao ? String(dados.nivel_compreensao) : null,
+    updated_at: new Date().toISOString(),
   }
 
-  const alunoExistente =
-    await getAlunoByUserId(
-      pagamento.user_id,
-    )
+  const alunoExistente = await getAlunoByUserId(userId)
 
   if (alunoExistente) {
-    const {
-      data,
-      error,
-    } = await supabaseAdmin
-      .from('alunos')
-      .update(alunoData)
-      .eq(
-        'id',
-        alunoExistente.id,
-      )
-      .select('id')
-      .single()
-
-    if (error || !data) {
-      console.error(
-        'Erro ao atualizar aluno:',
-        error,
-      )
-
-      throw new Error(
-        'Não foi possível atualizar o aluno.',
-      )
-    }
-
+    const { data, error } = await supabaseAdmin.from('alunos').update(alunoData).eq('id', alunoExistente.id).select('id').single()
+    if (error || !data) throw new Error('Não foi possível atualizar o aluno.')
     return data.id
   }
 
-  const {
-    data,
-    error,
-  } = await supabaseAdmin
-    .from('alunos')
-    .insert({
-      ...alunoData,
+  const { data, error } = await supabaseAdmin.from('alunos').insert({
+    ...alunoData,
+    created_at: new Date().toISOString(),
+  }).select('id').single()
 
-      created_at:
-        new Date().toISOString(),
-    })
-    .select('id')
-    .single()
-
-  if (error || !data) {
-    console.error(
-      'Erro ao criar aluno:',
-      error,
-    )
-
-    throw new Error(
-      'Não foi possível criar o aluno.',
-    )
-  }
-
+  if (error || !data) throw new Error('Não foi possível criar o aluno.')
   return data.id
 }
 
