@@ -198,6 +198,7 @@ export default function Financeiro() {
   const [transferKeyType, setTransferKeyType] = useState('CPF')
   const [transferKey, setTransferKey] = useState('')
   const [transferDescription, setTransferDescription] = useState('')
+  const [pixOwner, setPixOwner] = useState<any>(null)
 
   async function loadFinanceiro() {
     try {
@@ -306,28 +307,43 @@ export default function Financeiro() {
     setTransferModalOpen(false); setTransferConfirmOpen(false); setTransferValue(''); setTransferKeyType('CPF'); setTransferKey(''); setTransferDescription('')
   }
 
-  function requestAsaasTransfer() {
+  async function requestAsaasTransfer() {
     try {
       setAsaasError('')
       const value = parseMoney(transferValue)
       if (!value || value <= 0) throw new Error('Informe um valor válido para a transferência.')
       if (asaasBalance !== null && value > asaasBalance) throw new Error('O valor é superior ao saldo disponível no Asaas.')
       if (!transferKey.trim()) throw new Error('Informe a chave Pix de destino.')
-      const { data, error: functionError } = await supabase.functions.invoke('asaas-finance', {
-        body: { action: 'transfer', value, pix_key: transferKey, pix_key_type: transferKeyType, description: transferDescription.trim() || undefined },
-      })
+
+      setTransferSaving(true)
+      const { data, error: functionError } = await supabase.functions.invoke(
+        `asaas-finance?action=lookup-pix&type=${encodeURIComponent(transferKeyType)}&key=${encodeURIComponent(transferKey)}`,
+        { method: 'GET' },
+      )
       if (functionError) throw functionError
       if (data?.error) throw new Error(data.error)
+      setPixOwner(data?.owner ?? null)
       setTransferConfirmOpen(true)
     } catch (err) {
       console.error('Erro ao validar transferência Asaas:', err)
-      setAsaasError(err instanceof Error ? err.message : 'Não foi possível validar a transferência.')
+      setAsaasError(err instanceof Error ? err.message : 'Não foi possível validar a chave Pix.')
+    } finally {
+      setTransferSaving(false)
     }
   }
 
   async function handleAsaasTransfer() {
     try {
       setTransferSaving(true); setAsaasError('')
+      const value = parseMoney(transferValue)
+      const { data, error: functionError } = await supabase.functions.invoke('asaas-finance', {
+        body: { action: 'transfer', value, pix_key: transferKey, pix_key_type: transferKeyType, description: transferDescription.trim() || undefined },
+      })
+      if (functionError) throw functionError
+      if (data?.error) throw new Error(data.error)
+      setTransferConfirmOpen(false)
+      setTransferModalOpen(false)
+      await loadAsaasFinance(true)
     } catch (err) {
       console.error('Erro ao transferir saldo Asaas:', err)
       setAsaasError(err instanceof Error ? err.message : 'Não foi possível realizar a transferência.')
@@ -1425,7 +1441,12 @@ export default function Financeiro() {
             <footer className="financeiro-modal-footer">
               <button type="button" className="financeiro-secondary-button" onClick={() => setTransferConfirmOpen(false)} disabled={transferSaving}>Voltar</button>
               <button type="button" className="financeiro-primary-button" onClick={handleAsaasTransfer} disabled={transferSaving}>
-                {transferSaving ? <><span className="financeiro-button-spinner" /> Enviando...</> : <><Send size={16} /> Confirmar e transferir</>}
+                {transferSaving ? <><span className="financeiro-button-spinner" /> Enviando...</> : <><Send size={16} /> <div className="financeiro-transfer-owner">
+              <strong>Destinatário confirmado</strong>
+              <span>{pixOwner?.name || pixOwner?.ownerName || pixOwner?.nome || 'Titular identificado'}</span>
+              {(pixOwner?.cpfCnpj || pixOwner?.cpfCnpjMasked) && <small>CPF/CNPJ: {pixOwner.cpfCnpj || pixOwner.cpfCnpjMasked}</small>}
+            </div>
+            Confirmar e transferir</>}
               </button>
             </footer>
           </div>
