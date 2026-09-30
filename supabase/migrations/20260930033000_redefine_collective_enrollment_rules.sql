@@ -95,6 +95,70 @@ as 'select private.selecionar_horario_matricula_v2(p_horario_id,p_idioma,p_modal
 grant execute on function public.selecionar_horario_matricula_v2(uuid,text,text,integer,uuid,text,text,text) to anon,authenticated;
 grant execute on function public.listar_horarios_matricula(text,text,integer) to anon,authenticated;
 
+
+-- Busca segura dos horários que cruzam a disponibilidade informada pelo aluno.
+create or replace function public.buscar_horarios_disponiveis_matricula(
+  p_idioma text,
+  p_modalidade text,
+  p_aulas_semana integer,
+  p_dias integer[] default null,
+  p_periodos text[] default null,
+  p_disponibilidade jsonb default null
+)
+returns table(
+  id uuid, tipo_horario text, idioma text, dia_semana integer, hora_inicio time, hora_fim time,
+  disponivel boolean, aluno_id uuid, created_at timestamptz, meet_url text, meet_space_name text,
+  turma_id uuid, participante_id uuid, participantes integer, capacidade integer, vagas_restantes integer, valor_mensal numeric
+)
+language plpgsql security definer set search_path=''
+as $$
+declare v_individual numeric;
+begin
+  if p_idioma not in ('ingles','alemao') or p_modalidade not in ('individual','dupla','grupo') or p_aulas_semana not between 1 and 3 then
+    raise exception 'Parâmetros de busca de horários inválidos.';
+  end if;
+  if p_modalidade='individual' then
+    return query
+    select h.id,'individual'::text,h.idioma,h.dia_semana,h.hora_inicio,h.hora_fim,h.disponivel,h.aluno_id,h.created_at,h.meet_url,h.meet_space_name,
+      null::uuid,null::uuid,0,1,1, p.preco
+    from public.horarios h
+    join lateral (select p2.preco from public.planos p2 where p2.idioma=p_idioma and p2.modalidade='individual' and p2.tipo='mensal' and p2.aulas_semana=1 and p2.ativo=true order by p2.updated_at desc,p2.created_at desc limit 1) p on true
+    where h.idioma=p_idioma and h.disponivel=true and h.aluno_id is null and coalesce(h.tipo_horario,'individual')='individual'
+      and (p_dias is null or cardinality(p_dias)=0 or h.dia_semana=any(p_dias))
+      and (p_periodos is null or cardinality(p_periodos)=0 or ('manha'=any(p_periodos) and h.hora_inicio < time '12:00') or ('tarde'=any(p_periodos) and h.hora_inicio >= time '12:00' and h.hora_inicio < time '18:00') or ('noite'=any(p_periodos) and h.hora_inicio >= time '18:00'))
+      and (p_disponibilidade is null or p_disponibilidade->h.dia_semana::text is null or (h.hora_inicio >= (p_disponibilidade->h.dia_semana::text->>'start')::time and h.hora_fim <= (p_disponibilidade->h.dia_semana::text->>'end')::time));
+    return;
+  end if;
+  return query
+  with candidates as (
+    select h.id,h.idioma,h.dia_semana,h.hora_inicio,h.hora_fim,h.disponivel,h.aluno_id,h.created_at,h.meet_url,h.meet_space_name,
+      t.id turma_id, count(tp.id) filter (where tp.status in ('convidado','confirmado') and (tp.status='confirmado' or tp.reserva_expira_em is null or tp.reserva_expira_em>=now()))::int participantes,
+      case when p_modalidade='dupla' then 2 else 3 end capacidade
+    from public.horarios h
+    left join public.turma_horarios th on th.horario_id=h.id
+    left join public.turmas t on t.id=th.turma_id and t.idioma=p_idioma and t.modalidade=p_modalidade and t.aulas_semana=p_aulas_semana and t.status in ('em_formacao','aguardando_confirmacoes','pronta','ativa')
+    left join public.turma_participantes tp on tp.turma_id=t.id
+    where h.idioma=p_idioma and h.disponivel=true and (t.id is not null or coalesce(h.tipo_horario,'individual')='individual')
+      and (p_dias is null or cardinality(p_dias)=0 or h.dia_semana=any(p_dias))
+      and (p_periodos is null or cardinality(p_periodos)=0 or ('manha'=any(p_periodos) and h.hora_inicio < time '12:00') or ('tarde'=any(p_periodos) and h.hora_inicio >= time '12:00' and h.hora_inicio < time '18:00') or ('noite'=any(p_periodos) and h.hora_inicio >= time '18:00'))
+      and (p_disponibilidade is null or p_disponibilidade->h.dia_semana::text is null or (h.hora_inicio >= (p_disponibilidade->h.dia_semana::text->>'start')::time and h.hora_fim <= (p_disponibilidade->h.dia_semana::text->>'end')::time))
+    group by h.id,t.id
+  ), ranked as (
+    select c.*, greatest(0,c.capacidade-c.participantes) vagas,
+      case when c.participantes>0 and c.participantes<c.capacidade then 0 when c.participantes=c.capacidade then 1 else 2 end prioridade
+    from candidates c where c.participantes<c.capacidade
+  )
+  select r.id,p_modalidade,r.idioma,r.dia_semana,r.hora_inicio,r.hora_fim,r.disponivel,r.aluno_id,r.created_at,r.meet_url,r.meet_space_name,r.turma_id,
+    null::uuid,r.participantes,r.capacidade,r.vagas,
+    case when r.participantes<r.capacidade then public.preco_coletivo(p_idioma,p_modalidade,p_aulas_semana,r.capacidade) end
+  from ranked r order by r.prioridade,r.dia_semana,r.hora_inicio;
+end; $$;
+
+grant execute on function public.buscar_horarios_disponiveis_matricula(text,text,integer,integer[],text[],jsonb) to anon,authenticated;
+revoke execute on function public.preco_coletivo(text,text,integer,integer) from public,anon,authenticated;
+revoke execute on function public.preco_formacao_coletiva(text,text,integer) from public,anon,authenticated;
+grant execute on function public.preco_coletivo(text,text,integer,integer) to service_role;
+grant execute on function public.preco_formacao_coletiva(text,text,integer) to service_role;
 revoke execute on function public.preco_coletivo(text,text,integer,integer) from public,anon,authenticated;
 revoke execute on function public.preco_formacao_coletiva(text,text,integer) from public,anon,authenticated;
 grant execute on function public.preco_coletivo(text,text,integer,integer) to service_role;
