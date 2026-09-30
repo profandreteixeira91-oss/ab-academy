@@ -1490,9 +1490,7 @@ export default function Agenda() {
       )
     } catch (err) {
       console.error('Erro ao reorganizar horários em massa:', err)
-      window.alert('Não foi possível reorganizar os horários.
-
-' + getErrorMessage(err))
+      window.alert('Não foi possível reorganizar os horários.\n\n' + getErrorMessage(err))
     } finally {
       setSaving(false)
     }
