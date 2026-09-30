@@ -50,6 +50,18 @@ type Horario = {
   professor_id: string | null
 }
 
+type RegistroAula = {
+  id: string
+  horario_id: string
+  aluno_id: string
+  professor_id: string | null
+  data_aula: string
+  data_aula_override: string | null
+  hora_inicio_override: string | null
+  hora_fim_override: string | null
+  status: 'agendada' | 'presente' | 'falta'
+}
+
 type HorarioForm = {
   tipo_horario: 'individual' | 'dupla' | 'grupo'
   idioma: 'ingles' | 'alemao'
@@ -204,6 +216,7 @@ export default function Agenda() {
   const [horarios, setHorarios] = useState<Horario[]>([])
   const [alunos, setAlunos] = useState<Aluno[]>([])
   const [professores, setProfessores] = useState<Professor[]>([])
+  const [registrosAulas, setRegistrosAulas] = useState<RegistroAula[]>([])
 
   const [selectedDay, setSelectedDay] =
     useState<number>(new Date().getDay())
@@ -329,6 +342,11 @@ export default function Agenda() {
           .order('nome_completo', {
             ascending: true,
           }),
+
+        supabase
+          .from('registros_aulas')
+          .select('id, horario_id, aluno_id, professor_id, data_aula, data_aula_override, hora_inicio_override, hora_fim_override, status')
+          .order('data_aula', { ascending: true }),
       ])
 
       if (horariosResult.error) {
@@ -343,6 +361,10 @@ export default function Agenda() {
         throw professoresResult.error
       }
 
+      if (registrosResult.error) {
+        throw registrosResult.error
+      }
+
       setHorarios(
         (horariosResult.data || []) as Horario[],
       )
@@ -353,6 +375,10 @@ export default function Agenda() {
 
       setProfessores(
         (professoresResult.data || []) as Professor[],
+      )
+
+      setRegistrosAulas(
+        (registrosResult.data || []) as RegistroAula[],
       )
 
       setSelectedIds((current) =>
@@ -399,6 +425,23 @@ export default function Agenda() {
         ),
       )
   }, [horarios, selectedDay, filterTipo, filterProfessor, filterNivel])
+
+  const reposicoesDoDia = useMemo(() => {
+    const targetDate = dateKey(new Date())
+    return registrosAulas.filter((registro) =>
+      registro.data_aula_override === targetDate &&
+      Boolean(registro.hora_inicio_override) &&
+      Boolean(registro.hora_fim_override) &&
+      horarios.some((horario) =>
+        horario.id === registro.horario_id &&
+        horario.aluno_id === registro.aluno_id &&
+        (filterTipo === '' || horario.tipo_horario === filterTipo) &&
+        (filterProfessor === '' || horario.professor_id === filterProfessor) &&
+        (filterNivel === '' || horario.nivel_referencia === filterNivel) &&
+        horario.dia_semana !== selectedDay
+      ),
+    )
+  }, [registrosAulas, horarios, selectedDay, filterTipo, filterProfessor, filterNivel])
 
   /*
    * =======================================================
