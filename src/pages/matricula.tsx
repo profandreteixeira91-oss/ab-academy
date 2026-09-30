@@ -1235,7 +1235,7 @@ export default function Matricula() {
                   <h3>Horários compatíveis com você</h3>
                   <p>Mostrando horários reais compatíveis com você. O valor final será calculado após a análise do horário escolhido.</p>
                 </div>
-                <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setSelectedSchedule(null); setSelectedSchedules([]); }}>
+                <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setSelectedSchedule(null); setSelectedSchedules([]); setStep(2); }}>
                   Alterar disponibilidade
                 </button>
               </div>
@@ -1246,7 +1246,7 @@ export default function Matricula() {
                 <div className="enrollment-empty">
                   <strong>Não encontramos um horário exatamente dentro da sua disponibilidade.</strong>
                   <p>Revise os dias e períodos para ver outras opções.</p>
-                  <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setStep(3); }}>
+                  <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setStep(2); }}>
                     Ajustar disponibilidade
                   </button>
                 </div>
