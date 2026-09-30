@@ -1355,7 +1355,7 @@ Deno.serve(
           // Enquanto a turma não atingir a capacidade, todos os novos
           // participantes pagam a condição de formação: individual 1x/semana - 10%.
           // O preço coletivo só entra quando a turma estiver completa.
-          const { data: valorCalculado, error: valorError } = participantTotal < capacidade
+          const { data: valorCalculado, error: valorError } = participantTotal === 1
             ? await supabaseAdmin.rpc('preco_formacao_coletiva', {
                 p_idioma: turma.idioma,
                 p_modalidade: turma.modalidade,
@@ -1365,7 +1365,7 @@ Deno.serve(
                 p_idioma: turma.idioma,
                 p_modalidade: turma.modalidade,
                 p_aulas_semana: turma.aulas_semana,
-                p_participantes: participantTotal,
+                p_participantes: capacidade,
               })
 
           if (valorError || valorCalculado == null) {
