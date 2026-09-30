@@ -88,7 +88,6 @@ function ModalidadeCard({
         plano.idioma === idioma &&
         plano.modalidade === modalidade &&
         plano.tipo === 'mensal' &&
-        (modalidade === 'dupla' || (plano.aulas_semana ?? 0) >= 2),
     )
     .sort((a, b) => (a.aulas_semana ?? 0) - (b.aulas_semana ?? 0))
 
@@ -136,7 +135,7 @@ function ModalidadeCard({
                     : `${capacidadeTexto} — valor regular da turma formada.`}
                 </p>
                 <a
-                  href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma}
+                  href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id}
                   className="btn btn-outline planos-collective-cta"
                 >
                   Encontrar meu horário <ArrowRight size={16} />
@@ -178,13 +177,21 @@ function ModalidadeCard({
           </p>
         </div>
 
-        <a
-          href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&formacao=1'}
-          className="btn btn-primary planos-detail-cta"
-        >
-          {modalidade === 'dupla' ? 'Começar uma nova dupla' : 'Começar um novo grupo'}
-          <ArrowRight size={17} />
-        </a>
+        <div className="planos-formation-actions">
+          {regulares.length > 0 ? regulares.map((plano) => (
+            <a
+              key={plano.id}
+              href={'/matricula?idioma=' + idioma + '&plano=' + plano.id + '&formacao=1'}
+              className="btn btn-primary planos-detail-cta"
+            >
+              {modalidade === 'dupla' ? 'Começar nova dupla — ' : 'Começar novo grupo — '}
+              {plano.aulas_semana ?? 1}x por semana
+              <ArrowRight size={17} />
+            </a>
+          )) : (
+            <div className="planos-empty-collective">Nenhum plano de formação disponível no momento.</div>
+          )}
+        </div>
       </div>
 
       {individual1x && (
