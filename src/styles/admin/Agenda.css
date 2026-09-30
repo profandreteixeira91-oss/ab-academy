@@ -1141,3 +1141,9 @@
     gap: 5px;
   }
 }
+
+
+/* Filtros da agenda */
+.agenda-filters { display:flex; align-items:flex-end; gap:12px; flex-wrap:wrap; margin:18px 0; }
+.agenda-filters .agenda-form-field { min-width:210px; }
+@media (max-width: 640px) { .agenda-filters { display:grid; grid-template-columns:1fr; } .agenda-filters .agenda-form-field { min-width:0; } .agenda-filters .agenda-secondary-button { width:100%; } }
