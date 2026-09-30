@@ -8,16 +8,20 @@ type MobileSystemHeaderProps = {
 
 const links = [
   { label: 'Início', href: '/' },
+  { label: 'Sobre', href: '/#sobre', homeHref: '#sobre' },
   { label: 'Cursos', href: '/aulas' },
+  { label: 'Metodologia', href: '/#metodologia', homeHref: '#metodologia' },
   { label: 'Planos', href: '/planos' },
   { label: 'Aula diagnóstica', href: '/diagnostica' },
-  { label: 'Quero aprender', href: '/quero-aprender' },
+  { label: 'Enterprise', href: '/enterprise' },
+  { label: 'Contato', href: '/quero-aprender' },
   { label: 'Área do aluno', href: '/aluno' },
   { label: 'Portal do professor', href: '/professor' },
 ]
 
 export default function MobileSystemHeader({ title }: MobileSystemHeaderProps) {
   const [open, setOpen] = useState(false)
+  const isHome = window.location.pathname === '/'
 
   return (
     <header className="mobile-system-header">
@@ -44,7 +48,7 @@ export default function MobileSystemHeader({ title }: MobileSystemHeaderProps) {
       {open && (
         <nav className="mobile-system-header-navigation" aria-label="Navegação principal">
           {links.map((link) => (
-            <a key={link.href} href={link.href} onClick={() => setOpen(false)}>
+            <a key={link.label} href={isHome && link.homeHref ? link.homeHref : link.href} onClick={() => setOpen(false)}>
               {link.label}
             </a>
           ))}
