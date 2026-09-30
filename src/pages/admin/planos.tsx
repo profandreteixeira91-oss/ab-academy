@@ -17,10 +17,16 @@ import { supabase } from '../../lib/supabase'
 type Idioma = 'ingles' | 'alemao'
 type TipoPlano = 'mensal' | 'anual' | 'personalizado' | 'intensivo' | 'avulso'
 
+type Modalidade = 'individual' | 'dupla' | 'grupo'
+
 type Plano = {
   id: string
   idioma: Idioma
   tipo: TipoPlano
+  modalidade: Modalidade
+  min_alunos: number | null
+  max_alunos: number | null
+  aulas_semana: number | null
   nome: string
   descricao: string | null
   preco: number
@@ -35,6 +41,10 @@ type Plano = {
 type PlanoForm = {
   idioma: Idioma
   tipo: TipoPlano
+  modalidade: Modalidade
+  min_alunos: string
+  max_alunos: string
+  aulas_semana: string
   nome: string
   descricao: string
   preco: string
@@ -47,6 +57,10 @@ type PlanoForm = {
 const emptyForm: PlanoForm = {
   idioma: 'ingles',
   tipo: 'mensal',
+  modalidade: 'individual',
+  min_alunos: '1',
+  max_alunos: '1',
+  aulas_semana: '1',
   nome: '',
   descricao: '',
   preco: '',
@@ -75,6 +89,12 @@ function formatCurrency(value: number | null) {
 
 function formatIdioma(idioma: Idioma) {
   return idioma === 'ingles' ? 'Inglês' : 'Alemão'
+}
+
+function formatModalidade(modalidade: Modalidade) {
+  if (modalidade === 'dupla') return 'Dupla'
+  if (modalidade === 'grupo') return 'Grupo'
+  return 'Individual'
 }
 
 function formatTipo(tipo: TipoPlano) {
@@ -109,6 +129,8 @@ export default function Planos() {
   const [filterStatus, setFilterStatus] = useState<
     'todos' | 'ativo' | 'inativo'
   >('todos')
+  const [filterModalidade, setFilterModalidade] = useState<'todos' | Modalidade>('todos')
+  const [filterFrequencia, setFilterFrequencia] = useState<'todos' | '1' | '2' | '3'>('todos')
 
   const [modalOpen, setModalOpen] = useState(false)
   const [editingPlano, setEditingPlano] = useState<Plano | null>(null)
@@ -171,11 +193,16 @@ export default function Planos() {
         (filterStatus === 'ativo' && plano.ativo) ||
         (filterStatus === 'inativo' && !plano.ativo)
 
+      const matchesModalidade = filterModalidade === 'todos' || plano.modalidade === filterModalidade
+      const matchesFrequencia = filterFrequencia === 'todos' || String(plano.aulas_semana ?? '') === filterFrequencia
+
       return (
         matchesSearch &&
         matchesIdioma &&
         matchesTipo &&
-        matchesStatus
+        matchesStatus &&
+        matchesModalidade &&
+        matchesFrequencia
       )
     })
   }, [
@@ -184,6 +211,8 @@ export default function Planos() {
     filterIdioma,
     filterTipo,
     filterStatus,
+    filterModalidade,
+    filterFrequencia,
   ])
 
   const activeCount = planos.filter((plano) => plano.ativo).length
@@ -192,7 +221,9 @@ export default function Planos() {
     search.trim() ||
     filterIdioma !== 'todos' ||
     filterTipo !== 'todos' ||
-    filterStatus !== 'todos',
+    filterStatus !== 'todos' ||
+    filterModalidade !== 'todos' ||
+    filterFrequencia !== 'todos',
   )
 
   function openCreateModal() {
@@ -208,6 +239,10 @@ export default function Planos() {
     setForm({
       idioma: plano.idioma,
       tipo: plano.tipo,
+      modalidade: plano.modalidade ?? 'individual',
+      min_alunos: String(plano.min_alunos ?? (plano.modalidade === 'dupla' ? 2 : plano.modalidade === 'grupo' ? 3 : 1)),
+      max_alunos: String(plano.max_alunos ?? (plano.modalidade === 'dupla' ? 2 : plano.modalidade === 'grupo' ? 3 : 1)),
+      aulas_semana: String(plano.aulas_semana ?? 1),
       nome: plano.nome,
       descricao: plano.descricao ?? '',
       preco: String(plano.preco ?? ''),
@@ -305,7 +340,17 @@ export default function Planos() {
       return 'O preço não pode ser negativo.'
     }
 
-    if (form.parcelas.trim()) {
+    if (!['individual', 'dupla', 'grupo'].includes(form.modalidade)) return 'Selecione uma modalidade válida.'
+    const aulasSemana = Number(form.aulas_semana)
+    if (!Number.isInteger(aulasSemana) || aulasSemana < 1 || aulasSemana > 3) return 'A frequência deve ser de 1, 2 ou 3 aulas por semana.'
+    const minAlunos = Number(form.min_alunos)
+    const maxAlunos = Number(form.max_alunos)
+    if (!Number.isInteger(minAlunos) || !Number.isInteger(maxAlunos) || minAlunos < 1 || maxAlunos < minAlunos) return 'Informe corretamente a quantidade mínima e máxima de alunos.'
+    if (form.modalidade === 'individual' && (minAlunos !== 1 || maxAlunos !== 1)) return 'Planos individuais devem ter 1 aluno.'
+    if (form.modalidade === 'dupla' && (minAlunos !== 2 || maxAlunos !== 2)) return 'Planos em dupla devem ter 2 alunos.'
+    if (form.modalidade === 'grupo' && (minAlunos < 3 || maxAlunos > 6)) return 'Grupos devem ter capacidade entre 3 e 6 alunos.'
+
+    if (form.parcelas.trim())
       const parcelas = Number(form.parcelas)
 
       if (!Number.isInteger(parcelas) || parcelas <= 0) {
@@ -330,6 +375,9 @@ export default function Planos() {
       setSuccess('')
 
       const preco = parseMoney(form.preco)
+      const minAlunos = Number(form.min_alunos)
+      const maxAlunos = Number(form.max_alunos)
+      const aulasSemana = Number(form.aulas_semana)
 
       let parcelas = form.parcelas.trim()
         ? Number(form.parcelas)
@@ -359,6 +407,7 @@ export default function Planos() {
         .select('id')
         .eq('idioma', form.idioma)
         .eq('tipo', form.tipo)
+        .eq('modalidade', form.modalidade)
         .limit(1)
 
       if (editingPlano) {
@@ -375,13 +424,17 @@ export default function Planos() {
       }
 
       if (planoExistente) {
-        setError('Já existe um plano para este idioma e tipo. Edite o plano existente.')
+        setError('Já existe um plano para este idioma, modalidade e tipo. Edite o plano existente.')
         return
       }
 
       const payload = {
         idioma: form.idioma,
         tipo: form.tipo,
+        modalidade: form.modalidade,
+        min_alunos: minAlunos,
+        max_alunos: maxAlunos,
+        aulas_semana: aulasSemana,
         nome: form.nome.trim(),
         descricao: form.descricao.trim() || null,
         preco,
@@ -427,7 +480,7 @@ export default function Planos() {
 
       if (err?.code === '23505') {
         setError(
-          'Já existe um plano para este idioma e tipo.',
+          'Já existe um plano para este idioma, modalidade e tipo.',
         )
       } else {
         setError(
@@ -505,6 +558,15 @@ Esta ação não pode ser desfeita.`,
       beneficios: current.beneficios.filter(
         (_, itemIndex) => itemIndex !== index,
       ),
+    }))
+  }
+
+  function handleModalidadeChange(value: Modalidade) {
+    setForm((current) => ({
+      ...current,
+      modalidade: value,
+      min_alunos: value === 'individual' ? '1' : value === 'dupla' ? '2' : '3',
+      max_alunos: value === 'individual' ? '1' : value === 'dupla' ? '2' : '3',
     }))
   }
 
@@ -692,6 +754,18 @@ Esta ação não pode ser desfeita.`,
         </div>
 
         <div className="planos-filter">
+          <select value={filterModalidade} onChange={(event) => setFilterModalidade(event.target.value as 'todos' | Modalidade)}>
+            <option value="todos">Todas as modalidades</option><option value="individual">Individual</option><option value="dupla">Dupla</option><option value="grupo">Grupo</option>
+          </select><ChevronDown size={15} />
+        </div>
+
+        <div className="planos-filter">
+          <select value={filterFrequencia} onChange={(event) => setFilterFrequencia(event.target.value as 'todos' | '1' | '2' | '3')}>
+            <option value="todos">Todas as frequências</option><option value="1">1x por semana</option><option value="2">2x por semana</option><option value="3">3x por semana</option>
+          </select><ChevronDown size={15} />
+        </div>
+
+        <div className="planos-filter">
           <select
             value={filterStatus}
             onChange={(event) =>
@@ -719,6 +793,8 @@ Esta ação não pode ser desfeita.`,
               setFilterIdioma('todos')
               setFilterTipo('todos')
               setFilterStatus('todos')
+              setFilterModalidade('todos')
+              setFilterFrequencia('todos')
             }}
           >
             Limpar filtros
@@ -765,8 +841,7 @@ Esta ação não pode ser desfeita.`,
                 <tr>
                   <th>Plano</th>
                   <th>Idioma</th>
-                  <th>Tipo</th>
-                  <th>Preço</th>
+                  <th>Tipo</th><th>Modalidade</th><th>Frequência</th><th>Preço</th>
                   <th>Parcelamento</th>
                   <th>Status</th>
                   <th className="planos-actions-column">
@@ -797,12 +872,9 @@ Esta ação não pode ser desfeita.`,
                       </span>
                     </td>
 
-                    <td>
-                      <span className="planos-type">
-                        {formatTipo(plano.tipo)}
-                      </span>
-                    </td>
-
+                    <td><span className="planos-type">{formatTipo(plano.tipo)}</span></td>
+                    <td><span className="planos-type">{formatModalidade(plano.modalidade)}</span></td>
+                    <td><span className="planos-frequency-badge">{plano.aulas_semana ?? 1}x / semana</span></td>
                     <td>
                       <strong className="planos-price">
                         {formatCurrency(
@@ -990,6 +1062,28 @@ Esta ação não pode ser desfeita.`,
                       Avulso / Aula diagnóstica
                     </option>
                   </select>
+                </div>
+
+                <div className="planos-field">
+                  <label htmlFor="plano-modalidade">Modalidade</label>
+                  <select id="plano-modalidade" value={form.modalidade} onChange={(event) => handleModalidadeChange(event.target.value as Modalidade)} disabled={saving}>
+                    <option value="individual">Individual</option><option value="dupla">Dupla</option><option value="grupo">Grupo</option>
+                  </select>
+                  <small>Define como o plano será usado na matrícula e nos horários coletivos.</small>
+                </div>
+                <div className="planos-field">
+                  <label htmlFor="plano-frequencia">Aulas por semana</label>
+                  <select id="plano-frequencia" value={form.aulas_semana} onChange={(event) => updateForm('aulas_semana', event.target.value)} disabled={saving}>
+                    <option value="1">1x por semana</option><option value="2">2x por semana</option><option value="3">3x por semana</option>
+                  </select>
+                </div>
+                <div className="planos-field">
+                  <label htmlFor="plano-min-alunos">Mínimo de alunos</label>
+                  <input id="plano-min-alunos" type="number" min="1" max="6" value={form.min_alunos} onChange={(event) => updateForm('min_alunos', event.target.value)} disabled={saving || form.modalidade !== 'grupo'} />
+                </div>
+                <div className="planos-field">
+                  <label htmlFor="plano-max-alunos">Máximo de alunos</label>
+                  <input id="plano-max-alunos" type="number" min="1" max="6" value={form.max_alunos} onChange={(event) => updateForm('max_alunos', event.target.value)} disabled={saving || form.modalidade !== 'grupo'} />
                 </div>
 
                 <div className="planos-field planos-field-full">
