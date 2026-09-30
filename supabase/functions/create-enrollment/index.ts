@@ -660,6 +660,10 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: 'O valor da matrícula coletiva não corresponde à composição atual da turma.' }, 409)
         }
       } else {
+        const requiredSchedules = plano.tipo === 'intensivo' ? 3 : plano.tipo === 'personalizado' ? 2 : (plano.aulas_semana ?? 1)
+        if (horarioIds.length !== requiredSchedules) {
+          return jsonResponse({ error: `Este plano exige ${requiredSchedules} horário(s) por semana.` }, 409)
+        }
         if (Math.abs(Number(plano.preco) - Number(body.valor)) > 0.01) {
           return jsonResponse({ error: 'O valor enviado não corresponde ao valor oficial do plano.' }, 409)
         }
