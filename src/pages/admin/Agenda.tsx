@@ -298,6 +298,7 @@ export default function Agenda() {
         horariosResult,
         alunosResult,
         professoresResult,
+        registrosResult,
       ] = await Promise.all([
         supabase
           .from('horarios')
@@ -427,9 +428,9 @@ export default function Agenda() {
   }, [horarios, selectedDay, filterTipo, filterProfessor, filterNivel])
 
   const reposicoesDoDia = useMemo(() => {
-    const targetDate = dateKey(new Date())
     return registrosAulas.filter((registro) =>
-      registro.data_aula_override === targetDate &&
+      Boolean(registro.data_aula_override) &&
+      new Date(registro.data_aula_override + 'T12:00:00').getDay() === selectedDay &&
       Boolean(registro.hora_inicio_override) &&
       Boolean(registro.hora_fim_override) &&
       horarios.some((horario) =>
