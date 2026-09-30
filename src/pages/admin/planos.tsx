@@ -350,7 +350,7 @@ export default function Planos() {
     if (form.modalidade === 'dupla' && (minAlunos !== 2 || maxAlunos !== 2)) return 'Planos em dupla devem ter 2 alunos.'
     if (form.modalidade === 'grupo' && (minAlunos < 3 || maxAlunos > 6)) return 'Grupos devem ter capacidade entre 3 e 6 alunos.'
 
-    if (form.parcelas.trim())
+    if (form.parcelas.trim()) {
       const parcelas = Number(form.parcelas)
 
       if (!Number.isInteger(parcelas) || parcelas <= 0) {
