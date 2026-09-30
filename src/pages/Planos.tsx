@@ -66,9 +66,10 @@ type HorarioColetivo = {
   disponivel: boolean
   aluno_id: string | null
   professor_id: string | null
+  professor_nome: string | null
   tipo_horario: 'dupla' | 'grupo'
   nivel_referencia: string | null
-  professor?: { nome_completo: string | null } | null
+  vagas_restantes: number
 }
 
 const WEEKDAYS = [
@@ -157,7 +158,7 @@ function ModalidadeCard({
                   ))}
                 </div>
                 <p>
-                  {horariosDaOpcao[0]?.professor?.nome_completo ? 'Professor: ' + horariosDaOpcao[0].professor.nome_completo : 'Professor a confirmar'}
+                  {horariosDaOpcao[0]?.professor_nome ? 'Professor: ' + horariosDaOpcao[0].professor_nome : 'Professor a confirmar'}
                   {' · '}{nivel || horariosDaOpcao[0]?.nivel_referencia || 'Nível a confirmar'}
                 </p>
                 <a href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id)} className="btn btn-outline planos-collective-cta">
@@ -254,27 +255,38 @@ function Planos() {
       setLoading(true)
       setError('')
 
-      const [{ data: planosData, error: planosError }, { data: horariosData, error: horariosError }] = await Promise.all([
-        supabase.from('planos').select('id, idioma, tipo, nome, descricao, beneficios, preco, parcelas, valor_parcela, ativo, modalidade, min_alunos, max_alunos, created_at, aulas_semana').eq('ativo', true),
-        supabase.from('horarios').select('id, idioma, dia_semana, hora_inicio, hora_fim, disponivel, aluno_id, professor_id, tipo_horario, nivel_referencia, professor:professores(nome_completo)').eq('disponivel', true).in('tipo_horario', ['dupla', 'grupo']),
+      const [{ data: planosData, error: planosError }, { data: duplaData, error: duplaError }, { data: grupoData, error: grupoError }] = await Promise.all([
+        supabase
+          .from('planos')
+          .select('id, idioma, tipo, nome, descricao, beneficios, preco, parcelas, valor_parcela, ativo, modalidade, min_alunos, max_alunos, created_at, aulas_semana')
+          .eq('ativo', true),
+        supabase.rpc('listar_horarios_coletivos_planos', {
+          p_idioma: idiomaSelecionado,
+          p_modalidade: 'dupla',
+        }),
+        supabase.rpc('listar_horarios_coletivos_planos', {
+          p_idioma: idiomaSelecionado,
+          p_modalidade: 'grupo',
+        }),
       ])
 
       if (!active) return
-      if (planosError || horariosError) {
-        console.error('Erro ao carregar dados dos planos/horários:', planosError || horariosError)
+
+      if (planosError || duplaError || grupoError) {
+        console.error('Erro ao carregar dados dos planos/horários:', planosError || duplaError || grupoError)
         setError('Não foi possível carregar os planos e horários no momento.')
         setLoading(false)
         return
       }
 
       setPlanos((planosData || []) as Plano[])
-      setHorariosColetivos((horariosData || []) as HorarioColetivo[])
+      setHorariosColetivos([...(duplaData || []), ...(grupoData || [])] as HorarioColetivo[])
       setLoading(false)
     }
 
     loadPlanos()
     return () => { active = false }
-  }, [])
+  }, [idiomaSelecionado])
 
   const planosPorIdioma = useMemo(() => {
     /*
