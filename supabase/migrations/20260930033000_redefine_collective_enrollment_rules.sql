@@ -94,3 +94,8 @@ as 'select private.selecionar_horario_matricula_v2(p_horario_id,p_idioma,p_modal
 
 grant execute on function public.selecionar_horario_matricula_v2(uuid,text,text,integer,uuid,text,text,text) to anon,authenticated;
 grant execute on function public.listar_horarios_matricula(text,text,integer) to anon,authenticated;
+
+revoke execute on function public.preco_coletivo(text,text,integer,integer) from public,anon,authenticated;
+revoke execute on function public.preco_formacao_coletiva(text,text,integer) from public,anon,authenticated;
+grant execute on function public.preco_coletivo(text,text,integer,integer) to service_role;
+grant execute on function public.preco_formacao_coletiva(text,text,integer) to service_role;
