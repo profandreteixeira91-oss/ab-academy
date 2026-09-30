@@ -67,6 +67,8 @@ type Pagamento = {
   asaas_customer_id: string | null
   asaas_subscription_id: string | null
   matricula_id: string | null
+  turma_id: string | null
+  turma_participante_id: string | null
   dados_matricula: Record<string, unknown> | null
   horario_ids: string[] | null
 }
@@ -512,6 +514,8 @@ async function getPagamento(
       recorrencia_autorizada,
       recorrencia_autorizada_em,
       matricula_id,
+      turma_id,
+      turma_participante_id,
       dados_matricula,
       horario_ids
     `)
@@ -1560,52 +1564,122 @@ async function finalizarMatricula(
   }
 
   /*
-   * Recupera os horários da matrícula pendente.
-   */
-  const horarios =
-    await getHorariosSelecionados(
-      pagamento,
-    )
-
-  /*
    * Cria o aluno SOMENTE AGORA,
    * depois da confirmação do pagamento.
    */
-  const alunoId =
-    await createOrUpdateAluno(
-      pagamento,
-    )
+  const alunoId = await createOrUpdateAluno(pagamento)
 
   /*
-   * Confirma que os horários ainda não
-   * foram ocupados por outro aluno.
+   * Matrícula coletiva:
+   * o horário continua compartilhado; apenas o participante
+   * e a matrícula são ativados após o pagamento.
    */
-  await validarHorarios(
-    horarios,
-    alunoId,
-  )
+  if (pagamento.turma_id && pagamento.turma_participante_id) {
+    const { data: turma, error: turmaError } = await supabaseAdmin
+      .from('turmas')
+      .select('id,quantidade_minima,quantidade_maxima,status')
+      .eq('id', pagamento.turma_id)
+      .maybeSingle()
 
-  /*
-   * Ativa a matrícula já existente.
-   * NÃO cria uma nova matrícula.
-   */
-  const matriculaId =
-    await ativarMatricula(
-      matricula,
+    const { data: participante, error: participanteError } = await supabaseAdmin
+      .from('turma_participantes')
+      .select('id,turma_id,user_id,status')
+      .eq('id', pagamento.turma_participante_id)
+      .maybeSingle()
+
+    if (turmaError || participanteError || !turma || !participante || participante.turma_id !== turma.id || participante.user_id !== pagamento.user_id) {
+      throw new Error('A participação coletiva associada ao pagamento não é válida.')
+    }
+
+    const { data: activatedMatricula, error: activatedMatriculaError } = await supabaseAdmin
+      .from('matriculas')
+      .update({
+        aluno_id: alunoId,
+        status: 'ativa',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', matricula.id)
+      .select('id')
+      .single()
+
+    if (activatedMatriculaError || !activatedMatricula) {
+      throw new Error('Não foi possível ativar a matrícula coletiva.')
+    }
+
+    const { error: participanteUpdateError } = await supabaseAdmin
+      .from('turma_participantes')
+      .update({
+        aluno_id: alunoId,
+        status: 'confirmado',
+        confirmado_em: new Date().toISOString(),
+        reserva_expira_em: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', participante.id)
+
+    if (participanteUpdateError) {
+      throw new Error('Não foi possível confirmar a participação na turma.')
+    }
+
+    const { count: confirmedCount } = await supabaseAdmin
+      .from('turma_participantes')
+      .select('id', { count: 'exact', head: true })
+      .eq('turma_id', turma.id)
+      .eq('status', 'confirmado')
+
+    const turmaStatus = (confirmedCount ?? 0) >= turma.quantidade_minima ? 'ativa' : 'em_formacao'
+
+    await supabaseAdmin
+      .from('turmas')
+      .update({ status: turmaStatus, updated_at: new Date().toISOString() })
+      .eq('id', turma.id)
+
+    await supabaseAdmin
+      .from('turma_matriculas')
+      .update({
+        status: 'ativa',
+        matricula_id: matricula.id,
+        pagamento_id: pagamento.id,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('participante_id', participante.id)
+      .eq('matricula_id', matricula.id)
+
+    const { data: firstHorario } = await supabaseAdmin
+      .from('horarios')
+      .select('id,dia_semana,hora_inicio')
+      .eq('id', (pagamento.horario_ids ?? [])[0] ?? '')
+      .maybeSingle()
+
+    if (firstHorario) {
+      await supabaseAdmin
+        .from('matricula_horarios')
+        .upsert({
+          matricula_id: matricula.id,
+          horario_id: firstHorario.id,
+          dia_semana: firstHorario.dia_semana,
+          horario: firstHorario.hora_inicio,
+          created_at: new Date().toISOString(),
+        }, { onConflict: 'matricula_id,horario_id', ignoreDuplicates: true })
+    }
+
+    await atualizarPagamento(pagamento.id, 'pago', matricula.id)
+
+    return {
       alunoId,
-      pagamento,
-      horarios,
-    )
+      matriculaId: matricula.id,
+      subscriptionId: null,
+    }
+  }
 
   /*
-   * Vincula os horários à matrícula
-   * e ocupa os horários.
+   * Matrícula individual: mantém o fluxo existente.
    */
-  await vincularHorarios(
-    matriculaId,
-    alunoId,
-    horarios,
-  )
+  const horarios = await getHorariosSelecionados(pagamento)
+  await validarHorarios(horarios, alunoId)
+
+  const matriculaId = await ativarMatricula(matricula, alunoId, pagamento, horarios)
+  await vincularHorarios(matriculaId, alunoId, horarios)
 
   /*
    * Finalmente marca o pagamento como pago.
