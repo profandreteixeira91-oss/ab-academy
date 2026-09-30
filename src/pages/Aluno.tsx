@@ -3022,7 +3022,7 @@ function Aluno() {
       return [...lessons]
         .filter(
           (lesson) =>
-            lesson.status === 'agendada' && !lesson.isRescheduled,
+            lesson.status === 'agendada',
         )
         .sort(
           (a, b) =>
