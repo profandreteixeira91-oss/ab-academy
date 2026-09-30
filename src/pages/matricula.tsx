@@ -389,8 +389,8 @@ export default function Matricula() {
   }, [])
 
   useEffect(() => {
-    if (language) loadSchedules(language)
-  }, [language, plan?.modalidade, formationSlotId, waitingFormation, collectiveScheduleMode])
+    if (language && user) void loadSchedules(language)
+  }, [language, user, plan?.modalidade, plan?.aulas_semana, formationSlotId, waitingFormation, collectiveScheduleMode])
 
   useEffect(() => {
     if (!language || !isWaitingFormation) {
