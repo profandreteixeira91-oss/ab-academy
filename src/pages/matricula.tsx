@@ -385,9 +385,6 @@ export default function Matricula() {
     void initializeEnrollment()
   }, [])
 
-  useEffect(() => {
-    if (language) void loadSchedules(language)
-  }, [language, plan?.modalidade, plan?.aulas_semana, formationSlotId, waitingFormation])
 
   const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
     const { data, error: planError } = await supabase
@@ -415,75 +412,83 @@ export default function Matricula() {
   const loadSchedules = async (
     selectedLanguage: Language,
     withAvailability = availabilityReady,
-  ) => {
+  ): Promise<boolean> => {
     setLoadingSchedules(true)
     setError('')
 
-    if (formationSlotId && waitingFormation) {
-      const { data: response, error: formationError } = await supabase.functions.invoke('list-formation-slots', {
-        body: { horario_id: formationSlotId },
-      })
-      const data = response?.data?.[0]
-
-      if (formationError || !data || data.idioma !== selectedLanguage) {
-        setError('O horário de formação selecionado não está mais disponível.')
+    try {
+      if (!plan) {
+        setError('O plano selecionado ainda não foi carregado.')
         setAvailableSchedules([])
-        setLoadingSchedules(false)
-        return
+        return false
       }
 
-      setAvailableSchedules([{
-        id: data.horario_id,
-        tipo_horario: data.tipo_horario,
-        idioma: data.idioma,
-        dia_semana: data.dia_semana,
-        hora_inicio: data.hora_inicio,
-        hora_fim: data.hora_fim,
-        disponivel: true,
-        aluno_id: null,
-        created_at: '',
-        meet_url: null,
-        meet_space_name: null,
-        turma_id: null,
-        participante_id: null,
-        participantes: data.interessados ?? 0,
-        capacidade: data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 3),
-        vagas_restantes: Math.max(0, (data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 3)) - (data.interessados ?? 0)),
-        valor_mensal: null,
-        status_formacao: plan?.modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao',
-        tipo_valor: 'coletiva_em_formacao',
-        professor_id: data.professor_id ?? null,
-      }])
-      setLoadingSchedules(false)
-      return
-    }
+      if (formationSlotId && waitingFormation) {
+        const { data: response, error: formationError } = await supabase.functions.invoke('list-formation-slots', {
+          body: { horario_id: formationSlotId },
+        })
+        const data = response?.data?.[0]
 
-    const modalidade = plan?.modalidade ?? 'individual'
-    const aulasSemana = plan?.aulas_semana ?? (plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1)
+        if (formationError || !data || data.idioma !== selectedLanguage) {
+          setError('O horário de formação selecionado não está mais disponível.')
+          setAvailableSchedules([])
+          return false
+        }
 
-    const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula_inteligente', {
-      p_idioma: selectedLanguage,
-      p_modalidade: modalidade,
-      p_aulas_semana: aulasSemana,
-      p_dias: withAvailability && !availabilityFlexible ? availabilityDays : null,
-      p_periodos: withAvailability && !availabilityFlexible ? availabilityPeriods : null,
-      p_disponibilidade: withAvailability && !availabilityFlexible && Object.keys(availabilityRanges).length > 0
-        ? availabilityRanges
-        : null,
-    })
+        setAvailableSchedules([{
+          id: data.horario_id,
+          tipo_horario: data.tipo_horario,
+          idioma: data.idioma,
+          dia_semana: data.dia_semana,
+          hora_inicio: data.hora_inicio,
+          hora_fim: data.hora_fim,
+          disponivel: true,
+          aluno_id: null,
+          created_at: '',
+          meet_url: null,
+          meet_space_name: null,
+          turma_id: null,
+          participante_id: null,
+          participantes: data.interessados ?? 0,
+          capacidade: data.quantidade_maxima ?? (plan.modalidade === 'dupla' ? 2 : 3),
+          vagas_restantes: Math.max(0, (data.quantidade_maxima ?? (plan.modalidade === 'dupla' ? 2 : 3)) - (data.interessados ?? 0)),
+          valor_mensal: null,
+          status_formacao: plan.modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao',
+          tipo_valor: 'coletiva_em_formacao',
+          professor_id: data.professor_id ?? null,
+        }])
+        return true
+      }
 
-    if (schedulesError) {
-      console.error('Erro ao carregar horários:', schedulesError)
-      setError('Não foi possível carregar os horários disponíveis.')
-      setAvailableSchedules([])
-    } else {
+      const modalidade = plan.modalidade
+      const aulasSemana = plan.aulas_semana ?? (plan.tipo === 'intensivo' ? 3 : plan.tipo === 'personalizado' ? 2 : 1)
+
+      const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula_inteligente', {
+        p_idioma: selectedLanguage,
+        p_modalidade: modalidade,
+        p_aulas_semana: aulasSemana,
+        p_dias: withAvailability && !availabilityFlexible ? availabilityDays : null,
+        p_periodos: withAvailability && !availabilityFlexible ? availabilityPeriods : null,
+        p_disponibilidade: withAvailability && !availabilityFlexible && Object.keys(availabilityRanges).length > 0
+          ? availabilityRanges
+          : null,
+      })
+
+      if (schedulesError) {
+        console.error('Erro ao carregar horários:', schedulesError)
+        setError('Não foi possível carregar os horários disponíveis.')
+        setAvailableSchedules([])
+        return false
+      }
+
       setAvailableSchedules((data ?? []).map((item) => ({
         ...item,
         valor_mensal: item.valor_mensal ?? item.valor_final ?? null,
       })) as Horario[])
+      return true
+    } finally {
+      setLoadingSchedules(false)
     }
-
-    setLoadingSchedules(false)
   }
 
 
@@ -605,7 +610,12 @@ export default function Matricula() {
         setError('Informe pelo menos um período ou intervalo de horário.')
         return
       }
-      await loadSchedules(language, true)
+      if (!language) {
+        setError('O idioma da matrícula não foi definido.')
+        return
+      }
+      const schedulesLoaded = await loadSchedules(language, true)
+      if (!schedulesLoaded) return
       setAvailabilityReady(true)
       setSelectedWeekday(availabilityDays[0] ?? null)
       setStep(3)
@@ -656,7 +666,7 @@ export default function Matricula() {
       return
     }
 
-    if (requestedType !== 'individual' && selectedSchedules.length >= aulasSemana) {
+    if (selectedSchedules.length >= aulasSemana) {
       setError(`Este plano exige ${aulasSemana} horário(s) por semana. Remova um horário para escolher outro.`)
       return
     }
@@ -750,41 +760,48 @@ export default function Matricula() {
     return true
   }
 
-  const verifyScheduleAgain = async () => {
-    if (!selectedSchedule || !language) return false
-    const aulasSemana = effectivePlan?.aulas_semana ?? (effectivePlan?.tipo === 'intensivo' ? 3 : effectivePlan?.tipo === 'personalizado' ? 2 : 1)
-    const modalidade = effectivePlan?.modalidade ?? 'individual'
+  const verifyScheduleAgain = async (): Promise<SelectedSchedule[] | null> => {
+    if (!language || !effectivePlan || selectedSchedules.length === 0) return null
 
-    const { data, error } = await supabase.rpc('analisar_horario_matricula', {
-      p_horario_id: selectedSchedule.id,
-      p_idioma: language,
-      p_modalidade: modalidade,
-      p_aulas_semana: aulasSemana,
-    })
+    const aulasSemana = effectivePlan.aulas_semana ?? (effectivePlan.tipo === 'intensivo' ? 3 : effectivePlan.tipo === 'personalizado' ? 2 : 1)
+    const modalidade = effectivePlan.modalidade
+    const latestSchedules: SelectedSchedule[] = []
 
-    if (error || !data?.[0]) {
-      const message = error?.message || 'Este horário não está mais disponível.'
-      setError(message.toLowerCase().includes('preenchido')
-        ? 'Este horário acabou de ser preenchido. Atualizamos as opções disponíveis para você.'
-        : message)
-      await loadSchedules(language)
-      setSelectedSchedule(null)
-      return false
+    for (const current of selectedSchedules) {
+      const { data, error } = await supabase.rpc('analisar_horario_matricula', {
+        p_horario_id: current.id,
+        p_idioma: language,
+        p_modalidade: modalidade,
+        p_aulas_semana: aulasSemana,
+      })
+
+      if (error || !data?.[0]) {
+        const message = error?.message || 'Este horário não está mais disponível.'
+        setError(message.toLowerCase().includes('preenchido')
+          ? 'Este horário acabou de ser preenchido. Atualizamos as opções disponíveis para você.'
+          : message)
+        await loadSchedules(language, true)
+        setSelectedSchedule(null)
+        setSelectedSchedules([])
+        return null
+      }
+
+      const latest = data[0]
+      latestSchedules.push({
+        ...current,
+        turma_id: latest.turma_id ?? current.turma_id ?? null,
+        participantes: latest.quantidade_atual_alunos != null ? Number(latest.quantidade_atual_alunos) : current.participantes,
+        capacidade: latest.capacidade != null ? Number(latest.capacidade) : current.capacidade,
+        valor_mensal: latest.valor_final != null ? Number(latest.valor_final) : current.valor_mensal,
+        status_formacao: latest.status_formacao ?? current.status_formacao ?? null,
+        tipo_valor: latest.tipo_valor ?? current.tipo_valor ?? null,
+        professor_id: latest.professor_id ?? current.professor_id ?? null,
+      })
     }
 
-    const latest = data[0]
-    setSelectedSchedule((current) => current ? ({
-      ...current,
-      turma_id: latest.turma_id ?? null,
-      participantes: latest.quantidade_atual_alunos != null ? Number(latest.quantidade_atual_alunos) : null,
-      capacidade: latest.capacidade != null ? Number(latest.capacidade) : null,
-      valor_mensal: latest.valor_final != null ? Number(latest.valor_final) : null,
-      status_formacao: latest.status_formacao ?? null,
-      tipo_valor: latest.tipo_valor ?? null,
-      professor_id: latest.professor_id ?? null,
-    }) : current)
-
-    return true
+    setSelectedSchedules(latestSchedules)
+    setSelectedSchedule(latestSchedules[0] ?? null)
+    return latestSchedules
   }
 
   const createEnrollment = async () => {
@@ -800,10 +817,16 @@ export default function Matricula() {
     setSuccess('')
 
     try {
-      const scheduleIsAvailable =
-        await verifyScheduleAgain()
+      const freshSchedules = await verifyScheduleAgain()
 
-      if (!scheduleIsAvailable) {
+      if (!freshSchedules) {
+        setLoading(false)
+        return
+      }
+
+      const primarySchedule = freshSchedules[0]
+      if (!primarySchedule) {
+        setError('Nenhum horário válido foi confirmado.')
         setLoading(false)
         return
       }
@@ -837,9 +860,9 @@ export default function Matricula() {
         idioma: language,
         tipo_plano: effectivePlan?.tipo ?? 'mensal',
         turma_token: collectiveEnrollment?.token ?? null,
-        turma_participante_id: collectiveEnrollment?.participanteId ?? selectedSchedule.participante_id ?? null,
-        turma_id: collectiveEnrollment?.turmaId ?? selectedSchedule.turma_id ?? null,
-        horario_formacao_id: isWaitingFormation ? (formationSlotId || selectedSchedule.id) : null,
+        turma_participante_id: collectiveEnrollment?.participanteId ?? primarySchedule.participante_id ?? null,
+        turma_id: collectiveEnrollment?.turmaId ?? primarySchedule.turma_id ?? null,
+        horario_formacao_id: isWaitingFormation ? (formationSlotId || primarySchedule.id) : null,
         aguardando_formacao: isWaitingFormation,
 
         objetivos: null,
@@ -848,18 +871,18 @@ export default function Matricula() {
 
         valor_aula: collectiveEnrollment ? null : effectivePlan?.tipo === 'avulso' ? Number(effectivePlan.preco) : effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0) / (effectivePlan?.tipo === 'intensivo' ? 12 : effectivePlan?.tipo === 'personalizado' ? 8 : 4),
 
-        valor_mensal: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? selectedSchedule.valor_mensal : (isWaitingFormation ? selectedSchedule.valor_mensal : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0)))),
+        valor_mensal: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? primarySchedule.valor_mensal : (isWaitingFormation ? primarySchedule.valor_mensal : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0)))),
 
         valor_anual: collectiveEnrollment ? null : effectivePlan?.tipo === 'anual' ? Number(effectivePlan.preco) : null,
 
-        horario_ids: selectedSchedules.map((item) => item.id),
+        horario_ids: freshSchedules.map((item) => item.id),
 
-        schedules: selectedSchedules,
+        schedules: freshSchedules,
 
         dados_aluno: dadosAluno,
         reserva_token: reservaToken,
 
-        valor: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? selectedSchedule.valor_mensal : (isWaitingFormation ? selectedSchedule.valor_mensal : selectedSchedule.valor_mensal ?? Number(effectivePlan?.preco ?? 0))),
+        valor: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? primarySchedule.valor_mensal : (isWaitingFormation ? primarySchedule.valor_mensal : primarySchedule.valor_mensal ?? Number(effectivePlan?.preco ?? 0))),
       }
 
       const {
