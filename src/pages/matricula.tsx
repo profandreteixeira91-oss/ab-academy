@@ -511,7 +511,10 @@ export default function Matricula() {
       setError('Não foi possível carregar os horários disponíveis.')
       setAvailableSchedules([])
     } else {
-      setAvailableSchedules((data ?? []) as Horario[])
+      setAvailableSchedules((data ?? []).map((item) => ({
+        ...item,
+        valor_mensal: item.valor_mensal ?? item.valor_final ?? null,
+      })) as Horario[])
     }
 
     setLoadingSchedules(false)
