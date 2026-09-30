@@ -27,10 +27,6 @@ type PagamentoInfo = {
   status: string
   matricula_id?: string | null
   plano_nome: string | null
-  dados_matricula: Record<
-    string,
-    unknown
-  > | null
 }
 
 type CardBrand = 'Visa' | 'Mastercard' | 'American Express' | 'Elo' | 'Hipercard' | 'Diners Club' | 'Discover' | null
