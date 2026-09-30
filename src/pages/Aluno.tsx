@@ -4260,7 +4260,7 @@ function PagamentoAluno({
                   <div className={`student-payment-third-party-toggle ${cardHolderIsThirdParty ? 'active' : ''}`}>
                     <div>
                       <strong>O cartão pertence a outra pessoa?</strong>
-                      <span>Use os dados do titular real do cartão para o processamento.</span>
+                      <span>Se sim, informe os dados do titular real do cartão.</span>
                     </div>
                     <button
                       type="button"
@@ -4276,29 +4276,75 @@ function PagamentoAluno({
 
                   <div className="student-payment-card-holder-label">
                     <CreditCard size={17} />
-                    <span>{cardHolderIsThirdParty ? 'Dados do titular do cartão' : 'Dados do seu cartão'}</span>
+                    <span>{cardHolderIsThirdParty ? 'Dados do titular do cartão' : 'Dados do aluno'}</span>
                   </div>
 
-                  <input placeholder="Nome impresso no cartão" value={card.holderName} onChange={e => onCardChange(v => ({ ...v, holderName: e.target.value }))} />
-
-                  {cardHolderIsThirdParty && (
-                    <div className="student-payment-fields-2">
-                      <input placeholder="CPF/CNPJ do titular" inputMode="numeric" value={card.holderCpf} onChange={e => onCardChange(v => ({ ...v, holderCpf: e.target.value }))} />
-                      <input type="email" placeholder="E-mail do titular" value={card.holderEmail} onChange={e => onCardChange(v => ({ ...v, holderEmail: e.target.value }))} />
-                    </div>
-                  )}
-                  <input placeholder="Número do cartão" inputMode="numeric" value={card.number} onChange={e => onCardChange(v => ({ ...v, number: e.target.value }))} />
-                  <div className="student-payment-fields-3">
-                    <input placeholder="Mês" maxLength={2} inputMode="numeric" value={card.expiryMonth} onChange={e => onCardChange(v => ({ ...v, expiryMonth: e.target.value }))} />
-                    <input placeholder="Ano" maxLength={4} inputMode="numeric" value={card.expiryYear} onChange={e => onCardChange(v => ({ ...v, expiryYear: e.target.value }))} />
-                    <input placeholder="CVV" maxLength={4} inputMode="numeric" value={card.ccv} onChange={e => onCardChange(v => ({ ...v, ccv: e.target.value }))} />
+                  <div className="student-payment-field">
+                    <label>Nome completo do titular <strong>*</strong></label>
+                    <input autoComplete="cc-name" value={card.holderName} onChange={e => onCardChange(v => ({ ...v, holderName: e.target.value }))} />
                   </div>
+
                   <div className="student-payment-fields-2">
-                    <input placeholder="CEP" inputMode="numeric" value={card.postalCode} onChange={e => onCardChange(v => ({ ...v, postalCode: e.target.value }))} />
-                    <input placeholder="Número do endereço" value={card.addressNumber} onChange={e => onCardChange(v => ({ ...v, addressNumber: e.target.value }))} />
+                    <div className="student-payment-field">
+                      <label>CPF/CNPJ do titular <strong>*</strong></label>
+                      <input inputMode="numeric" autoComplete="off" value={card.holderCpf} onChange={e => onCardChange(v => ({ ...v, holderCpf: e.target.value.replace(/\D/g, '').slice(0, 14) }))} />
+                    </div>
+                    <div className="student-payment-field">
+                      <label>E-mail do titular <strong>*</strong></label>
+                      <input type="email" autoComplete="email" value={card.holderEmail} onChange={e => onCardChange(v => ({ ...v, holderEmail: e.target.value }))} />
+                    </div>
                   </div>
-                  <input placeholder="Complemento (opcional)" value={card.addressComplement} onChange={e => onCardChange(v => ({ ...v, addressComplement: e.target.value }))} />
-                  <input placeholder="Telefone" inputMode="tel" value={card.phone} onChange={e => onCardChange(v => ({ ...v, phone: e.target.value }))} />
+
+                  <div className="student-payment-field">
+                    <label>Número do cartão <strong>*</strong></label>
+                    <input inputMode="numeric" autoComplete="cc-number" value={card.number} onChange={e => onCardChange(v => ({ ...v, number: e.target.value.replace(/\D/g, '').slice(0, 19) }))} />
+                  </div>
+
+                  <div className="student-payment-fields-3">
+                    <div className="student-payment-field">
+                      <label>Mês <strong>*</strong></label>
+                      <input inputMode="numeric" autoComplete="cc-exp-month" maxLength={2} value={card.expiryMonth} onChange={e => onCardChange(v => ({ ...v, expiryMonth: e.target.value.replace(/\D/g, '').slice(0, 2) }))} />
+                    </div>
+                    <div className="student-payment-field">
+                      <label>Ano <strong>*</strong></label>
+                      <input inputMode="numeric" autoComplete="cc-exp-year" maxLength={4} value={card.expiryYear} onChange={e => onCardChange(v => ({ ...v, expiryYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
+                    </div>
+                    <div className="student-payment-field">
+                      <label>CVV <strong>*</strong></label>
+                      <input inputMode="numeric" autoComplete="cc-csc" maxLength={4} value={card.ccv} onChange={e => onCardChange(v => ({ ...v, ccv: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
+                    </div>
+                  </div>
+
+                  <div className="student-payment-fields-2">
+                    <div className="student-payment-field">
+                      <label>CEP do titular <strong>*</strong></label>
+                      <input inputMode="numeric" autoComplete="postal-code" value={card.postalCode} onChange={e => onCardChange(v => ({ ...v, postalCode: e.target.value.replace(/\D/g, '').slice(0, 8) }))} />
+                    </div>
+                    <div className="student-payment-field">
+                      <label>Número do endereço <strong>*</strong></label>
+                      <input value={card.addressNumber} onChange={e => onCardChange(v => ({ ...v, addressNumber: e.target.value }))} />
+                    </div>
+                  </div>
+
+                  <div className="student-payment-fields-2">
+                    <div className="student-payment-field">
+                      <label>Telefone do titular <strong>*</strong></label>
+                      <input inputMode="tel" autoComplete="tel" value={card.phone} onChange={e => onCardChange(v => ({ ...v, phone: e.target.value.replace(/\D/g, '').slice(0, 11) }))} />
+                    </div>
+                    <div className="student-payment-field">
+                      <label>Complemento</label>
+                      <input autoComplete="address-line2" value={card.addressComplement} onChange={e => onCardChange(v => ({ ...v, addressComplement: e.target.value }))} />
+                    </div>
+                  </div>
+
+                  <label className={`student-payment-recurring ${recurringAuthorized ? 'active' : ''}`}>
+                    <input type="checkbox" checked={recurringAuthorized} onChange={e => onRecurringChange(e.target.checked)} />
+                    <span className="student-payment-recurring-check" aria-hidden="true">{recurringAuthorized ? '✓' : ''}</span>
+                    <span>
+                      <strong>Autorizar cobrança recorrente da mensalidade</strong>
+                      <small>Ao autorizar, a AB Academy poderá cobrar automaticamente esta mensalidade no cartão informado nos próximos ciclos. O cartão fica vinculado à assinatura no Asaas; os dados completos do cartão não são armazenados pela AB Academy.</small>
+                    </span>
+                  </label>
                 </div>
               )}
 
