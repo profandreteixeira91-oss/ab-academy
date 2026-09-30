@@ -1471,12 +1471,6 @@ export default function Matricula() {
     }
   }
 
-,
-        { id: 2, text: 'Welche Antwort passt? „Wie geht es dir?“', options: ['Danke, gut!', 'Ich bin aus Brasilien.', 'Ich habe zwanzig Jahre.', 'Morgen um acht.'] },
-        { id: 3, text: 'Welche frase está correta?', options: ['Ich habe gestern gearbeitet.', 'Ich gestern habe gearbeitet.', 'Gestern ich gearbeitet habe.', 'Ich gearbeitet gestern habe.'] },
-        { id: 4, text: 'Qual opção expressa uma hipótese?', options: ['Wenn ich Zeit hätte, würde ich reisen.', 'Ich reise gestern.', 'Ich bin gerade angekommen.', 'Ich werde morgen arbeiten.'] },
-        { id: 5, text: 'Qual frase apresenta uma estrutura mais avançada?', options: ['Obwohl es geregnet hat, sind wir spazieren gegangen.', 'Ich gehe nach Hause.', 'Ich lerne Deutsch.', 'Das ist mein Buch.'] },
-      ]
     : [
         { id: 1, text: 'How would you introduce yourself?', options: ['My name is Anna and I am from Brazil.', 'I name Anna Brazil.', 'Anna be Brazil.', 'My name are Anna.'] },
         { id: 2, text: 'Which answer fits? “How are you?”', options: ['I’m fine, thank you!', 'I’m from Brazil.', 'I’m twenty years.', 'Tomorrow at eight.'] },
