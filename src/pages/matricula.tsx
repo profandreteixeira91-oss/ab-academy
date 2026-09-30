@@ -621,12 +621,6 @@ export default function Matricula() {
     }
 
     if (step === 2) {
-      if (!validatePersonalData()) return
-      setStep(3)
-      return
-    }
-
-    if (step === 3) {
       if (availabilityDays.length === 0 && !availabilityFlexible) {
         setError('Selecione pelo menos um dia em que você pode estudar.')
         return
@@ -637,13 +631,24 @@ export default function Matricula() {
       }
       setAvailabilityReady(true)
       setSelectedWeekday(availabilityDays[0] ?? null)
+      setStep(3)
+      return
+    }
+
+    if (step === 3) {
+      if (!validateSchedule()) return
       setStep(4)
       return
     }
 
     if (step === 4) {
-      if (!validateSchedule()) return
+      if (!validatePersonalData()) return
       setLoadingSchedules(true)
+      const reserved = await reserveSelectedSchedules()
+      if (!reserved) {
+        setLoadingSchedules(false)
+        return
+      }
       const confirmed = await verifyScheduleAgain()
       setLoadingSchedules(false)
       if (!confirmed) return
@@ -684,72 +689,88 @@ export default function Matricula() {
       return
     }
 
-    setLoadingSchedules(true)
-
-    const { data: selected, error: selectionError } = await supabase.rpc('selecionar_horario_matricula_v2', {
-      p_horario_id: horario.id,
-      p_idioma: language,
-      p_modalidade: requestedType,
-      p_aulas_semana: aulasSemana,
-      p_turma_id: selectedSchedule?.turma_id ?? null,
-      p_reserva_token: reservaToken,
-      p_nome: name.trim(),
-      p_email: email.trim().toLowerCase(),
-    })
-
-    setLoadingSchedules(false)
-
-    if (selectionError || !selected) {
-      console.error('Erro ao selecionar horário:', selectionError)
-      const selectionMessage = selectionError?.message || ''
-      setError(
-        selectionMessage.toLowerCase().includes('preenchido') ||
-        selectionMessage.toLowerCase().includes('completa')
-          ? 'Este horário acabou de ser preenchido. Atualizamos as opções disponíveis para você.'
-          : selectionMessage || 'Este horário não está mais disponível. Escolha outro horário.',
-      )
-      if (language) await loadSchedules(language)
-      return
-    }
-
     const schedule: SelectedSchedule = {
-      id: selected.id,
-      date: getDateForWeekday(selected.dia_semana),
-      weekday: selected.dia_semana,
-      hora_inicio: selected.hora_inicio,
-      hora_fim: selected.hora_fim,
-      meet_url: selected.meet_url ?? null,
-      meet_space_name: selected.meet_space_name ?? null,
-      turma_id: selected.turma_id ?? null,
-      participante_id: selected.participante_id ?? null,
-      valor_mensal: selected.valor_mensal != null ? Number(selected.valor_mensal) : null,
-      participantes: selected.participantes != null ? Number(selected.participantes) : null,
-      capacidade: selected.capacidade != null ? Number(selected.capacidade) : null,
-      status_formacao: selected.status_formacao ?? null,
-      tipo_valor: selected.tipo_valor ?? null,
-      professor_id: selected.professor_id ?? null,
+      id: horario.id,
+      date: getDateForWeekday(horario.dia_semana),
+      weekday: horario.dia_semana,
+      hora_inicio: horario.hora_inicio,
+      hora_fim: horario.hora_fim,
+      meet_url: horario.meet_url ?? null,
+      meet_space_name: horario.meet_space_name ?? null,
+      turma_id: horario.turma_id ?? null,
+      participante_id: horario.participante_id ?? null,
+      valor_mensal: horario.valor_mensal != null ? Number(horario.valor_mensal) : null,
+      participantes: horario.participantes != null ? Number(horario.participantes) : null,
+      capacidade: horario.capacidade != null ? Number(horario.capacidade) : null,
+      status_formacao: horario.status_formacao ?? null,
+      tipo_valor: horario.tipo_valor ?? null,
+      professor_id: horario.professor_id ?? null,
     }
 
     const next = [...selectedSchedules, schedule]
     setSelectedSchedules(next)
     setSelectedSchedule(next[0] ?? null)
+  }
 
-    setAvailableSchedules((current) =>
-      current.map((item) =>
-        item.id === selected.id
-          ? {
-              ...item,
-              tipo_horario: selected.tipo_horario,
-              turma_id: selected.turma_id ?? null,
-              participante_id: selected.participante_id ?? null,
-              participantes: Number(selected.participantes ?? item.participantes ?? 0),
-              capacidade: Number(selected.capacidade ?? item.capacidade ?? 1),
-              vagas_restantes: Number(selected.vagas_restantes ?? item.vagas_restantes ?? 0),
-              valor_mensal: selected.valor_mensal != null ? Number(selected.valor_mensal) : item.valor_mensal,
-            }
-          : item,
-      ),
-    )
+  const reserveSelectedSchedules = async () => {
+    if (!language || !effectivePlan || selectedSchedules.length === 0) return false
+
+    const modalidade = effectivePlan.modalidade
+    const aulasSemana = effectivePlan.aulas_semana ?? (effectivePlan.tipo === 'intensivo' ? 3 : effectivePlan.tipo === 'personalizado' ? 2 : 1)
+
+    if (modalidade === 'individual') return true
+    if (!name.trim() || !email.trim()) {
+      setError('Informe seus dados pessoais antes de reservar o horário.')
+      return false
+    }
+
+    const reservedSchedules: SelectedSchedule[] = []
+
+    for (const current of selectedSchedules) {
+      const { data, error: selectionError } = await supabase.rpc('selecionar_horario_matricula_v2', {
+        p_horario_id: current.id,
+        p_idioma: language,
+        p_modalidade: modalidade,
+        p_aulas_semana: aulasSemana,
+        p_turma_id: current.turma_id ?? null,
+        p_reserva_token: reservaToken,
+        p_nome: name.trim(),
+        p_email: email.trim().toLowerCase(),
+      })
+
+      if (selectionError || !data) {
+        const message = selectionError?.message || 'Este horário acabou de ser preenchido.'
+        setError(message.toLowerCase().includes('preenchido') || message.toLowerCase().includes('completa')
+          ? 'Este horário acabou de ser preenchido. Encontramos novas opções para você.'
+          : message)
+        await loadSchedules(language)
+        setSelectedSchedule(null)
+        setSelectedSchedules([])
+        return false
+      }
+
+      reservedSchedules.push({
+        id: data.id,
+        date: getDateForWeekday(Number(data.dia_semana)),
+        weekday: Number(data.dia_semana),
+        hora_inicio: data.hora_inicio,
+        hora_fim: data.hora_fim,
+        meet_url: data.meet_url ?? null,
+        meet_space_name: data.meet_space_name ?? null,
+        turma_id: data.turma_id ?? null,
+        participante_id: data.participante_id ?? null,
+        valor_mensal: data.valor_mensal != null ? Number(data.valor_mensal) : null,
+        participantes: data.participantes != null ? Number(data.participantes) : null,
+        capacidade: data.capacidade != null ? Number(data.capacidade) : null,
+        status_formacao: data.status_formacao ?? null,
+        tipo_valor: data.tipo_valor ?? null,
+        professor_id: data.professor_id ?? null,
+      })
+    }
+
+    setSelectedSchedules(reservedSchedules)
+    setSelectedSchedule(reservedSchedules[0] ?? null)
+    return true
   }
 
   const verifyScheduleAgain = async () => {
@@ -1097,6 +1118,182 @@ export default function Matricula() {
               )}
 
               {step === 2 && (
+            <div className="availability-section">
+              <div className="selection-heading">
+                <div>
+                  <h3>Quando você pode estudar?</h3>
+                  <p>Informe sua disponibilidade. Depois mostraremos apenas os horários reais compatíveis com você.</p>
+                </div>
+              </div>
+
+              <div className="availability-days">
+                {WEEKDAYS.filter((day) => day.value !== 0 && day.value !== 6).map((day) => (
+                  <button
+                    type="button"
+                    key={day.value}
+                    className={availabilityDays.includes(day.value) ? 'selected' : ''}
+                    onClick={() => toggleAvailabilityDay(day.value)}
+                  >
+                    <span>✓</span>
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="availability-periods">
+                <strong>Qual período você prefere?</strong>
+                <div>
+                  {[
+                    ['manha', 'Manhã'],
+                    ['tarde', 'Tarde'],
+                    ['noite', 'Noite'],
+                  ].map(([value, label]) => (
+                    <button
+                      type="button"
+                      key={value}
+                      className={availabilityPeriods.includes(value) ? 'selected' : ''}
+                      onClick={() => toggleAvailabilityPeriod(value)}
+                    >
+                      {availabilityPeriods.includes(value) ? '✓ ' : ''}{label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="availability-flexible">
+                <input
+                  type="checkbox"
+                  checked={availabilityFlexible}
+                  onChange={(event) => setAvailabilityFlexible(event.target.checked)}
+                />
+                <span>
+                  <strong>Tenho flexibilidade de horário</strong>
+                  <small>Mostrar todos os horários compatíveis com o idioma, frequência e modalidade.</small>
+                </span>
+              </label>
+
+              {availabilityDays.length > 0 && !availabilityFlexible && (
+                <div className="availability-ranges">
+                  <strong>Ou informe um intervalo específico por dia</strong>
+                  {availabilityDays.map((day) => (
+                    <div className="availability-range" key={day}>
+                      <span>{WEEKDAYS.find((item) => item.value === day)?.label}</span>
+                      <label>
+                        das
+                        <input
+                          type="time"
+                          value={availabilityRanges[day]?.start ?? '18:00'}
+                          onChange={(event) => setAvailabilityRange(day, 'start', event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        até
+                        <input
+                          type="time"
+                          value={availabilityRanges[day]?.end ?? '21:00'}
+                          onChange={(event) => setAvailabilityRange(day, 'end', event.target.value)}
+                        />
+                      </label>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <div className="availability-actions">
+                <button type="button" className="enrollment-primary-button" onClick={nextStep}>
+                  Encontrar horários compatíveis <ArrowRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 3 && (
+            <div className="schedule-section">
+              <div className="selection-heading">
+                <div>
+                  <h3>Horários compatíveis com você</h3>
+                  <p>Mostrando horários reais compatíveis com você. O valor final será calculado após a análise do horário escolhido.</p>
+                </div>
+                <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setSelectedSchedule(null); setSelectedSchedules([]); }}>
+                  Alterar disponibilidade
+                </button>
+              </div>
+
+              {loadingSchedules ? (
+                <div className="enrollment-loading">Buscando os melhores horários...</div>
+              ) : availableSchedules.length === 0 ? (
+                <div className="enrollment-empty">
+                  <strong>Não encontramos um horário exatamente dentro da sua disponibilidade.</strong>
+                  <p>Revise os dias e períodos para ver outras opções.</p>
+                  <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setStep(3); }}>
+                    Ajustar disponibilidade
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="schedule-calendar">
+                    <button type="button" className={`schedule-date ${selectedWeekday === null ? 'selected' : ''}`} onClick={() => setSelectedWeekday(null)}>
+                      <strong>Todos</strong><span>horários</span>
+                    </button>
+                    {groupedSchedules.map((weekday) => (
+                      <button type="button" key={weekday.value} className={`schedule-date ${selectedWeekday === weekday.value ? 'selected' : ''}`} onClick={() => setSelectedWeekday(weekday.value)}>
+                        <strong>{weekday.short}</strong><span>{weekday.schedules.length} opções</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="schedule-times">
+                    {visibleSchedules
+                      .slice()
+                      .sort((a, b) => {
+                        const formationA = a.participantes > 0 && a.participantes < a.capacidade ? 0 : a.participantes === a.capacidade ? 1 : 2
+                        const formationB = b.participantes > 0 && b.participantes < b.capacidade ? 0 : b.participantes === b.capacidade ? 1 : 2
+                        return formationA - formationB || a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio)
+                      })
+                      .map((horario) => {
+                        const selected = selectedSchedule?.id === horario.id
+                        const formation = isCollectivePlan && horario.status_formacao?.includes('_em_formacao')
+                        const label = horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'
+                        return (
+                          <button type="button" key={horario.id} className={`schedule-time ${selected ? 'selected' : ''}`} onClick={() => handleSelectSchedule(horario)}>
+                            <strong>{formatTime(horario.hora_inicio)}</strong>
+                            <span>até {formatTime(horario.hora_fim)}</span>
+                            {isCollectivePlan && (
+                              <small>
+                                {formation ? `${label} em formação • ${horario.participantes}/${horario.capacidade} alunos` : horario.participantes >= horario.capacidade ? `${label} formada • ${horario.participantes}/${horario.capacidade}` : `Nova ${label.toLowerCase()} • 0/${horario.capacidade}`}
+                              </small>
+                            )}
+                          </button>
+                        )
+                      })}
+                  </div>
+
+                  {selectedSchedule && (
+                    <div className="availability-selection-summary">
+                      <strong>Sua escolha</strong>
+                      <span>Dia: {WEEKDAYS.find((day) => day.value === selectedSchedule.weekday)?.label}</span>
+                      <span>Horário: {formatTime(selectedSchedule.hora_inicio)} — {formatTime(selectedSchedule.hora_fim)}</span>
+                      {isCollectivePlan && (
+                        <>
+                          <span>Situação: {selectedSchedule.status_formacao === 'dupla_formada' ? 'Dupla já formada' : selectedSchedule.status_formacao === 'grupo_formado' ? 'Grupo já formado' : selectedSchedule.status_formacao === 'dupla_em_formacao' ? 'Nova dupla em formação' : 'Grupo em formação'}</span>
+                          <span>Alunos na turma: {selectedSchedule.participantes ?? '—'} de {selectedSchedule.capacidade ?? '—'}</span>
+                        </>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="availability-actions">
+                    <button type="button" className="enrollment-primary-button" onClick={nextStep} disabled={!selectedSchedule}>
+                      Continuar <ArrowRight size={18} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+
+              {step === 4 && (
                 <div className="enrollment-fields">
                   <div className="enrollment-field">
                     <label>
@@ -1228,182 +1425,6 @@ export default function Matricula() {
                   </div>
                 </div>
               )}
-
-              {step === 3 && (
-            <div className="availability-section">
-              <div className="selection-heading">
-                <div>
-                  <h3>Quando você pode estudar?</h3>
-                  <p>Informe sua disponibilidade. Depois mostraremos apenas os horários reais compatíveis com você.</p>
-                </div>
-              </div>
-
-              <div className="availability-days">
-                {WEEKDAYS.filter((day) => day.value !== 0 && day.value !== 6).map((day) => (
-                  <button
-                    type="button"
-                    key={day.value}
-                    className={availabilityDays.includes(day.value) ? 'selected' : ''}
-                    onClick={() => toggleAvailabilityDay(day.value)}
-                  >
-                    <span>✓</span>
-                    {day.label}
-                  </button>
-                ))}
-              </div>
-
-              <div className="availability-periods">
-                <strong>Qual período você prefere?</strong>
-                <div>
-                  {[
-                    ['manha', 'Manhã'],
-                    ['tarde', 'Tarde'],
-                    ['noite', 'Noite'],
-                  ].map(([value, label]) => (
-                    <button
-                      type="button"
-                      key={value}
-                      className={availabilityPeriods.includes(value) ? 'selected' : ''}
-                      onClick={() => toggleAvailabilityPeriod(value)}
-                    >
-                      {availabilityPeriods.includes(value) ? '✓ ' : ''}{label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <label className="availability-flexible">
-                <input
-                  type="checkbox"
-                  checked={availabilityFlexible}
-                  onChange={(event) => setAvailabilityFlexible(event.target.checked)}
-                />
-                <span>
-                  <strong>Tenho flexibilidade de horário</strong>
-                  <small>Mostrar todos os horários compatíveis com o idioma, frequência e modalidade.</small>
-                </span>
-              </label>
-
-              {availabilityDays.length > 0 && !availabilityFlexible && (
-                <div className="availability-ranges">
-                  <strong>Ou informe um intervalo específico por dia</strong>
-                  {availabilityDays.map((day) => (
-                    <div className="availability-range" key={day}>
-                      <span>{WEEKDAYS.find((item) => item.value === day)?.label}</span>
-                      <label>
-                        das
-                        <input
-                          type="time"
-                          value={availabilityRanges[day]?.start ?? '18:00'}
-                          onChange={(event) => setAvailabilityRange(day, 'start', event.target.value)}
-                        />
-                      </label>
-                      <label>
-                        até
-                        <input
-                          type="time"
-                          value={availabilityRanges[day]?.end ?? '21:00'}
-                          onChange={(event) => setAvailabilityRange(day, 'end', event.target.value)}
-                        />
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              <div className="availability-actions">
-                <button type="button" className="enrollment-primary-button" onClick={nextStep}>
-                  Encontrar horários compatíveis <ArrowRight size={18} />
-                </button>
-              </div>
-            </div>
-          )}
-
-          {step === 4 && (
-            <div className="schedule-section">
-              <div className="selection-heading">
-                <div>
-                  <h3>Horários compatíveis com você</h3>
-                  <p>Mostrando horários reais compatíveis com você. O valor final será calculado após a análise do horário escolhido.</p>
-                </div>
-                <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setSelectedSchedule(null); setSelectedSchedules([]); }}>
-                  Alterar disponibilidade
-                </button>
-              </div>
-
-              {loadingSchedules ? (
-                <div className="enrollment-loading">Buscando os melhores horários...</div>
-              ) : availableSchedules.length === 0 ? (
-                <div className="enrollment-empty">
-                  <strong>Não encontramos um horário exatamente dentro da sua disponibilidade.</strong>
-                  <p>Revise os dias e períodos para ver outras opções.</p>
-                  <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setStep(3); }}>
-                    Ajustar disponibilidade
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <div className="schedule-calendar">
-                    <button type="button" className={`schedule-date ${selectedWeekday === null ? 'selected' : ''}`} onClick={() => setSelectedWeekday(null)}>
-                      <strong>Todos</strong><span>horários</span>
-                    </button>
-                    {groupedSchedules.map((weekday) => (
-                      <button type="button" key={weekday.value} className={`schedule-date ${selectedWeekday === weekday.value ? 'selected' : ''}`} onClick={() => setSelectedWeekday(weekday.value)}>
-                        <strong>{weekday.short}</strong><span>{weekday.schedules.length} opções</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="schedule-times">
-                    {visibleSchedules
-                      .slice()
-                      .sort((a, b) => {
-                        const formationA = a.participantes > 0 && a.participantes < a.capacidade ? 0 : a.participantes === a.capacidade ? 1 : 2
-                        const formationB = b.participantes > 0 && b.participantes < b.capacidade ? 0 : b.participantes === b.capacidade ? 1 : 2
-                        return formationA - formationB || a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio)
-                      })
-                      .map((horario) => {
-                        const selected = selectedSchedule?.id === horario.id
-                        const formation = isCollectivePlan && horario.status_formacao?.includes('_em_formacao')
-                        const label = horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'
-                        return (
-                          <button type="button" key={horario.id} className={`schedule-time ${selected ? 'selected' : ''}`} onClick={() => handleSelectSchedule(horario)}>
-                            <strong>{formatTime(horario.hora_inicio)}</strong>
-                            <span>até {formatTime(horario.hora_fim)}</span>
-                            {isCollectivePlan && (
-                              <small>
-                                {formation ? `${label} em formação • ${horario.participantes}/${horario.capacidade} alunos` : horario.participantes >= horario.capacidade ? `${label} formada • ${horario.participantes}/${horario.capacidade}` : `Nova ${label.toLowerCase()} • 0/${horario.capacidade}`}
-                              </small>
-                            )}
-                          </button>
-                        )
-                      })}
-                  </div>
-
-                  {selectedSchedule && (
-                    <div className="availability-selection-summary">
-                      <strong>Sua escolha</strong>
-                      <span>Dia: {WEEKDAYS.find((day) => day.value === selectedSchedule.weekday)?.label}</span>
-                      <span>Horário: {formatTime(selectedSchedule.hora_inicio)} — {formatTime(selectedSchedule.hora_fim)}</span>
-                      {isCollectivePlan && (
-                        <>
-                          <span>Situação: {selectedSchedule.status_formacao === 'dupla_formada' ? 'Dupla já formada' : selectedSchedule.status_formacao === 'grupo_formado' ? 'Grupo já formado' : selectedSchedule.status_formacao === 'dupla_em_formacao' ? 'Nova dupla em formação' : 'Grupo em formação'}</span>
-                          <span>Alunos na turma: {selectedSchedule.participantes ?? '—'} de {selectedSchedule.capacidade ?? '—'}</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  <div className="availability-actions">
-                    <button type="button" className="enrollment-primary-button" onClick={nextStep} disabled={!selectedSchedule}>
-                      Continuar <ArrowRight size={18} />
-                    </button>
-                  </div>
-                </>
-              )}
-            </div>
-          )}
-
           {step === 5 && (
                 <div className="schedule-confirmation">
                   <div className="selection-heading">
@@ -1605,7 +1626,7 @@ export default function Matricula() {
                   </button>
                 )}
                 <div />
-                {step < 4 ? (
+                {step < 5 ? (
                   <button type="button" className="enrollment-submit" onClick={nextStep} disabled={loading || (step === 1 && !plan)}>
                     Continuar
                     <ArrowRight size={18} />
