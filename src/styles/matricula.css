@@ -2902,3 +2902,84 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+
+/* =========================================================
+   PROFICIENCY DOCUMENT
+========================================================= */
+
+.proficiency-section {
+  display: grid;
+  gap: 18px;
+}
+
+.proficiency-card,
+.proficiency-result {
+  display: grid;
+  gap: 10px;
+  padding: 22px;
+  border: 1px solid var(--enrollment-line);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: var(--enrollment-shadow);
+}
+
+.proficiency-card-icon {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--enrollment-soft);
+  color: var(--primary);
+}
+
+.proficiency-card p {
+  margin: 0;
+  color: var(--enrollment-muted);
+  line-height: 1.55;
+}
+
+.proficiency-card input[type="file"] {
+  width: 100%;
+  min-height: 48px;
+  padding: 10px 12px;
+  border: 1px dashed var(--enrollment-line);
+  border-radius: 12px;
+  background: var(--enrollment-soft);
+  color: var(--enrollment-ink);
+}
+
+.proficiency-card small,
+.proficiency-result small {
+  color: var(--enrollment-muted);
+  line-height: 1.5;
+}
+
+.proficiency-result {
+  background: var(--enrollment-soft);
+}
+
+.proficiency-result span {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--enrollment-line);
+}
+
+.proficiency-result span:last-of-type {
+  border-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .proficiency-card,
+  .proficiency-result {
+    padding: 18px;
+    border-radius: 16px;
+  }
+
+  .proficiency-result span {
+    align-items: flex-start;
+  }
+}
