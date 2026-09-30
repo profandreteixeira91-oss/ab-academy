@@ -4619,6 +4619,8 @@ body {
   grid-template-columns: 18px 30px minmax(0, 1fr);
   align-items: start;
   gap: 10px;
+  width: 100%;
+  box-sizing: border-box;
   margin-top: 4px;
   padding: 14px;
   border: 1px solid var(--student-border);
@@ -4661,9 +4663,19 @@ body {
 
 .student-payment-recurring > span:last-child {
   min-width: 0;
+  width: 100%;
   display: flex;
   flex-direction: column;
   gap: 4px;
+}
+
+.student-payment-recurring > span:last-child strong,
+.student-payment-recurring > span:last-child small {
+  display: block;
+  width: 100%;
+  max-width: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .student-payment-recurring strong {
@@ -4686,6 +4698,11 @@ body {
 
   .student-payment-recurring {
     grid-template-columns: 18px 28px minmax(0, 1fr);
+    width: 100%;
     padding: 12px;
+  }
+
+  .student-payment-recurring > span:last-child {
+    width: 100%;
   }
 }
