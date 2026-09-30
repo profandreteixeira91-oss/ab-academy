@@ -1197,228 +1197,179 @@ export default function Matricula() {
               )}
 
               {step === 3 && (
-                <div className="schedule-section">
-                  {isCollectivePlan && !formationSlotId && (
-                    <div className="collective-schedule-selector">
-                      <div className="selection-heading">
-                        <div>
-                          <h3>Escolha o horário da sua turma</h3>
-                          <p>
-                            Horários com alunos já inscritos aparecem aqui e podem ser ocupados por novos alunos da mesma modalidade.
-                            Um horário livre passa automaticamente a ser reservado para sua {plan?.modalidade === 'dupla' ? 'dupla' : 'turma'}.
-                          </p>
-                        </div>
-                      </div>
+            <div className="availability-section">
+              <div className="selection-heading">
+                <div>
+                  <h3>Quando você pode estudar?</h3>
+                  <p>Informe sua disponibilidade. Depois mostraremos apenas os horários reais compatíveis com você.</p>
+                </div>
+              </div>
+
+              <div className="availability-days">
+                {WEEKDAYS.filter((day) => day.value !== 0 && day.value !== 6).map((day) => (
+                  <button
+                    type="button"
+                    key={day.value}
+                    className={availabilityDays.includes(day.value) ? 'selected' : ''}
+                    onClick={() => toggleAvailabilityDay(day.value)}
+                  >
+                    <span>✓</span>
+                    {day.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="availability-periods">
+                <strong>Qual período você prefere?</strong>
+                <div>
+                  {[
+                    ['manha', 'Manhã'],
+                    ['tarde', 'Tarde'],
+                    ['noite', 'Noite'],
+                  ].map(([value, label]) => (
+                    <button
+                      type="button"
+                      key={value}
+                      className={availabilityPeriods.includes(value) ? 'selected' : ''}
+                      onClick={() => toggleAvailabilityPeriod(value)}
+                    >
+                      {availabilityPeriods.includes(value) ? '✓ ' : ''}{label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <label className="availability-flexible">
+                <input
+                  type="checkbox"
+                  checked={availabilityFlexible}
+                  onChange={(event) => setAvailabilityFlexible(event.target.checked)}
+                />
+                <span>
+                  <strong>Tenho flexibilidade de horário</strong>
+                  <small>Mostrar todos os horários compatíveis com o idioma, frequência e modalidade.</small>
+                </span>
+              </label>
+
+              {availabilityDays.length > 0 && !availabilityFlexible && (
+                <div className="availability-ranges">
+                  <strong>Ou informe um intervalo específico por dia</strong>
+                  {availabilityDays.map((day) => (
+                    <div className="availability-range" key={day}>
+                      <span>{WEEKDAYS.find((item) => item.value === day)?.label}</span>
+                      <label>
+                        das
+                        <input
+                          type="time"
+                          value={availabilityRanges[day]?.start ?? '18:00'}
+                          onChange={(event) => setAvailabilityRange(day, 'start', event.target.value)}
+                        />
+                      </label>
+                      <label>
+                        até
+                        <input
+                          type="time"
+                          value={availabilityRanges[day]?.end ?? '21:00'}
+                          onChange={(event) => setAvailabilityRange(day, 'end', event.target.value)}
+                        />
+                      </label>
                     </div>
-                  )}
-
-                  <div className="selection-heading">
-                    <div>
-                      <h3>
-                        Escolha seu horário
-                      </h3>
-
-                      <p>
-                        Selecione{' '}
-                        <strong>
-                          1
-                        </strong>{' '}
-                        horário disponível.
-                      </p>
-                    </div>
-
-                    <span>
-                      {selectedSchedules.length}/{plan?.aulas_semana ?? 1}
-                    </span>
-                  </div>
-
-                  {loadingSchedules ? (
-                    <div className="enrollment-loading">
-                      Carregando horários...
-                    </div>
-                  ) : availableSchedules.length ===
-                    0 ? (
-                    <div className="enrollment-empty">
-                      Nenhum horário disponível para{' '}
-                      {selectedLanguageLabel}.
-                    </div>
-                  ) : (
-                    <>
-                      <div className="schedule-calendar">
-                        <button
-                          type="button"
-                          className={`schedule-date ${
-                            selectedWeekday ===
-                            null
-                              ? 'selected'
-                              : ''
-                          }`}
-                          onClick={() =>
-                            setSelectedWeekday(
-                              null,
-                            )
-                          }
-                        >
-                          <strong>
-                            Todos
-                          </strong>
-
-                          <span>
-                            horários
-                          </span>
-                        </button>
-
-                        {groupedSchedules.map(
-                          (weekday) => (
-                            <button
-                              type="button"
-                              key={
-                                weekday.value
-                              }
-                              className={`schedule-date ${
-                                selectedWeekday ===
-                                weekday.value
-                                  ? 'selected'
-                                  : ''
-                              }`}
-                              onClick={() =>
-                                setSelectedWeekday(
-                                  weekday.value,
-                                )
-                              }
-                            >
-                              <strong>
-                                {
-                                  weekday.short
-                                }
-                              </strong>
-
-                              <span>
-                                {
-                                  weekday.schedules
-                                    .length
-                                }{' '}
-                                opções
-                              </span>
-                            </button>
-                          ),
-                        )}
-                      </div>
-
-                      <div className="schedule-times">
-                        {visibleSchedules.map(
-                          (horario) => {
-                            const selected =
-                              selectedSchedule?.id ===
-                              horario.id
-
-                            return (
-                              <button
-                                type="button"
-                                key={
-                                  horario.id
-                                }
-                                className={`schedule-time ${
-                                  selected
-                                    ? 'selected'
-                                    : ''
-                                }`}
-                                disabled={isCollectivePlan && !!selectedSchedule?.turma_id && !!horario.turma_id && horario.turma_id !== selectedSchedule.turma_id}
-                                onClick={() =>
-                                  handleSelectSchedule(
-                                    horario,
-                                  )
-                                }
-                              >
-                                <strong>
-                                  {formatTime(
-                                    horario.hora_inicio,
-                                  )}
-                                </strong>
-
-                                <span>
-                                  até{' '}
-                                  {formatTime(
-                                    horario.hora_fim,
-                                  )}
-                                </span>
-                                {isCollectivePlan && (
-                                  <small>
-                                    {horario.participantes === 0
-                                      ? `${horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'} em formação • 0/${horario.capacidade}`
-                                      : horario.participantes < horario.capacidade
-                                        ? `${horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'} em formação • ${horario.participantes}/${horario.capacidade} alunos • ${horario.vagas_restantes} vaga(s)`
-                                        : `${horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'} • ${horario.participantes}/${horario.capacidade} alunos`}
-                                  </small>
-                                )}
-                                {isCollectivePlan && horario.valor_mensal != null && (
-                                  <em>{formatCurrency(horario.valor_mensal)} /mês</em>
-                                )}
-                              </button>
-                            )
-                          },
-                        )}
-                      </div>
-
-                      {selectedSchedules.length > 0 && (
-                        <div className="schedule-selected-summary">
-                          <strong>
-                            {selectedSchedules.length} horário(s) selecionado(s)
-                          </strong>
-                          {selectedSchedules.map((item) => (
-                            <div key={item.id}>
-                              <span>
-                                {WEEKDAYS.find((day) => day.value === item.weekday)?.label}
-                              </span>
-                              <span>
-                                {formatTime(item.hora_inicio)} - {formatTime(item.hora_fim)}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-
-                      {selectedSchedule && false && (
-                        <div className="schedule-selected-summary">
-                          <strong>
-                            Horário selecionado
-                          </strong>
-
-                          <div>
-                            <span>
-                              {
-                                WEEKDAYS.find(
-                                  (day) =>
-                                    day.value ===
-                                    selectedSchedule.weekday,
-                                )?.label
-                              }
-                            </span>
-
-                            <span>
-                              {formatTime(
-                                selectedSchedule.hora_inicio,
-                              )}{' '}
-                              -{' '}
-                              {formatTime(
-                                selectedSchedule.hora_fim,
-                              )}
-                            </span>
-
-                            <span>
-                              {formatDate(
-                                selectedSchedule.date,
-                              )}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
+                  ))}
                 </div>
               )}
 
-              {step === 4 && (
+              <div className="availability-actions">
+                <button type="button" className="enrollment-primary-button" onClick={nextStep}>
+                  Encontrar horários compatíveis <ArrowRight size={18} />
+                </button>
+              </div>
+            </div>
+          )}
+
+          {step === 4 && (
+            <div className="schedule-section">
+              <div className="selection-heading">
+                <div>
+                  <h3>Horários compatíveis com você</h3>
+                  <p>Mostrando primeiro oportunidades de turmas em formação, depois turmas com vaga e, por último, novos horários.</p>
+                </div>
+                <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setSelectedSchedule(null); setSelectedSchedules([]); }}>
+                  Alterar disponibilidade
+                </button>
+              </div>
+
+              {loadingSchedules ? (
+                <div className="enrollment-loading">Buscando os melhores horários...</div>
+              ) : availableSchedules.length === 0 ? (
+                <div className="enrollment-empty">
+                  <strong>Não encontramos um horário exatamente dentro da sua disponibilidade.</strong>
+                  <p>Revise os dias e períodos para ver outras opções.</p>
+                  <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setStep(3); }}>
+                    Ajustar disponibilidade
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div className="schedule-calendar">
+                    <button type="button" className={`schedule-date ${selectedWeekday === null ? 'selected' : ''}`} onClick={() => setSelectedWeekday(null)}>
+                      <strong>Todos</strong><span>horários</span>
+                    </button>
+                    {groupedSchedules.map((weekday) => (
+                      <button type="button" key={weekday.value} className={`schedule-date ${selectedWeekday === weekday.value ? 'selected' : ''}`} onClick={() => setSelectedWeekday(weekday.value)}>
+                        <strong>{weekday.short}</strong><span>{weekday.schedules.length} opções</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="schedule-times">
+                    {visibleSchedules
+                      .slice()
+                      .sort((a, b) => {
+                        const formationA = a.participantes > 0 && a.participantes < a.capacidade ? 0 : a.participantes === a.capacidade ? 1 : 2
+                        const formationB = b.participantes > 0 && b.participantes < b.capacidade ? 0 : b.participantes === b.capacidade ? 1 : 2
+                        return formationA - formationB || a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio)
+                      })
+                      .map((horario) => {
+                        const selected = selectedSchedule?.id === horario.id
+                        const formation = isCollectivePlan && horario.participantes > 0 && horario.participantes < horario.capacidade
+                        const label = horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'
+                        return (
+                          <button type="button" key={horario.id} className={`schedule-time ${selected ? 'selected' : ''}`} onClick={() => handleSelectSchedule(horario)}>
+                            <strong>{formatTime(horario.hora_inicio)}</strong>
+                            <span>até {formatTime(horario.hora_fim)}</span>
+                            {isCollectivePlan && (
+                              <small>
+                                {formation ? `${label} em formação • ${horario.participantes}/${horario.capacidade} alunos` : horario.participantes >= horario.capacidade ? `${label} formada • ${horario.participantes}/${horario.capacidade}` : `Nova ${label.toLowerCase()} • 0/${horario.capacidade}`}
+                              </small>
+                            )}
+                            {isCollectivePlan && <em>{formatCurrency(horario.valor_mensal ?? selectedPlanPrice)} /mês</em>}
+                          </button>
+                        )
+                      })}
+                  </div>
+
+                  {selectedSchedule && (
+                    <div className="availability-selection-summary">
+                      <strong>Sua escolha</strong>
+                      <span>Dia: {WEEKDAYS.find((day) => day.value === selectedSchedule.weekday)?.label}</span>
+                      <span>Horário: {formatTime(selectedSchedule.hora_inicio)} — {formatTime(selectedSchedule.hora_fim)}</span>
+                      {isCollectivePlan && (
+                        <span>Situação: {selectedSchedule.turma_id ? 'Turma coletiva em formação/vaga' : 'Novo horário em formação'}</span>
+                      )}
+                    </div>
+                  )}
+
+                  <div className="availability-actions">
+                    <button type="button" className="enrollment-primary-button" onClick={nextStep} disabled={!selectedSchedule}>
+                      Continuar <ArrowRight size={18} />
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {step === 4 && (
                 <div className="schedule-confirmation">
                   <div className="selection-heading">
                     <ShieldCheck
