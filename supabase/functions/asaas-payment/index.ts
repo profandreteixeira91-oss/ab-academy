@@ -54,6 +54,8 @@ type Pagamento = {
   id: string
   user_id: string | null
   matricula_id: string | null
+  turma_id: string | null
+  turma_participante_id: string | null
   plano_id: string | null
   idioma: string | null
   tipo_plano: string | null
@@ -79,6 +81,8 @@ type Plano = {
   preco: number
   parcelas: number | null
   valor_parcela: number | null
+  modalidade: string
+  aulas_semana: number | null
 }
 
 const supabaseAdmin = createClient(
@@ -441,6 +445,8 @@ async function getPagamento(
         id,
         user_id,
         matricula_id,
+        turma_id,
+        turma_participante_id,
         plano_id,
         idioma,
         tipo_plano,
@@ -510,7 +516,9 @@ async function getPlano(
         nome,
         preco,
         parcelas,
-        valor_parcela
+        valor_parcela,
+        modalidade,
+        aulas_semana
       `)
       .eq(
         'id',
@@ -857,6 +865,96 @@ async function finalizeEnrollment(
 
     alunoId =
       novoAluno.id
+  }
+
+  /*
+   * ---------------------------------------------------------
+   * MATRÍCULA COLETIVA
+   * ---------------------------------------------------------
+   */
+  if (pagamento.turma_id && pagamento.turma_participante_id) {
+    const { data: turma, error: turmaError } = await supabaseAdmin
+      .from('turmas')
+      .select('id,modalidade,idioma,aulas_semana,quantidade_minima,quantidade_maxima')
+      .eq('id', pagamento.turma_id)
+      .maybeSingle()
+
+    const { data: participante, error: participanteError } = await supabaseAdmin
+      .from('turma_participantes')
+      .select('id,turma_id,user_id,status,reserva_expira_em')
+      .eq('id', pagamento.turma_participante_id)
+      .maybeSingle()
+
+    if (turmaError || participanteError || !turma || !participante || participante.user_id !== userId || participante.turma_id !== turma.id) {
+      throw new Error('A participação coletiva vinculada ao pagamento não é válida.')
+    }
+
+    const { count } = await supabaseAdmin
+      .from('turma_participantes')
+      .select('id', { count: 'exact', head: true })
+      .eq('turma_id', turma.id)
+      .in('status', ['convidado','confirmado'])
+
+    const { data: valorColetivo, error: valorError } = await supabaseAdmin.rpc('preco_coletivo', {
+      p_idioma: turma.idioma,
+      p_modalidade: turma.modalidade,
+      p_aulas_semana: turma.aulas_semana,
+      p_participantes: count ?? 1,
+    })
+
+    if (valorError || valorColetivo == null || Math.abs(Number(pagamento.valor) - Number(valorColetivo)) > 0.01) {
+      throw new Error('O valor do pagamento não corresponde ao valor atual da turma.')
+    }
+
+    const { data: updatedMatricula, error: updateMatriculaError } = await supabaseAdmin
+      .from('matriculas')
+      .update({ aluno_id: alunoId, status: 'ativa', updated_at: new Date().toISOString() })
+      .eq('id', matricula.id)
+      .select('id')
+      .single()
+
+    if (updateMatriculaError || !updatedMatricula) {
+      throw new Error('Não foi possível ativar a matrícula coletiva.')
+    }
+
+    const { error: participantUpdateError } = await supabaseAdmin
+      .from('turma_participantes')
+      .update({
+        aluno_id: alunoId,
+        status: 'confirmado',
+        confirmado_em: new Date().toISOString(),
+        reserva_expira_em: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', participante.id)
+
+    if (participantUpdateError) throw new Error('Não foi possível confirmar a participação na turma.')
+
+    const { count: confirmedCount } = await supabaseAdmin
+      .from('turma_participantes')
+      .select('id', { count: 'exact', head: true })
+      .eq('turma_id', turma.id)
+      .eq('status', 'confirmado')
+
+    await supabaseAdmin
+      .from('turmas')
+      .update({
+        status: (confirmedCount ?? 0) >= turma.quantidade_minima ? 'ativa' : 'em_formacao',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', turma.id)
+
+    await supabaseAdmin
+      .from('turma_matriculas')
+      .update({ status: 'ativa', updated_at: new Date().toISOString() })
+      .eq('participante_id', participante.id)
+      .eq('matricula_id', matricula.id)
+
+    return {
+      aluno_id: alunoId,
+      matricula_id: matricula.id,
+      status: 'ativa',
+    }
   }
 
   /*
