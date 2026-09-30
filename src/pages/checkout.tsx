@@ -1183,7 +1183,7 @@ export default function Checkout({
                     placeholder="0000 0000 0000 0000"
                     inputMode="numeric"
                     autoComplete="cc-number"
-                    maxLength={19}
+                    maxLength={23}
                   />
 
                   {getCardBrand(card.number) && (
@@ -1195,42 +1195,33 @@ export default function Checkout({
                 </div>
 
                 <div className="checkout-fields-row">
-
-                  <div className="checkout-field">
+                  <div className="checkout-field checkout-expiry-field">
                     <label>
-                      Mês
-                    </label>
-
-                    <input
-                      value={card.expiry_month}
-                      onChange={event => updateCard('expiry_month', event.target.value)}
-                      onBlur={() => updateCard('expiry_month', card.expiry_month.padStart(2, '0'))}
-                      placeholder="MM"
-                      maxLength={2}
-                      inputMode="numeric"
-                      autoComplete="cc-exp-month"
-                    />
-                  </div>
-
-                  <div className="checkout-field">
-                    <label>
-                      Ano
+                      Validade
                     </label>
 
                     <input
                       value={
-                        card.expiry_year
+                        card.expiry_month || card.expiry_year
+                          ? `${card.expiry_month}${card.expiry_year ? '/' + card.expiry_year : ''}`
+                          : ''
                       }
-                      onChange={event =>
+                      onChange={event => {
+                        const value = event.target.value.replace(/\\D/g, '').slice(0, 6)
+                        updateCard(
+                          'expiry_month',
+                          value.slice(0, 2),
+                        )
                         updateCard(
                           'expiry_year',
-                          event.target.value,
+                          value.slice(2, 6),
                         )
-                      }
-                      placeholder="AAAA"
-                      maxLength={4}
+                      }}
+                      placeholder="MM/AAAA"
+                      maxLength={7}
                       inputMode="numeric"
-                      autoComplete="cc-exp-year"
+                      autoComplete="cc-exp"
+                      aria-label="Validade do cartão"
                     />
                   </div>
 
@@ -1248,7 +1239,6 @@ export default function Checkout({
                       autoComplete="cc-csc"
                     />
                   </div>
-
                 </div>
 
                 {pagamento.tipo_plano !== 'avulso' &&
