@@ -678,6 +678,9 @@ export default function Agenda() {
 
       const targetDay = targetDateObject.getDay()
 
+      const isFreeHorario = (horario: Horario) =>
+        horario.aluno_id === null && horario.disponivel === true
+
       const conflictingHorario = rescheduleSource.professor_id
         ? horarios.find((horario) => {
             if (
@@ -685,6 +688,13 @@ export default function Agenda() {
               horario.dia_semana !== targetDay ||
               horario.professor_id !== rescheduleSource.professor_id
             ) {
+              return false
+            }
+
+            // Um horário já cadastrado pode ser usado no reagendamento
+            // quando estiver efetivamente livre. Apenas horários ocupados
+            // ou marcados como indisponíveis bloqueiam a operação.
+            if (isFreeHorario(horario)) {
               return false
             }
 
@@ -696,14 +706,27 @@ export default function Agenda() {
               endMinutes > existingStart
             )
           })
-        : getConflictingHorario(
-            targetDay,
-            rescheduleStart,
-            rescheduleEnd,
-            [rescheduleSource.id],
-            rescheduleSource.idioma,
-            null,
-          )
+        : horarios.find((horario) => {
+            if (
+              horario.id === rescheduleSource.id ||
+              horario.dia_semana !== targetDay ||
+              horario.idioma !== rescheduleSource.idioma
+            ) {
+              return false
+            }
+
+            if (isFreeHorario(horario)) {
+              return false
+            }
+
+            const existingStart = timeToMinutes(horario.hora_inicio.slice(0, 5))
+            const existingEnd = timeToMinutes(horario.hora_fim.slice(0, 5))
+
+            return (
+              startMinutes < existingEnd &&
+              endMinutes > existingStart
+            )
+          })
 
       if (conflictingHorario) {
         throw new Error(
