@@ -100,7 +100,7 @@ export default function Turmas() {
     }
 
     setFixedSaving(true)
-    const { error } = await supabase.rpc('criar_turma_fixa_admin', {
+    const { error } = await supabase.rpc('criar_turma_fixa_admin_v2', {
       p_idioma: fixedIdioma,
       p_modalidade: fixedModalidade,
       p_aulas_semana: fixedAulasSemana,
@@ -115,7 +115,7 @@ export default function Turmas() {
     if (error) {
       window.alert(error.message || 'Não foi possível criar a turma fixa.')
     } else {
-      window.alert('Turma fixa criada. Ela já estará disponível no seletor inteligente de horários da matrícula.')
+      window.alert('Turma fixa criada. Ela já estará disponível como campanha de turma na matrícula.')
       setFixedOpen(false)
       resetFixedForm()
       await load()
