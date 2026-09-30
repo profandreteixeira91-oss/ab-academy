@@ -227,6 +227,8 @@ export default function Agenda() {
       return hour < 12 ? 'manha' : hour < 20 ? 'tarde' : 'noite'
     })
 
+  const [agendaNow, setAgendaNow] = useState(() => new Date())
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
