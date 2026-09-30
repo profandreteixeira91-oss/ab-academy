@@ -576,6 +576,9 @@ export default function Matricula() {
           delete next[day]
           return next
         })
+        setAvailabilityReady(false)
+        setSelectedSchedule(null)
+        setSelectedSchedules([])
         return current.filter((item) => item !== day)
       }
 
@@ -588,11 +591,18 @@ export default function Matricula() {
         return current
       }
 
+      setAvailabilityReady(false)
+      setSelectedSchedule(null)
+      setSelectedSchedules([])
       return [...current, day]
     })
   }
 
   const toggleAvailabilityPeriod = (period: string) => {
+    setError('')
+    setAvailabilityReady(false)
+    setSelectedSchedule(null)
+    setSelectedSchedules([])
     setAvailabilityPeriods((current) =>
       current.includes(period)
         ? current.filter((item) => item !== period)
@@ -605,6 +615,10 @@ export default function Matricula() {
     field: 'start' | 'end',
     value: string,
   ) => {
+    setError('')
+    setAvailabilityReady(false)
+    setSelectedSchedule(null)
+    setSelectedSchedules([])
     setAvailabilityRanges((current) => ({
       ...current,
       [day]: {
