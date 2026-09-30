@@ -1380,9 +1380,6 @@ Deno.serve(
           metodo:
             body.metodo,
 
-          status:
-            'processando',
-
           parcelas:
             body.metodo ===
             'cartao'
@@ -1391,6 +1388,10 @@ Deno.serve(
                     1,
                 )
               : null,
+
+          ...(body.metodo === 'pix'
+            ? { status: 'processando' }
+            : {}),
         },
       )
 
@@ -1696,12 +1697,34 @@ Deno.serve(
         error,
       )
 
+      try {
+        const bodyPaymentId =
+          typeof body?.pagamento_id === 'string'
+            ? body.pagamento_id
+            : null
+
+        if (bodyPaymentId) {
+          await updateLocalPayment(
+            bodyPaymentId,
+            {
+              status:
+                'recusado',
+            },
+          )
+        }
+      } catch (updateError) {
+        console.error(
+          'Não foi possível marcar o pagamento como recusado:',
+          updateError,
+        )
+      }
+
       return jsonResponse(
         {
           error:
             error instanceof Error
               ? error.message
-              : 'Erro interno ao processar pagamento.',
+              : 'Não foi possível processar o pagamento.',
         },
         500,
       )
