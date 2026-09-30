@@ -206,6 +206,7 @@ export default function Matricula() {
   const [collectiveEnrollment, setCollectiveEnrollment] = useState<{ token: string; turmaId: string; participanteId: string; valorMensal: number; condicaoMeses: number | null; condicaoInicio: string | null; condicaoFim: string | null } | null>(null)
   const [availableSchedules, setAvailableSchedules] = useState<Horario[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<SelectedSchedule | null>(null)
+  const [selectedSchedules, setSelectedSchedules] = useState<SelectedSchedule[]>([])
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
   const [collectiveScheduleMode, setCollectiveScheduleMode] = useState<'existing' | 'waiting'>('existing')
   const [waitingIndividualPlan, setWaitingIndividualPlan] = useState<Plan | null>(null)
@@ -678,21 +679,35 @@ export default function Matricula() {
   const handleSelectSchedule = async (horario: Horario) => {
     setError('')
 
-    if (selectedSchedule?.id === horario.id) {
-      setSelectedSchedule(null)
+    const aulasSemana = plan?.aulas_semana ?? (plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1)
+    const requestedType: Horario['tipo_horario'] = plan?.modalidade || 'individual'
+    const alreadySelected = selectedSchedules.some((item) => item.id === horario.id)
+
+    if (alreadySelected) {
+      const next = selectedSchedules.filter((item) => item.id !== horario.id)
+      setSelectedSchedules(next)
+      setSelectedSchedule(next[0] ?? null)
       return
     }
 
-    const requestedType: Horario['tipo_horario'] = plan?.modalidade || 'individual'
-    const aulasSemana = plan?.aulas_semana ?? (plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1)
+    if (requestedType !== 'individual' && selectedSchedules.length >= aulasSemana) {
+      setError(`Este plano exige ${aulasSemana} horário(s) por semana. Remova um horário para escolher outro.`)
+      return
+    }
+
+    if (requestedType !== 'individual' && selectedSchedule?.turma_id && horario.turma_id && horario.turma_id !== selectedSchedule.turma_id) {
+      setError('Para este plano, todos os horários devem pertencer à mesma turma.')
+      return
+    }
 
     setLoadingSchedules(true)
 
-    const { data: selected, error: selectionError } = await supabase.rpc('private_selecionar_horario_matricula_v2', {
+    const { data: selected, error: selectionError } = await supabase.rpc('selecionar_horario_matricula_v2', {
       p_horario_id: horario.id,
       p_idioma: language,
       p_modalidade: requestedType,
       p_aulas_semana: aulasSemana,
+      p_turma_id: selectedSchedule?.turma_id ?? null,
     })
 
     setLoadingSchedules(false)
@@ -717,6 +732,10 @@ export default function Matricula() {
       valor_mensal: selected.valor_mensal != null ? Number(selected.valor_mensal) : null,
     }
 
+    const next = [...selectedSchedules, schedule]
+    setSelectedSchedules(next)
+    setSelectedSchedule(next[0] ?? null)
+
     setAvailableSchedules((current) =>
       current.map((item) =>
         item.id === selected.id
@@ -733,11 +752,10 @@ export default function Matricula() {
           : item,
       ),
     )
-    setSelectedSchedule(schedule)
   }
 
   const verifyScheduleAgain = async () => {
-    if (!language || !selectedSchedule) return false
+    if (!language || !selectedSchedule || selectedSchedules.length === 0) return false
 
     if (isCollectivePlan && selectedSchedule.turma_id && selectedSchedule.participante_id) {
       return true
@@ -776,7 +794,7 @@ export default function Matricula() {
       return
     }
 
-    if ((!plan && !collectiveEnrollment) || !selectedSchedule || !language) {
+    if ((!plan && !collectiveEnrollment) || !selectedSchedule || selectedSchedules.length === 0 || !language) {
       setError(
         'Complete todas as etapas da matrícula.',
       )
@@ -844,13 +862,9 @@ export default function Matricula() {
 
         valor_anual: collectiveEnrollment ? null : effectivePlan?.tipo === 'anual' ? Number(effectivePlan.preco) : null,
 
-        horario_ids: [
-          selectedSchedule.id,
-        ],
+        horario_ids: selectedSchedules.map((item) => item.id),
 
-        schedules: [
-          selectedSchedule,
-        ],
+        schedules: selectedSchedules,
 
         dados_aluno: dadosAluno,
 
@@ -1443,6 +1457,7 @@ export default function Matricula() {
                                     ? 'selected'
                                     : ''
                                 }`}
+                                disabled={isCollectivePlan && !!selectedSchedule?.turma_id && !!horario.turma_id && horario.turma_id !== selectedSchedule.turma_id}
                                 onClick={() =>
                                   handleSelectSchedule(
                                     horario,
@@ -1474,7 +1489,25 @@ export default function Matricula() {
                         )}
                       </div>
 
-                      {selectedSchedule && (
+                      {selectedSchedules.length > 0 && (
+                        <div className="schedule-selected-summary">
+                          <strong>
+                            {selectedSchedules.length} horário(s) selecionado(s)
+                          </strong>
+                          {selectedSchedules.map((item) => (
+                            <div key={item.id}>
+                              <span>
+                                {WEEKDAYS.find((day) => day.value === item.weekday)?.label}
+                              </span>
+                              <span>
+                                {formatTime(item.hora_inicio)} - {formatTime(item.hora_fim)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {selectedSchedule && false && (
                         <div className="schedule-selected-summary">
                           <strong>
                             Horário selecionado
