@@ -77,7 +77,8 @@ const WEEKDAYS = [
   { value: 3, short: 'Qua' }, { value: 4, short: 'Qui' }, { value: 5, short: 'Sex' }, { value: 6, short: 'Sáb' },
 ]
 
-const NIVEIS = ['A1', 'A2', 'B1', 'B2', 'C1', 'C2'] as const
+const NIVEIS = ['iniciante', 'basico', 'intermediario', 'avancado'] as const
+const NIVEL_LABELS: Record<(typeof NIVEIS)[number], string> = { iniciante: 'Iniciante', basico: 'Básico', intermediario: 'Intermediário', avancado: 'Avançado' }
 
 function formatTime(value: string) { return value.slice(0, 5) }
 function getWeekdayLabel(value: number) { return WEEKDAYS.find((day) => day.value === value)?.short ?? '—' }
@@ -136,7 +137,7 @@ function ModalidadeCard({
       <div className="planos-collective-section">
         <div className="planos-collective-section-heading">
           <span className="planos-collective-kicker">Horários disponíveis</span>
-          <strong>{nivel ? 'Nível ' + nivel : 'Todos os níveis configurados'}</strong>
+          <strong>{nivel ? 'Nível ' + (NIVEL_LABELS[nivel as keyof typeof NIVEL_LABELS] || nivel) : 'Todos os níveis configurados'}</strong>
           <p>Os horários são carregados diretamente da agenda e os preços diretamente dos planos ativos.</p>
         </div>
 
@@ -160,7 +161,7 @@ function ModalidadeCard({
                 </div>
                 <p>
                   {horariosDaOpcao[0]?.professor_nome ? 'Professor: ' + horariosDaOpcao[0].professor_nome : 'Professor a confirmar'}
-                  {' · '}{nivel || horariosDaOpcao[0]?.nivel_referencia || 'Nível a confirmar'}
+                  {' · '}{NIVEL_LABELS[(nivel || horariosDaOpcao[0]?.nivel_referencia || '') as keyof typeof NIVEL_LABELS] || nivel || horariosDaOpcao[0]?.nivel_referencia || 'Nível a confirmar'}
                   {' · '}{vagasRestantes} {vagasRestantes === 1 ? 'vaga disponível' : 'vagas disponíveis'}
                 </p>
                 <a href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id)} className="btn btn-outline planos-collective-cta">
@@ -466,7 +467,7 @@ function Planos() {
                   <div className="planos-level-switch" role="tablist" aria-label="Selecione o nível">
                     <button type="button" className={'planos-level-option' + (!nivelSelecionado ? ' active' : '')} aria-selected={!nivelSelecionado} onClick={() => setNivelSelecionado('')}>Todos</button>
                     {NIVEIS.map((nivel) => (
-                      <button key={nivel} type="button" className={'planos-level-option' + (nivelSelecionado === nivel ? ' active' : '')} aria-selected={nivelSelecionado === nivel} onClick={() => setNivelSelecionado(nivel)}>{nivel}</button>
+                      <button key={nivel} type="button" className={'planos-level-option' + (nivelSelecionado === nivel ? ' active' : '')} aria-selected={nivelSelecionado === nivel} onClick={() => setNivelSelecionado(nivel)} >{NIVEL_LABELS[nivel]}</button>
                     ))}
                   </div>
                   <div className="planos-language planos-language--stacked"><div className="planos-grid">
