@@ -56,6 +56,8 @@ type Student = {
 type LessonData = {
   lesson: Lesson
   student: Student
+  scheduledStartAt: string
+  scheduledEndAt: string
 }
 
 type LiveKitData = {
@@ -1193,6 +1195,13 @@ export default function SalaAula() {
             )
           }
 
+          const [baseLessonId, replacementMarker, replacementRecordId] =
+            lessonId.split(':')
+
+          const isReplacement =
+            replacementMarker === 'reposicao' &&
+            Boolean(replacementRecordId)
+
           const {
             data: lesson,
             error: lessonError,
@@ -1210,7 +1219,7 @@ export default function SalaAula() {
               `)
               .eq(
                 'id',
-                lessonId,
+                baseLessonId || lessonId,
               )
               .eq(
                 'aluno_id',
@@ -1228,6 +1237,83 @@ export default function SalaAula() {
             )
           }
 
+          let scheduledStartAt: string
+          let scheduledEndAt: string
+
+          if (isReplacement) {
+            const {
+              data: replacement,
+              error: replacementError,
+            } = await supabase
+              .from('registros_aulas')
+              .select(`
+                id,
+                horario_id,
+                aluno_id,
+                data_aula_override,
+                hora_inicio_override,
+                hora_fim_override,
+                status
+              `)
+              .eq('id', replacementRecordId)
+              .eq('horario_id', lesson.id)
+              .eq('aluno_id', student.id)
+              .maybeSingle()
+
+            if (replacementError) {
+              throw replacementError
+            }
+
+            if (
+              !replacement ||
+              !replacement.data_aula_override ||
+              !replacement.hora_inicio_override
+            ) {
+              throw new Error(
+                'Reposição não encontrada ou você não possui acesso a esta aula.',
+              )
+            }
+
+            const [year, month, day] =
+              replacement.data_aula_override.split('-').map(Number)
+            const [hour, minute] =
+              replacement.hora_inicio_override.slice(0, 5).split(':').map(Number)
+            const [endHour, endMinute] =
+              (replacement.hora_fim_override || lesson.hora_fim)
+                .slice(0, 5)
+                .split(':')
+                .map(Number)
+
+            scheduledStartAt = new Date(
+              year,
+              month - 1,
+              day,
+              hour,
+              minute,
+              0,
+              0,
+            ).toISOString()
+
+            scheduledEndAt = new Date(
+              year,
+              month - 1,
+              day,
+              endHour,
+              endMinute,
+              0,
+              0,
+            ).toISOString()
+          } else {
+            const occurrence = getNextLessonOccurrence(
+              Number(lesson.dia_semana),
+              lesson.hora_inicio,
+              lesson.hora_fim,
+            )
+
+            scheduledStartAt = occurrence.startAt.toISOString()
+            scheduledEndAt = occurrence.endAt.toISOString()
+          }
+
           if (!mounted) {
             return
           }
@@ -1235,6 +1321,8 @@ export default function SalaAula() {
           setData({
             lesson,
             student,
+            scheduledStartAt,
+            scheduledEndAt,
           })
         } catch (err) {
           console.error(
@@ -1412,16 +1500,9 @@ export default function SalaAula() {
   } = data
 
   const {
-    startAt,
-    endAt,
-  } =
-    getNextLessonOccurrence(
-      Number(
-        lesson.dia_semana,
-      ),
-      lesson.hora_inicio,
-      lesson.hora_fim,
-    )
+    scheduledStartAt: startAt,
+    scheduledEndAt: endAt,
+  } = data
 
   const available =
     isLessonAvailable(
