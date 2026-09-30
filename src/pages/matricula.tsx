@@ -509,22 +509,58 @@ export default function Matricula() {
           return false
         }
 
-        const schedules: Horario[] = (compatibleTurmas ?? []).flatMap((turma) => {
-          const encontros = Array.isArray(turma.encontros) ? turma.encontros : []
-          return encontros
-            .filter((encontro) => {
-              if (availabilityMode !== 'ranges' || Object.keys(availabilityRanges).length === 0) {
-                return true
-              }
+        const formationPriceResponse = await supabase.rpc('preco_formacao_coletiva', {
+          p_idioma: selectedLanguage,
+          p_modalidade: modalidade,
+          p_aulas_semana: aulasSemana,
+        })
+        const formationPrice = Number(formationPriceResponse.data ?? 0)
 
+        const regularPriceCache = new Map<number, number>()
+        const getRegularPrice = async (capacity: number) => {
+          if (regularPriceCache.has(capacity)) {
+            return regularPriceCache.get(capacity) as number
+          }
+
+          const { data: price, error: priceError } = await supabase.rpc('preco_coletivo', {
+            p_idioma: selectedLanguage,
+            p_modalidade: modalidade,
+            p_aulas_semana: aulasSemana,
+            p_quantidade_alunos: capacity,
+          })
+
+          if (priceError) {
+            console.error('Erro ao consultar preço coletivo:', priceError)
+            return null
+          }
+
+          const value = Number(price ?? 0)
+          regularPriceCache.set(capacity, value)
+          return value
+        }
+
+        const schedules: Horario[] = []
+
+        for (const turma of compatibleTurmas ?? []) {
+          const encontros = Array.isArray(turma.encontros) ? turma.encontros : []
+          const participantes = Number(turma.participantes ?? 0)
+          const capacidade = Number(turma.capacidade ?? (modalidade === 'dupla' ? 2 : 3))
+          const formsOnJoin = participantes + 1 >= capacidade
+          const valorMensal = formsOnJoin
+            ? await getRegularPrice(capacidade)
+            : formationPrice
+
+          for (const encontro of encontros) {
+            if (availabilityMode === 'ranges' && Object.keys(availabilityRanges).length > 0) {
               const range = availabilityRanges[Number(encontro.dia_semana)]
-              if (!range) return false
+              if (!range) continue
 
               const inicio = String(encontro.hora_inicio).slice(0, 5)
               const fim = String(encontro.hora_fim).slice(0, 5)
-              return inicio >= range.start && fim <= range.end
-            })
-            .map((encontro) => ({
+              if (inicio < range.start || fim > range.end) continue
+            }
+
+            schedules.push({
               id: String(encontro.horario_id),
               tipo_horario: modalidade,
               idioma: selectedLanguage,
@@ -538,17 +574,18 @@ export default function Matricula() {
               meet_space_name: null,
               turma_id: turma.turma_id,
               participante_id: null,
-              participantes: Number(turma.participantes ?? 0),
-              capacidade: Number(turma.capacidade ?? (modalidade === 'dupla' ? 2 : 3)),
+              participantes,
+              capacidade,
               vagas_restantes: Number(turma.vagas_restantes ?? 0),
-              valor_mensal: null,
-              status_formacao: Number(turma.participantes ?? 0) > 0
-                ? (modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao')
+              valor_mensal: valorMensal > 0 ? valorMensal : null,
+              status_formacao: formsOnJoin
+                ? (modalidade === 'dupla' ? 'dupla_formada' : 'grupo_formado')
                 : (modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao'),
-              tipo_valor: 'coletiva_em_formacao',
+              tipo_valor: formsOnJoin ? 'coletiva_formada' : 'coletiva_em_formacao',
               professor_id: turma.professor_id ?? null,
-            }))
-        })
+            })
+          }
+        }
 
         if (schedules.length === 0) {
           setError('Não encontramos uma turma coletiva compatível com os dias e horários informados.')
@@ -559,7 +596,6 @@ export default function Matricula() {
         setAvailableSchedules(schedules)
         return true
       }
-
       const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula_inteligente', {
         p_idioma: selectedLanguage,
         p_modalidade: modalidade,
