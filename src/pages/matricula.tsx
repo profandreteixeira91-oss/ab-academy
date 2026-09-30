@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   ChevronLeft,
@@ -63,6 +63,11 @@ type SelectedSchedule = {
   turma_id: string | null
   participante_id: string | null
   valor_mensal: number | null
+  participantes: number | null
+  capacidade: number | null
+  status_formacao: string | null
+  tipo_valor: 'individual' | 'coletiva_formada' | 'coletiva_em_formacao' | null
+  professor_id: string | null
 }
 
 type StudentData = {
@@ -203,8 +208,6 @@ export default function Matricula() {
   const [selectedSchedules, setSelectedSchedules] = useState<SelectedSchedule[]>([])
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
   const [collectiveScheduleMode, setCollectiveScheduleMode] = useState<'existing' | 'waiting'>('existing')
-  const [collectivePricingMode, setCollectivePricingMode] = useState<'existing' | 'formation'>('formation')
-  const [waitingIndividualPlan, setWaitingIndividualPlan] = useState<Plan | null>(null)
   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
   const [reservaToken] = useState(() => crypto.randomUUID())
@@ -222,17 +225,7 @@ export default function Matricula() {
 
   const isCollectivePlan = plan?.modalidade === 'dupla' || plan?.modalidade === 'grupo'
   const isWaitingFormation = waitingFormation || (isCollectivePlan && collectiveScheduleMode === 'waiting' && !formationSlotId)
-
-  const selectedPlanPrice = useMemo(() => {
-    const basePrice = Number(waitingIndividualPlan?.preco ?? plan?.preco ?? 0)
-    if (isCollectivePlan && collectivePricingMode === 'formation') {
-      return Math.round(basePrice * 0.90 * 100) / 100
-    }
-    if (isWaitingFormation) return Math.round(basePrice * 0.9 * 100) / 100
-    return Number(plan?.preco ?? 0)
-  }, [plan, waitingIndividualPlan, isWaitingFormation, isCollectivePlan, collectivePricingMode])
-
-  const effectivePlan = isWaitingFormation && waitingIndividualPlan ? waitingIndividualPlan : plan
+  const effectivePlan = plan
 
 
   const visibleSchedules =
@@ -703,10 +696,6 @@ export default function Matricula() {
       return
     }
 
-    if (isCollectivePlan) {
-      setCollectivePricingMode(Number(selected.participantes ?? 0) > 1 ? 'existing' : 'formation')
-    }
-
     const schedule: SelectedSchedule = {
       id: selected.id,
       date: getDateForWeekday(selected.dia_semana),
@@ -718,6 +707,11 @@ export default function Matricula() {
       turma_id: selected.turma_id ?? null,
       participante_id: selected.participante_id ?? null,
       valor_mensal: selected.valor_mensal != null ? Number(selected.valor_mensal) : null,
+      participantes: selected.participantes != null ? Number(selected.participantes) : null,
+      capacidade: selected.capacidade != null ? Number(selected.capacidade) : null,
+      status_formacao: selected.status_formacao ?? null,
+      tipo_valor: selected.tipo_valor ?? null,
+      professor_id: selected.professor_id ?? null,
     }
 
     const next = [...selectedSchedules, schedule]
@@ -838,7 +832,7 @@ export default function Matricula() {
 
         valor_aula: collectiveEnrollment ? null : effectivePlan?.tipo === 'avulso' ? Number(effectivePlan.preco) : effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0) / (effectivePlan?.tipo === 'intensivo' ? 12 : effectivePlan?.tipo === 'personalizado' ? 8 : 4),
 
-        valor_mensal: collectiveEnrollment?.valorMensal ?? (selectedSchedule.valor_mensal ?? (isCollectivePlan ? selectedPlanPrice : (isWaitingFormation ? selectedPlanPrice : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0))))),
+        valor_mensal: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? selectedSchedule.valor_mensal : (isWaitingFormation ? selectedSchedule.valor_mensal : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0)))),
 
         valor_anual: collectiveEnrollment ? null : effectivePlan?.tipo === 'anual' ? Number(effectivePlan.preco) : null,
 
@@ -849,7 +843,7 @@ export default function Matricula() {
         dados_aluno: dadosAluno,
         reserva_token: reservaToken,
 
-        valor: collectiveEnrollment?.valorMensal ?? selectedSchedule.valor_mensal ?? selectedPlanPrice,
+        valor: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? selectedSchedule.valor_mensal : (isWaitingFormation ? selectedSchedule.valor_mensal : selectedSchedule.valor_mensal ?? Number(effectivePlan?.preco ?? 0))),
       }
 
       const {
@@ -1312,7 +1306,7 @@ export default function Matricula() {
               <div className="selection-heading">
                 <div>
                   <h3>Horários compatíveis com você</h3>
-                  <p>Mostrando primeiro oportunidades de turmas em formação, depois turmas com vaga e, por último, novos horários.</p>
+                  <p>Mostrando horários reais compatíveis com você. O valor final será calculado após a análise do horário escolhido.</p>
                 </div>
                 <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setSelectedSchedule(null); setSelectedSchedules([]); }}>
                   Alterar disponibilidade
@@ -1352,7 +1346,7 @@ export default function Matricula() {
                       })
                       .map((horario) => {
                         const selected = selectedSchedule?.id === horario.id
-                        const formation = isCollectivePlan && horario.participantes > 0 && horario.participantes < horario.capacidade
+                        const formation = isCollectivePlan && horario.status_formacao?.includes('_em_formacao')
                         const label = horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'
                         return (
                           <button type="button" key={horario.id} className={`schedule-time ${selected ? 'selected' : ''}`} onClick={() => handleSelectSchedule(horario)}>
@@ -1363,7 +1357,6 @@ export default function Matricula() {
                                 {formation ? `${label} em formação • ${horario.participantes}/${horario.capacidade} alunos` : horario.participantes >= horario.capacidade ? `${label} formada • ${horario.participantes}/${horario.capacidade}` : `Nova ${label.toLowerCase()} • 0/${horario.capacidade}`}
                               </small>
                             )}
-                            {isCollectivePlan && <em>{formatCurrency(horario.valor_mensal ?? selectedPlanPrice)} /mês</em>}
                           </button>
                         )
                       })}
@@ -1375,7 +1368,8 @@ export default function Matricula() {
                       <span>Dia: {WEEKDAYS.find((day) => day.value === selectedSchedule.weekday)?.label}</span>
                       <span>Horário: {formatTime(selectedSchedule.hora_inicio)} — {formatTime(selectedSchedule.hora_fim)}</span>
                       {isCollectivePlan && (
-                        <span>Situação: {selectedSchedule.turma_id ? 'Turma coletiva em formação/vaga' : 'Novo horário em formação'}</span>
+                        <span>Situação: {selectedSchedule.status_formacao === 'dupla_formada' ? 'Dupla já formada' : selectedSchedule.status_formacao === 'grupo_formado' ? 'Grupo já formado' : selectedSchedule.status_formacao === 'dupla_em_formacao' ? 'Nova dupla em formação' : 'Grupo em formação'}</span>
+                        <span>Alunos na turma: {selectedSchedule.participantes ?? '—'} de {selectedSchedule.capacidade ?? '—'}</span>
                       )}
                     </div>
                   )}
@@ -1482,15 +1476,28 @@ export default function Matricula() {
 
                     <div>
                       <span>
-                        Valor:{' '}
+                        {isCollectivePlan ? 'Investimento atual:' : 'Valor:'}{' '}
                       </span>
-
                       <strong>
-                        {formatCurrency(
-                          selectedSchedule?.valor_mensal ?? selectedPlanPrice,
-                        )}
+                        {selectedSchedule?.valor_mensal != null
+                          ? formatCurrency(selectedSchedule.valor_mensal) + (isCollectivePlan ? '/mês' : '')
+                          : '—'}
                       </strong>
                     </div>
+                    {isCollectivePlan && selectedSchedule && (
+                      <div>
+                        <span>Situação:</span>
+                        <strong>
+                          {selectedSchedule.status_formacao === 'dupla_formada'
+                            ? 'Dupla já formada'
+                            : selectedSchedule.status_formacao === 'grupo_formado'
+                              ? 'Grupo já formado'
+                              : selectedSchedule.status_formacao === 'dupla_em_formacao'
+                                ? 'Nova dupla em formação'
+                                : 'Grupo em formação'}
+                        </strong>
+                      </div>
+                    )}
 
                     {plan?.tipo ===
                       'anual' &&
@@ -1643,14 +1650,15 @@ export default function Matricula() {
               </div>
 
               <div className="enrollment-summary-total">
-                <span>
-                  Valor: 
-                </span>
-
+                <span>Valor:</span>
                 <strong>
-                  {plan
-                    ? formatCurrency(selectedSchedule?.valor_mensal ?? selectedPlanPrice) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
-                    : '—'}
+                  {isCollectivePlan
+                    ? (step === 5 && selectedSchedule?.valor_mensal != null
+                      ? formatCurrency(selectedSchedule.valor_mensal) + '/mês'
+                      : 'Calculado após a análise do horário')
+                    : plan
+                      ? formatCurrency(selectedSchedule?.valor_mensal ?? Number(plan.preco)) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
+                      : '—'}
                 </strong>
               </div>
 
