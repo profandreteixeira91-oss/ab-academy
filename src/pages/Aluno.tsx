@@ -623,6 +623,7 @@ function Aluno() {
   const studentIdRef = useRef<string | null>(null)
   const authLoadFinishedRef = useRef(false)
   const authLoadingRef = useRef(false)
+  const passwordRecoveryRef = useRef(false)
 
   /*
    * =========================================================
@@ -912,6 +913,7 @@ function Aluno() {
       if (sessionError) throw sessionError
       if (!sessionData.session?.user) throw new Error('A sessão de recuperação expirou.')
 
+      passwordRecoveryRef.current = false
       setAuthPassword('')
       setAuthPasswordConfirmation('')
       setAuthStep('password')
@@ -976,6 +978,7 @@ function Aluno() {
   }
 
   function resetAuthToEmail() {
+    passwordRecoveryRef.current = false
     setAuthStep('email')
     setAuthPassword('')
     setAuthPasswordConfirmation('')
@@ -1989,6 +1992,10 @@ function Aluno() {
         if (!mounted) return
 
         if (event === 'PASSWORD_RECOVERY') {
+          passwordRecoveryRef.current = true
+          authUserIdRef.current = null
+          studentIdRef.current = null
+          authLoadFinishedRef.current = false
           setUser(null)
           setLoading(false)
           setAuthError('')
@@ -2013,6 +2020,16 @@ function Aluno() {
         }
 
         if (event === 'SIGNED_IN' && session?.user) {
+          /*
+           * Durante a recuperação, o Supabase pode emitir SIGNED_IN
+           * para a sessão temporária criada pelo link de recuperação.
+           * Essa sessão NÃO deve abrir o portal nem substituir a tela
+           * de criação da nova senha.
+           */
+          if (passwordRecoveryRef.current) {
+            return
+          }
+
           /*
            * Exatamente como no Portal do Professor:
            * SIGNED_IN repetido ao voltar para a aba não recarrega o portal.
@@ -2668,6 +2685,7 @@ function Aluno() {
       authUserIdRef.current = null
       studentIdRef.current = null
       authLoadFinishedRef.current = false
+      passwordRecoveryRef.current = false
       setUser(null)
       setSection('inicio')
 
