@@ -1001,9 +1001,12 @@ export default function Matricula() {
                       'Seus dados pessoais'}
 
                     {step === 3 &&
-                      'Escolha seu horário'}
+                      'Quando você pode estudar?'}
 
                     {step === 4 &&
+                      'Horários compatíveis com você'}
+
+                    {step === 5 &&
                       'Confirme sua matrícula'}
                   </h2>
 
@@ -1015,9 +1018,12 @@ export default function Matricula() {
                       'Informe os dados necessários para sua matrícula.'}
 
                     {step === 3 &&
-                      'Selecione um horário disponível para sua aula.'}
+                      'Informe os dias e períodos em que você pode estudar.'}
 
                     {step === 4 &&
+                      'Escolha entre os horários reais compatíveis com sua disponibilidade.'}
+
+                    {step === 5 &&
                       'Revise todas as informações antes de continuar para o pagamento.'}
                   </p>
                 </div>
@@ -1384,7 +1390,7 @@ export default function Matricula() {
             </div>
           )}
 
-          {step === 4 && (
+          {step === 5 && (
                 <div className="schedule-confirmation">
                   <div className="selection-heading">
                     <ShieldCheck
