@@ -74,7 +74,7 @@ type RegistroAula = {
   aluno_id: string
   professor_id: string
   data_aula: string
-  status: 'presente' | 'falta'
+  status: 'agendada' | 'presente' | 'falta'
   data_aula_override?: string | null
   hora_inicio_override?: string | null
   hora_fim_override?: string | null
@@ -129,6 +129,9 @@ function Professor() {
   const [registrosAulas, setRegistrosAulas] =
     useState<RegistroAula[]>([])
 
+  // Mantém a disponibilidade de entrada na aula sincronizada com o relógio.
+  const [currentTime, setCurrentTime] = useState(() => new Date())
+
   const [registroFaltaLoading, setRegistroFaltaLoading] =
     useState<string | null>(null)
 
@@ -168,6 +171,16 @@ function Professor() {
    */
   const professorUserIdRef = useRef<string | null>(null)
   const initialAuthLoadFinishedRef = useRef(false)
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setCurrentTime(new Date())
+    }, 30_000)
+
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [])
 
   /*
    * ============================================================
@@ -820,65 +833,219 @@ function Professor() {
 
   /*
    * ============================================================
-   * PRÓXIMA AULA
+   * PRÓXIMA AULA / REPOSIÇÕES
    * ============================================================
+   *
+   * Uma reposição não altera o dia da semana do horário original.
+   * Ela é uma ocorrência excepcional registrada em
+   * data_aula_override/hora_*_override.
+   *
+   * O portal precisa considerar:
+   * 1. a ocorrência semanal normal;
+   * 2. qualquer reposição futura ou em andamento;
+   * 3. uma reposição como substituição da ocorrência original,
+   *    evitando mostrar duas aulas para o mesmo horário.
    */
+
+  function getDateKey(date: Date) {
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('-')
+  }
+
+  function buildLessonDate(
+    dateKey: string,
+    time: string,
+  ) {
+    const [year, month, day] =
+      dateKey.split('-').map(Number)
+    const [hours, minutes] =
+      time.slice(0, 5).split(':').map(Number)
+
+    return new Date(
+      year,
+      month - 1,
+      day,
+      hours,
+      minutes,
+      0,
+      0,
+    )
+  }
+
+  function getLessonOccurrence(
+    horario: Horario,
+  ) {
+    const now = currentTime
+    const registros = registrosAulas.filter(
+      (registro) =>
+        registro.horario_id === horario.id,
+    )
+
+    const candidates: Array<{
+      startAt: Date
+      endAt: Date
+      replacement: boolean
+    }> = []
+
+    const addCandidate = (
+      dateKey: string,
+      startTime: string,
+      endTime: string,
+      replacement: boolean,
+    ) => {
+      const startAt = buildLessonDate(
+        dateKey,
+        startTime,
+      )
+      const endAt = buildLessonDate(
+        dateKey,
+        endTime,
+      )
+
+      if (endAt.getTime() < startAt.getTime()) {
+        endAt.setDate(endAt.getDate() + 1)
+      }
+
+      candidates.push({
+        startAt,
+        endAt,
+        replacement,
+      })
+    }
+
+    // Reposições têm prioridade e devem ser consideradas
+    // independentemente do dia original da aula.
+    registros.forEach((registro) => {
+      if (
+        registro.data_aula_override &&
+        registro.hora_inicio_override &&
+        registro.hora_fim_override
+      ) {
+        addCandidate(
+          registro.data_aula_override,
+          registro.hora_inicio_override,
+          registro.hora_fim_override,
+          true,
+        )
+      }
+    })
+
+    // Procura a ocorrência semanal atual e a próxima.
+    // Quando existe uma reposição para aquela ocorrência,
+    // a ocorrência normal é substituída pela reposição.
+    for (let offset = 0; offset <= 7; offset += 1) {
+      const date = new Date(now)
+      date.setHours(0, 0, 0, 0)
+      date.setDate(
+        date.getDate() + offset,
+      )
+
+      if (
+        date.getDay() !==
+        horario.dia_semana
+      ) {
+        continue
+      }
+
+      const dateKey = getDateKey(date)
+      const registroDaOcorrencia =
+        registros.find(
+          (registro) =>
+            registro.data_aula ===
+            dateKey,
+        )
+
+      if (
+        registroDaOcorrencia?.data_aula_override
+      ) {
+        continue
+      }
+
+      addCandidate(
+        dateKey,
+        horario.hora_inicio,
+        horario.hora_fim,
+        false,
+      )
+    }
+
+    const activeOrFuture =
+      candidates
+        .filter(
+          (candidate) =>
+            candidate.endAt.getTime() >=
+            now.getTime(),
+        )
+        .sort(
+          (a, b) =>
+            a.startAt.getTime() -
+            b.startAt.getTime(),
+        )
+
+    return (
+      activeOrFuture[0] ??
+      null
+    )
+  }
 
   function podeEntrarNaAula(
     horario: Horario,
   ) {
-    const now = new Date()
+    const occurrence =
+      getLessonOccurrence(horario)
 
-    if (now.getDay() !== horario.dia_semana) {
+    if (!occurrence) {
       return false
     }
 
-    const [hours, minutes] =
-      horario.hora_inicio
-        .slice(0, 5)
-        .split(':')
-        .map(Number)
-
-    const [endHours, endMinutes] =
-      horario.hora_fim
-        .slice(0, 5)
-        .split(':')
-        .map(Number)
-
-    const startAt = new Date(now)
-    startAt.setHours(hours, minutes, 0, 0)
-
-    const endAt = new Date(now)
-    endAt.setHours(endHours, endMinutes, 0, 0)
-
-    const accessStart = new Date(
-      startAt.getTime() - 5 * 60 * 1000,
-    )
+    const accessStart =
+      new Date(
+        occurrence.startAt.getTime() -
+          5 * 60 * 1000,
+      )
 
     return (
-      now.getTime() >= accessStart.getTime() &&
-      now.getTime() <= endAt.getTime()
+      currentTime.getTime() >=
+        accessStart.getTime() &&
+      currentTime.getTime() <=
+        occurrence.endAt.getTime()
     )
   }
-  function getTodayDateKey() {
-    const now = new Date()
 
-    return [
-      now.getFullYear(),
-      String(now.getMonth() + 1).padStart(2, '0'),
-      String(now.getDate()).padStart(2, '0'),
-    ].join('-')
+  function getTodayDateKey() {
+    return getDateKey(currentTime)
   }
 
   function getRegistroAulaAtual(
     horario: Horario,
   ) {
-    const today = getTodayDateKey()
+    const today =
+      getTodayDateKey()
 
     return registrosAulas.find(
       (registro) =>
-        registro.horario_id === horario.id &&
-        (registro.data_aula === today || registro.data_aula_override === today),
+        registro.horario_id ===
+          horario.id &&
+        (
+          registro.data_aula === today ||
+          registro.data_aula_override ===
+            today
+        ),
+    )
+  }
+
+  function hasAttendanceRegistered(
+    horario: Horario,
+  ) {
+    const registro =
+      getRegistroAulaAtual(horario)
+
+    return (
+      registro?.status === 'presente' ||
+      registro?.status === 'falta'
     )
   }
 
@@ -892,10 +1059,7 @@ function Professor() {
       return
     }
 
-    const registroExistente =
-      getRegistroAulaAtual(horario)
-
-    if (registroExistente) {
+    if (hasAttendanceRegistered(horario)) {
       return
     }
 
@@ -949,7 +1113,8 @@ function Professor() {
               registroAtual as RegistroAula,
               ...current.filter(
                 (registro) =>
-                  registro.id !== registroAtual.id,
+                  registro.id !==
+                  registroAtual.id,
               ),
             ])
           }
@@ -983,44 +1148,45 @@ function Professor() {
   function getNextLesson(
     horario: Horario,
   ) {
-    const now = new Date()
-    const currentDay = now.getDay()
-    let daysUntil = horario.dia_semana - currentDay
-    if (daysUntil < 0) daysUntil += 7
+    const occurrence =
+      getLessonOccurrence(horario)
 
-    const recurringDate = new Date(now)
-    recurringDate.setDate(now.getDate() + daysUntil)
-    recurringDate.setHours(0, 0, 0, 0)
-    const recurringDateKey = [
-      recurringDate.getFullYear(),
-      String(recurringDate.getMonth() + 1).padStart(2, '0'),
-      String(recurringDate.getDate()).padStart(2, '0'),
-    ].join('-')
+    if (occurrence) {
+      return occurrence.startAt
+    }
 
-    const registro = registrosAulas.find((item) => item.horario_id === horario.id && item.data_aula === recurringDateKey)
-    const actualDateKey = registro?.data_aula_override || recurringDateKey
-    const actualStart = registro?.hora_inicio_override || horario.hora_inicio
-    const actualEnd = registro?.hora_fim_override || horario.hora_fim
-    const [year, month, day] = actualDateKey.split('-').map(Number)
-    const [hours, minutes] = actualStart.slice(0, 5).split(':').map(Number)
-    const [endHours, endMinutes] = actualEnd.slice(0, 5).split(':').map(Number)
+    // Fallback apenas para horários sem uma ocorrência futura
+    // carregável no estado atual.
+    const fallback = new Date(currentTime)
+    fallback.setHours(0, 0, 0, 0)
 
-    const lessonDate = new Date(year, month - 1, day, hours, minutes, 0, 0)
-    const lessonEnd = new Date(year, month - 1, day, endHours, endMinutes, 0, 0)
-    const accessStart = new Date(lessonDate.getTime() - 5 * 60 * 1000)
+    for (let offset = 0; offset <= 7; offset += 1) {
+      const date = new Date(fallback)
+      date.setDate(
+        fallback.getDate() + offset,
+      )
 
-    if (now.getTime() >= accessStart.getTime() && now.getTime() <= lessonEnd.getTime()) return lessonDate
-    if (lessonDate <= now) lessonDate.setDate(lessonDate.getDate() + 7)
-    return lessonDate
+      if (
+        date.getDay() ===
+        horario.dia_semana
+      ) {
+        const dateKey = getDateKey(date)
+        return buildLessonDate(
+          dateKey,
+          horario.hora_inicio,
+        )
+      }
+    }
+
+    return fallback
   }
 
   function formatNextLesson(
     horario: Horario,
   ) {
-    const date =
-      getNextLesson(horario)
-
-    return date.toLocaleDateString(
+    return getNextLesson(
+      horario,
+    ).toLocaleDateString(
       'pt-BR',
       {
         day: '2-digit',
@@ -1033,10 +1199,9 @@ function Professor() {
   function getNextLessonTime(
     horario: Horario,
   ) {
-    const date =
-      getNextLesson(horario)
-
-    return date.toLocaleTimeString(
+    return getNextLesson(
+      horario,
+    ).toLocaleTimeString(
       'pt-BR',
       {
         hour: '2-digit',
@@ -1839,13 +2004,13 @@ function Professor() {
                           {getNextLesson(horario).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}{' '}
                           -{' '}
                           {(() => {
-                            const startAt = getNextLesson(horario)
-                            const registro = registrosAulas.find((item) => item.horario_id === horario.id)
-                            if (!registro?.hora_fim_override) return formatHour(horario.hora_fim)
-                            const [h, m] = registro.hora_fim_override.slice(0, 5).split(':').map(Number)
-                            const endAt = new Date(startAt)
-                            endAt.setHours(h, m, 0, 0)
-                            return endAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+                            const occurrence = getLessonOccurrence(horario)
+                            return occurrence
+                              ? occurrence.endAt.toLocaleTimeString('pt-BR', {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : formatHour(horario.hora_fim)
                           })()}
                         </span>
 
@@ -1875,9 +2040,7 @@ function Professor() {
                           }}
                           disabled={
                             !podeEntrarNaAula(horario) ||
-                            Boolean(
-                              getRegistroAulaAtual(horario),
-                            )
+                            hasAttendanceRegistered(horario)
                           }
                         >
                           <Video
@@ -1894,9 +2057,7 @@ function Professor() {
                             void registrarFalta(horario)
                           }}
                           disabled={
-                            Boolean(
-                              getRegistroAulaAtual(horario),
-                            ) ||
+                            hasAttendanceRegistered(horario) ||
                             registroFaltaLoading ===
                               horario.id
                           }
