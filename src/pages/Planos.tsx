@@ -232,6 +232,13 @@ function ModalidadeCard({
         <div className="planos-frequency-list">
           {opcoes.map(({ plano, horariosDaOpcao }) => {
             const frequencia = plano.aulas_semana ?? 1
+            const individualPlan = planos.find((item) =>
+              item.idioma === idioma
+              && item.modalidade === 'individual'
+              && item.ativo
+              && item.tipo === (frequencia === 1 ? 'mensal' : frequencia === 2 ? 'personalizado' : 'intensivo')
+              && (item.aulas_semana ?? 1) === frequencia
+            )
             const vagasRestantes = Math.min(...horariosDaOpcao.map((horario) => horario.vagas_restantes))
             return (
               <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')}>
