@@ -4304,11 +4304,11 @@ function PagamentoAluno({
                   <div className="student-payment-fields-3">
                     <div className="student-payment-field">
                       <label>Mês <strong>*</strong></label>
-                      <input inputMode="numeric" autoComplete="cc-exp-month" maxLength={2} value={card.expiryMonth} onChange={e => onCardChange(v => ({ ...v, expiryMonth: e.target.value.replace(/\D/g, '').slice(0, 2) }))} />
+                      <input inputMode="numeric" autoComplete="cc-exp-month" maxLength={2} placeholder="MM" value={card.expiryMonth} onChange={e => onCardChange(v => ({ ...v, expiryMonth: e.target.value.replace(/\D/g, '').slice(0, 2) }))} />
                     </div>
                     <div className="student-payment-field">
                       <label>Ano <strong>*</strong></label>
-                      <input inputMode="numeric" autoComplete="cc-exp-year" maxLength={4} value={card.expiryYear} onChange={e => onCardChange(v => ({ ...v, expiryYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
+                      <input inputMode="numeric" autoComplete="cc-exp-year" maxLength={4} placeholder="AAAA" value={card.expiryYear} onChange={e => onCardChange(v => ({ ...v, expiryYear: e.target.value.replace(/\D/g, '').slice(0, 4) }))} />
                     </div>
                     <div className="student-payment-field">
                       <label>CVV <strong>*</strong></label>
