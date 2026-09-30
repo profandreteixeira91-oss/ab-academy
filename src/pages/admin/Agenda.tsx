@@ -3246,12 +3246,16 @@ export default function Agenda() {
                 onClick={() => void handleReschedule()}
                 disabled={
                   saving ||
-                  !rescheduleDate ||
+                  (rescheduleMode === 'reposicao' && !rescheduleDate) ||
                   !rescheduleStart ||
                   !rescheduleEnd
                 }
               >
-                {saving ? 'Reagendando...' : 'Confirmar reagendamento'}
+                {saving
+                  ? 'Salvando...'
+                  : rescheduleMode === 'permanente'
+                    ? 'Confirmar mudança permanente'
+                    : 'Confirmar reposição'}
               </button>
             </div>
           </div>
