@@ -575,6 +575,12 @@ export default function Agenda() {
         return false
       }
 
+      // Individual, dupla e grupo podem compartilhar o mesmo intervalo.
+      // Apenas o mesmo tipo de horário é considerado duplicado no cadastro.
+      if (tipoHorario && horario.tipo_horario !== tipoHorario) {
+        return false
+      }
+
       return true
     })
   }
@@ -788,6 +794,7 @@ export default function Agenda() {
             : [],
                     form.idioma,
             form.professor_id || null,
+            form.tipo_horario,
           )
 
       if (conflict) {
