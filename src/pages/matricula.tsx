@@ -1644,7 +1644,6 @@ export default function Matricula() {
                   </p>
                   </div>
                 </div>
-              </div>
 
               {error && (
                 <div
