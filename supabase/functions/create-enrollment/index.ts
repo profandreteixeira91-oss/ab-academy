@@ -638,15 +638,22 @@ Deno.serve(async (req) => {
           .eq('turma_id', turma.id)
           .in('status', ['convidado','confirmado'])
 
-        const { data: valorData, error: valorError } = await supabaseAdmin.rpc('preco_coletivo', {
-          p_idioma: body.idioma,
-          p_modalidade: turma.modalidade,
-          p_aulas_semana: turma.aulas_semana,
-          p_participantes: participantesCount ?? 1,
-        })
+        const participantTotal = participantesCount ?? 1
+        const { data: valorData, error: valorError } = participantTotal <= 1
+          ? await supabaseAdmin.rpc('preco_formacao_coletiva', {
+              p_idioma: body.idioma,
+              p_modalidade: turma.modalidade,
+              p_aulas_semana: turma.aulas_semana,
+            })
+          : await supabaseAdmin.rpc('preco_coletivo', {
+              p_idioma: body.idioma,
+              p_modalidade: turma.modalidade,
+              p_aulas_semana: turma.aulas_semana,
+              p_participantes: participantTotal,
+            })
 
         if (valorError || valorData == null || Math.abs(Number(valorData) - Number(body.valor)) > 0.01) {
-          return jsonResponse({ error: 'O valor da matrícula coletiva não corresponde à composição atual da turma.' }, 409)
+          return jsonResponse({ error: 'O valor da matrícula coletiva não corresponde à condição atual da turma.' }, 409)
         }
       } else {
         const requiredSchedules = plano.tipo === 'intensivo' ? 3 : plano.tipo === 'personalizado' ? 2 : (plano.aulas_semana ?? 1)
