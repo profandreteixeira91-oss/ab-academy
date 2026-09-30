@@ -395,7 +395,7 @@ export default function Agenda() {
           b.hora_inicio,
         ),
       )
-  }, [horarios, selectedDay, filterTipo, filterProfessor, filterNivel]
+  }, [horarios, selectedDay, filterTipo, filterProfessor, filterNivel])
 
   /*
    * =======================================================
