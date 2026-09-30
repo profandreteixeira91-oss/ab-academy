@@ -10,6 +10,11 @@ const PUBLIC_PATHS = new Set([
   '/enterprise',
   '/trabalhe-conosco',
   '/matricula',
+  '/horarios',
+  '/aulas',
+  '/aulas/individuais',
+  '/aulas/duplas',
+  '/aulas/grupos',
   '/politica-privacidade',
   '/termos-de-servico',
 ])
@@ -76,25 +81,36 @@ export function trackPublicPageView(path: string, pageTitle: string) {
   if (!PUBLIC_PATHS.has(path)) return
 
   const params = new URLSearchParams(window.location.search)
+  const stored = (() => {
+    try {
+      return JSON.parse(sessionStorage.getItem('abacademy_attribution') || '{}') as Record<string, string>
+    } catch {
+      return {}
+    }
+  })()
   const referrer = document.referrer || null
 
-  void supabase.from('site_analytics_events').insert({
+  const payload = {
     session_id: getAnalyticsSessionId(),
     event_type: 'page_view',
     path,
     page_title: pageTitle,
     referrer,
     referrer_domain: getReferrerDomain(),
-    utm_source: params.get('utm_source'),
-    utm_medium: params.get('utm_medium'),
-    utm_campaign: params.get('utm_campaign'),
-    utm_term: params.get('utm_term'),
-    utm_content: params.get('utm_content'),
+    utm_source: params.get('utm_source') || stored.source || null,
+    utm_medium: params.get('utm_medium') || stored.medium || null,
+    utm_campaign: params.get('utm_campaign') || stored.campaign || null,
+    utm_term: params.get('utm_term') || stored.term || null,
+    utm_content: params.get('utm_content') || stored.content || null,
     device_type: getDeviceType(),
     browser: getBrowser(),
     os: getOs(),
     language: navigator.language || null,
     screen_width: window.innerWidth,
+  }
+
+  void supabase.from('site_analytics_events').insert(payload).then(({ error }) => {
+    if (error) console.warn('[AB Academy Analytics] Falha ao registrar page_view:', error.message)
   })
 }
 
@@ -116,7 +132,6 @@ export function trackActiveVisitor(path: string, pageTitle: string) {
   if (!PUBLIC_PATHS.has(path)) return
 
   const sessionId = getAnalyticsSessionId()
-  const params = new URLSearchParams(window.location.search)
   const payload = {
     session_id: sessionId,
     path,
