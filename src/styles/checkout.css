@@ -334,6 +334,40 @@
   font-weight: 700;
 }
 
+.checkout-third-party-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-top: -5px;
+  padding: 13px 14px;
+  border: 1px solid #dbeafe;
+  border-radius: 10px;
+  background: #f8fbff;
+  color: #374151;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.45;
+  cursor: pointer;
+}
+
+.checkout-third-party-toggle input {
+  width: 17px;
+  height: 17px;
+  margin: 1px 0 0;
+  flex: 0 0 auto;
+  accent-color: #2563eb;
+}
+
+.checkout-cardholder-notice {
+  margin-top: -5px;
+  padding: 11px 13px;
+  border-radius: 9px;
+  background: #f9fafb;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.55;
+}
+
 .checkout-installment-preview {
   display: grid;
   grid-template-columns: 1fr auto;
