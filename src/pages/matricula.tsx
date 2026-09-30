@@ -258,7 +258,7 @@ export default function Matricula() {
    const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
   const [reservaToken] = useState(() => crypto.randomUUID())
-  const [formationOrigin, setFormationOrigin] = useState<{ turmaId: string; horarioId: string; modalidade: 'dupla' | 'grupo'; aulasSemana: number } | null>(null)
+  const [formationOrigin, setFormationOrigin] = useState<{ turmaId: string; horarioId: string; modalidade: 'dupla' | 'grupo'; aulasSemana: number; valorDesconto: number } | null>(null)
   const selectedLanguageLabel =
     language === 'ingles'
       ? 'Inglês'
@@ -1153,6 +1153,7 @@ export default function Matricula() {
         horarioId: firstEncounter.horario_id,
         modalidade: campaign.modalidade,
         aulasSemana: campaign.aulas_semana,
+        valorDesconto: Number(discountedPrice),
       })
       setPlan(individualPlan as Plan)
       setSelectedSchedule(null)
@@ -1390,8 +1391,9 @@ export default function Matricula() {
         turma_token: collectiveEnrollment?.token ?? null,
         turma_participante_id: collectiveEnrollment?.participanteId ?? primarySchedule.participante_id ?? null,
         turma_id: collectiveEnrollment?.turmaId ?? primarySchedule.turma_id ?? null,
-        horario_formacao_id: isWaitingFormation ? (formationSlotId || primarySchedule.id) : null,
-        aguardando_formacao: isWaitingFormation,
+        horario_formacao_id: formationOrigin?.horarioId ?? (isWaitingFormation ? (formationSlotId || primarySchedule.id) : null),
+        aguardando_formacao: Boolean(formationOrigin) || isWaitingFormation,
+        formacao_modalidade: formationOrigin?.modalidade ?? null,
 
         objetivos: null,
 
@@ -1399,7 +1401,7 @@ export default function Matricula() {
 
         valor_aula: collectiveEnrollment ? null : effectivePlan?.tipo === 'avulso' ? Number(effectivePlan.preco) : effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0) / (effectivePlan?.tipo === 'intensivo' ? 12 : effectivePlan?.tipo === 'personalizado' ? 8 : 4),
 
-        valor_mensal: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? primarySchedule.valor_mensal : (isWaitingFormation ? primarySchedule.valor_mensal : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0)))),
+        valor_mensal: collectiveEnrollment?.valorMensal ?? (formationOrigin?.valorDesconto ?? (isCollectivePlan ? primarySchedule.valor_mensal : (isWaitingFormation ? primarySchedule.valor_mensal : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0))))),
 
         valor_anual: collectiveEnrollment ? null : effectivePlan?.tipo === 'anual' ? Number(effectivePlan.preco) : null,
 
@@ -1410,7 +1412,7 @@ export default function Matricula() {
         dados_aluno: dadosAluno,
         reserva_token: reservaToken,
 
-        valor: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? Number(primarySchedule.valor_mensal ?? 0) : authoritativeValue),
+        valor: collectiveEnrollment?.valorMensal ?? (formationOrigin?.valorDesconto ?? (isCollectivePlan ? Number(primarySchedule.valor_mensal ?? 0) : authoritativeValue)),
       }
 
       const {
