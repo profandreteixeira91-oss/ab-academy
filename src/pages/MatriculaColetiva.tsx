@@ -74,6 +74,7 @@ export default function MatriculaColetiva({ modalidade: propModalidade }: { moda
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [selectedSchedules, setSelectedSchedules] = useState<SelectedSchedule[]>([])
   const [selectedTurmaId, setSelectedTurmaId] = useState<string | null>(null)
+  const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
   const [loadingSchedules, setLoadingSchedules] = useState(false); const [loadingSelection, setLoadingSelection] = useState<string | null>(null)
   const [planId, setPlanId] = useState<string | null>(null); const [error, setError] = useState(''); const [success, setSuccess] = useState(''); const [loading, setLoading] = useState(false)
   const reservaToken = useMemo(() => crypto.randomUUID(), [])
@@ -83,6 +84,20 @@ export default function MatriculaColetiva({ modalidade: propModalidade }: { moda
   const formationPrice = language ? (baseIndividualPrice[language][frequency] || 0) * (1 - discount) : 0
   const existingParticipants = selectedSchedules.length ? Math.max.apply(null, selectedSchedules.map(item => item.participantes)) : 0
   const collectivePrice = selectedSchedules[0]?.valor_mensal ?? null
+  const groupedSchedules = useMemo(() => {
+    const groups = new Map<number, Schedule[]>()
+    schedules.forEach((item) => {
+      const current = groups.get(item.dia_semana) ?? []
+      current.push(item)
+      groups.set(item.dia_semana, current)
+    })
+    return Array.from(groups.entries()).sort(([a], [b]) => a - b).map(([value, items]) => ({
+      value,
+      short: weekdays[value].replace('-feira', '').replace('Domingo', 'Dom.').slice(0, 3),
+      schedules: items.sort((a, b) => String(a.hora_inicio).localeCompare(String(b.hora_inicio))),
+    }))
+  }, [schedules])
+  const visibleSchedules = selectedWeekday === null ? schedules : schedules.filter((item) => item.dia_semana === selectedWeekday)
   const monthlyPrice = formationMode ? formationPrice : (collectivePrice ?? formationPrice)
 
   useEffect(() => {
@@ -102,9 +117,10 @@ export default function MatriculaColetiva({ modalidade: propModalidade }: { moda
     setLoadingSchedules(false)
     if (scheduleError) { console.error(scheduleError); setError('Não foi possível carregar os horários disponíveis.'); return }
     setSchedules((data ?? []) as Schedule[])
+    setSelectedWeekday(null)
   }
   useEffect(() => {
-    if (language) { void loadPlans(language, frequency); setSelectedSchedules([]); setSelectedTurmaId(null); if (step === 2) void loadSchedules() }
+    if (language) { void loadPlans(language, frequency); setSelectedSchedules([]); setSelectedTurmaId(null); setSelectedWeekday(null); if (step === 2) void loadSchedules() }
   }, [language, frequency])
 
   function validatePersonalData() {
@@ -199,7 +215,7 @@ export default function MatriculaColetiva({ modalidade: propModalidade }: { moda
             <div className="selection-heading"><Users size={20} /><div><h3>Idioma</h3><p>Escolha o idioma da matrícula.</p></div></div>
             <div className="language-selection">{(['ingles', 'alemao'] as Language[]).map(item => <button key={item} type="button" className={'language-selection-card ' + (language === item ? 'selected' : '')} onClick={() => setLanguage(item)}><img src={item === 'ingles' ? usaFlag : germanyFlag} alt="" /><div><strong>{languageLabel[item]}</strong><span>{item === 'ingles' ? 'Inglês' : 'Deutsch'}</span></div><span className="selection-radio" /></button>)}</div>
             <div className="collective-frequency"><div className="selection-heading"><CalendarDays size={20} /><div><h3>Frequência semanal</h3><p>Escolha quantas aulas você fará por semana.</p></div></div>
-              <div className="collective-frequency-options">{(modalidade === 'grupo' ? [2, 3] : [1, 2]).map(value => <button type="button" key={value} className={frequency === value ? 'selected' : ''} onClick={() => setFrequency(value)}><strong>{value}x</strong><span>{value === 1 ? '1 aula por semana' : value + ' aulas por semana'}</span></button>)}</div>
+              <div className="collective-frequency-options">{(modalidade === 'grupo' ? [1, 2, 3] : [1, 2]).map(value => <button type="button" key={value} className={frequency === value ? 'selected' : ''} onClick={() => setFrequency(value)}><strong>{value}x</strong><span>{value === 1 ? '1 aula por semana' : value + ' aulas por semana'}</span></button>)}</div>
             </div>
             <div className="enrollment-fields collective-fields">
               <div className="enrollment-field collective-field-wide"><label>Nome completo *</label><input value={name} onChange={e => setName(e.target.value)} autoComplete="name" /></div>
@@ -218,19 +234,33 @@ export default function MatriculaColetiva({ modalidade: propModalidade }: { moda
           </>}
           {step === 2 && <>
             <div className="enrollment-card-header"><span className="enrollment-card-number">2</span><div><h2>Verifique a disponibilidade</h2><p>Você verá horários livres e horários que já possuem alunos na modalidade escolhida.</p></div></div>
-            {loadingSchedules ? <div className="collective-loading"><Loader2 size={22} className="student-spin" /> Carregando horários...</div> : <div className="collective-schedule-list">
-              {schedules.length === 0 && <div className="collective-empty">Não encontramos horários compatíveis no momento.</div>}
-              {schedules.map(item => {
-                const selected = selectedSchedules.some(current => current.id === item.id)
-                const hasExisting = !!item.turma_id && item.participantes > 0
-                const displayPrice = hasExisting ? Number(item.valor_mensal || 0) : formationPrice
-                return <button type="button" key={item.id} className={'collective-schedule-card ' + (selected ? 'selected' : '')} onClick={() => void selectSchedule(item)} disabled={!!loadingSelection}>
-                  <div className="collective-schedule-main"><div className="collective-day">{weekdays[item.dia_semana]}</div><strong>{String(item.hora_inicio).slice(0, 5)} – {String(item.hora_fim).slice(0, 5)}</strong><span>{hasExisting ? (modalidade === 'grupo' ? 'Grupo com ' + item.participantes + ' aluno(s)' : 'Dupla com 1 aluno') : 'Horário livre — você inicia a formação'}</span></div>
-                  <div className="collective-schedule-side"><strong>{money(displayPrice)}</strong><small>por mês</small><span className={hasExisting ? 'join' : 'start'}>{hasExisting ? 'Entrar' : 'Iniciar'}</span></div>
-                </button>
-              })}
-            </div>}
-            <div className="collective-selection-summary"><strong>{selectedSchedules.length}/{requiredSchedules} horários selecionados</strong><span>{selectedSchedules.length ? selectedSchedules.map(item => weekdays[item.dia_semana] + ' ' + String(item.hora_inicio).slice(0, 5)).join(' • ') : 'Selecione os horários acima.'}</span></div>
+            {loadingSchedules ? <div className="enrollment-loading">Carregando horários...</div> : <div className="collective-schedule-selector">
+              {schedules.length === 0 ? <div className="enrollment-empty">Nenhum horário disponível para {language ? languageLabel[language] : 'o idioma selecionado'}.</div> : <>
+                <div className="schedule-calendar">
+                  <button type="button" className={'schedule-date ' + (selectedWeekday === null ? 'selected' : '')} onClick={() => setSelectedWeekday(null)}>
+                    <strong>Todos</strong><span>horários</span>
+                  </button>
+                  {groupedSchedules.map((weekday) => (
+                    <button type="button" key={weekday.value} className={'schedule-date ' + (selectedWeekday === weekday.value ? 'selected' : '')} onClick={() => setSelectedWeekday(weekday.value)}>
+                      <strong>{weekday.short}</strong><span>{weekday.schedules.length} opções</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="schedule-times">
+                  {visibleSchedules.map((item) => {
+                    const selected = selectedSchedules.some(current => current.id === item.id)
+                    const hasExisting = !!item.turma_id && item.participantes > 0
+                    const displayPrice = hasExisting ? Number(item.valor_mensal || formationPrice) : formationPrice
+                    return <button type="button" key={item.id} className={'schedule-time ' + (selected ? 'selected' : '')} onClick={() => void selectSchedule(item)} disabled={!!loadingSelection || (!!selectedTurmaId && !!item.turma_id && selectedTurmaId !== item.turma_id)}>
+                      <strong>{String(item.hora_inicio).slice(0, 5)}</strong>
+                      <span>até {String(item.hora_fim).slice(0, 5)}</span>
+                      <small>{hasExisting ? (modalidade === 'grupo' ? `${item.participantes}/${item.capacidade} alunos • ${item.vagas_restantes} vaga(s)` : 'Dupla com 1 aluno • 1 vaga') : 'Horário livre • será sua nova turma'}</small>
+                      <em>{money(displayPrice)} /mês</em>
+                    </button>
+                  })}
+                </div>
+              </>}
+            </div>}           <div className="collective-selection-summary"><strong>{selectedSchedules.length}/{requiredSchedules} horários selecionados</strong><span>{selectedSchedules.length ? selectedSchedules.map(item => weekdays[item.dia_semana] + ' ' + String(item.hora_inicio).slice(0, 5)).join(' • ') : 'Selecione os horários acima.'}</span></div>
           </>}
           {step === 3 && <>
             <div className="enrollment-card-header"><span className="enrollment-card-number">3</span><div><h2>Confira sua matrícula</h2><p>Revise a condição e confirme para gerar o pagamento.</p></div></div>
