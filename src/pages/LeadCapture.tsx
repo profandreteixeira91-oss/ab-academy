@@ -2,6 +2,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, CheckCircle2, Languages, MessageCircle } from 'lucide-react'
 import '../styles/lead-capture.css'
 import { supabase } from '../lib/supabase'
+import { getAnalyticsSessionId } from '../lib/analytics'
 
 type Language = 'ingles' | 'alemao' | 'ambos'
 type Modality = 'individual' | 'dupla' | 'grupo'
@@ -214,6 +215,7 @@ export default function LeadCapture() {
 
     const { data: createdLead, error: insertError } = await supabase.from('leads').insert({
       ...form,
+      analytics_session_id: getAnalyticsSessionId(),
       origem: tracking.source,
       landing_page: new URLSearchParams(window.location.search).get('landing_page') || window.location.pathname,
       source: tracking.source,
