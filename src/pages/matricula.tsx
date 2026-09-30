@@ -212,6 +212,10 @@ export default function Matricula() {
   const [waitingIndividualPlan, setWaitingIndividualPlan] = useState<Plan | null>(null)
   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
+  const [selectionLocked] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return ['dupla', 'grupo'].includes(params.get('modalidade') || '') && ['ingles', 'alemao'].includes(params.get('idioma') || '')
+  })
 
   const selectedLanguageLabel =
     language === 'ingles'
@@ -1391,10 +1395,7 @@ export default function Matricula() {
                     </div>
 
                     <span>
-                      {selectedSchedule
-                        ? 1
-                        : 0}
-                      /1
+                      {selectedSchedules.length}/{plan?.aulas_semana ?? 1}
                     </span>
                   </div>
 
