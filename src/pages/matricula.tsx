@@ -796,7 +796,7 @@ export default function Matricula() {
     const reservedSchedules: SelectedSchedule[] = []
 
     for (const current of selectedSchedules) {
-      const { data, error: selectionError } = await supabase.rpc('selecionar_horario_matricula_v2', {
+      const { data, error: selectionError } = await supabase.rpc('selecionar_horario_matricula_publico', {
         p_horario_id: current.id,
         p_idioma: language,
         p_modalidade: modalidade,
