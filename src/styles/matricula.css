@@ -1712,3 +1712,438 @@
   margin: 0;
   line-height: 1.55;
 }
+
+
+/* =========================================================
+   COMPATIBILIDADE COM A MATRÍCULA ATUAL
+   Ajustes cirúrgicos para os elementos presentes em
+   matricula.tsx e para larguras intermediárias/mobile.
+========================================================= */
+
+.enrollment-page,
+.enrollment-page *,
+.enrollment-page *::before,
+.enrollment-page *::after {
+  box-sizing: border-box;
+}
+
+.enrollment-header {
+  gap: 16px;
+}
+
+.academy-header-logo {
+  display: block;
+}
+
+.enrollment-back {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.enrollment-card {
+  overflow: hidden;
+}
+
+.enrollment-plan-language {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-bottom: 5px;
+  color: var(--primary);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.enrollment-primary-button {
+  min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: auto;
+  max-width: 100%;
+  padding: 0 20px;
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-md);
+  background: var(--primary);
+  color: #fff;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.enrollment-primary-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(22, 70, 216, 0.18);
+}
+
+.enrollment-primary-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.enrollment-primary-button:focus-visible,
+.enrollment-submit:focus-visible,
+.enrollment-back-button:focus-visible,
+.enrollment-change-plan:focus-visible,
+.availability-days button:focus-visible,
+.availability-periods button:focus-visible,
+.availability-edit-button:focus-visible,
+.schedule-date:focus-visible,
+.schedule-time:focus-visible {
+  outline: 3px solid rgba(22, 70, 216, 0.18);
+  outline-offset: 2px;
+}
+
+.availability-days button,
+.availability-periods button,
+.availability-flexible,
+.availability-range,
+.availability-edit-button,
+.schedule-date,
+.schedule-time,
+.enrollment-primary-button {
+  min-width: 0;
+}
+
+.availability-days button,
+.availability-periods button {
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.availability-flexible {
+  user-select: none;
+}
+
+.availability-range input {
+  width: 100%;
+  min-width: 0;
+  min-height: 40px;
+  box-sizing: border-box;
+  font: inherit;
+  outline: none;
+}
+
+.availability-range input:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(22, 70, 216, 0.08);
+}
+
+.availability-actions {
+  flex-wrap: wrap;
+}
+
+.schedule-section > .selection-heading {
+  gap: 16px;
+}
+
+.schedule-section > .selection-heading > div {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.schedule-section > .selection-heading > .availability-edit-button {
+  flex: 0 0 auto;
+}
+
+.schedule-time {
+  min-width: 0;
+  padding: 10px 8px;
+  flex-wrap: wrap;
+  align-content: center;
+  text-align: center;
+}
+
+.schedule-time strong,
+.schedule-time span,
+.schedule-time small {
+  min-width: 0;
+}
+
+.schedule-time small {
+  flex: 0 0 100%;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.schedule-time.selected small {
+  color: rgba(255, 255, 255, 0.82);
+}
+
+.collective-formation-note {
+  overflow-wrap: anywhere;
+}
+
+.collective-formation-note p {
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.enrollment-summary-item strong,
+.enrollment-summary-total strong {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.enrollment-summary-total {
+  align-items: flex-start;
+}
+
+.enrollment-summary-total strong {
+  text-align: right;
+}
+
+.enrollment-security,
+.enrollment-summary-security {
+  min-width: 0;
+}
+
+.enrollment-security p,
+.enrollment-summary-security span {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .enrollment-container {
+    width: min(100% - 32px, 1080px);
+  }
+
+  .enrollment-card {
+    padding: 28px;
+  }
+
+  .enrollment-summary {
+    width: 100%;
+  }
+
+  .availability-days {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 700px) {
+  .enrollment-header {
+    padding-inline: 16px;
+  }
+
+  .enrollment-main {
+    padding-top: 38px;
+  }
+
+  .enrollment-container {
+    width: min(100% - 24px, 1080px);
+  }
+
+  .enrollment-card {
+    padding: 22px 18px;
+  }
+
+  .enrollment-card-header {
+    gap: 11px;
+  }
+
+  .enrollment-progress {
+    overflow: hidden;
+  }
+
+  .availability-days {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .availability-periods > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .availability-periods button {
+    width: 100%;
+  }
+
+  .availability-actions {
+    flex-direction: column;
+  }
+
+  .enrollment-primary-button {
+    width: 100%;
+  }
+
+  .schedule-section > .selection-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .schedule-section > .selection-heading > .availability-edit-button {
+    width: 100%;
+  }
+
+  .schedule-times {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .enrollment-summary-total {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .enrollment-summary-total strong {
+    text-align: left;
+  }
+}
+
+@media (max-width: 500px) {
+  .enrollment-header {
+    height: 70px;
+    min-height: 70px;
+  }
+
+  .enrollment-logo img {
+    height: 56px;
+    max-width: min(145px, 55vw);
+  }
+
+  .enrollment-back {
+    font-size: 12px;
+  }
+
+  .enrollment-heading h1 {
+    font-size: clamp(30px, 9vw, 34px);
+  }
+
+  .enrollment-heading p {
+    line-height: 1.6;
+  }
+
+  .enrollment-card {
+    padding: 20px 16px;
+    border-radius: var(--radius-lg);
+  }
+
+  .enrollment-fields {
+    gap: 12px;
+  }
+
+  .enrollment-field input,
+  .enrollment-field select {
+    min-width: 0;
+    height: 46px;
+  }
+
+  .availability-days {
+    gap: 8px;
+  }
+
+  .availability-days button {
+    min-height: 52px;
+    padding: 10px 8px;
+    font-size: 12px;
+  }
+
+  .availability-periods > div {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-range {
+    gap: 8px;
+    padding: 12px;
+  }
+
+  .schedule-times {
+    gap: 8px;
+  }
+
+  .schedule-time {
+    min-height: 66px;
+    padding: 9px 6px;
+    font-size: 12px;
+  }
+
+  .schedule-time strong {
+    font-size: 14px;
+  }
+
+  .schedule-time span {
+    font-size: 10px;
+  }
+
+  .schedule-time small {
+    font-size: 9px;
+  }
+
+  .availability-selection-summary {
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .enrollment-summary {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 380px) {
+  .enrollment-container {
+    width: calc(100% - 18px);
+  }
+
+  .enrollment-card {
+    padding: 18px 14px;
+  }
+
+  .enrollment-heading h1 {
+    font-size: 28px;
+  }
+
+  .enrollment-card-header h2 {
+    font-size: 17px;
+  }
+
+  .enrollment-primary-button,
+  .enrollment-submit,
+  .enrollment-back-button {
+    min-height: 46px;
+  }
+
+  .schedule-times {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-time {
+    min-height: 58px;
+    flex-direction: row;
+  }
+
+  .schedule-time small {
+    flex-basis: 100%;
+  }
+
+  .enrollment-summary {
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .enrollment-page *,
+  .enrollment-page *::before,
+  .enrollment-page *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}
