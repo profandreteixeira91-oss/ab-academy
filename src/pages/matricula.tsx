@@ -389,29 +389,6 @@ export default function Matricula() {
     if (language) void loadSchedules(language)
   }, [language, plan?.modalidade, plan?.aulas_semana, formationSlotId, waitingFormation, collectiveScheduleMode])
 
-  useEffect(() => {
-    if (!language || (!isCollectivePlan && !isWaitingFormation)) {
-      return
-    }
-
-    const loadWaitingIndividualPlan = async () => {
-      const { data } = await supabase
-        .from('planos')
-        .select('id, idioma, tipo, modalidade, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, aulas_semana, min_alunos, max_alunos')
-        .eq('idioma', language)
-        .eq('modalidade', 'individual')
-        .eq('tipo', 'mensal')
-        .eq('ativo', true)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      void data
-    }
-
-    void loadWaitingIndividualPlan()
-  }, [language, isWaitingFormation, isCollectivePlan])
-
   const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
     const { data, error: planError } = await supabase
       .from('planos')
