@@ -75,7 +75,7 @@ function QueroAprenderRedirect() {
     <main style={{ minHeight: '60vh', display: 'grid', placeItems: 'center', padding: '40px 20px' }}>
       <div style={{ textAlign: 'center' }}>
         <strong>Preparando sua matrícula...</strong>
-        <p>Você será direcionado para escolher seu plano e horário.</p>
+        <p>Você será direcionado para verificar a disponibilidade e concluir sua matrícula.</p>
       </div>
     </main>
   )
