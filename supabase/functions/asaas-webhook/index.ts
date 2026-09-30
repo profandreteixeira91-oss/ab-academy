@@ -106,7 +106,15 @@ function jsonResponse(
 
 function getLocalPaymentStatus(
   asaasStatus: string,
+  event?: string,
 ) {
+  if (
+    event ===
+    'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED'
+  ) {
+    return 'recusado'
+  }
+
   switch (asaasStatus) {
     case 'RECEIVED':
     case 'CONFIRMED':
@@ -1828,6 +1836,7 @@ Deno.serve(async (req) => {
     const localStatus =
       getLocalPaymentStatus(
         payment.status ?? '',
+        body.event,
       )
 
     /*
