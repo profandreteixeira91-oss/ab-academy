@@ -1534,3 +1534,18 @@
     font-size: 27px;
   }
 }
+
+.planos-level-switch{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin:0 auto 22px}
+.planos-level-option{border:1px solid #dce7f7;background:#fff;color:#5d6d86;border-radius:999px;padding:8px 15px;font-size:12px;font-weight:800;cursor:pointer;transition:.2s}
+.planos-level-option:hover{border-color:#8eabe0;color:#3567c8}
+.planos-level-option.active{background:#3567c8;border-color:#3567c8;color:#fff}
+.planos-schedule-list{display:flex;flex-direction:column;gap:7px;margin:12px 0}
+.planos-schedule-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:9px 11px;border-radius:10px;background:#fff;border:1px solid #e2e9f4}
+.planos-schedule-row strong{font-size:12px;color:var(--planos-ink)}
+.planos-schedule-row span{font-size:12px;font-weight:800;color:var(--planos-primary)}
+.planos-frequency-card--regular>p{margin-bottom:0}
+@media(max-width:720px){
+  .planos-level-switch{justify-content:flex-start;overflow-x:auto;flex-wrap:nowrap;padding-bottom:4px}
+  .planos-level-option{flex:0 0 auto}
+  .planos-schedule-row{align-items:flex-start;flex-direction:column;gap:3px}
+}
