@@ -181,7 +181,7 @@ function ModalidadeCard({
           {regulares.length > 0 ? regulares.map((plano) => (
             <a
               key={plano.id}
-              href={'/matricula?idioma=' + idioma + '&plano=' + plano.id + '&formacao=1'}
+              href={'/matricula?idioma=' + idioma + '&plano=' + plano.id}
               className="btn btn-primary planos-detail-cta"
             >
               {modalidade === 'dupla' ? 'Começar nova dupla — ' : 'Começar novo grupo — '}
