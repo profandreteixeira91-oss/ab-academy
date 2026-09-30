@@ -950,6 +950,26 @@ async function finalizeEnrollment(
       .eq('participante_id', participante.id)
       .eq('matricula_id', matricula.id)
 
+    const horarioIds = (pagamento.dados_matricula?.schedules as Array<{ id?: string }> | undefined)?.map((item) => item.id).filter((id): id is string => Boolean(id)) ?? []
+    if (horarioIds.length > 0) {
+      const { data: selectedHorarios } = await supabaseAdmin
+        .from('horarios')
+        .select('id,dia_semana,hora_inicio')
+        .in('id', horarioIds)
+
+      for (const horario of selectedHorarios ?? []) {
+        await supabaseAdmin
+          .from('matricula_horarios')
+          .upsert({
+            matricula_id: matricula.id,
+            horario_id: horario.id,
+            dia_semana: horario.dia_semana,
+            horario: horario.hora_inicio,
+            created_at: new Date().toISOString(),
+          }, { onConflict: 'matricula_id,horario_id', ignoreDuplicates: true })
+      }
+    }
+
     return {
       aluno_id: alunoId,
       matricula_id: matricula.id,
