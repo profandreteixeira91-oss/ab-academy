@@ -582,6 +582,8 @@ function Aluno() {
   const [paymentPix, setPaymentPix] = useState<{ qrCode: string | null; copiaCola: string | null } | null>(null)
   const [paymentCard, setPaymentCard] = useState({
     holderName: '',
+    holderCpf: '',
+    holderEmail: '',
     number: '',
     expiryMonth: '',
     expiryYear: '',
@@ -591,6 +593,7 @@ function Aluno() {
     addressComplement: '',
     phone: '',
   })
+  const [cardHolderIsThirdParty, setCardHolderIsThirdParty] = useState(false)
   const paymentPollRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   const [requests, setRequests] = useState<StudentRequest[]>([])
@@ -2728,8 +2731,11 @@ function Aluno() {
     setPaymentStatus('formulario')
     setPaymentId(null)
     setPaymentPix(null)
+    setCardHolderIsThirdParty(false)
     setPaymentCard({
       holderName: name,
+      holderCpf: '',
+      holderEmail: '',
       number: '',
       expiryMonth: '',
       expiryYear: '',
@@ -2830,24 +2836,37 @@ function Aluno() {
           throw new Error('Preencha todos os dados obrigatórios do cartão.')
         }
 
+        const holderName = paymentCard.holderName.trim() || alunoData.nome_completo
+        const holderCpf = cardHolderIsThirdParty
+          ? paymentCard.holderCpf.replace(/\D/g, '')
+          : String(alunoData.cpf ?? '').replace(/\D/g, '')
+        const holderEmail = cardHolderIsThirdParty
+          ? paymentCard.holderEmail.trim()
+          : alunoData.email
+        const holderPhone = paymentCard.phone.replace(/\D/g, '') || String(alunoData.telefone ?? '').replace(/\D/g, '')
+
+        if (cardHolderIsThirdParty && (!holderName || holderCpf.length !== 11 && holderCpf.length !== 14 || !holderEmail)) {
+          throw new Error('Preencha nome, CPF/CNPJ e e-mail do titular do cartão.')
+        }
+
         body = {
           ...body,
           parcelas: 1,
           credit_card: {
-            holder_name: paymentCard.holderName || alunoData.nome_completo,
+            holder_name: holderName,
             number: paymentCard.number.replace(/\s/g, ''),
             expiry_month: paymentCard.expiryMonth,
             expiry_year: paymentCard.expiryYear,
             ccv: paymentCard.ccv,
           },
           credit_card_holder_info: {
-            name: paymentCard.holderName || alunoData.nome_completo,
-            email: alunoData.email,
-            cpf_cnpj: String(alunoData.cpf ?? '').replace(/\D/g, ''),
+            name: holderName,
+            email: holderEmail,
+            cpf_cnpj: holderCpf,
             postal_code: paymentCard.postalCode.replace(/\D/g, ''),
             address_number: paymentCard.addressNumber,
             address_complement: paymentCard.addressComplement,
-            phone: paymentCard.phone.replace(/\D/g, '') || String(alunoData.telefone ?? '').replace(/\D/g, ''),
+            phone: holderPhone,
           },
         }
       }
@@ -3857,6 +3876,16 @@ function Aluno() {
               error={paymentError}
               pix={paymentPix}
               card={paymentCard}
+              cardHolderIsThirdParty={cardHolderIsThirdParty}
+              onThirdPartyChange={(value) => {
+                setCardHolderIsThirdParty(value)
+                setPaymentCard(current => ({
+                  ...current,
+                  holderName: value ? '' : name,
+                  holderCpf: '',
+                  holderEmail: '',
+                }))
+              }}
               onMethodChange={setPaymentMethod}
               onCardChange={setPaymentCard}
               onProcess={handleProcessPayment}
@@ -4055,6 +4084,8 @@ type PagamentoAlunoProps = {
   pix: { qrCode: string | null; copiaCola: string | null } | null
   card: {
     holderName: string
+    holderCpf: string
+    holderEmail: string
     number: string
     expiryMonth: string
     expiryYear: string
@@ -4064,7 +4095,9 @@ type PagamentoAlunoProps = {
     addressComplement: string
     phone: string
   }
+  cardHolderIsThirdParty: boolean
   onMethodChange: (value: 'pix' | 'cartao') => void
+  onThirdPartyChange: (value: boolean) => void
   onCardChange: React.Dispatch<React.SetStateAction<PagamentoAlunoProps['card']>>
   onProcess: () => void
   onClose: () => void
@@ -4078,7 +4111,9 @@ function PagamentoAluno({
   error,
   pix,
   card,
+  cardHolderIsThirdParty,
   onMethodChange,
+  onThirdPartyChange,
   onCardChange,
   onProcess,
   onClose,
@@ -4166,7 +4201,36 @@ function PagamentoAluno({
                 </div>
               ) : (
                 <div className="student-payment-card-form">
+                  <div className={`student-payment-third-party-toggle ${cardHolderIsThirdParty ? 'active' : ''}`}>
+                    <div>
+                      <strong>O cartão pertence a outra pessoa?</strong>
+                      <span>Use os dados do titular real do cartão para o processamento.</span>
+                    </div>
+                    <button
+                      type="button"
+                      className={`student-payment-switch ${cardHolderIsThirdParty ? 'on' : ''}`}
+                      role="switch"
+                      aria-checked={cardHolderIsThirdParty}
+                      aria-label="Cartão de terceiros"
+                      onClick={() => onThirdPartyChange(!cardHolderIsThirdParty)}
+                    >
+                      <span />
+                    </button>
+                  </div>
+
+                  <div className="student-payment-card-holder-label">
+                    <CreditCard size={17} />
+                    <span>{cardHolderIsThirdParty ? 'Dados do titular do cartão' : 'Dados do seu cartão'}</span>
+                  </div>
+
                   <input placeholder="Nome impresso no cartão" value={card.holderName} onChange={e => onCardChange(v => ({ ...v, holderName: e.target.value }))} />
+
+                  {cardHolderIsThirdParty && (
+                    <div className="student-payment-fields-2">
+                      <input placeholder="CPF/CNPJ do titular" inputMode="numeric" value={card.holderCpf} onChange={e => onCardChange(v => ({ ...v, holderCpf: e.target.value }))} />
+                      <input type="email" placeholder="E-mail do titular" value={card.holderEmail} onChange={e => onCardChange(v => ({ ...v, holderEmail: e.target.value }))} />
+                    </div>
+                  )}
                   <input placeholder="Número do cartão" inputMode="numeric" value={card.number} onChange={e => onCardChange(v => ({ ...v, number: e.target.value }))} />
                   <div className="student-payment-fields-3">
                     <input placeholder="Mês" maxLength={2} inputMode="numeric" value={card.expiryMonth} onChange={e => onCardChange(v => ({ ...v, expiryMonth: e.target.value }))} />
