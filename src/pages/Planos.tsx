@@ -70,6 +70,7 @@ type HorarioColetivo = {
   tipo_horario: 'dupla' | 'grupo'
   nivel_referencia: string | null
   vagas_restantes: number
+  participantes: number
 }
 
 const WEEKDAYS = [
@@ -120,6 +121,92 @@ function ModalidadeCard({
   const filtrados = nivel ? horarios.filter((horario) => horario.nivel_referencia === nivel) : horarios
   const horariosDisponiveis = filtrados.filter((horario) => horario.disponivel)
   const horariosIndisponiveis = filtrados.filter((horario) => !horario.disponivel)
+  const [expandedScheduleKey, setExpandedScheduleKey] = useState<string | null>(null)
+  const [formationPrices, setFormationPrices] = useState<Record<string, number>>({})
+  const [formationPriceLoading, setFormationPriceLoading] = useState<string | null>(null)
+  const [reserveTarget, setReserveTarget] = useState<{ key: string; plano: Plano; horarios: HorarioColetivo[] } | null>(null)
+  const [reserveName, setReserveName] = useState('')
+  const [reserveEmail, setReserveEmail] = useState('')
+  const [reservePhone, setReservePhone] = useState('')
+  const [reserveSaving, setReserveSaving] = useState(false)
+  const [reserveMessage, setReserveMessage] = useState('')
+
+  const formatPhone = (value: string) => {
+    const digits = value.replace(/\\D/g, '').slice(0, 11)
+    if (digits.length <= 10) {
+      return digits.replace(/^(\\d{2})(\\d)/, '($1) $2').replace(/(\\d{4})(\\d)/, '$1-$2')
+    }
+    return digits.replace(/^(\\d{2})(\\d)/, '($1) $2').replace(/(\\d{5})(\\d)/, '$1-$2')
+  }
+
+  const handleChooseSchedule = async (key: string, plano: Plano, horariosDaOpcao: HorarioColetivo[]) => {
+    setReserveMessage('')
+    setReserveTarget(null)
+    if (expandedScheduleKey === key) {
+      setExpandedScheduleKey(null)
+      return
+    }
+    setExpandedScheduleKey(key)
+
+    if (horariosDaOpcao.some((horario) => horario.participantes > 0) || formationPrices[key] !== undefined) return
+
+    setFormationPriceLoading(key)
+    const { data, error: priceError } = await supabase.rpc('preco_formacao_coletiva', {
+      p_idioma: idioma,
+      p_modalidade: modalidade,
+      p_aulas_semana: plano.aulas_semana ?? 1,
+    })
+    if (!priceError && Number(data ?? 0) > 0) {
+      setFormationPrices((current) => ({ ...current, [key]: Number(data) }))
+    }
+    setFormationPriceLoading(null)
+  }
+
+  const submitReserve = async () => {
+    if (!reserveTarget) return
+    const phoneDigits = reservePhone.replace(/\\D/g, '')
+    if (!reserveName.trim() || !reserveEmail.trim() || phoneDigits.length < 10) {
+      setReserveMessage('Informe nome, e-mail e WhatsApp para reservar a vaga.')
+      return
+    }
+
+    setReserveSaving(true)
+    setReserveMessage('')
+    const first = reserveTarget.horarios[0]
+    const scheduleText = reserveTarget.horarios
+      .map((item) => getWeekdayLabel(item.dia_semana) + ' ' + formatTime(item.hora_inicio) + '-' + formatTime(item.hora_fim))
+      .join(' | ')
+
+    const { error: leadError } = await supabase.from('leads').insert({
+      nome: reserveName.trim(),
+      email: reserveEmail.trim().toLowerCase(),
+      telefone: phoneDigits,
+      idioma_interesse: reserveTarget.plano.idioma,
+      origem: 'planos',
+      landing_page: window.location.pathname,
+      status: 'novo',
+      observacoes: 'Reserva de vaga em horário coletivo: ' + scheduleText + '.',
+      modalidade: reserveTarget.plano.modalidade,
+      quantidade_participantes: 1,
+      horario_preferido: scheduleText,
+      aulas_semana: reserveTarget.plano.aulas_semana ?? 1,
+      formacao_turma: 'reservar_vaga',
+      horario_id: first?.id ?? null,
+      turma_id: null,
+    })
+
+    if (leadError) {
+      console.error('Erro ao registrar reserva de vaga:', leadError)
+      setReserveMessage('Não foi possível registrar sua reserva. Tente novamente.')
+    } else {
+      setReserveMessage('Sua solicitação foi registrada. A equipe da AB Academy entrará em contato para confirmar a turma.')
+      setReserveTarget(null)
+      setReserveName('')
+      setReserveEmail('')
+      setReservePhone('')
+    }
+    setReserveSaving(false)
+  }
 
   const opcoes = planosColetivos.flatMap((plano) =>
     buildScheduleCombinations(
