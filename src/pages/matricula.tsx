@@ -1640,7 +1640,9 @@ export default function Matricula() {
                               ? 'Faça o teste externo, anexe o documento e deixe o sistema analisar seu resultado.'
                               : step === 5
                                 ? 'Informe os dados necessários para sua matrícula.'
-                                : 'Leia o contrato e conclua a assinatura eletrônica. Depois, você seguirá para o pagamento.'}                  </p>
+                                : 'Leia o contrato e conclua a assinatura eletrônica. Depois, você seguirá para o pagamento.'}
+                  </p>
+                  </div>
                 </div>
               </div>
 
