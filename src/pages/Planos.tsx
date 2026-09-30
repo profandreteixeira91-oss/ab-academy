@@ -152,7 +152,20 @@ function ModalidadeCard({
     if (horariosDaOpcao.some((horario) => horario.participantes > 0) || formationPrices[key] !== undefined) return
 
     setFormationPriceLoading(key)
-    setFormationPrices((current) => ({ ...current, [key]: Number(plano.preco) * 0.9 }))
+    const { data: formationPrice, error: formationPriceError } = await supabase.rpc('preco_formacao_coletiva', {
+      p_idioma: plano.idioma,
+      p_modalidade: modalidade,
+      p_aulas_semana: plano.aulas_semana ?? 1,
+    })
+
+    if (formationPriceError || formationPrice == null || Number(formationPrice) <= 0) {
+      console.error('Erro ao calcular preço de formação:', formationPriceError)
+      setFormationPriceLoading(null)
+      setReserveMessage('Não foi possível calcular a condição especial deste horário.')
+      return
+    }
+
+    setFormationPrices((current) => ({ ...current, [key]: Number(formationPrice) }))
     setFormationPriceLoading(null)
   }
 
@@ -280,7 +293,18 @@ function ModalidadeCard({
                           <span>Entre diretamente nesta turma para continuar sua matrícula.</span>
                         </div>
                         <a
-                          href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id)}
+                          href={(() => {
+                          const params = new URLSearchParams({
+                            modalidade,
+                            idioma,
+                            plano: plano.id,
+                            turma_id: horariosDaOpcao[0]?.turma_id ?? '',
+                            horario_id: horariosDaOpcao[0]?.id ?? '',
+                            horario_ids: horariosDaOpcao.map((item) => item.id).join(','),
+                            nivel: horariosDaOpcao[0]?.nivel_referencia ?? nivel,
+                          })
+                          return '/matricula?' + params.toString()
+                        })()}
                           className="btn btn-primary planos-schedule-choice-button"
                         >
                           Entrar nessa turma <ArrowRight size={16} />
@@ -301,7 +325,9 @@ function ModalidadeCard({
                                 idioma,
                                 plano: individualPlan?.id ?? plano.id,
                                 horario_id: firstSchedule.id,
+                                horario_ids: horariosDaOpcao.map((item) => item.id).join(','),
                                 aguardando_formacao: '1',
+                                nivel: firstSchedule.nivel_referencia ?? nivel,
                               })
                               if (firstSchedule.turma_id) params.set('turma_id', firstSchedule.turma_id)
                               return '/matricula?' + params.toString()
@@ -395,7 +421,7 @@ function ModalidadeCard({
     </article>
   )
 }
-function PlanoCard({ plano, horarioId }: { plano: Plano; horarioId?: string | null }) {
+function PlanoCard({ plano }: { plano: Plano }) {
   const price = getPlanPrice(plano)
 
   return (
@@ -435,7 +461,7 @@ function PlanoCard({ plano, horarioId }: { plano: Plano; horarioId?: string | nu
       )}
 
       <a
-        href={'/matricula?idioma=' + plano.idioma + '&plano=' + plano.id + (horarioId && plano.tipo === 'mensal' ? '&horario_id=' + encodeURIComponent(horarioId) + '&aguardando_formacao=1' : '')}
+        href={'/matricula?idioma=' + encodeURIComponent(plano.idioma) + '&plano=' + encodeURIComponent(plano.id)}
         className="btn btn-primary planos-detail-cta"
       >
         {getPlanCta(plano.tipo, plano.idioma)}
@@ -458,7 +484,6 @@ function Planos() {
   const [nivelSelecionado, setNivelSelecionado] = useState(() => new URLSearchParams(window.location.search).get('nivel') || '')
   const [horariosColetivos, setHorariosColetivos] = useState<HorarioColetivo[]>([])
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const [horarioId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
@@ -666,7 +691,7 @@ function Planos() {
               {modalidadeSelecionada === 'individual' ? (
                 idiomaSelecionado === 'ingles' ? (
                   <div className="planos-language planos-language--stacked"><div className="planos-grid">
-                    {planosPorIdioma.ingles.filter((plano) => plano.modalidade === 'individual').map((plano) => <PlanoCard key={plano.id} plano={plano} horarioId={horarioId} />)}
+                    {planosPorIdioma.ingles.filter((plano) => plano.modalidade === 'individual').map((plano) => <PlanoCard key={plano.id} plano={plano} />)}
                   </div></div>
                 ) : (
                   <div className="planos-language planos-language--stacked"><div className="planos-grid">
