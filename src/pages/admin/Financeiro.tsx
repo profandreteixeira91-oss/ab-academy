@@ -272,15 +272,27 @@ export default function Financeiro() {
   useEffect(() => {
     loadFinanceiro()
   }, [])
-  async function loadAsaasFinance() {
+  async function loadAsaasFinance(refresh = false) {
     try {
       setAsaasLoading(true); setAsaasError('')
-      const { data, error: functionError } = await supabase.functions.invoke('asaas-finance?action=balance', { method: 'GET' })
-      if (functionError) throw functionError
-      if (data?.error) throw new Error(data.error)
-      setAsaasBalance(Number(data?.balance?.balance ?? 0))
-      setAsaasBalanceUpdatedAt(new Date().toISOString())
-      setAsaasTransfers((data?.transfers ?? []) as AsaasTransfer[])
+      if (refresh) {
+        const { data, error: functionError } = await supabase.functions.invoke('asaas-finance?action=balance', { method: 'GET' })
+        if (functionError) throw functionError
+        if (data?.error) throw new Error(data.error)
+        setAsaasBalance(Number(data?.balance?.balance ?? 0))
+        setAsaasBalanceUpdatedAt(new Date().toISOString())
+        setAsaasTransfers((data?.transfers ?? []) as AsaasTransfer[])
+      } else {
+        const [{ data: cache, error: cacheError }, { data: transfers, error: transfersError }] = await Promise.all([
+          supabase.from('asaas_saldo_cache').select('saldo, consultado_em').eq('id', true).maybeSingle(),
+          supabase.functions.invoke('asaas-finance?action=transfers', { method: 'GET' }),
+        ])
+        if (cacheError) throw cacheError
+        if (transfersError) throw transfersError
+        setAsaasBalance(cache ? Number(cache.saldo) : null)
+        setAsaasBalanceUpdatedAt(cache?.consultado_em ?? null)
+        setAsaasTransfers((transfers?.data?.transfers ?? []) as AsaasTransfer[])
+      }
     } catch (err) {
       console.error('Erro ao consultar saldo Asaas:', err)
       setAsaasError(err instanceof Error ? err.message : 'Não foi possível consultar o saldo Asaas.')
@@ -959,7 +971,7 @@ export default function Financeiro() {
               {asaasError && <p className="financeiro-asaas-error">{asaasError}</p>}
             </div>
             <div className="financeiro-asaas-actions">
-              <button type="button" className="financeiro-secondary-button" onClick={() => void loadAsaasFinance()} disabled={asaasLoading}><RefreshCw size={15} className={asaasLoading ? 'financeiro-spin' : ''} />Atualizar saldo</button>
+              <button type="button" className="financeiro-secondary-button" onClick={() => void loadAsaasFinance(true)} disabled={asaasLoading}><RefreshCw size={15} className={asaasLoading ? 'financeiro-spin' : ''} />Atualizar saldo</button>
               <button type="button" className="financeiro-primary-button" onClick={() => setTransferModalOpen(true)} disabled={asaasLoading || (asaasBalance ?? 0) <= 0}><Send size={15} />Transferir por Pix</button>
             </div>
           </section>
