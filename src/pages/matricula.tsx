@@ -220,11 +220,6 @@ export default function Matricula() {
   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
   const [reservaToken] = useState(() => crypto.randomUUID())
-  const [selectionLocked] = useState(() => {
-    const params = new URLSearchParams(window.location.search)
-    return ['dupla', 'grupo'].includes(params.get('modalidade') || '') && ['ingles', 'alemao'].includes(params.get('idioma') || '')
-  })
-
   const selectedLanguageLabel =
     language === 'ingles'
       ? 'Inglês'
@@ -604,15 +599,6 @@ export default function Matricula() {
         [field]: value,
       },
     }))
-  }
-
-  const clearAvailability = () => {
-    setAvailabilityDays([])
-    setAvailabilityPeriods([])
-    setAvailabilityRanges({})
-    setAvailabilityFlexible(false)
-    setAvailabilityReady(false)
-    setAvailableSchedules([])
   }
 
   const validateSchedule = () => {
