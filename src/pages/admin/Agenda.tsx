@@ -34,10 +34,13 @@ type Professor = {
   ativo: boolean
 }
 
+type Nivel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'
+
 type Horario = {
   id: string
   tipo_horario: 'individual' | 'dupla' | 'grupo'
   idioma: 'ingles' | 'alemao'
+  nivel_referencia: Nivel | null
   dia_semana: number
   hora_inicio: string
   hora_fim: string
@@ -49,6 +52,7 @@ type Horario = {
 type HorarioForm = {
   tipo_horario: 'individual' | 'dupla' | 'grupo'
   idioma: 'ingles' | 'alemao'
+  nivel_referencia: Nivel | ''
   dia_semana: number
   hora_inicio: string
   hora_fim: string
@@ -60,6 +64,7 @@ type HorarioForm = {
 type BulkCreateForm = {
   tipo_horario: 'individual' | 'dupla' | 'grupo'
   idioma: 'ingles' | 'alemao'
+  nivel_referencia: Nivel | ''
   dias: number[]
   hora_inicio: string
   hora_fim: string
@@ -69,7 +74,9 @@ type BulkCreateForm = {
 }
 
 type BulkEditForm = {
+  tipo_horario: '' | 'individual' | 'dupla' | 'grupo'
   idioma: '' | 'ingles' | 'alemao'
+  nivel_referencia: '' | Nivel
   dia_semana: '' | number
   hora_inicio: string
   hora_fim: string
@@ -138,6 +145,15 @@ const idiomas = [
   },
 ]
 
+const niveis: { value: Nivel; label: string }[] = [
+  { value: 'A1', label: 'A1 — Iniciante' },
+  { value: 'A2', label: 'A2 — Básico' },
+  { value: 'B1', label: 'B1 — Intermediário' },
+  { value: 'B2', label: 'B2 — Intermediário superior' },
+  { value: 'C1', label: 'C1 — Avançado' },
+  { value: 'C2', label: 'C2 — Proficiente' },
+]
+
 /*
  * =========================================================
  * FORMULÁRIOS
@@ -147,6 +163,7 @@ const idiomas = [
 const initialForm: HorarioForm = {
   tipo_horario: 'individual',
   idioma: 'ingles',
+  nivel_referencia: '',
   dia_semana: 1,
   hora_inicio: '08:00',
   hora_fim: '09:00',
@@ -158,6 +175,7 @@ const initialForm: HorarioForm = {
 const initialBulkCreateForm: BulkCreateForm = {
   tipo_horario: 'individual',
   idioma: 'ingles',
+  nivel_referencia: '',
   dias: [1],
   hora_inicio: '08:00',
   hora_fim: '18:00',
@@ -167,7 +185,9 @@ const initialBulkCreateForm: BulkCreateForm = {
 }
 
 const initialBulkEditForm: BulkEditForm = {
+  tipo_horario: '',
   idioma: '',
+  nivel_referencia: '',
   dia_semana: '',
   hora_inicio: '',
   hora_fim: '',
@@ -214,6 +234,7 @@ export default function Agenda() {
 
   const [filterTipo, setFilterTipo] = useState<'' | 'individual' | 'dupla' | 'grupo'>('')
   const [filterProfessor, setFilterProfessor] = useState('')
+  const [filterNivel, setFilterNivel] = useState<'' | Nivel>('')
 
   /*
    * MODAIS EM MASSA
@@ -228,6 +249,9 @@ export default function Agenda() {
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
   const [rescheduleSource, setRescheduleSource] = useState<Horario | null>(null)
   const [rescheduleTargetId, setRescheduleTargetId] = useState('')
+  const [bulkReorganizeOpen, setBulkReorganizeOpen] = useState(false)
+  const [bulkReorganizeDay, setBulkReorganizeDay] = useState<number>(selectedDay)
+  const [bulkReorganizeStart, setBulkReorganizeStart] = useState('08:00')
 
   const [bulkCreateForm, setBulkCreateForm] =
     useState<BulkCreateForm>(
@@ -265,6 +289,7 @@ export default function Agenda() {
             id,
             tipo_horario,
             idioma,
+            nivel_referencia,
             dia_semana,
             hora_inicio,
             hora_fim,
@@ -362,14 +387,15 @@ export default function Agenda() {
         (horario) =>
           horario.dia_semana === selectedDay &&
           (filterTipo === '' || horario.tipo_horario === filterTipo) &&
-          (filterProfessor === '' || horario.professor_id === filterProfessor),
+          (filterProfessor === '' || horario.professor_id === filterProfessor) &&
+          (filterNivel === '' || horario.nivel_referencia === filterNivel),
       )
       .sort((a, b) =>
         a.hora_inicio.localeCompare(
           b.hora_inicio,
         ),
       )
-  }, [horarios, selectedDay, filterTipo, filterProfessor]
+  }, [horarios, selectedDay, filterTipo, filterProfessor, filterNivel]
 
   /*
    * =======================================================
@@ -703,6 +729,7 @@ export default function Agenda() {
 
     setForm({
       tipo_horario: horario.tipo_horario || 'individual',
+      nivel_referencia: horario.nivel_referencia || '',
       idioma:
         horario.idioma === 'alemao'
           ? 'alemao'
@@ -810,6 +837,7 @@ export default function Agenda() {
       const payload = {
         tipo_horario: form.tipo_horario,
         idioma: form.idioma,
+        nivel_referencia: form.nivel_referencia || null,
         dia_semana: form.dia_semana,
         hora_inicio:
           form.hora_inicio,
@@ -973,6 +1001,7 @@ export default function Agenda() {
 
       const newSlots: {
         tipo_horario: 'individual' | 'dupla' | 'grupo'
+        nivel_referencia: Nivel | null
         idioma:
           | 'ingles'
           | 'alemao'
@@ -1028,6 +1057,7 @@ export default function Agenda() {
           } else {
             newSlots.push({
               tipo_horario: bulkCreateForm.tipo_horario,
+              nivel_referencia: bulkCreateForm.nivel_referencia || null,
               idioma:
                 bulkCreateForm.idioma,
               dia_semana: day,
@@ -1187,6 +1217,13 @@ export default function Agenda() {
           )
         }
 
+        const nextTipo =
+          bulkEditForm.tipo_horario || horario.tipo_horario
+
+        if (horario.aluno_id && nextTipo !== horario.tipo_horario) {
+          throw new Error('O horário ' + formatHour(horario.hora_inicio) + ' possui aluno vinculado e não pode mudar de tipo.')
+        }
+
         const nextIdioma =
           bulkEditForm.idioma || horario.idioma
 
@@ -1205,6 +1242,7 @@ export default function Agenda() {
             selectedIds,
             nextIdioma,
             nextProfessor,
+            nextTipo,
           )
 
         if (conflict) {
@@ -1225,11 +1263,16 @@ export default function Agenda() {
         const payload: Partial<Horario> =
           {}
 
-        if (
-          bulkEditForm.idioma
-        ) {
-          payload.idioma =
-            bulkEditForm.idioma
+        if (bulkEditForm.tipo_horario) {
+          payload.tipo_horario = bulkEditForm.tipo_horario
+        }
+
+        if (bulkEditForm.idioma) {
+          payload.idioma = bulkEditForm.idioma
+        }
+
+        if (bulkEditForm.nivel_referencia) {
+          payload.nivel_referencia = bulkEditForm.nivel_referencia
         }
 
         if (
@@ -1318,6 +1361,88 @@ export default function Agenda() {
           err,
         )}`,
       )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  /*
+   * =======================================================
+   * REORGANIZAÇÃO EM MASSA
+   * =======================================================
+   */
+
+  function closeBulkReorganizeModal() {
+    if (saving) return
+    setBulkReorganizeOpen(false)
+  }
+
+  async function handleBulkReorganize() {
+    try {
+      setSaving(true)
+      setError(null)
+
+      if (selectedHorarios.length === 0) throw new Error('Selecione pelo menos um horário.')
+
+      const ordered = [...selectedHorarios].sort(
+        (a, b) => a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio),
+      )
+      const baseOldStart = timeToMinutes(formatHour(ordered[0].hora_inicio))
+      const baseNewStart = timeToMinutes(bulkReorganizeStart)
+      const updates = ordered.map((horario) => {
+        const offset = timeToMinutes(formatHour(horario.hora_inicio)) - baseOldStart
+        const duration = timeToMinutes(formatHour(horario.hora_fim)) - timeToMinutes(formatHour(horario.hora_inicio))
+        const start = baseNewStart + offset
+        return {
+          horario,
+          dia: bulkReorganizeDay,
+          inicio: minutesToTime(start),
+          fim: minutesToTime(start + duration),
+        }
+      })
+
+      if (updates.some((item) => timeToMinutes(item.inicio) >= timeToMinutes(item.fim) || timeToMinutes(item.fim) > 24 * 60)) {
+        throw new Error('A reorganização gera um horário inválido ou ultrapassa 24:00.')
+      }
+
+      for (const item of updates) {
+        const conflict = getConflictingHorario(
+          item.dia,
+          item.inicio,
+          item.fim,
+          selectedIds,
+          item.horario.idioma,
+          item.horario.professor_id,
+          item.horario.tipo_horario,
+        )
+        if (conflict) {
+          throw new Error(
+            'A reorganização criaria conflito em ' +
+              getDayLabel(item.dia) + ' ' + item.inicio + '–' + item.fim + '.',
+          )
+        }
+      }
+
+      for (const item of updates) {
+        const { error: updateError } = await supabase
+          .from('horarios')
+          .update({ dia_semana: item.dia, hora_inicio: item.inicio, hora_fim: item.fim })
+          .eq('id', item.horario.id)
+        if (updateError) throw updateError
+      }
+
+      closeBulkReorganizeModal()
+      clearSelection()
+      await loadAgenda()
+      window.alert(
+        updates.length +
+          ' horário(s) reorganizado(s) com sucesso. Duração e espaçamento entre horários foram preservados.',
+      )
+    } catch (err) {
+      console.error('Erro ao reorganizar horários em massa:', err)
+      window.alert('Não foi possível reorganizar os horários.
+
+' + getErrorMessage(err))
     } finally {
       setSaving(false)
     }
@@ -1657,8 +1782,9 @@ export default function Agenda() {
 
       <div className="agenda-filters">
         <div className="agenda-form-field"><label>Tipo de horário</label><select value={filterTipo} onChange={(event) => { setFilterTipo(event.target.value as '' | 'individual' | 'dupla' | 'grupo'); clearSelection() }}><option value="">Todos os tipos</option><option value="individual">Individual</option><option value="dupla">Dupla</option><option value="grupo">Grupo</option></select></div>
+        <div className="agenda-form-field"><label>Nível</label><select value={filterNivel} onChange={(event) => { setFilterNivel(event.target.value as '' | Nivel); clearSelection() }}><option value="">Todos os níveis</option>{niveis.map((nivel) => <option key={nivel.value} value={nivel.value}>{nivel.label}</option>)}</select></div>
         <div className="agenda-form-field"><label>Professor</label><select value={filterProfessor} onChange={(event) => { setFilterProfessor(event.target.value); clearSelection() }}><option value="">Todos os professores</option>{professores.map((professor) => <option key={professor.id} value={professor.id}>{professor.nome_completo}</option>)}</select></div>
-        {(filterTipo || filterProfessor) && <button type="button" className="agenda-secondary-button" onClick={() => { setFilterTipo(''); setFilterProfessor(''); clearSelection() }}>Limpar filtros</button>}
+        {(filterTipo || filterProfessor || filterNivel) && <button type="button" className="agenda-secondary-button" onClick={() => { setFilterTipo(''); setFilterProfessor(''); setFilterNivel(''); clearSelection() }}>Limpar filtros</button>}
       </div>
 
       {/* DIAS */}
@@ -1676,7 +1802,8 @@ export default function Agenda() {
                 (horario) =>
                   horario.dia_semana === dia.value &&
                   (filterTipo === '' || horario.tipo_horario === filterTipo) &&
-                  (filterProfessor === '' || horario.professor_id === filterProfessor),
+                  (filterProfessor === '' || horario.professor_id === filterProfessor) &&
+                  (filterNivel === '' || horario.nivel_referencia === filterNivel),
               ).length
 
             return (
@@ -1912,6 +2039,21 @@ export default function Agenda() {
 
               <button
                 type="button"
+                className="agenda-bulk-edit-button"
+                onClick={() => {
+                  const first = [...selectedHorarios].sort((a, b) => a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio))[0]
+                  setBulkReorganizeDay(first?.dia_semana ?? selectedDay)
+                  setBulkReorganizeStart(first ? formatHour(first.hora_inicio) : '08:00')
+                  setBulkReorganizeOpen(true)
+                }}
+                disabled={saving}
+              >
+                <Clock3 size={16} />
+                Reorganizar horários
+              </button>
+
+              <button
+                type="button"
                 className="agenda-bulk-delete-button"
                 onClick={() =>
                   void handleBulkDelete()
@@ -2097,6 +2239,9 @@ export default function Agenda() {
                           <span className="agenda-language">
                             {horario.tipo_horario === 'dupla' ? 'Dupla' : horario.tipo_horario === 'grupo' ? 'Grupo' : 'Individual'}
                           </span>
+                          {horario.nivel_referencia && (
+                            <span className="agenda-status available">{horario.nivel_referencia}</span>
+                          )}
 
                           <span
                             className={`agenda-status ${
@@ -2324,6 +2469,15 @@ export default function Agenda() {
                   <option value="grupo">Grupo</option>
                 </select>
                 <small>Define como este horário poderá ser utilizado na matrícula e na formação de turmas.</small>
+              </div>
+
+              <div className="agenda-form-field">
+                <label htmlFor="agenda-nivel">Nível de referência</label>
+                <select id="agenda-nivel" value={form.nivel_referencia} onChange={(event) => setForm((current) => ({ ...current, nivel_referencia: event.target.value as Nivel | '' }))}>
+                  <option value="">Sem nível definido</option>
+                  {niveis.map((nivel) => <option key={nivel.value} value={nivel.value}>{nivel.label}</option>)}
+                </select>
+                <small>Use o nível CEFR para organizar horários e futuras campanhas coletivas.</small>
               </div>
 
               <div className="agenda-form-field">
@@ -2713,6 +2867,41 @@ export default function Agenda() {
         </div>
       )}
 
+      {bulkReorganizeOpen && (
+        <div className="agenda-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) closeBulkReorganizeModal() }}>
+          <div className="agenda-modal agenda-bulk-modal">
+            <div className="agenda-modal-header">
+              <div>
+                <h2>Reorganizar horários em massa</h2>
+                <p>Move os horários selecionados para um novo dia e horário inicial, preservando duração e espaçamento.</p>
+              </div>
+              <button type="button" className="agenda-modal-close" onClick={closeBulkReorganizeModal} disabled={saving}><X size={19} /></button>
+            </div>
+            <div className="agenda-form">
+              <div className="agenda-form-field">
+                <label>Novo dia</label>
+                <select value={bulkReorganizeDay} onChange={(event) => setBulkReorganizeDay(Number(event.target.value))}>
+                  {diasSemana.map((dia) => <option key={dia.value} value={dia.value}>{dia.label}</option>)}
+                </select>
+              </div>
+              <div className="agenda-form-field">
+                <label>Novo horário inicial</label>
+                <input type="time" value={bulkReorganizeStart} onChange={(event) => setBulkReorganizeStart(event.target.value)} />
+                <small>Os horários serão ordenados e deslocados como um bloco. A duração de cada aula será preservada.</small>
+              </div>
+              <div className="agenda-bulk-preview">
+                <strong>{selectedHorarios.length} horário(s) selecionado(s)</strong>
+                <span>O sistema valida conflitos antes de salvar e não altera os horários que não foram selecionados.</span>
+              </div>
+            </div>
+            <div className="agenda-modal-footer">
+              <button type="button" className="agenda-cancel-button" onClick={closeBulkReorganizeModal} disabled={saving}>Cancelar</button>
+              <button type="button" className="agenda-save-button" onClick={() => void handleBulkReorganize()} disabled={saving}>{saving ? 'Reorganizando...' : 'Reorganizar horários'}</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* =================================================
           MODAL CRIAÇÃO EM MASSA
           ================================================= */}
@@ -2764,6 +2953,25 @@ export default function Agenda() {
             <div className="agenda-form">
 
               <div className="agenda-form-field"><label>Tipo de horário</label><select value={bulkCreateForm.tipo_horario} onChange={(event) => setBulkCreateForm((current) => ({ ...current, tipo_horario: event.target.value as 'individual' | 'dupla' | 'grupo' }))}><option value="individual">Individual</option><option value="dupla">Dupla</option><option value="grupo">Grupo</option></select></div>
+              <div className="agenda-form-field"><label>Nível de referência</label><select value={bulkCreateForm.nivel_referencia} onChange={(event) => setBulkCreateForm((current) => ({ ...current, nivel_referencia: event.target.value as Nivel | '' }))}><option value="">Sem nível definido</option>{niveis.map((nivel) => <option key={nivel.value} value={nivel.value}>{nivel.label}</option>)}</select></div>
+
+              <div className="agenda-form-field">
+                <label>Tipo de horário</label>
+                <select value={bulkEditForm.tipo_horario} onChange={(event) => setBulkEditForm((current) => ({ ...current, tipo_horario: event.target.value as BulkEditForm['tipo_horario'] }))}>
+                  <option value="">Manter atual</option>
+                  <option value="individual">Individual</option>
+                  <option value="dupla">Dupla</option>
+                  <option value="grupo">Grupo</option>
+                </select>
+              </div>
+
+              <div className="agenda-form-field">
+                <label>Nível de referência</label>
+                <select value={bulkEditForm.nivel_referencia} onChange={(event) => setBulkEditForm((current) => ({ ...current, nivel_referencia: event.target.value as BulkEditForm['nivel_referencia'] }))}>
+                  <option value="">Manter atual</option>
+                  {niveis.map((nivel) => <option key={nivel.value} value={nivel.value}>{nivel.label}</option>)}
+                </select>
+              </div>
 
               <div className="agenda-form-field">
 
