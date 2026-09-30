@@ -210,6 +210,12 @@ export default function Matricula() {
   const [selectedSchedule, setSelectedSchedule] = useState<SelectedSchedule | null>(null)
   const [selectedSchedules, setSelectedSchedules] = useState<SelectedSchedule[]>([])
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
+  const [availabilityDays, setAvailabilityDays] = useState<number[]>([])
+  const [availabilityPeriods, setAvailabilityPeriods] = useState<string[]>([])
+  const [availabilityRanges, setAvailabilityRanges] = useState<Record<number, { start: string; end: string }>>({})
+  const [availabilityFlexible, setAvailabilityFlexible] = useState(false)
+  const [availabilityReady, setAvailabilityReady] = useState(false)
+  const [waitingIndividualPlan, setWaitingIndividualPlan] = useState<Plan | null>(null)
   const [collectiveScheduleMode, setCollectiveScheduleMode] = useState<'existing' | 'waiting'>('existing')
   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
@@ -440,12 +446,17 @@ export default function Matricula() {
     setPlan(data as Plan)
   }
 
-  const loadSchedules = async (selectedLanguage: Language) => {
+  const loadSchedules = async (
+    selectedLanguage: Language,
+    withAvailability = availabilityReady,
+  ) => {
     setLoadingSchedules(true)
     setError('')
 
     if (formationSlotId && waitingFormation) {
-      const { data: response, error: formationError } = await supabase.functions.invoke('list-formation-slots', { body: { horario_id: formationSlotId } })
+      const { data: response, error: formationError } = await supabase.functions.invoke('list-formation-slots', {
+        body: { horario_id: formationSlotId },
+      })
       const data = response?.data?.[0]
 
       if (formationError || !data || data.idioma !== selectedLanguage) {
@@ -470,8 +481,8 @@ export default function Matricula() {
         turma_id: null,
         participante_id: null,
         participantes: data.interessados ?? 0,
-        capacidade: data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 6),
-        vagas_restantes: Math.max(0, (data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 6)) - (data.interessados ?? 0)),
+        capacidade: data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 3),
+        vagas_restantes: Math.max(0, (data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 3)) - (data.interessados ?? 0)),
         valor_mensal: null,
         status_formacao: plan?.modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao',
         tipo_valor: 'coletiva_em_formacao',
@@ -484,10 +495,15 @@ export default function Matricula() {
     const modalidade = plan?.modalidade ?? 'individual'
     const aulasSemana = plan?.aulas_semana ?? (plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1)
 
-    const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula_v2', {
+    const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula_inteligente', {
       p_idioma: selectedLanguage,
       p_modalidade: modalidade,
       p_aulas_semana: aulasSemana,
+      p_dias: withAvailability && !availabilityFlexible ? availabilityDays : null,
+      p_periodos: withAvailability && !availabilityFlexible ? availabilityPeriods : null,
+      p_disponibilidade: withAvailability && !availabilityFlexible && Object.keys(availabilityRanges).length > 0
+        ? availabilityRanges
+        : null,
     })
 
     if (schedulesError) {
@@ -629,6 +645,7 @@ export default function Matricula() {
         setError('Informe pelo menos um período ou intervalo de horário.')
         return
       }
+      await loadSchedules(language, true)
       setAvailabilityReady(true)
       setSelectedWeekday(availabilityDays[0] ?? null)
       setStep(3)
