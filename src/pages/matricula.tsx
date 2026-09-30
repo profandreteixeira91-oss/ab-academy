@@ -1762,6 +1762,39 @@ export default function Matricula() {
           )}
 
 
+              {step === 5 && (
+                <div className="enrollment-fields">
+                  <div className="enrollment-field">
+                    <label>Nome completo *</label>
+                    <input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Seu nome completo" autoComplete="name" />
+                  </div>
+                  <div className="enrollment-field">
+                    <label>CPF *</label>
+                    <input type="text" value={cpf} onChange={(event) => setCpf(formatCpf(event.target.value))} placeholder="000.000.000-00" maxLength={14} inputMode="numeric" />
+                  </div>
+                  <div className="enrollment-field">
+                    <label>E-mail *</label>
+                    <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" autoComplete="email" />
+                  </div>
+                  <div className="enrollment-field">
+                    <label>Data de nascimento *</label>
+                    <input type="date" value={birthDate} onChange={(event) => setBirthDate(event.target.value)} />
+                  </div>
+                  <div className="enrollment-field">
+                    <label>WhatsApp / Telefone *</label>
+                    <input type="tel" value={phone} onChange={(event) => setPhone(formatPhone(event.target.value))} placeholder="(00) 00000-0000" autoComplete="tel" />
+                  </div>
+                  <div className="enrollment-field">
+                    <label>Nome do responsável</label>
+                    <input type="text" value={responsibleName} onChange={(event) => setResponsibleName(event.target.value)} placeholder="Se aplicável" />
+                  </div>
+                  <div className="enrollment-field">
+                    <label>WhatsApp do responsável</label>
+                    <input type="tel" value={responsiblePhone} onChange={(event) => setResponsiblePhone(formatPhone(event.target.value))} placeholder="(00) 00000-0000" />
+                  </div>
+                </div>
+              )}
+
               {step === 6 && (
                 <div className="contract-section">
                   <div className="selection-heading"><div><h3>Contrato virtual</h3><p>Leia as condições da matrícula antes da assinatura.</p></div></div>
