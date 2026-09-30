@@ -32,3 +32,8 @@ If you are developing a production application, we recommend enabling type-aware
 See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
 
 Deploy de produção configurado via Cloudflare Workers.
+
+
+## Configuração da matrícula
+
+A etapa de teste de proficiência da matrícula utiliza um endereço externo configurado no frontend por meio da variável `VITE_PROFICIENCY_TEST_URL`. O endereço deve apontar para o serviço que gera o documento PDF de resultado. O PDF é enviado ao Edge Function `processar-teste-proficiencia` para leitura e classificação do nível.
