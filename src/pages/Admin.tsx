@@ -35,6 +35,7 @@ import Leads from './admin/Leads'
 import Turmas from './admin/Turmas'
 import AdminNotifications from './admin/AdminNotifications'
 import Analytics from './admin/Analytics'
+import Configuracoes from './admin/Configuracoes'
 
 import '../styles/admin.css'
 import '../styles/central-admin.css'
@@ -616,6 +617,10 @@ export default function Admin() {
 
           {activeModule === 'enterprise' && (
             <EnterpriseLeads />
+          )}
+
+          {activeModule === 'configuracoes' && (
+            <Configuracoes />
           )}
 
           {activeModule !== 'dashboard' &&
