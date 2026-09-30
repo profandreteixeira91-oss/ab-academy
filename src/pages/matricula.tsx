@@ -2202,7 +2202,7 @@ export default function Matricula() {
                       ? formatCurrency(selectedSchedule.valor_mensal) + '/mês'
                       : 'Calculado após a análise do horário')
                     : plan
-                      ? formatCurrency(selectedSchedule?.valor_mensal ?? Number(plan.preco)) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
+                      ? formatCurrency(formationOrigin?.valorDesconto ?? selectedSchedule?.valor_mensal ?? Number(plan.preco)) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
                       : '—'}
                 </strong>
               </div>
