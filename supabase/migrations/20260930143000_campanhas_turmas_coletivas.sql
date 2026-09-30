@@ -199,7 +199,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.criar_turma_fixa_admin_v2(text,text,integer,integer[],text[],text[],uuid,integer,text,date) from public;
+revoke all on function public.criar_turma_fixa_admin_v2(text,text,integer,integer[],text[],text[],uuid,integer,text,date) from public, anon;
 grant execute on function public.criar_turma_fixa_admin_v2(text,text,integer,integer[],text[],text[],uuid,integer,text,date) to authenticated;
 
 create or replace function public.listar_turmas_coletivas_matricula(
