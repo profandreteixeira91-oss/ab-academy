@@ -222,7 +222,7 @@ export default function Agenda() {
     useState<number>(new Date().getDay())
 
   const [openPeriod, setOpenPeriod] =
-    useState<'manha' | 'tarde' | 'noite'>(() => {
+    useState<'manha' | 'tarde' | 'noite' | null>(() => {
       const hour = new Date().getHours()
       return hour < 12 ? 'manha' : hour < 20 ? 'tarde' : 'noite'
     })
@@ -2505,7 +2505,7 @@ export default function Agenda() {
               {([
                 { key: 'manha' as const, label: 'Manhã', range: '08:00 — 12:00', start: 8 * 60, end: 12 * 60 },
                 { key: 'tarde' as const, label: 'Tarde', range: '14:00 — 20:00', start: 14 * 60, end: 20 * 60 },
-                { key: 'noite' as const, label: 'Noite', range: '20:00 — 22:00', start: 20 * 60, end: 24 * 60 },
+                { key: 'noite' as const, label: 'Noite', range: '20:00 — 22:00', start: 20 * 60, end: 22 * 60 },
               ]).map((period) => {
                 const periodHorarios = horariosDoDia.filter((horario) => {
                   const inicio = timeToMinutes(formatHour(horario.hora_inicio))
