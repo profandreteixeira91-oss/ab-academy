@@ -484,7 +484,7 @@ export default function Matricula() {
     const modalidade = plan?.modalidade ?? 'individual'
     const aulasSemana = plan?.aulas_semana ?? (plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1)
 
-    const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula', {
+    const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula_v2', {
       p_idioma: selectedLanguage,
       p_modalidade: modalidade,
       p_aulas_semana: aulasSemana,
@@ -697,7 +697,13 @@ export default function Matricula() {
 
     if (selectionError || !selected) {
       console.error('Erro ao selecionar horário:', selectionError)
-      setError(selectionError?.message || 'Este horário não está mais disponível. Escolha outro horário.')
+      const selectionMessage = selectionError?.message || ''
+      setError(
+        selectionMessage.toLowerCase().includes('preenchido') ||
+        selectionMessage.toLowerCase().includes('completa')
+          ? 'Este horário acabou de ser preenchido. Atualizamos as opções disponíveis para você.'
+          : selectionMessage || 'Este horário não está mais disponível. Escolha outro horário.',
+      )
       if (language) await loadSchedules(language)
       return
     }
@@ -1497,6 +1503,15 @@ export default function Matricula() {
                                 ? 'Nova dupla em formação'
                                 : 'Grupo em formação'}
                         </strong>
+                      </div>
+                    )}
+                    {isCollectivePlan && selectedSchedule?.tipo_valor === 'coletiva_em_formacao' && (
+                      <div className="collective-formation-note">
+                        <strong>Valor durante a formação</strong>
+                        <p>
+                          Este valor corresponde ao valor individual de 1 aula por semana com 10% de desconto enquanto a turma estiver em formação.
+                          Quando a turma atingir sua capacidade, o valor regular da modalidade será aplicado somente a partir do próximo ciclo de cobrança, sem cobrança retroativa.
+                        </p>
                       </div>
                     )}
 
