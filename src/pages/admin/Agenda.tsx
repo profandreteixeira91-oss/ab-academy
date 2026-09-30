@@ -2502,15 +2502,16 @@ export default function Agenda() {
           ) : (
 
             <div className="agenda-periods">
-              {([
+              {[
                 { key: 'manha' as const, label: 'Manhã', range: '08:00 — 12:00', start: 8 * 60, end: 12 * 60 },
                 { key: 'tarde' as const, label: 'Tarde', range: '14:00 — 20:00', start: 14 * 60, end: 20 * 60 },
                 { key: 'noite' as const, label: 'Noite', range: '20:00 — 22:00', start: 20 * 60, end: 22 * 60 },
-              ]).map((period) => {
+              ].map((period) => {
                 const periodHorarios = horariosDoDia.filter((horario) => {
                   const inicio = timeToMinutes(formatHour(horario.hora_inicio))
                   return inicio >= period.start && inicio < period.end
                 })
+
                 const periodReposicoes = reposicoesDoDia.filter((registro) => {
                   if (!registro.hora_inicio_override) return false
                   const inicio = timeToMinutes(formatHour(registro.hora_inicio_override))
@@ -2532,341 +2533,274 @@ export default function Agenda() {
                       <span className="agenda-period-menu-count">
                         {periodHorarios.length + periodReposicoes.length}
                       </span>
-                      <span className="agenda-period-chevron">{openPeriod === period.key ? '−' : '+'}</span>
+                      <span className="agenda-period-chevron">
+                        {openPeriod === period.key ? '−' : '+'}
+                      </span>
                     </button>
 
                     {openPeriod === period.key && (
                       <div className="agenda-period-content">
-                        {periodHorarios.length > 0 ? (
+                        {periodHorarios.length > 0 && (
                           <div className="agenda-card-grid">
-              {periodHorarios.map(
-                (horario) => {
-                  const alunoNome =
-                    getAlunoNome(
-                      horario.aluno_id,
-                    )
-
-                  const professorNome =
-                    getProfessorNome(
-                      horario.professor_id,
-                    )
-
-                  const todayDate = dateKey(new Date())
-                  const reagendamentoOriginal = registrosAulas.find(
-                    (registro) =>
-                      registro.horario_id === horario.id &&
-                      registro.data_aula >= todayDate &&
-                      Boolean(registro.data_aula_override),
-                  )
-
-                  const ocupado =
-                    !!horario.aluno_id
-
-                  const selected =
-                    selectedIds.includes(
-                      horario.id,
-                    )
-
-                  return (
-                    <div
-                      key={
-                        horario.id
-                      }
-                      className={`agenda-item ${horario.id === horarioAtualId ? 'current ' : ''}${horario.id === proximoHorarioId ? 'next ' : ''}${ocupado ? 'occupied' : 'available'} ${
-                        selected
-                          ? 'selected'
-                          : ''
-                      }`}
-                    >
-
-                      <button
-                        type="button"
-                        className={`agenda-select-checkbox ${
-                          selected
-                            ? 'checked'
-                            : ''
-                        }`}
-                        onClick={() =>
-                          toggleSelection(
-                            horario.id,
-                          )
-                        }
-                        aria-label={
-                          selected
-                            ? 'Desmarcar horário'
-                            : 'Selecionar horário'
-                        }
-                      >
-                        {selected ? (
-                          <CheckSquare
-                            size={19}
-                          />
-                        ) : (
-                          <Square
-                            size={19}
-                          />
-                        )}
-                      </button>
-
-                      <div className="agenda-time">
-
-                        <strong>
-                          {formatHour(
-                            horario.hora_inicio,
-                          )}
-                        </strong>
-
-                        <span>
-                          {formatHour(
-                            horario.hora_fim,
-                          )}
-                        </span>
-
-                      </div>
-
-                      <div className="agenda-item-main">
-
-                        <div className="agenda-item-top">
-
-                          <span className="agenda-language">
-                            {getIdiomaLabel(
-                              horario.idioma,
-                            )}
-                          </span>
-                          <span className="agenda-language">
-                            {horario.tipo_horario === 'dupla' ? 'Dupla' : horario.tipo_horario === 'grupo' ? 'Grupo' : 'Individual'}
-                          </span>
-                          {horario.nivel_referencia && (
-                            <span className="agenda-status available">{horario.nivel_referencia === 'iniciante' ? 'Iniciante' : horario.nivel_referencia === 'basico' ? 'Básico' : horario.nivel_referencia === 'intermediario' ? 'Intermediário' : horario.nivel_referencia === 'avancado' ? 'Avançado' : horario.nivel_referencia}</span>
-                          )}
-
-                          {reagendamentoOriginal && (
-                            <span className="agenda-status unavailable">REAGENDADA</span>
-                          )}
-
-                          <span
-                            className={`agenda-status ${
-                              ocupado
-                                ? 'occupied'
-                                : horario.disponivel
-                                  ? 'available'
-                                  : 'unavailable'
-                            }`}
-                          >
-                            {ocupado
-                              ? 'Ocupado'
-                              : horario.disponivel
-                                ? 'Disponível'
-                                : 'Indisponível'}
-                          </span>
-
-                        </div>
-
-                        <div className="agenda-student">
-
-                          <UserRound
-                            size={16}
-                          />
-
-                          <span>
-                            {alunoNome ||
-                              'Nenhum aluno vinculado'}
-                          </span>
-
-                        </div>
-
-                        <div className="agenda-student">
-
-                          <UserRound
-                            size={16}
-                          />
-
-                          <span>
-                            {professorNome
-                              ? `Professor: ${professorNome}`
-                              : 'Nenhum professor atribuído'}
-                          </span>
-
-                        </div>
-
-                        <div className="agenda-lesson-status">
-
-                          <Video
-                            size={15}
-                          />
-
-                          <span>
-                            {ocupado
-                              ? 'Aula disponível na AB Academy'
-                              : 'Aguardando matrícula'}
-                          </span>
-
-                        </div>
-
-                      </div>
-
-                      <div className="agenda-actions">
-
-                        {ocupado && (
-                          <button
-                            type="button"
-                            className="agenda-action-button"
-                            onClick={() =>
-                              openTeacherRoom(
-                                horario,
+                            {periodHorarios.map((horario) => {
+                              const alunoNome = getAlunoNome(horario.aluno_id)
+                              const professorNome = getProfessorNome(horario.professor_id)
+                              const ocupado = Boolean(horario.aluno_id)
+                              const selected = selectedIds.includes(horario.id)
+                              const todayDate = dateKey(new Date())
+                              const reagendamentoOriginal = registrosAulas.find(
+                                (registro) =>
+                                  registro.horario_id === horario.id &&
+                                  registro.data_aula >= todayDate &&
+                                  Boolean(registro.data_aula_override),
                               )
-                            }
-                            title="Entrar na aula"
-                          >
-                            <Video
-                              size={17}
-                            />
-                          </button>
-                        )}
 
-                        {ocupado && (
-                          <button
-                            type="button"
-                            className="agenda-action-button"
-                            onClick={() => openRescheduleModal(horario)}
-                            title="Reagendar aula"
-                          >
-                            <Clock3 size={17} />
-                          </button>
-                        )}
+                              return (
+                                <div
+                                  key={horario.id}
+                                  className={`agenda-item ${horario.id === horarioAtualId ? 'current ' : ''}${horario.id === proximoHorarioId ? 'next ' : ''}${ocupado ? 'occupied' : 'available'}${selected ? ' selected' : ''}`}
+                                >
+                                  <button
+                                    type="button"
+                                    className={`agenda-select-checkbox ${selected ? 'checked' : ''}`}
+                                    onClick={() => toggleSelection(horario.id)}
+                                    aria-label={selected ? 'Desmarcar horário' : 'Selecionar horário'}
+                                  >
+                                    {selected ? <CheckSquare size={19} /> : <Square size={19} />}
+                                  </button>
 
-                        {ocupado && (
-                          <button
-                            type="button"
-                            className="agenda-action-button"
-                            onClick={() =>
-                              void unlinkStudent(
-                                horario,
+                                  <div className="agenda-time">
+                                    <strong>{formatHour(horario.hora_inicio)}</strong>
+                                    <span>{formatHour(horario.hora_fim)}</span>
+                                  </div>
+
+                                  <div className="agenda-item-main">
+                                    <div className="agenda-item-top">
+                                      <span className="agenda-language">{getIdiomaLabel(horario.idioma)}</span>
+                                      <span className="agenda-language">
+                                        {horario.tipo_horario === 'dupla'
+                                          ? 'Dupla'
+                                          : horario.tipo_horario === 'grupo'
+                                            ? 'Grupo'
+                                            : 'Individual'}
+                                      </span>
+                                      {horario.nivel_referencia && (
+                                        <span className="agenda-status available">
+                                          {horario.nivel_referencia === 'iniciante'
+                                            ? 'Iniciante'
+                                            : horario.nivel_referencia === 'basico'
+                                              ? 'Básico'
+                                              : horario.nivel_referencia === 'intermediario'
+                                                ? 'Intermediário'
+                                                : horario.nivel_referencia === 'avancado'
+                                                  ? 'Avançado'
+                                                  : horario.nivel_referencia}
+                                        </span>
+                                      )}
+                                      {reagendamentoOriginal && (
+                                        <span className="agenda-status unavailable">REAGENDADA</span>
+                                      )}
+                                      <span
+                                        className={`agenda-status ${
+                                          ocupado
+                                            ? 'occupied'
+                                            : horario.disponivel
+                                              ? 'available'
+                                              : 'unavailable'
+                                        }`}
+                                      >
+                                        {ocupado
+                                          ? 'Ocupado'
+                                          : horario.disponivel
+                                            ? 'Disponível'
+                                            : 'Indisponível'}
+                                      </span>
+                                    </div>
+
+                                    <div className="agenda-student">
+                                      <UserRound size={16} />
+                                      <span>{alunoNome || 'Nenhum aluno vinculado'}</span>
+                                    </div>
+
+                                    <div className="agenda-student">
+                                      <UserRound size={16} />
+                                      <span>
+                                        {professorNome
+                                          ? `Professor: ${professorNome}`
+                                          : 'Nenhum professor atribuído'}
+                                      </span>
+                                    </div>
+
+                                    <div className="agenda-lesson-status">
+                                      <Video size={15} />
+                                      <span>
+                                        {ocupado
+                                          ? 'Aula disponível na AB Academy'
+                                          : 'Aguardando matrícula'}
+                                      </span>
+                                    </div>
+                                  </div>
+
+                                  <div className="agenda-actions">
+                                    {ocupado && (
+                                      <button
+                                        type="button"
+                                        className="agenda-action-button"
+                                        onClick={() => openTeacherRoom(horario)}
+                                        title="Entrar na aula"
+                                      >
+                                        <Video size={17} />
+                                      </button>
+                                    )}
+
+                                    {ocupado && (
+                                      <button
+                                        type="button"
+                                        className="agenda-action-button"
+                                        onClick={() => openRescheduleModal(horario)}
+                                        title="Reagendar aula"
+                                      >
+                                        <Clock3 size={17} />
+                                      </button>
+                                    )}
+
+                                    {ocupado && (
+                                      <button
+                                        type="button"
+                                        className="agenda-action-button"
+                                        onClick={() => void unlinkStudent(horario)}
+                                        title="Desvincular aluno"
+                                      >
+                                        <X size={17} />
+                                      </button>
+                                    )}
+
+                                    {!ocupado && (
+                                      <button
+                                        type="button"
+                                        className="agenda-action-button"
+                                        onClick={() => void toggleAvailability(horario)}
+                                        title={
+                                          horario.disponivel
+                                            ? 'Marcar como indisponível'
+                                            : 'Marcar como disponível'
+                                        }
+                                      >
+                                        <CheckCircle2 size={17} />
+                                      </button>
+                                    )}
+
+                                    <button
+                                      type="button"
+                                      className="agenda-action-button"
+                                      onClick={() => openEditModal(horario)}
+                                      title="Editar horário"
+                                    >
+                                      <Edit3 size={17} />
+                                    </button>
+                                  </div>
+                                </div>
                               )
-                            }
-                            title="Desvincular aluno"
-                          >
-                            <X
-                              size={17}
-                            />
-                          </button>
+                            })}
+                          </div>
                         )}
 
-                        {!ocupado && (
-                          <button
-                            type="button"
-                            className="agenda-action-button"
-                            onClick={() =>
-                              void toggleAvailability(
-                                horario,
-                              )
-                            }
-                            title={
-                              horario.disponivel
-                                ? 'Marcar como indisponível'
-                                : 'Marcar como disponível'
-                            }
-                          >
-                            <CheckCircle2
-                              size={17}
-                            />
-                          </button>
+                        {periodReposicoes.length > 0 && (
+                          <div className="agenda-replacement-section">
+                            <div className="agenda-replacement-heading">
+                              <div>
+                                <h3>Reposições agendadas</h3>
+                                <p>Aulas remanejadas para este período.</p>
+                              </div>
+                              <span>{periodReposicoes.length}</span>
+                            </div>
+
+                            <div className="agenda-card-grid">
+                              {periodReposicoes.map((registro) => {
+                                const horario = horarios.find(
+                                  (item) => item.id === registro.horario_id,
+                                )
+
+                                if (
+                                  !horario ||
+                                  !registro.data_aula_override ||
+                                  !registro.hora_inicio_override ||
+                                  !registro.hora_fim_override
+                                ) {
+                                  return null
+                                }
+
+                                const professorNome = getProfessorNome(horario.professor_id)
+
+                                return (
+                                  <div
+                                    key={`reposicao-${registro.id}`}
+                                    className="agenda-item occupied"
+                                  >
+                                    <div className="agenda-time">
+                                      <strong>{formatHour(registro.hora_inicio_override)}</strong>
+                                      <span>{formatHour(registro.hora_fim_override)}</span>
+                                    </div>
+
+                                    <div className="agenda-item-main">
+                                      <div className="agenda-item-top">
+                                        <span className="agenda-language">
+                                          {getIdiomaLabel(horario.idioma)}
+                                        </span>
+                                        <span className="agenda-language">
+                                          {horario.tipo_horario === 'dupla'
+                                            ? 'Dupla'
+                                            : horario.tipo_horario === 'grupo'
+                                              ? 'Grupo'
+                                              : 'Individual'}
+                                        </span>
+                                        <span className="agenda-status unavailable">REPOSIÇÃO</span>
+                                      </div>
+
+                                      <div className="agenda-student">
+                                        <UserRound size={16} />
+                                        <span>
+                                          {getAlunoNome(registro.aluno_id) || 'Aluno'}
+                                        </span>
+                                      </div>
+
+                                      <div className="agenda-student">
+                                        <UserRound size={16} />
+                                        <span>
+                                          {professorNome
+                                            ? `Professor: ${professorNome}`
+                                            : 'Nenhum professor atribuído'}
+                                        </span>
+                                      </div>
+
+                                      <div className="agenda-lesson-status">
+                                        <Video size={15} />
+                                        <span>Aula disponível na AB Academy</span>
+                                      </div>
+                                    </div>
+
+                                    <div className="agenda-actions">
+                                      <button
+                                        type="button"
+                                        className="agenda-action-button"
+                                        onClick={() => openTeacherRoom(horario)}
+                                        title="Entrar na reposição"
+                                      >
+                                        <Video size={17} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
                         )}
-
-                        <button
-                          type="button"
-                          className="agenda-action-button"
-                          onClick={() =>
-                            openEditModal(
-                              horario,
-                            )
-                          }
-                          title="Editar horário"
-                        >
-                          <Edit3
-                            size={17}
-                          />
-                        </button>
-
                       </div>
-
-                    </div>
-                  )
-                },
-              )}
-
-                          </div>
-                        ) : null}
-
-              {periodReposicoes.length > 0 && (
-                <div className="agenda-replacement-section">
-                  <div className="agenda-replacement-heading">
-                    <div>
-                      <h3>Reposições agendadas</h3>
-                      <p>Aulas remanejadas para este período.</p>
-                    </div>
-                    <span>{periodReposicoes.length}</span>
+                    )}
                   </div>
-
-                  <div className="agenda-card-grid">
-                  {periodReposicoes.map((registro) => {
-                    const horario = horarios.find((item) => item.id === registro.horario_id)
-                    if (!horario || !registro.data_aula_override || !registro.hora_inicio_override || !registro.hora_fim_override) return null
-
-                    return (
-                      <div key={'reposicao-' + registro.id} className="agenda-item occupied">
-                        <div className="agenda-time">
-                          <strong>{formatHour(registro.hora_inicio_override)}</strong>
-                          <span>{formatHour(registro.hora_fim_override)}</span>
-                        </div>
-
-                        <div className="agenda-item-main">
-                          <div className="agenda-item-top">
-                            <span className="agenda-language">{getIdiomaLabel(horario.idioma)}</span>
-                            <span className="agenda-language">
-                              {horario.tipo_horario === 'dupla' ? 'Dupla' : horario.tipo_horario === 'grupo' ? 'Grupo' : 'Individual'}
-                            </span>
-                            <span className="agenda-status unavailable">REPOSIÇÃO</span>
-                          </div>
-
-                          <div className="agenda-student">
-                            <UserRound size={16} />
-                            <span>{getAlunoNome(registro.aluno_id) || 'Aluno'}</span>
-                          </div>
-
-                          <div className="agenda-student">
-                            <UserRound size={16} />
-                            <span>{getProfessorNome(horario.professor_id) ? 'Professor: ' + getProfessorNome(horario.professor_id) : 'Nenhum professor atribuído'}</span>
-                          </div>
-
-                          <div className="agenda-lesson-status">
-                            <Video size={15} />
-                            <span>Aula disponível na AB Academy</span>
-                          </div>
-                        </div>
-
-                        <div className="agenda-actions">
-                          <button
-                            type="button"
-                            className="agenda-action-button"
-                            onClick={() => openTeacherRoom(horario)}
-                            title="Entrar na reposição"
-                          >
-                            <Video size={17} />
-                          </button>
-                        </div>
-                      </div>
-                    )
-                  })}
-                  </div>
-                </div>
-              )}
-                  </div>
-                )}
-              </div>
-          })}
-          </div>
-        )}
+                )
+              })}
+            </div>
 
         </div>
       </div>
