@@ -48,6 +48,7 @@ type EnrollmentRequest = {
   horario_formacao_id?: string | null
   aguardando_formacao?: boolean
   reserva_token?: string | null
+  modalidade?: 'individual' | 'dupla' | 'grupo'
 }
 
 function jsonResponse(
@@ -325,73 +326,130 @@ Deno.serve(async (req) => {
      * VERIFICAR HORÁRIOS DIRETAMENTE NO BANCO
      * =====================================================
      *
-     * O banco é a fonte oficial dos horários.
+     * Individual: o horário precisa continuar livre.
+     * Coletivo: a reserva já foi criada pela RPC e o horário
+     * permanece compartilhável; validamos a turma/reserva.
      */
 
-    const {
-      data: freshSlots,
-      error: slotsError,
-    } =
-      await supabaseAdmin
+    const isCollectiveRequest =
+      Boolean(body.turma_id && body.turma_participante_id)
+
+    let freshSlots: Array<{
+      id: string
+      hora_inicio: string
+      hora_fim: string
+      disponivel: boolean
+      aluno_id: string | null
+      dia_semana: number
+      idioma: string
+      tipo_horario: string
+    }> = []
+
+    if (isCollectiveRequest) {
+      const { data: turma, error: turmaError } = await supabaseAdmin
+        .from('turmas')
+        .select('id,idioma,modalidade,aulas_semana,quantidade_maxima,status')
+        .eq('id', body.turma_id)
+        .maybeSingle()
+
+      const { data: participante, error: participanteError } = await supabaseAdmin
+        .from('turma_participantes')
+        .select('id,turma_id,user_id,status,reserva_expira_em,reserva_token,email')
+        .eq('id', body.turma_participante_id)
+        .maybeSingle()
+
+      if (
+        turmaError ||
+        participanteError ||
+        !turma ||
+        !participante ||
+        participante.turma_id !== turma.id
+      ) {
+        return jsonResponse({ error: 'A turma selecionada não está mais disponível.' }, 409)
+      }
+
+      if (
+        participante.reserva_token !== body.reserva_token ||
+        String(participante.email ?? '').trim().toLowerCase() !== body.dados_aluno.email.trim().toLowerCase()
+      ) {
+        return jsonResponse({ error: 'A reserva desta turma não pertence a esta matrícula.' }, 403)
+      }
+
+      if (!['convidado', 'confirmado'].includes(participante.status)) {
+        return jsonResponse({ error: 'A reserva desta turma não está mais ativa.' }, 409)
+      }
+
+      if (
+        participante.status === 'convidado' &&
+        participante.reserva_expira_em &&
+        new Date(participante.reserva_expira_em).getTime() < Date.now()
+      ) {
+        return jsonResponse({ error: 'A reserva desta turma expirou. Escolha o horário novamente.' }, 409)
+      }
+
+      if (
+        turma.idioma !== body.idioma ||
+        turma.aulas_semana !== body.aulas_semana ||
+        !['dupla', 'grupo'].includes(turma.modalidade)
+      ) {
+        return jsonResponse({ error: 'A turma não corresponde à matrícula coletiva.' }, 400)
+      }
+
+      const { count: participantCount } = await supabaseAdmin
+        .from('turma_participantes')
+        .select('id', { count: 'exact', head: true })
+        .eq('turma_id', turma.id)
+        .in('status', ['convidado', 'confirmado'])
+
+      if ((participantCount ?? 0) > turma.quantidade_maxima) {
+        return jsonResponse({ error: 'A turma atingiu sua capacidade máxima.' }, 409)
+      }
+
+      const { data: turmaHorarios, error: turmaHorariosError } = await supabaseAdmin
+        .from('turma_horarios')
+        .select('horario_id')
+        .eq('turma_id', turma.id)
+        .in('horario_id', horarioIds)
+
+      if (turmaHorariosError || !turmaHorarios || turmaHorarios.length !== horarioIds.length) {
+        return jsonResponse({ error: 'Os horários selecionados não correspondem à turma reservada.' }, 409)
+      }
+
+      const { data: slots, error: slotsError } = await supabaseAdmin
         .from('horarios')
-        .select(
-          `
-            id,
-            hora_inicio,
-            hora_fim,
-            disponivel,
-            aluno_id,
-            dia_semana,
-            idioma,
-            tipo_horario
-          `,
-        )
-        .in(
-          'id',
-          horarioIds,
-        )
-        .eq(
-          'idioma',
-          body.idioma,
-        )
-        .eq(
-          'disponivel',
-          true,
-        )
-        .is(
-          'aluno_id',
-          null,
-        )
+        .select('id,hora_inicio,hora_fim,disponivel,aluno_id,dia_semana,idioma,tipo_horario')
+        .in('id', horarioIds)
+        .eq('idioma', body.idioma)
 
-    if (slotsError) {
-      console.error(
-        'Erro ao verificar horários:',
-        slotsError,
-      )
+      if (slotsError || !slots || slots.length !== horarioIds.length) {
+        return jsonResponse({ error: 'Um ou mais horários da turma não foram encontrados.' }, 409)
+      }
 
-      return jsonResponse(
-        {
-          error:
-            'Não foi possível verificar os horários disponíveis.',
-          details:
-            slotsError.message,
-        },
-        500,
-      )
-    }
+      freshSlots = slots
+    } else {
+      const { data: slots, error: slotsError } = await supabaseAdmin
+        .from('horarios')
+        .select('id,hora_inicio,hora_fim,disponivel,aluno_id,dia_semana,idioma,tipo_horario')
+        .in('id', horarioIds)
+        .eq('idioma', body.idioma)
+        .eq('disponivel', true)
+        .is('aluno_id', null)
 
-    if (
-      !freshSlots ||
-      freshSlots.length !==
-        horarioIds.length
-    ) {
-      return jsonResponse(
-        {
-          error:
-            'Um ou mais horários selecionados não estão mais disponíveis.',
-        },
-        409,
-      )
+      if (slotsError) {
+        console.error('Erro ao verificar horários:', slotsError)
+        return jsonResponse({
+          error: 'Não foi possível verificar os horários disponíveis.',
+          details: slotsError.message,
+        }, 500)
+      }
+
+      if (!slots || slots.length !== horarioIds.length) {
+        return jsonResponse({
+          error: 'Um ou mais horários selecionados não estão mais disponíveis.',
+        }, 409)
+      }
+
+      freshSlots = slots
     }
 
     /*
@@ -400,21 +458,14 @@ Deno.serve(async (req) => {
      * =====================================================
      */
 
-    const principalSlot =
-      freshSlots.find(
-        (slot) =>
-          slot.id ===
-          firstSchedule.id,
-      )
+    const principalSlot = freshSlots.find(
+      (slot) => slot.id === firstSchedule.id,
+    )
 
     if (!principalSlot) {
-      return jsonResponse(
-        {
-          error:
-            'O horário principal selecionado não foi encontrado entre os horários disponíveis.',
-        },
-        409,
-      )
+      return jsonResponse({
+        error: 'O horário principal da matrícula não foi encontrado entre os horários selecionados.',
+      }, 409)
     }
 
     /*
