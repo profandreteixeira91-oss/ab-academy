@@ -1559,3 +1559,160 @@
 .planos-frequency-card--unavailable .planos-schedule-row{background:#fff}
 .planos-frequency-card--unavailable .planos-schedule-row span{color:#65748b}
 .planos-frequency-card--unavailable>p{color:#7b8799}
+
+
+/* =========================================================
+   ESCOLHA DO HORÁRIO — FORMAÇÃO / TURMA EXISTENTE
+========================================================= */
+.planos-schedule-choice-panel{
+  margin-top:12px;
+  padding:15px;
+  border:1px solid #d9e4f5;
+  border-radius:14px;
+  background:#f7faff;
+}
+.planos-schedule-choice-copy{
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  margin-bottom:12px;
+}
+.planos-schedule-choice-copy strong{
+  color:var(--planos-ink);
+  font-size:12px;
+  line-height:1.4;
+}
+.planos-schedule-choice-copy span{
+  color:var(--planos-muted);
+  font-size:11px;
+  line-height:1.5;
+}
+.planos-schedule-choice-button{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  width:100%;
+  min-height:48px;
+  padding:10px 13px;
+  border:1px solid #d7e1f0;
+  border-radius:11px;
+  background:#fff;
+  color:var(--planos-ink);
+  text-decoration:none;
+  font:inherit;
+  text-align:left;
+  cursor:pointer;
+}
+.planos-schedule-choice-button:hover{
+  border-color:#9fb9e8;
+}
+.planos-schedule-choice-button--individual{
+  flex-direction:column;
+  align-items:flex-start;
+  border-color:#c9d9f5;
+  background:#fff;
+}
+.planos-schedule-choice-button--individual span,
+.planos-schedule-choice-button--reserve span{
+  color:var(--planos-ink);
+  font-size:12px;
+  font-weight:800;
+}
+.planos-schedule-choice-button--individual strong{
+  color:var(--planos-primary);
+  font-size:21px;
+  line-height:1;
+}
+.planos-schedule-choice-button--individual strong small{
+  margin-left:4px;
+  color:var(--planos-muted);
+  font-size:10px;
+}
+.planos-schedule-choice-button em,
+.planos-schedule-choice-button--reserve strong{
+  color:var(--planos-muted);
+  font-size:10px;
+  font-style:normal;
+  font-weight:600;
+}
+.planos-schedule-choice-actions{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.planos-schedule-choice-button--reserve{
+  flex-direction:column;
+  align-items:flex-start;
+  justify-content:center;
+}
+.planos-reserve-form{
+  margin-top:12px;
+  padding:14px;
+  border:1px solid #d8e3f3;
+  border-radius:12px;
+  background:#fff;
+}
+.planos-reserve-form>div:first-child{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+.planos-reserve-form>div:first-child strong{
+  color:var(--planos-ink);
+  font-size:12px;
+}
+.planos-reserve-form>div:first-child span{
+  color:var(--planos-muted);
+  font-size:10px;
+  line-height:1.45;
+}
+.planos-reserve-fields{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:8px;
+  margin-top:10px;
+}
+.planos-reserve-fields input{
+  width:100%;
+  min-width:0;
+  padding:10px 11px;
+  border:1px solid #dbe3ef;
+  border-radius:9px;
+  background:#fff;
+  color:var(--planos-ink);
+  font:inherit;
+  font-size:11px;
+  outline:none;
+}
+.planos-reserve-fields input:focus{
+  border-color:#8eabe0;
+  box-shadow:0 0 0 3px rgba(53,103,200,.08);
+}
+.planos-reserve-message{
+  margin:9px 0 0;
+  color:#53627a;
+  font-size:10px;
+  line-height:1.5;
+}
+.planos-reserve-actions{
+  display:flex;
+  justify-content:flex-end;
+  gap:8px;
+  margin-top:10px;
+}
+.planos-reserve-actions .btn{
+  min-height:36px;
+  padding:8px 12px;
+  font-size:10px;
+}
+@media(max-width:720px){
+  .planos-schedule-choice-actions,
+  .planos-reserve-fields{
+    grid-template-columns:1fr;
+  }
+  .planos-reserve-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+  }
+}
