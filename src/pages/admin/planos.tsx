@@ -829,6 +829,8 @@ Esta ação não pode ser desfeita.`,
                 setFilterIdioma('todos')
                 setFilterTipo('todos')
                 setFilterStatus('todos')
+                setFilterModalidade('todos')
+                setFilterFrequencia('todos')
               }}
             >
               Limpar filtros
