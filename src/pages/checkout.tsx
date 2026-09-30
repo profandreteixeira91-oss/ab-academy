@@ -275,6 +275,19 @@ export default function Checkout({
               '/aluno',
             )
           }, 1800)
+      } else if (
+        data.status === 'recusado' ||
+        data.status === 'cancelado' ||
+        data.status === 'expirado'
+      ) {
+        setCheckingPayment(false)
+        setProcessing(false)
+        setPaymentResult(null)
+        setError(
+          data.status === 'recusado'
+            ? 'O pagamento com cartão não foi autorizado. Verifique os dados do cartão ou utilize outro cartão.'
+            : 'Esta tentativa de pagamento foi cancelada. Você pode tentar novamente.',
+        )
       }
     } catch (err) {
       console.error(
