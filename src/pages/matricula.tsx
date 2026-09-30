@@ -399,7 +399,7 @@ export default function Matricula() {
   }, [language, plan?.modalidade, plan?.aulas_semana, formationSlotId, waitingFormation, collectiveScheduleMode])
 
   useEffect(() => {
-    if (!language || !isWaitingFormation) {
+    if (!language || (!isCollectivePlan && !isWaitingFormation)) {
       setWaitingIndividualPlan(null)
       return
     }
@@ -420,7 +420,7 @@ export default function Matricula() {
     }
 
     void loadWaitingIndividualPlan()
-  }, [language, isWaitingFormation])
+  }, [language, isWaitingFormation, isCollectivePlan])
 
   const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
     const { data, error: planError } = await supabase
@@ -1304,10 +1304,15 @@ export default function Matricula() {
                                 </span>
                                 {isCollectivePlan && (
                                   <small>
-                                    {horario.participantes > 0
-                                      ? `${horario.participantes}/${horario.capacidade} alunos • ${horario.vagas_restantes} vaga(s)`
-                                      : 'Horário livre • será sua nova turma'}
+                                    {horario.participantes === 0
+                                      ? `${horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'} em formação • 0/${horario.capacidade}`
+                                      : horario.participantes < horario.capacidade
+                                        ? `${horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'} em formação • ${horario.participantes}/${horario.capacidade} alunos • ${horario.vagas_restantes} vaga(s)`
+                                        : `${horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'} • ${horario.participantes}/${horario.capacidade} alunos`}
                                   </small>
+                                )}
+                                {isCollectivePlan && horario.valor_mensal != null && (
+                                  <em>{formatCurrency(horario.valor_mensal)} /mês</em>
                                 )}
                               </button>
                             )
