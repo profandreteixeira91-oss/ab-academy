@@ -59,7 +59,7 @@ export default function LanguageLanding({ language }: Props) {
           <a href="#para-quem">Para quem é</a>
           <a href="#beneficios">Benefícios</a>
           <a href={plansUrl}>Planos</a>
-          <a href="/diagnostica?idioma={language}">Diagnóstica</a>
+          <a href={diagnosticUrl}>Diagnóstica</a>
         </nav>
         <a href={leadUrl} className="language-landing-header-link">Fale com a equipe</a>
       </header>
