@@ -718,7 +718,7 @@ export default function Checkout({
       if (expiryYear === currentYear && expiryMonth < new Date().getMonth() + 1) throw new Error('O cartão está vencido.')
 
       const expectedCvvLength = cardBrand === 'American Express' ? 4 : 3
-      const ccvPattern = new RegExp('^\\d{' + expectedCvvLength + '}
+      const ccvPattern = new RegExp('^\\d{' + expectedCvvLength + '}$')
 
       if (
         !holder.name.trim()
