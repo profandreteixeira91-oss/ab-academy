@@ -2893,10 +2893,6 @@ function Aluno() {
           throw new Error('Preencha todos os dados obrigatórios do cartão e do titular.')
         }
 
-        if (cardHolderIsThirdParty && !recurringAuthorized && paymentEntry.status === 'pago') {
-          throw new Error('A mensalidade já está paga.')
-        }
-
         body = {
           ...body,
           parcelas: 1,
