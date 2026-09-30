@@ -1180,6 +1180,30 @@ export default function Agenda() {
       const selected =
         selectedHorarios
 
+      if (bulkEditForm.tipo_horario) {
+        const { data: turmaLinks, error: turmaLinksError } = await supabase
+          .from('turma_horarios')
+          .select('horario_id')
+          .in('horario_id', selectedIds)
+
+        if (turmaLinksError) throw turmaLinksError
+
+        if ((turmaLinks || []).length > 0) {
+          const linkedIds = new Set((turmaLinks || []).map((link) => link.horario_id))
+          const incompatible = selected.filter(
+            (horario) =>
+              linkedIds.has(horario.id) &&
+              horario.tipo_horario !== bulkEditForm.tipo_horario,
+          )
+
+          if (incompatible.length > 0) {
+            throw new Error(
+              'Um ou mais horários selecionados estão vinculados a turmas fixas. Remova o vínculo com a turma antes de alterar o tipo de horário.',
+            )
+          }
+        }
+      }
+
       /*
        * Validar os novos horários
        * antes de alterar qualquer registro.
