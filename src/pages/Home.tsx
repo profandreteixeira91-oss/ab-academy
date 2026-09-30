@@ -158,6 +158,7 @@ function Home() {
             <a href="#metodologia">Metodologia</a>
             <a href="/planos">Planos</a>
             <a href="/enterprise">Enterprise</a>
+            <a href="/trabalhe-conosco">Trabalhe conosco</a>
             <a href="/quero-aprender">Contato</a>
           </nav>
 
@@ -202,6 +203,7 @@ function Home() {
             <a href="/planos" onClick={() => setMobileMenuOpen(false)}>Planos</a>
             <a href="/diagnostica" onClick={() => setMobileMenuOpen(false)}>Aula diagnóstica</a>
             <a href="/enterprise" onClick={() => setMobileMenuOpen(false)}>Enterprise</a>
+            <a href="/trabalhe-conosco" onClick={() => setMobileMenuOpen(false)}>Trabalhe conosco</a>
             <a href="/quero-aprender" onClick={() => setMobileMenuOpen(false)}>Contato</a>
             <a href="/aluno" onClick={() => setMobileMenuOpen(false)}>Área do aluno</a>
             <a href="/professor" onClick={() => setMobileMenuOpen(false)}>Portal do professor</a>
