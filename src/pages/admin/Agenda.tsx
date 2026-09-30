@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   CheckSquare,
   Clock3,
+  CalendarClock,
   Edit3,
   Plus,
   Square,
@@ -246,7 +247,9 @@ export default function Agenda() {
 
   const [rescheduleOpen, setRescheduleOpen] = useState(false)
   const [rescheduleSource, setRescheduleSource] = useState<Horario | null>(null)
-  const [rescheduleTargetId, setRescheduleTargetId] = useState('')
+  const [rescheduleDate, setRescheduleDate] = useState('')
+  const [rescheduleStart, setRescheduleStart] = useState('')
+  const [rescheduleEnd, setRescheduleEnd] = useState('')
   const [bulkReorganizeOpen, setBulkReorganizeOpen] = useState(false)
   const [bulkReorganizeDay, setBulkReorganizeDay] = useState<number>(selectedDay)
   const [bulkReorganizeStart, setBulkReorganizeStart] = useState('08:00')
@@ -611,8 +614,17 @@ export default function Agenda() {
 
   function openRescheduleModal(horario: Horario) {
     if (!horario.aluno_id) return
+
+    const occurrence = getNextOccurrence(
+      horario.dia_semana,
+      horario.hora_inicio,
+      horario.hora_fim,
+    )
+
     setRescheduleSource(horario)
-    setRescheduleTargetId('')
+    setRescheduleDate(dateKey(occurrence.startAt))
+    setRescheduleStart(formatHour(horario.hora_inicio))
+    setRescheduleEnd(formatHour(horario.hora_fim))
     setRescheduleOpen(true)
   }
 
@@ -620,78 +632,174 @@ export default function Agenda() {
     if (saving) return
     setRescheduleOpen(false)
     setRescheduleSource(null)
-    setRescheduleTargetId('')
+    setRescheduleDate('')
+    setRescheduleStart('')
+    setRescheduleEnd('')
   }
 
-  const rescheduleTargets = useMemo(() => {
-    if (!rescheduleSource) return []
-    return horarios.filter((horario) => {
-      if (horario.id === rescheduleSource.id) return false
-      if (horario.aluno_id || !horario.disponivel) return false
-      if (horario.idioma !== rescheduleSource.idioma) return false
-      if (horario.professor_id && horario.professor_id !== rescheduleSource.professor_id) return false
-      return true
-    }).sort((a, b) => a.dia_semana !== b.dia_semana ? a.dia_semana - b.dia_semana : a.hora_inicio.localeCompare(b.hora_inicio))
-  }, [horarios, rescheduleSource])
-
   async function handleReschedule() {
-    if (!rescheduleSource || !rescheduleTargetId) return
+    if (
+      !rescheduleSource ||
+      !rescheduleDate ||
+      !rescheduleStart ||
+      !rescheduleEnd
+    ) {
+      return
+    }
+
     try {
       setSaving(true)
-      const target = horarios.find((horario) => horario.id === rescheduleTargetId)
-      if (!target) throw new Error('Horário de destino não encontrado.')
-      const sourceOccurrence = getNextOccurrence(rescheduleSource.dia_semana, rescheduleSource.hora_inicio, rescheduleSource.hora_fim)
-      const targetOccurrence = getNextOccurrence(target.dia_semana, target.hora_inicio, target.hora_fim)
-      const sourceDate = dateKey(sourceOccurrence.startAt)
-      const targetDate = dateKey(targetOccurrence.startAt)
-      const sourceDuration = timeToMinutes(formatHour(rescheduleSource.hora_fim)) - timeToMinutes(formatHour(rescheduleSource.hora_inicio))
-      const targetDuration = timeToMinutes(formatHour(target.hora_fim)) - timeToMinutes(formatHour(target.hora_inicio))
-      if (sourceOccurrence.startAt.getTime() <= Date.now()) throw new Error('A aula selecionada não possui uma próxima ocorrência futura.')
 
-      const targetStartMinutes = timeToMinutes(target.hora_inicio.slice(0, 5))
-      const targetEndMinutes = targetStartMinutes + sourceDuration
-      const horarioConflict = horarios.find((horario) => {
-        if (horario.id === target.id || horario.dia_semana !== target.dia_semana) return false
-        if (horario.idioma !== rescheduleSource.idioma) return false
-        if (!horario.professor_id || !rescheduleSource.professor_id || horario.professor_id !== rescheduleSource.professor_id) return false
-        const start = timeToMinutes(horario.hora_inicio.slice(0, 5))
-        const end = timeToMinutes(horario.hora_fim.slice(0, 5))
-        return targetStartMinutes < end && targetEndMinutes > start
-      })
-      if (horarioConflict) throw new Error('A duração da aula reagendada entra em conflito com outro horário do mesmo professor.')
+      const startMinutes = timeToMinutes(rescheduleStart)
+      const endMinutes = timeToMinutes(rescheduleEnd)
 
-      const { data: existingTargets, error: targetError } = await supabase.from('registros_aulas').select('id, hora_inicio_override, hora_fim_override').eq('data_aula_override', targetDate)
+      if (endMinutes <= startMinutes) {
+        throw new Error('O horário final deve ser posterior ao horário inicial.')
+      }
+
+      const sourceOccurrence = getNextOccurrence(
+        rescheduleSource.dia_semana,
+        rescheduleSource.hora_inicio,
+        rescheduleSource.hora_fim,
+      )
+
+      if (sourceOccurrence.startAt.getTime() <= Date.now()) {
+        throw new Error('A próxima ocorrência desta aula já começou ou terminou.')
+      }
+
+      const targetDateObject = new Date(rescheduleDate + 'T' + rescheduleStart + ':00')
+      if (Number.isNaN(targetDateObject.getTime())) {
+        throw new Error('A data escolhida é inválida.')
+      }
+
+      if (targetDateObject.getTime() <= Date.now()) {
+        throw new Error('Escolha uma data e horário futuros.')
+      }
+
+      const targetDay = targetDateObject.getDay()
+
+      const conflictingHorario = getConflictingHorario(
+        targetDay,
+        rescheduleStart,
+        rescheduleEnd,
+        [rescheduleSource.id],
+        rescheduleSource.idioma,
+        rescheduleSource.professor_id,
+      )
+
+      if (conflictingHorario) {
+        throw new Error(
+          'O professor já possui um horário no período escolhido: ' +
+            formatHour(conflictingHorario.hora_inicio) +
+            '–' +
+            formatHour(conflictingHorario.hora_fim) +
+            '.',
+        )
+      }
+
+      const { data: existingTargets, error: targetError } =
+        await supabase
+          .from('registros_aulas')
+          .select(
+            'id, horario_id, aluno_id, hora_inicio_override, hora_fim_override',
+          )
+          .eq('data_aula_override', rescheduleDate)
+
       if (targetError) throw targetError
+
       const overrideConflict = (existingTargets || []).some((registro) => {
-        if (!registro.hora_inicio_override || !registro.hora_fim_override) return false
-        const start = timeToMinutes(registro.hora_inicio_override.slice(0, 5))
-        const end = timeToMinutes(registro.hora_fim_override.slice(0, 5))
-        return targetStartMinutes < end && targetEndMinutes > start
+        if (
+          registro.horario_id === rescheduleSource.id ||
+          registro.aluno_id === rescheduleSource.aluno_id
+        ) {
+          return false
+        }
+
+        if (!registro.hora_inicio_override || !registro.hora_fim_override) {
+          return false
+        }
+
+        const existingStart = timeToMinutes(
+          registro.hora_inicio_override.slice(0, 5),
+        )
+        const existingEnd = timeToMinutes(
+          registro.hora_fim_override.slice(0, 5),
+        )
+
+        return startMinutes < existingEnd && endMinutes > existingStart
       })
-      if (overrideConflict) throw new Error('O horário de destino já está reservado para uma aula reagendada.')
 
-      const { data: existingSource, error: sourceError } = await supabase.from('registros_aulas').select('id, status').eq('horario_id', rescheduleSource.id).eq('data_aula', sourceDate).limit(1).maybeSingle()
+      if (overrideConflict) {
+        throw new Error(
+          'O horário escolhido já está reservado para outra aula reagendada.',
+        )
+      }
+
+      const { data: existingSource, error: sourceError } =
+        await supabase
+          .from('registros_aulas')
+          .select('id, status')
+          .eq('horario_id', rescheduleSource.id)
+          .eq('data_aula', dateKey(sourceOccurrence.startAt))
+          .limit(1)
+          .maybeSingle()
+
       if (sourceError) throw sourceError
-      if (existingSource && (existingSource.status === 'presente' || existingSource.status === 'falta')) throw new Error('A próxima ocorrência já possui registro de presença e não pode ser reagendada.')
 
-      const overrideStart = target.hora_inicio.slice(0, 5)
-      const overrideEnd = sourceDuration === targetDuration ? target.hora_fim.slice(0, 5) : minutesToTime(targetEndMinutes)
-      const payload = { horario_id: rescheduleSource.id, aluno_id: rescheduleSource.aluno_id, professor_id: rescheduleSource.professor_id, data_aula: sourceDate, data_aula_override: targetDate, hora_inicio_override: overrideStart, hora_fim_override: overrideEnd, status: 'presente' as const }
+      if (
+        existingSource &&
+        (existingSource.status === 'presente' ||
+          existingSource.status === 'falta')
+      ) {
+        throw new Error(
+          'A próxima ocorrência já possui presença registrada e não pode ser reagendada.',
+        )
+      }
+
+      const payload = {
+        horario_id: rescheduleSource.id,
+        aluno_id: rescheduleSource.aluno_id,
+        professor_id: rescheduleSource.professor_id,
+        data_aula: dateKey(sourceOccurrence.startAt),
+        data_aula_override: rescheduleDate,
+        hora_inicio_override: rescheduleStart,
+        hora_fim_override: rescheduleEnd,
+        status: existingSource?.status || 'agendada',
+      }
 
       if (existingSource) {
-        const { error } = await supabase.from('registros_aulas').update(payload).eq('id', existingSource.id)
+        const { error } = await supabase
+          .from('registros_aulas')
+          .update(payload)
+          .eq('id', existingSource.id)
+
         if (error) throw error
       } else {
-        const { error } = await supabase.from('registros_aulas').insert(payload)
+        const { error } = await supabase
+          .from('registros_aulas')
+          .insert(payload)
+
         if (error) throw error
       }
 
       closeRescheduleModal()
       await loadAgenda()
-      window.alert('Aula reagendada para ' + formatDateKey(targetDate) + ' das ' + overrideStart + ' às ' + overrideEnd + '. O horário recorrente original não foi alterado.')
+
+      window.alert(
+        'Aula reagendada para ' +
+          formatDateKey(rescheduleDate) +
+          ' das ' +
+          rescheduleStart +
+          ' às ' +
+          rescheduleEnd +
+          '. O horário recorrente original não foi alterado.',
+      )
     } catch (err) {
       console.error('Erro ao reagendar aula:', err)
-      window.alert('Não foi possível reagendar a aula.\\n\\n' + getErrorMessage(err))
+      window.alert(
+        'Não foi possível reagendar a aula.\\n\\n' +
+          getErrorMessage(err),
+      )
     } finally {
       setSaving(false)
     }
