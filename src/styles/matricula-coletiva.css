@@ -1,0 +1,67 @@
+
+.collective-enrollment-page .enrollment-heading p strong{color:var(--text)}
+.collective-enrollment-grid{grid-template-columns:minmax(0,1fr) 300px}
+.collective-context-card{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:25px}
+.collective-context-card>div{padding:14px 16px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--background-light)}
+.collective-context-card span,.collective-review span{display:block;color:var(--text-secondary);font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.06em}
+.collective-context-card strong{display:block;margin-top:5px;font-size:15px}
+.collective-frequency{margin-top:25px;padding-top:25px;border-top:1px solid var(--border)}
+.collective-frequency-options{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.collective-frequency-options button{display:flex;align-items:center;gap:12px;padding:15px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--background);color:var(--text);cursor:pointer;font:inherit;text-align:left}
+.collective-frequency-options button.selected{border-color:var(--primary);background:var(--primary-light);box-shadow:0 0 0 2px rgba(22,70,216,.08)}
+.collective-frequency-options strong{font-family:'Montserrat',sans-serif;font-size:20px;color:var(--primary)}
+.collective-frequency-options span{font-size:12px;color:var(--text-secondary)}
+.collective-fields{margin-top:25px}
+.collective-field-wide{grid-column:1/-1}
+.collective-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:15px;margin-top:15px;padding-top:20px;border-top:1px solid var(--border)}
+.collective-levels select{width:100%;height:48px;box-sizing:border-box;padding:0 14px;border:1px solid var(--border);border-radius:var(--radius-md);background:var(--background);color:var(--text);font:inherit}
+.collective-loading,.collective-empty{min-height:180px;display:flex;align-items:center;justify-content:center;gap:10px;border:1px dashed var(--border);border-radius:var(--radius-lg);color:var(--text-secondary);text-align:center;padding:20px}
+.collective-schedule-list{display:grid;gap:11px}
+.collective-schedule-card{width:100%;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:17px 18px;border:1px solid var(--border);border-radius:var(--radius-lg);background:var(--background);color:var(--text);font:inherit;text-align:left;cursor:pointer;transition:.2s ease}
+.collective-schedule-card:hover:not(:disabled),.collective-schedule-card.selected{border-color:var(--primary);background:var(--primary-light)}
+.collective-schedule-card:disabled{opacity:.65;cursor:wait}
+.collective-schedule-main{min-width:0}
+.collective-day{color:var(--primary);font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.06em}
+.collective-schedule-main strong{display:block;margin:5px 0;font-family:'Montserrat',sans-serif;font-size:18px}
+.collective-schedule-main span{color:var(--text-secondary);font-size:12px}
+.collective-schedule-side{flex:0 0 120px;text-align:right}
+.collective-schedule-side strong{display:block;font-family:'Montserrat',sans-serif;font-size:17px}
+.collective-schedule-side small{display:block;color:var(--text-secondary);font-size:10px}
+.collective-schedule-side>span{display:inline-block;margin-top:7px;padding:4px 9px;border-radius:999px;font-size:10px;font-weight:800}
+.collective-schedule-side .start{background:var(--primary-light);color:var(--primary)}
+.collective-schedule-side .join{background:rgba(16,185,129,.08);color:#047857}
+.collective-selection-summary{display:flex;justify-content:space-between;gap:15px;margin-top:15px;padding:14px 16px;border-radius:var(--radius-md);background:var(--background-light)}
+.collective-selection-summary strong{font-size:12px}
+.collective-selection-summary span{color:var(--text-secondary);font-size:12px;text-align:right}
+.collective-review{display:grid;grid-template-columns:1fr 1fr;gap:14px;padding:18px;border:1px solid var(--border);border-radius:var(--radius-lg)}
+.collective-review>div{padding-bottom:12px;border-bottom:1px solid var(--border)}
+.collective-review>div:nth-last-child(-n+2){border-bottom:0;padding-bottom:0}
+.collective-review strong{display:block;margin-top:6px;font-size:14px}
+.collective-review-schedules{grid-column:1/-1}
+.collective-review-schedules strong{margin-top:5px}
+.collective-price-highlight{margin-top:18px;padding:22px;border-radius:var(--radius-lg);background:var(--primary-light);border:1px solid rgba(22,70,216,.14)}
+.collective-price-highlight span{display:block;color:var(--text-secondary);font-size:12px;font-weight:700}
+.collective-price-highlight strong{display:block;margin:6px 0;font-family:'Montserrat',sans-serif;font-size:32px;color:var(--primary)}
+.collective-price-highlight small{display:block;color:var(--text-secondary);font-size:12px;line-height:1.5}
+.collective-security{display:flex;gap:10px;margin-top:16px;padding:14px;border:1px solid var(--border);border-radius:var(--radius-md);color:var(--text-secondary);font-size:12px;line-height:1.5}
+.collective-security svg{flex-shrink:0;color:var(--primary)}
+.collective-summary h3{margin-top:8px;font-family:'Montserrat',sans-serif;font-size:20px}
+.collective-summary>p{margin-top:6px;color:var(--text-secondary);font-size:12px}
+.collective-summary-price{display:flex;align-items:baseline;gap:5px;margin:22px 0 8px}
+.collective-summary-price strong{font-family:'Montserrat',sans-serif;font-size:28px}
+.collective-summary-price span{color:var(--text-secondary);font-size:12px}
+.collective-summary-note{padding:12px;border-radius:var(--radius-md);background:var(--background-light);color:var(--text-secondary);font-size:11px;line-height:1.5}
+.collective-summary-item{display:flex;align-items:center;gap:8px;margin-top:13px;color:var(--text-secondary);font-size:12px}
+.collective-summary-item svg{color:var(--primary)}
+@media(max-width:800px){
+  .collective-enrollment-grid{grid-template-columns:1fr}
+  .collective-summary{position:static}
+}
+@media(max-width:600px){
+  .collective-context-card,.collective-levels,.collective-review{grid-template-columns:1fr}
+  .collective-field-wide,.collective-review-schedules{grid-column:auto}
+  .collective-schedule-card{align-items:flex-start;padding:14px}
+  .collective-schedule-side{flex-basis:95px}
+  .collective-selection-summary{flex-direction:column}
+  .collective-selection-summary span{text-align:left}
+}
