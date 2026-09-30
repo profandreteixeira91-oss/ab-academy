@@ -20,6 +20,7 @@ type Plano = {
   modalidade: 'individual' | 'dupla' | 'grupo'
   min_alunos: number | null
   max_alunos: number | null
+  aulas_semana: number | null
   created_at?: string | null
 }
 
@@ -491,6 +492,20 @@ function Planos() {
                     planos={planos}
                   />
                 </div></div>
+              )}
+
+              {modalidadeSelecionada !== 'individual' && (
+                <section className="planos-formation-rules" aria-labelledby="planos-formation-rules-title">
+                  <span className="planos-collective-kicker">Transparência no investimento</span>
+                  <h2 id="planos-formation-rules-title">Como funciona a formação de uma dupla ou grupo?</h2>
+                  <div className="planos-formation-rules-grid">
+                    <div><strong>1.</strong><p>Você escolhe o idioma, a frequência e o horário.</p></div>
+                    <div><strong>2.</strong><p>Se já houver uma turma compatível com vaga, você entra pelo valor regular da modalidade.</p></div>
+                    <div><strong>3.</strong><p>Se não houver uma turma formada, você pode iniciar uma nova turma.</p></div>
+                    <div><strong>4.</strong><p>Enquanto estiver em formação, você paga o valor individual de 1 aula por semana com 10% de desconto.</p></div>
+                    <div><strong>5.</strong><p>Quando a turma atingir a quantidade necessária, o valor passa ao preço regular no próximo ciclo de cobrança.</p></div>
+                  </div>
+                </section>
               )}
 
               <div className="planos-diagnostic">
