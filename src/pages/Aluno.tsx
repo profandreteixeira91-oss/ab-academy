@@ -1392,12 +1392,14 @@ function Aluno() {
           : undefined,
       }
 
+      const todayKey = new Date().toISOString().slice(0, 10)
+
       const replacementLessons: Lesson[] = (registros || [])
         .filter(
           (item) =>
             item.horario_id === horario.id &&
-            item.data_aula === lessonDate &&
-            Boolean(item.data_aula_override),
+            Boolean(item.data_aula_override) &&
+            (item.data_aula_override as string) >= todayKey,
         )
         .map((item) => {
           const actualDate = item.data_aula_override as string
