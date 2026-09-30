@@ -52,8 +52,14 @@ export default function LanguageLanding({ language }: Props) {
     <main className="language-landing">
       <header className="language-landing-header">
         <a href="/" className="language-landing-brand">AB Academy</a>
-        <nav className="language-landing-nav" aria-label="Navegação da página">
-          <a href="#como-funciona">Como funciona</a><a href="#para-quem">Para quem é</a><a href="#beneficios">Benefícios</a><a href={plansUrl}>Planos</a>
+        <nav className="language-landing-nav" aria-label="Navegação principal">
+          <a href="/">Início</a>
+          <a href="/aulas">Cursos</a>
+          <a href="#como-funciona">Como funciona</a>
+          <a href="#para-quem">Para quem é</a>
+          <a href="#beneficios">Benefícios</a>
+          <a href={plansUrl}>Planos</a>
+          <a href="/diagnostica?idioma={language}">Diagnóstica</a>
         </nav>
         <a href={leadUrl} className="language-landing-header-link">Fale com a equipe</a>
       </header>
