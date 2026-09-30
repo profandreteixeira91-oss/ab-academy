@@ -438,8 +438,7 @@ export default function Agenda() {
         horario.aluno_id === registro.aluno_id &&
         (filterTipo === '' || horario.tipo_horario === filterTipo) &&
         (filterProfessor === '' || horario.professor_id === filterProfessor) &&
-        (filterNivel === '' || horario.nivel_referencia === filterNivel) &&
-        horario.dia_semana !== selectedDay
+        (filterNivel === '' || horario.nivel_referencia === filterNivel)
       ),
     )
   }, [registrosAulas, horarios, selectedDay, filterTipo, filterProfessor, filterNivel])
