@@ -2810,14 +2810,6 @@ export default function Agenda() {
 
                   <div className="agenda-card-grid">
                   {periodReposicoes.map((registro) => {
-                  <div className="agenda-panel-header" style={{ marginBottom: '10px' }}>
-                    <div>
-                      <h3>Reposições agendadas</h3>
-                      <p>Aulas que foram retiradas do horário original e serão realizadas neste dia.</p>
-                    </div>
-                  </div>
-
-                  {reposicoesDoDia.map((registro) => {
                     const horario = horarios.find((item) => item.id === registro.horario_id)
                     if (!horario || !registro.data_aula_override || !registro.hora_inicio_override || !registro.hora_fim_override) return null
 
@@ -2869,7 +2861,6 @@ export default function Agenda() {
                   </div>
                 </div>
               )}
-                      </div>
                     )}
                   </div>
                 )
