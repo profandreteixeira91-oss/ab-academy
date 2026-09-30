@@ -71,6 +71,7 @@ type HorarioColetivo = {
   nivel_referencia: string | null
   vagas_restantes: number
   participantes: number
+  turma_id: string | null
 }
 
 const WEEKDAYS = [
@@ -293,9 +294,18 @@ function ModalidadeCard({
                         </div>
                         <div className="planos-schedule-choice-actions">
                           <a
-                            href={individualPlan
-                              ? '/matricula?modalidade=individual&idioma=' + idioma + '&plano=' + individualPlan.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id) + '&aguardando_formacao=1'
-                              : '/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id) + '&aguardando_formacao=1'}
+                            href={(() => {
+                              const firstSchedule = horariosDaOpcao[0]
+                              const params = new URLSearchParams({
+                                modalidade: 'individual',
+                                idioma,
+                                plano: individualPlan?.id ?? plano.id,
+                                horario_id: firstSchedule.id,
+                                aguardando_formacao: '1',
+                              })
+                              if (firstSchedule.turma_id) params.set('turma_id', firstSchedule.turma_id)
+                              return '/matricula?' + params.toString()
+                            })()}
                             className="planos-schedule-choice-button planos-schedule-choice-button--individual"
                           >
                             <span>Desejo iniciar individualmente</span>
