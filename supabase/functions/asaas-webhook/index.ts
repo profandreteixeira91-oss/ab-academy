@@ -1645,22 +1645,24 @@ async function finalizarMatricula(
       .eq('participante_id', participante.id)
       .eq('matricula_id', matricula.id)
 
-    const { data: firstHorario } = await supabaseAdmin
-      .from('horarios')
-      .select('id,dia_semana,hora_inicio')
-      .eq('id', (pagamento.horario_ids ?? [])[0] ?? '')
-      .maybeSingle()
+    const horarioIds = pagamento.horario_ids ?? []
+    if (horarioIds.length > 0) {
+      const { data: selectedHorarios } = await supabaseAdmin
+        .from('horarios')
+        .select('id,dia_semana,hora_inicio')
+        .in('id', horarioIds)
 
-    if (firstHorario) {
-      await supabaseAdmin
-        .from('matricula_horarios')
-        .upsert({
-          matricula_id: matricula.id,
-          horario_id: firstHorario.id,
-          dia_semana: firstHorario.dia_semana,
-          horario: firstHorario.hora_inicio,
-          created_at: new Date().toISOString(),
-        }, { onConflict: 'matricula_id,horario_id', ignoreDuplicates: true })
+      for (const horario of selectedHorarios ?? []) {
+        await supabaseAdmin
+          .from('matricula_horarios')
+          .upsert({
+            matricula_id: matricula.id,
+            horario_id: horario.id,
+            dia_semana: horario.dia_semana,
+            horario: horario.hora_inicio,
+            created_at: new Date().toISOString(),
+          }, { onConflict: 'matricula_id,horario_id', ignoreDuplicates: true })
+      }
     }
 
     await atualizarPagamento(pagamento.id, 'pago', matricula.id)
