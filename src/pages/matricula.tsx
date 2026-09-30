@@ -2,14 +2,11 @@ import { useEffect, useState } from 'react'
 import {
   ArrowRight,
   ChevronLeft,
-  Languages,
   ShieldCheck,
 } from 'lucide-react'
 
 import '../styles/matricula.css'
 import logo from '../assets/logo_abacademy.png'
-import usaFlag from '../assets/flag-usa.svg'
-import germanyFlag from '../assets/flag-germany.svg'
 import { supabase } from '../lib/supabase'
 
 type Language = 'ingles' | 'alemao'
