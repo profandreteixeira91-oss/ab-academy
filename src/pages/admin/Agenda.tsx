@@ -295,6 +295,14 @@ export default function Agenda() {
     void loadAgenda()
   }, [])
 
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setAgendaNow(new Date())
+    }, 30_000)
+
+    return () => window.clearInterval(intervalId)
+  }, [])
+
   async function loadAgenda() {
     try {
       setLoading(true)
@@ -441,7 +449,6 @@ export default function Agenda() {
       Boolean(registro.hora_fim_override) &&
       horarios.some((horario) =>
         horario.id === registro.horario_id &&
-        horario.aluno_id === registro.aluno_id &&
         (filterTipo === '' || horario.tipo_horario === filterTipo) &&
         (filterProfessor === '' || horario.professor_id === filterProfessor) &&
         (filterNivel === '' || horario.nivel_referencia === filterNivel)
@@ -449,7 +456,7 @@ export default function Agenda() {
     )
   }, [registrosAulas, horarios, selectedDay, filterTipo, filterProfessor, filterNivel])
 
-  const agendaNow = new Date()
+  const [agendaNow, setAgendaNow] = useState(() => new Date())
   const agendaToday = agendaNow.getDay()
   const agendaNowMinutes = agendaNow.getHours() * 60 + agendaNow.getMinutes()
 
@@ -2499,11 +2506,17 @@ export default function Agenda() {
                             {periodHorarios.map((horario) => {
                               const alunoNome = getAlunoNome(horario.aluno_id)
                               const professorNome = getProfessorNome(horario.professor_id)
-                              const todayDate = dateKey(new Date())
+                              const nextOccurrenceDate = dateKey(
+                                getNextOccurrence(
+                                  horario.dia_semana,
+                                  horario.hora_inicio,
+                                  horario.hora_fim,
+                                ).startAt,
+                              )
                               const reagendamentoOriginal = registrosAulas.find(
                                 (registro) =>
                                   registro.horario_id === horario.id &&
-                                  registro.data_aula >= todayDate &&
+                                  registro.data_aula === nextOccurrenceDate &&
                                   Boolean(registro.data_aula_override),
                               )
                               const ocupado = Boolean(horario.aluno_id)
