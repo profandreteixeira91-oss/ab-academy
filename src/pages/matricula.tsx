@@ -203,6 +203,7 @@ export default function Matricula() {
   const [selectedSchedules, setSelectedSchedules] = useState<SelectedSchedule[]>([])
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
   const [collectiveScheduleMode, setCollectiveScheduleMode] = useState<'existing' | 'waiting'>('existing')
+  const [collectivePricingMode, setCollectivePricingMode] = useState<'existing' | 'formation'>('formation')
   const [waitingIndividualPlan, setWaitingIndividualPlan] = useState<Plan | null>(null)
   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
@@ -223,11 +224,14 @@ export default function Matricula() {
   const isWaitingFormation = waitingFormation || (isCollectivePlan && collectiveScheduleMode === 'waiting' && !formationSlotId)
 
   const selectedPlanPrice = useMemo(() => {
-    const basePrice = isWaitingFormation
-      ? Number(waitingIndividualPlan?.preco ?? plan?.preco ?? 0)
-      : Number(plan?.preco ?? 0)
-    return isWaitingFormation ? Math.round(basePrice * 0.9 * 100) / 100 : basePrice
-  }, [plan, waitingIndividualPlan, isWaitingFormation])
+    const basePrice = Number(waitingIndividualPlan?.preco ?? plan?.preco ?? 0)
+    if (isCollectivePlan && collectivePricingMode === 'formation') {
+      const discount = plan?.modalidade === 'grupo' ? 0.85 : 0.90
+      return Math.round(basePrice * discount * 100) / 100
+    }
+    if (isWaitingFormation) return Math.round(basePrice * 0.9 * 100) / 100
+    return Number(plan?.preco ?? 0)
+  }, [plan, waitingIndividualPlan, isWaitingFormation, isCollectivePlan, collectivePricingMode])
 
   const effectivePlan = isWaitingFormation && waitingIndividualPlan ? waitingIndividualPlan : plan
 
@@ -355,9 +359,9 @@ export default function Matricula() {
       }
 
       if (requestedModality === 'dupla' || requestedModality === 'grupo') {
-        // O fluxo anterior já definiu a modalidade. A matrícula apenas
-        // recupera o plano comercial correspondente e deixa o aluno
-        // escolher os horários nesta etapa.
+        // Modalidades coletivas usam fluxo próprio: o plano individual serve
+        // apenas como referência para a condição de formação e o preço final
+        // depende da existência de uma turma compatível.
         const aulasSemanaPadrao = requestedModality === 'dupla' ? 1 : 2
         const { data: collectivePlan, error: collectivePlanError } = await supabase
           .from('planos')
@@ -645,6 +649,10 @@ export default function Matricula() {
       return
     }
 
+    if (isCollectivePlan) {
+      setCollectivePricingMode(Number(selected.participantes ?? 0) > 1 ? 'existing' : 'formation')
+    }
+
     const schedule: SelectedSchedule = {
       id: selected.id,
       date: getDateForWeekday(selected.dia_semana),
@@ -683,9 +691,7 @@ export default function Matricula() {
   const verifyScheduleAgain = async () => {
     if (!language || !selectedSchedule || selectedSchedules.length === 0) return false
 
-    if (isCollectivePlan && selectedSchedule.turma_id && selectedSchedule.participante_id) {
-      return true
-    }
+    if (isCollectivePlan && selectedSchedule.turma_id && selectedSchedule.participante_id) return true
 
     const { data, error: verifyError } = await supabase
       .from('horarios')
@@ -777,7 +783,7 @@ export default function Matricula() {
 
         valor_aula: collectiveEnrollment ? null : effectivePlan?.tipo === 'avulso' ? Number(effectivePlan.preco) : effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0) / (effectivePlan?.tipo === 'intensivo' ? 12 : effectivePlan?.tipo === 'personalizado' ? 8 : 4),
 
-        valor_mensal: collectiveEnrollment?.valorMensal ?? (selectedSchedule.valor_mensal ?? (isWaitingFormation ? selectedPlanPrice : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0)))),
+        valor_mensal: collectiveEnrollment?.valorMensal ?? (selectedSchedule.valor_mensal ?? (isCollectivePlan ? selectedPlanPrice : (isWaitingFormation ? selectedPlanPrice : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0))))),
 
         valor_anual: collectiveEnrollment ? null : effectivePlan?.tipo === 'anual' ? Number(effectivePlan.preco) : null,
 
