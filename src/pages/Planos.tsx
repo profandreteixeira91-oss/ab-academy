@@ -132,11 +132,11 @@ function ModalidadeCard({
   const [reserveMessage, setReserveMessage] = useState('')
 
   const formatPhone = (value: string) => {
-    const digits = value.replace(/\\D/g, '').slice(0, 11)
+    const digits = value.replace(/\D/g, '').slice(0, 11)
     if (digits.length <= 10) {
-      return digits.replace(/^(\\d{2})(\\d)/, '($1) $2').replace(/(\\d{4})(\\d)/, '$1-$2')
+      return digits.replace(/^(\d{2})(\d)/, '($1) $2').replace(/(\d{4})(\d)/, '$1-$2')
     }
-    return digits.replace(/^(\\d{2})(\\d)/, '($1) $2').replace(/(\\d{5})(\\d)/, '$1-$2')
+    return digits.replace(/^(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2')
   }
 
   const handleChooseSchedule = async (key: string, plano: Plano, horariosDaOpcao: HorarioColetivo[]) => {
@@ -164,7 +164,7 @@ function ModalidadeCard({
 
   const submitReserve = async () => {
     if (!reserveTarget) return
-    const phoneDigits = reservePhone.replace(/\\D/g, '')
+    const phoneDigits = reservePhone.replace(/\D/g, '')
     if (!reserveName.trim() || !reserveEmail.trim() || phoneDigits.length < 10) {
       setReserveMessage('Informe nome, e-mail e WhatsApp para reservar a vaga.')
       return
@@ -256,9 +256,84 @@ function ModalidadeCard({
                   {' · '}{NIVEL_LABELS[(nivel || horariosDaOpcao[0]?.nivel_referencia || '') as keyof typeof NIVEL_LABELS] || nivel || horariosDaOpcao[0]?.nivel_referencia || 'Nível a confirmar'}
                   {' · '}{vagasRestantes} {vagasRestantes === 1 ? 'vaga disponível' : 'vagas disponíveis'}
                 </p>
-                <a href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id)} className="btn btn-outline planos-collective-cta">
-                  Escolher este horário <ArrowRight size={16} />
-                </a>
+                <button
+                  type="button"
+                  className="btn btn-outline planos-collective-cta"
+                  onClick={() => void handleChooseSchedule(plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-'), plano, horariosDaOpcao)}
+                >
+                  {expandedScheduleKey === plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-') ? 'Fechar opções' : 'Escolher este horário'}
+                  <ArrowRight size={16} />
+                </button>
+
+                {expandedScheduleKey === plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-') && (
+                  <div className="planos-schedule-choice-panel">
+                    {horariosDaOpcao.some((horario) => horario.participantes > 0) ? (
+                      <>
+                        <div className="planos-schedule-choice-copy">
+                          <strong>Esta turma já possui aluno matriculado.</strong>
+                          <span>Entre diretamente nesta turma para continuar sua matrícula.</span>
+                        </div>
+                        <a
+                          href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id)}
+                          className="btn btn-primary planos-schedule-choice-button"
+                        >
+                          Entrar nessa turma <ArrowRight size={16} />
+                        </a>
+                      </>
+                    ) : (
+                      <>
+                        <div className="planos-schedule-choice-copy">
+                          <strong>Esta turma ainda está em formação.</strong>
+                          <span>Você pode começar individualmente com a condição especial de formação ou reservar sua vaga.</span>
+                        </div>
+                        <div className="planos-schedule-choice-actions">
+                          <a
+                            href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id) + '&aguardando_formacao=1'}
+                            className="planos-schedule-choice-button planos-schedule-choice-button--individual"
+                          >
+                            <span>Desejo iniciar individualmente</span>
+                            <strong>
+                              {formationPriceLoading === plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')
+                                ? 'Calculando...'
+                                : formationPrices[plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')] !== undefined
+                                  ? formatCurrency(formationPrices[plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')])
+                                  : 'Condição especial'}
+                              <small>{formationPrices[plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')] !== undefined ? '/mês' : ''}</small>
+                            </strong>
+                            <em>Condição especial de formação</em>
+                          </a>
+                          <button
+                            type="button"
+                            className="planos-schedule-choice-button planos-schedule-choice-button--reserve"
+                            onClick={() => setReserveTarget({ key: plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-'), plano, horarios: horariosDaOpcao })}
+                          >
+                            <span>Reservar vaga</span>
+                            <strong>Quero participar desta turma</strong>
+                            <em>A equipe entrará em contato para confirmar</em>
+                          </button>
+                        </div>
+                        {reserveTarget?.key === plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-') && (
+                          <div className="planos-reserve-form">
+                            <div>
+                              <strong>Reserve sua vaga</strong>
+                              <span>Preencha seus dados e a AB Academy entrará em contato.</span>
+                            </div>
+                            <div className="planos-reserve-fields">
+                              <input type="text" value={reserveName} onChange={(event) => setReserveName(event.target.value)} placeholder="Nome completo" autoComplete="name" />
+                              <input type="email" value={reserveEmail} onChange={(event) => setReserveEmail(event.target.value)} placeholder="E-mail" autoComplete="email" />
+                              <input type="tel" value={reservePhone} onChange={(event) => setReservePhone(formatPhone(event.target.value))} placeholder="WhatsApp" autoComplete="tel" />
+                            </div>
+                            {reserveMessage && <p className="planos-reserve-message">{reserveMessage}</p>}
+                            <div className="planos-reserve-actions">
+                              <button type="button" className="btn btn-outline" onClick={() => setReserveTarget(null)} disabled={reserveSaving}>Cancelar</button>
+                              <button type="button" className="btn btn-primary" onClick={() => void submitReserve()} disabled={reserveSaving}>{reserveSaving ? 'Registrando...' : 'Confirmar reserva'}</button>
+                            </div>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             )
           })}
