@@ -225,6 +225,18 @@ function ModalidadeCard({
         <div className="planos-frequency-list">
           {opcoes.map(({ plano, horariosDaOpcao }) => {
             const frequencia = plano.aulas_semana ?? 1
+            const individualPlan = planos.find((item) =>
+              item.idioma === idioma
+              && item.modalidade === 'individual'
+              && item.ativo
+              && item.tipo !== 'diagnostica'
+              && (
+                (frequencia === 1 && item.nome.toLowerCase().includes('1 aula'))
+                || (frequencia === 2 && item.nome.toLowerCase().includes('2x'))
+                || (frequencia === 3 && item.nome.toLowerCase().includes('3x'))
+              )
+              && !item.nome.toLowerCase().includes('anual')
+            )
             const vagasRestantes = Math.min(...horariosDaOpcao.map((horario) => horario.vagas_restantes))
             return (
               <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')}>
@@ -295,7 +307,7 @@ function ModalidadeCard({
                                   : 'Condição especial'}
                               <small>{formationPrices[plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')] !== undefined ? '/mês' : ''}</small>
                             </strong>
-                            <em>Condição especial de formação</em>
+                            <em>Válido no primeiro mês. Se a dupla/grupo não for formada, a continuidade individual seguirá o valor normal do plano individual.</em>
                           </a>
                           <button
                             type="button"
