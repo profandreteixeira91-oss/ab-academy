@@ -146,26 +146,22 @@ export function trackActiveVisitor(path: string, pageTitle: string) {
   }
 
   void supabase
-    .from('site_active_visitors')
-    .insert(payload)
-    .then(async ({ error }) => {
-      if (!error) return
-
-      // A visitor already registered cannot use upsert reliably with the
-      // public RLS policy because PostgREST may require SELECT on conflict.
-      if (error.code === '23505') {
-        const { error: updateError } = await supabase
-          .from('site_active_visitors')
-          .update(payload)
-          .eq('session_id', sessionId)
-
-        if (updateError) {
-          console.warn('[AB Academy Analytics] Falha ao atualizar visitante ativo:', updateError.message)
-        }
-        return
+    .rpc('touch_active_visitor', {
+      p_session_id: sessionId,
+      p_path: path,
+      p_page_title: pageTitle,
+      p_referrer_domain: getReferrerDomain(),
+      p_device_type: getDeviceType(),
+      p_browser: getBrowser(),
+      p_os: getOs(),
+      p_language: navigator.language || null,
+      p_screen_width: window.innerWidth,
+      p_last_seen_at: new Date().toISOString(),
+    })
+    .then(({ error }) => {
+      if (error) {
+        console.warn('[AB Academy Analytics] Falha ao atualizar visitante ativo:', error.message)
       }
-
-      console.warn('[AB Academy Analytics] Falha ao registrar visitante ativo:', error.message)
     })
 
   return sessionId
