@@ -485,6 +485,81 @@ export default function Matricula() {
       const modalidade = plan.modalidade
       const aulasSemana = plan.aulas_semana ?? (plan.tipo === 'intensivo' ? 3 : plan.tipo === 'personalizado' ? 2 : 1)
 
+      if (isCollectivePlan) {
+        const { data: compatibleTurmas, error: compatibilityError } = await supabase.rpc('buscar_turmas_compativeis_matricula', {
+          p_idioma: selectedLanguage,
+          p_modalidade: modalidade,
+          p_aulas_semana: aulasSemana,
+          p_dias: withAvailability && availabilityMode !== 'flexible'
+            ? availabilityDays.map(String)
+            : null,
+          p_periodos: withAvailability && availabilityMode === 'periods'
+            ? availabilityPeriods
+            : null,
+          p_professor_id: null,
+          p_nivel_conversacao: conversationLevel || null,
+          p_nivel_escrita: writingLevel || null,
+          p_nivel_compreensao: comprehensionLevel || null,
+        })
+
+        if (compatibilityError) {
+          console.error('Erro ao buscar turmas compatíveis:', compatibilityError)
+          setError('Não foi possível analisar as turmas compatíveis.')
+          setAvailableSchedules([])
+          return false
+        }
+
+        const schedules: Horario[] = (compatibleTurmas ?? []).flatMap((turma) => {
+          const encontros = Array.isArray(turma.encontros) ? turma.encontros : []
+          return encontros
+            .filter((encontro) => {
+              if (availabilityMode !== 'ranges' || Object.keys(availabilityRanges).length === 0) {
+                return true
+              }
+
+              const range = availabilityRanges[Number(encontro.dia_semana)]
+              if (!range) return false
+
+              const inicio = String(encontro.hora_inicio).slice(0, 5)
+              const fim = String(encontro.hora_fim).slice(0, 5)
+              return inicio >= range.start && fim <= range.end
+            })
+            .map((encontro) => ({
+              id: String(encontro.horario_id),
+              tipo_horario: modalidade,
+              idioma: selectedLanguage,
+              dia_semana: Number(encontro.dia_semana),
+              hora_inicio: String(encontro.hora_inicio),
+              hora_fim: String(encontro.hora_fim),
+              disponivel: true,
+              aluno_id: null,
+              created_at: '',
+              meet_url: null,
+              meet_space_name: null,
+              turma_id: turma.turma_id,
+              participante_id: null,
+              participantes: Number(turma.participantes ?? 0),
+              capacidade: Number(turma.capacidade ?? (modalidade === 'dupla' ? 2 : 3)),
+              vagas_restantes: Number(turma.vagas_restantes ?? 0),
+              valor_mensal: null,
+              status_formacao: Number(turma.participantes ?? 0) > 0
+                ? (modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao')
+                : (modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao'),
+              tipo_valor: 'coletiva_em_formacao',
+              professor_id: turma.professor_id ?? null,
+            }))
+        })
+
+        if (schedules.length === 0) {
+          setError('Não encontramos uma turma coletiva compatível com os dias e horários informados.')
+          setAvailableSchedules([])
+          return false
+        }
+
+        setAvailableSchedules(schedules)
+        return true
+      }
+
       const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula_inteligente', {
         p_idioma: selectedLanguage,
         p_modalidade: modalidade,
@@ -775,9 +850,16 @@ export default function Matricula() {
       return
     }
 
-    if (requestedType !== 'individual' && selectedSchedule?.turma_id && horario.turma_id && horario.turma_id !== selectedSchedule.turma_id) {
-      setError('Para este plano, todos os horários devem pertencer à mesma turma.')
-      return
+    if (requestedType !== 'individual') {
+      if (!horario.turma_id) {
+        setError('Este horário não está vinculado a uma turma coletiva válida.')
+        return
+      }
+
+      if (selectedSchedule?.turma_id && horario.turma_id !== selectedSchedule.turma_id) {
+        setError('Para este plano, todos os horários devem pertencer à mesma turma. Escolha os outros encontros da turma já selecionada.')
+        return
+      }
     }
 
     const schedule: SelectedSchedule = {
@@ -790,7 +872,11 @@ export default function Matricula() {
       meet_space_name: horario.meet_space_name ?? null,
       turma_id: horario.turma_id ?? null,
       participante_id: horario.participante_id ?? null,
-      valor_mensal: horario.valor_mensal != null ? Number(horario.valor_mensal) : null,
+      valor_mensal: horario.valor_mensal != null
+        ? Number(horario.valor_mensal)
+        : isCollectivePlan
+          ? Number(horario.tipo_valor === 'coletiva_em_formacao' ? (plan?.idioma === 'ingles' ? 357.3 : 384.3) : 0)
+          : null,
       participantes: horario.participantes != null ? Number(horario.participantes) : null,
       capacidade: horario.capacidade != null ? Number(horario.capacidade) : null,
       status_formacao: horario.status_formacao ?? null,
