@@ -1350,12 +1350,12 @@ Deno.serve(
 
           if (turmaError || !turma) throw new Error('Turma coletiva não encontrada.')
           const participantTotal = participantesCount ?? 1
+          const capacidade = turma.modalidade === 'dupla' ? 2 : 3
 
-          // Quando a turma ainda está sendo formada, o primeiro aluno
-          // paga a condição de formação (individual com desconto).
-          // A partir do segundo participante, aplica-se o preço coletivo
-          // correspondente ao tamanho atual da turma.
-          const { data: valorCalculado, error: valorError } = participantTotal <= 1
+          // Enquanto a turma não atingir a capacidade, todos os novos
+          // participantes pagam a condição de formação: individual 1x/semana - 10%.
+          // O preço coletivo só entra quando a turma estiver completa.
+          const { data: valorCalculado, error: valorError } = participantTotal < capacidade
             ? await supabaseAdmin.rpc('preco_formacao_coletiva', {
                 p_idioma: turma.idioma,
                 p_modalidade: turma.modalidade,
