@@ -2522,7 +2522,7 @@ export default function Agenda() {
                     <button
                       type="button"
                       className={`agenda-period-menu ${openPeriod === period.key ? 'active' : ''}`}
-                      onClick={() => setOpenPeriod(openPeriod === period.key ? period.key : period.key)}
+                      onClick={() => setOpenPeriod(openPeriod === period.key ? null : period.key)}
                       aria-expanded={openPeriod === period.key}
                     >
                       <span className="agenda-period-menu-main">
@@ -2864,7 +2864,6 @@ export default function Agenda() {
                   </div>
                 )}
               </div>
-            </div>
           })}
           </div>
         )}
