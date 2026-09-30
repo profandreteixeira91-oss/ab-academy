@@ -207,6 +207,8 @@ export default function Matricula() {
   const [levelTestResult, setLevelTestResult] = useState('')
   const [contractAccepted, setContractAccepted] = useState(false)
   const [contractSignatureStatus, setContractSignatureStatus] = useState<'pending' | 'signed'>('pending')
+  const [signatureName, setSignatureName] = useState('')
+  const [signingContract, setSigningContract] = useState(false)
   const [plan, setPlan] = useState<Plan | null>(null)
   const [collectiveEnrollment, setCollectiveEnrollment] = useState<{ token: string; turmaId: string; participanteId: string; valorMensal: number; condicaoMeses: number | null; condicaoInicio: string | null; condicaoFim: string | null } | null>(null)
   const [availableSchedules, setAvailableSchedules] = useState<Horario[]>([])
@@ -799,6 +801,68 @@ export default function Matricula() {
     return true
   }
 
+  const signContractInternally = async () => {
+    setError('')
+    setSuccess('')
+
+    if (!contractAccepted) {
+      setError('Leia e aceite o contrato antes de assinar.')
+      return
+    }
+
+    const signerName = signatureName.trim()
+    if (!signerName) {
+      setError('Digite seu nome completo para registrar a assinatura.')
+      return
+    }
+
+    if (!name.trim() || !cpf.trim() || !email.trim()) {
+      setError('Complete seus dados pessoais antes de assinar o contrato.')
+      return
+    }
+
+    if (signerName.toLocaleLowerCase() !== name.trim().toLocaleLowerCase()) {
+      setError('O nome da assinatura deve corresponder exatamente ao nome completo informado no cadastro.')
+      return
+    }
+
+    setSigningContract(true)
+
+    try {
+      const { error: startError } = await supabase.rpc('iniciar_assinatura_interna_matricula', {
+        p_reserva_token: reservaToken,
+        p_nome: name.trim(),
+        p_cpf: cleanDigits(cpf),
+        p_email: email.trim().toLowerCase(),
+        p_versao_contrato: 'estrutura-interna-v1',
+        p_hash_contrato: null,
+      })
+
+      if (startError) {
+        throw new Error(startError.message || 'Não foi possível preparar a assinatura.')
+      }
+
+      const { error: signatureError } = await supabase.rpc('assinar_matricula_internamente', {
+        p_reserva_token: reservaToken,
+        p_nome_assinatura: signerName,
+        p_hash_assinatura: null,
+      })
+
+      if (signatureError) {
+        throw new Error(signatureError.message || 'Não foi possível registrar a assinatura.')
+      }
+
+      setContractSignatureStatus('signed')
+      setSuccess('Assinatura interna registrada com sucesso.')
+    } catch (signatureError) {
+      console.error('Erro ao assinar contrato internamente:', signatureError)
+      setContractSignatureStatus('pending')
+      setError(signatureError instanceof Error ? signatureError.message : 'Não foi possível registrar a assinatura.')
+    } finally {
+      setSigningContract(false)
+    }
+  }
+
   const nextStep = async () => {
     setError('')
     setSuccess('')
@@ -864,7 +928,7 @@ export default function Matricula() {
 
     if (step === 6) {
       if (!contractAccepted || contractSignatureStatus !== 'signed') {
-        setError('O contrato precisa ser assinado pelo fluxo de assinatura gov.br antes da finalização.')
+        setError('O contrato precisa ser aceito e assinado antes da finalização.')
         return
       }
       setLoadingSchedules(true)
@@ -1665,12 +1729,67 @@ export default function Matricula() {
                   <div className="selection-heading"><div><h3>Contrato virtual</h3><p>Leia as condições da matrícula antes da assinatura.</p></div></div>
                   <div className="contract-card">
                     <strong>Contrato AB Academy Idiomas</strong>
-                    <p>O documento será gerado com seus dados, plano, turma/horários e condições financeiras. A assinatura eletrônica deve ser realizada pelo próprio titular.</p>
-                    <label><input type="checkbox" checked={contractAccepted} onChange={(event) => setContractAccepted(event.target.checked)} /> Li e concordo com o conteúdo do contrato.</label>
-                    <button type="button" className="enrollment-primary-button" disabled={!contractAccepted} disabled
-                      >Assinar contrato com gov.br <ArrowRight size={18} /></button>
-                    <div className="enrollment-empty">A integração com a API de assinatura GOV.BR ainda precisa ser habilitada para a AB Academy. A etapa permanece bloqueada até que o retorno oficial da assinatura seja recebido.</div>
-                    <small>Integração real com a API de Assinatura GOV.BR depende da habilitação oficial e das credenciais do serviço.</small>
+                    <p>Esta etapa usa a assinatura eletrônica interna da AB Academy. O documento será vinculado à sua matrícula e ao token desta sessão, com registro de aceite, identidade do signatário e horário da assinatura.</p>
+
+                    <div className="contract-status">
+                      <ShieldCheck size={18} />
+                      <span>
+                        {contractSignatureStatus === 'signed'
+                          ? 'Assinatura registrada nesta matrícula.'
+                          : 'Aguardando sua assinatura.'}
+                      </span>
+                    </div>
+
+                    <label className="contract-checkbox">
+                      <input
+                        type="checkbox"
+                        checked={contractAccepted}
+                        onChange={(event) => {
+                          setContractAccepted(event.target.checked)
+                          if (!event.target.checked) {
+                            setContractSignatureStatus('pending')
+                          }
+                        }}
+                        disabled={contractSignatureStatus === 'signed'}
+                      />
+                      <span>Li e concordo com o conteúdo do contrato.</span>
+                    </label>
+
+                    {contractAccepted && contractSignatureStatus !== 'signed' && (
+                      <div className="contract-signature-field">
+                        <label htmlFor="contract-signature-name">Assinatura eletrônica</label>
+                        <input
+                          id="contract-signature-name"
+                          type="text"
+                          value={signatureName}
+                          onChange={(event) => setSignatureName(event.target.value)}
+                          placeholder="Digite seu nome completo"
+                          autoComplete="name"
+                        />
+                        <small>Digite exatamente o mesmo nome informado no cadastro. A assinatura é registrada internamente pela AB Academy.</small>
+                      </div>
+                    )}
+
+                    {contractSignatureStatus !== 'signed' ? (
+                      <button
+                        type="button"
+                        className="enrollment-primary-button"
+                        disabled={!contractAccepted || !signatureName.trim() || signingContract}
+                        onClick={signContractInternally}
+                      >
+                        {signingContract ? 'Registrando assinatura...' : 'Assinar contrato'}
+                        {!signingContract && <ArrowRight size={18} />}
+                      </button>
+                    ) : (
+                      <div className="contract-signed-badge">
+                        <ShieldCheck size={18} />
+                        Assinado por {name}
+                      </div>
+                    )}
+
+                    <small className="contract-internal-note">
+                      Assinatura interna — sem integração com GOV.BR ou provedor externo. O conteúdo jurídico definitivo do contrato será conectado a esta estrutura antes da publicação da versão final.
+                    </small>
                   </div>
                 </div>
               )}
