@@ -982,9 +982,10 @@ export default function Matricula() {
           <div className="enrollment-progress">
             {[
               'Plano selecionado',
-              'Dados pessoais',
+              'Disponibilidade',
               'Horário',
-              'Confirmação',
+              'Dados pessoais',
+              'Pagamento',
             ].map(
               (label, index) => {
                 const number =
@@ -1009,7 +1010,7 @@ export default function Matricula() {
                       {label}
                     </span>
 
-                    {number < 4 && (
+                    {number < 5 && (
                       <div className="enrollment-progress-line" />
                     )}
                   </div>
@@ -1031,16 +1032,16 @@ export default function Matricula() {
                       'Plano selecionado'}
 
                     {step === 2 &&
-                      'Seus dados pessoais'}
-
-                    {step === 3 &&
                       'Quando você pode estudar?'}
 
-                    {step === 4 &&
+                    {step === 3 &&
                       'Horários compatíveis com você'}
 
+                    {step === 4 &&
+                      'Seus dados pessoais'}
+
                     {step === 5 &&
-                      'Confirme sua matrícula'}
+                      'Revise sua matrícula'}
                   </h2>
 
                   <p>
@@ -1048,13 +1049,13 @@ export default function Matricula() {
                       'Confira o plano escolhido na página de planos.'}
 
                     {step === 2 &&
-                      'Informe os dados necessários para sua matrícula.'}
-
-                    {step === 3 &&
                       'Informe os dias e períodos em que você pode estudar.'}
 
-                    {step === 4 &&
+                    {step === 3 &&
                       'Escolha entre os horários reais compatíveis com sua disponibilidade.'}
+
+                    {step === 4 &&
+                      'Informe os dados necessários para sua matrícula.'}
 
                     {step === 5 &&
                       'Revise todas as informações antes de continuar para o pagamento.'}
