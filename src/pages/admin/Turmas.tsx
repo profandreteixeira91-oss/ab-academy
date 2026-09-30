@@ -4,7 +4,8 @@ import '../../styles/admin/Turmas.css'
 import { supabase } from '../../lib/supabase'
 
 type Turma = { id: string; modalidade: 'dupla' | 'grupo'; idioma: 'ingles' | 'alemao'; aulas_semana: number; quantidade_minima: number; quantidade_maxima: number; horario_preferido: string | null; status: string; origem_lead_id: string | null; created_at: string; fixa?: boolean; professor_id?: string | null; nivel_referencia?: string | null; data_inicio?: string | null }
-type Professor = { id: string; nome_completo: string; ativo: boolean }\ntype Participante = { id: string; turma_id: string; nome: string; email: string; telefone: string | null; papel: 'organizador' | 'participante'; status: 'convidado' | 'confirmado' | 'recusado' | 'cancelado'; forma_inicio: 'coletivo' | 'individual_aguardando'; valor_individual: number | null; valor_coletivo: number | null; valor_coletivo_normal: number | null; condicao_meses: number | null; condicao_inicio: string | null; condicao_fim: string | null }
+type Professor = { id: string; nome_completo: string; ativo: boolean }
+type Participante = { id: string; turma_id: string; nome: string; email: string; telefone: string | null; papel: 'organizador' | 'participante'; status: 'convidado' | 'confirmado' | 'recusado' | 'cancelado'; forma_inicio: 'coletivo' | 'individual_aguardando'; valor_individual: number | null; valor_coletivo: number | null; valor_coletivo_normal: number | null; condicao_meses: number | null; condicao_inicio: string | null; condicao_fim: string | null }
 
 const statusLabel: Record<string, string> = { em_formacao: 'Em formação', aguardando_confirmacoes: 'Aguardando confirmações', pronta: 'Pronta para matrícula', ativa: 'Ativa', encerrada: 'Encerrada', cancelada: 'Cancelada' }
 const langLabel: Record<string, string> = { ingles: 'Inglês', alemao: 'Alemão' }
