@@ -50,6 +50,9 @@ type Horario = {
   capacidade: number
   vagas_restantes: number
   valor_mensal: number | null
+  status_formacao: string | null
+  tipo_valor: 'individual' | 'coletiva_formada' | 'coletiva_em_formacao' | null
+  professor_id: string | null
 }
 
 type SelectedSchedule = {
@@ -470,6 +473,9 @@ export default function Matricula() {
         capacidade: data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 6),
         vagas_restantes: Math.max(0, (data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 6)) - (data.interessados ?? 0)),
         valor_mensal: null,
+        status_formacao: plan?.modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao',
+        tipo_valor: 'coletiva_em_formacao',
+        professor_id: data.professor_id ?? null,
       }])
       setLoadingSchedules(false)
       return
@@ -771,11 +777,6 @@ export default function Matricula() {
       setError(
         'Complete todas as etapas da matrícula.',
       )
-      return
-    }
-
-    if (isWaitingFormation && !waitingIndividualPlan) {
-      setError('Não foi possível carregar o plano individual necessário para esta condição. Tente novamente.')
       return
     }
 
