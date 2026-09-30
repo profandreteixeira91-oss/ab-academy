@@ -1458,16 +1458,19 @@ function Aluno() {
             return null
           }
 
-          const actualDateForHistory = registro.data_aula_override || registro.data_aula
-          const actualStartForHistory = registro.hora_inicio_override || horario.hora_inicio
-          const actualEndForHistory = registro.hora_fim_override || horario.hora_fim
+          const actualDateForHistory =
+            registro.data_aula_override || registro.data_aula
+          const actualStartForHistory =
+            registro.hora_inicio_override || horario.hora_inicio
+          const actualEndForHistory =
+            registro.hora_fim_override || horario.hora_fim
 
           const [year, month, day] =
-            registro.data_aula.split('-').map(Number)
+            actualDateForHistory.split('-').map(Number)
           const [hours, minutes] =
-            horario.hora_inicio.slice(0, 5).split(':').map(Number)
+            actualStartForHistory.slice(0, 5).split(':').map(Number)
           const [endHours, endMinutes] =
-            horario.hora_fim.slice(0, 5).split(':').map(Number)
+            actualEndForHistory.slice(0, 5).split(':').map(Number)
 
           const startAt = new Date(
             year,
@@ -1499,7 +1502,7 @@ function Aluno() {
                 ? 'Inglês'
                 : 'Alemão',
             date: startAt.toLocaleDateString('pt-BR'),
-            time: actualStart.slice(0, 5),
+            time: actualStartForHistory.slice(0, 5),
             teacher:
               professoresMap.get(horario.professor_id) ||
               'Professor',
