@@ -1823,6 +1823,77 @@ Deno.serve(async (req) => {
       },
     )
 
+    /*
+     * =====================================================
+     * AUTORIZAÇÃO AUTOMÁTICA DE TRANSFERÊNCIAS ASAAS
+     * =====================================================
+     *
+     * Este bloco atende ao Webhook especial de autorização
+     * de saques/transferências do Asaas. Ele substitui a
+     * aprovação manual por Token APP quando esse mecanismo
+     * estiver habilitado na conta Asaas.
+     */
+    if (body.type === 'TRANSFER') {
+      const authTransfer = body.transfer as Record<string, unknown> | undefined
+      const transferId = String(authTransfer?.id ?? '')
+      const value = Number(authTransfer?.value ?? 0)
+      const bankAccount = authTransfer?.bankAccount as Record<string, unknown> | undefined
+      const pixKey = String(bankAccount?.pixAddressKey ?? '')
+      const externalReference = authTransfer?.externalReference
+        ? String(authTransfer.externalReference)
+        : null
+
+      if (!transferId || !Number.isFinite(value) || value <= 0) {
+        return jsonResponse({
+          status: 'REFUSED',
+          refuseReason: 'Dados da transferência inválidos.',
+        })
+      }
+
+      const { data: localTransfer, error: localTransferError } = await supabaseAdmin
+        .from('asaas_transferencias')
+        .select('id, valor, chave_pix, tipo_chave_pix, status, asaas_transfer_id')
+        .eq('asaas_transfer_id', transferId)
+        .maybeSingle()
+
+      if (localTransferError || !localTransfer) {
+        console.error('Transferência não encontrada para autorização:', transferId, localTransferError)
+        return jsonResponse({
+          status: 'REFUSED',
+          refuseReason: 'Transferência não encontrada no banco da AB Academy.',
+        })
+      }
+
+      const localValue = Number(localTransfer.valor)
+      const localKey = String(localTransfer.chave_pix ?? '')
+      const valueMatches = Math.abs(localValue - value) < 0.01
+      const keyMatches = !pixKey || pixKey === localKey
+      const referenceMatches = !externalReference || externalReference === String(localTransfer.id)
+      const pendingStatus = ['PENDING', 'PROCESSING'].includes(String(localTransfer.status).toUpperCase())
+
+      if (!valueMatches || !keyMatches || !referenceMatches || !pendingStatus) {
+        console.error('Transferência recusada pela validação interna:', {
+          transferId,
+          value,
+          pixKey,
+          externalReference,
+          localTransfer,
+        })
+        return jsonResponse({
+          status: 'REFUSED',
+          refuseReason: 'A transferência recebida não corresponde à solicitação registrada ou não está pendente.',
+        })
+      }
+
+      console.log('TRANSFERÊNCIA ASAAS AUTORIZADA AUTOMATICAMENTE:', {
+        transferId,
+        value,
+        localTransferId: localTransfer.id,
+      })
+
+      return jsonResponse({ status: 'APPROVED' })
+    }
+
     const transfer = body.transfer
 
     if (transfer?.id) {
