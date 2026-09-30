@@ -28,6 +28,9 @@ type Plan = {
   ativo: boolean
   created_at: string
   updated_at: string
+  aulas_semana: number | null
+  min_alunos: number | null
+  max_alunos: number | null
 }
 
 type Horario = {
@@ -42,6 +45,12 @@ type Horario = {
   created_at: string
   meet_url: string | null
   meet_space_name: string | null
+  turma_id: string | null
+  participante_id: string | null
+  participantes: number
+  capacidade: number
+  vagas_restantes: number
+  valor_mensal: number | null
 }
 
 type SelectedSchedule = {
@@ -52,6 +61,9 @@ type SelectedSchedule = {
   hora_fim: string
   meet_url: string | null
   meet_space_name: string | null
+  turma_id: string | null
+  participante_id: string | null
+  valor_mensal: number | null
 }
 
 type StudentData = {
@@ -332,7 +344,7 @@ export default function Matricula() {
         } else {
           const { data, error: diagnosticError } = await supabase
             .from('planos')
-            .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, modalidade')
+            .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, modalidade, aulas_semana, min_alunos, max_alunos')
             .eq('idioma', selectedLanguage)
             .eq('tipo', 'avulso')
             .eq('ativo', true)
@@ -389,7 +401,7 @@ export default function Matricula() {
     const loadWaitingIndividualPlan = async () => {
       const { data } = await supabase
         .from('planos')
-        .select('id, idioma, tipo, modalidade, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at')
+        .select('id, idioma, tipo, modalidade, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, aulas_semana, min_alunos, max_alunos')
         .eq('idioma', language)
         .eq('modalidade', 'individual')
         .eq('tipo', 'mensal')
@@ -407,7 +419,7 @@ export default function Matricula() {
   const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
     const { data, error: planError } = await supabase
       .from('planos')
-      .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at')
+      .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, modalidade, aulas_semana, min_alunos, max_alunos')
       .eq('id', selectedPlanId)
       .eq('idioma', selectedLanguage)
       .eq('ativo', true)
@@ -427,9 +439,7 @@ export default function Matricula() {
     setPlan(data as Plan)
   }
 
-  const loadSchedules = async (
-    selectedLanguage: Language,
-  ) => {
+  const loadSchedules = async (selectedLanguage: Language) => {
     setLoadingSchedules(true)
     setError('')
 
@@ -456,61 +466,32 @@ export default function Matricula() {
         created_at: '',
         meet_url: null,
         meet_space_name: null,
-      } as Horario])
+        turma_id: null,
+        participante_id: null,
+        participantes: data.interessados ?? 0,
+        capacidade: data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 6),
+        vagas_restantes: Math.max(0, (data.quantidade_maxima ?? (plan?.modalidade === 'dupla' ? 2 : 6)) - (data.interessados ?? 0)),
+        valor_mensal: null,
+      }])
       setLoadingSchedules(false)
       return
     }
 
-    let query = supabase
-      .from('horarios')
-      .select(
-        `
-          id,
-          tipo_horario,
-          idioma,
-          dia_semana,
-          hora_inicio,
-          hora_fim,
-          disponivel,
-          aluno_id,
-          created_at,
-          meet_url,
-          meet_space_name
-        `,
-      )
-      .eq('idioma', selectedLanguage)
-      .eq('disponivel', true)
-      .is('aluno_id', null)
+    const modalidade = plan?.modalidade ?? 'individual'
+    const aulasSemana = plan?.aulas_semana ?? (plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1)
 
-    if (isCollectivePlan && collectiveScheduleMode === 'existing') {
-      query = query.eq('tipo_horario', plan?.modalidade)
-    } else if (isCollectivePlan && collectiveScheduleMode === 'waiting') {
-      query = query.eq('tipo_horario', 'individual')
-    }
-
-    const { data, error: schedulesError } = await query
-      .order('dia_semana', {
-        ascending: true,
-      })
-      .order('hora_inicio', {
-        ascending: true,
-      })
+    const { data, error: schedulesError } = await supabase.rpc('listar_horarios_matricula', {
+      p_idioma: selectedLanguage,
+      p_modalidade: modalidade,
+      p_aulas_semana: aulasSemana,
+    })
 
     if (schedulesError) {
-      console.error(
-        'Erro ao carregar horários:',
-        schedulesError,
-      )
-
-      setError(
-        'Não foi possível carregar os horários disponíveis.',
-      )
-
+      console.error('Erro ao carregar horários:', schedulesError)
+      setError('Não foi possível carregar os horários disponíveis.')
       setAvailableSchedules([])
     } else {
-      setAvailableSchedules(
-        (data || []) as Horario[],
-      )
+      setAvailableSchedules((data ?? []) as Horario[])
     }
 
     setLoadingSchedules(false)
@@ -694,9 +675,7 @@ export default function Matricula() {
     }
   }
 
-  const handleSelectSchedule = async (
-    horario: Horario,
-  ) => {
+  const handleSelectSchedule = async (horario: Horario) => {
     setError('')
 
     if (selectedSchedule?.id === horario.id) {
@@ -704,28 +683,23 @@ export default function Matricula() {
       return
     }
 
-    const requestedType: Horario['tipo_horario'] =
-      waitingFormation
-        ? (horario.tipo_horario === 'grupo' ? 'grupo' : 'dupla')
-        : plan?.modalidade || 'individual'
+    const requestedType: Horario['tipo_horario'] = plan?.modalidade || 'individual'
+    const aulasSemana = plan?.aulas_semana ?? (plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1)
 
     setLoadingSchedules(true)
 
-    const { data: selected, error: selectionError } =
-      await supabase.rpc('selecionar_horario_matricula', {
-        p_horario_id: horario.id,
-        p_idioma: language,
-        p_tipo_horario: requestedType,
-      })
+    const { data: selected, error: selectionError } = await supabase.rpc('private_selecionar_horario_matricula_v2', {
+      p_horario_id: horario.id,
+      p_idioma: language,
+      p_modalidade: requestedType,
+      p_aulas_semana: aulasSemana,
+    })
 
     setLoadingSchedules(false)
 
     if (selectionError || !selected) {
       console.error('Erro ao selecionar horário:', selectionError)
-      setError(
-        selectionError?.message ||
-          'Este horário não está mais disponível. Escolha outro horário.',
-      )
+      setError(selectionError?.message || 'Este horário não está mais disponível. Escolha outro horário.')
       if (language) await loadSchedules(language)
       return
     }
@@ -736,14 +710,26 @@ export default function Matricula() {
       weekday: selected.dia_semana,
       hora_inicio: selected.hora_inicio,
       hora_fim: selected.hora_fim,
-      meet_url: selected.meet_url,
-      meet_space_name: selected.meet_space_name,
+      meet_url: selected.meet_url ?? null,
+      meet_space_name: selected.meet_space_name ?? null,
+      turma_id: selected.turma_id ?? null,
+      participante_id: selected.participante_id ?? null,
+      valor_mensal: selected.valor_mensal != null ? Number(selected.valor_mensal) : null,
     }
 
     setAvailableSchedules((current) =>
       current.map((item) =>
         item.id === selected.id
-          ? { ...item, tipo_horario: selected.tipo_horario }
+          ? {
+              ...item,
+              tipo_horario: selected.tipo_horario,
+              turma_id: selected.turma_id ?? null,
+              participante_id: selected.participante_id ?? null,
+              participantes: Number(selected.participantes ?? item.participantes ?? 0),
+              capacidade: Number(selected.capacidade ?? item.capacidade ?? 1),
+              vagas_restantes: Number(selected.vagas_restantes ?? item.vagas_restantes ?? 0),
+              valor_mensal: selected.valor_mensal != null ? Number(selected.valor_mensal) : item.valor_mensal,
+            }
           : item,
       ),
     )
@@ -751,55 +737,31 @@ export default function Matricula() {
   }
 
   const verifyScheduleAgain = async () => {
-    if (!language || !selectedSchedule) {
-      return false
+    if (!language || !selectedSchedule) return false
+
+    if (isCollectivePlan && selectedSchedule.turma_id && selectedSchedule.participante_id) {
+      return true
     }
 
-    const { data, error: verifyError } =
-      await supabase
-        .from('horarios')
-        .select(
-          `
-            id,
-            idioma,
-            dia_semana,
-            hora_inicio,
-            hora_fim,
-            disponivel,
-            aluno_id,
-            created_at,
-            meet_url,
-            meet_space_name
-          `,
-        )
-        .eq('id', selectedSchedule.id)
-        .eq('idioma', language)
-        .eq('disponivel', true)
-        .is('aluno_id', null)
-        .maybeSingle()
+    const { data, error: verifyError } = await supabase
+      .from('horarios')
+      .select('id,idioma,dia_semana,hora_inicio,hora_fim,disponivel,aluno_id')
+      .eq('id', selectedSchedule.id)
+      .eq('idioma', language)
+      .eq('disponivel', true)
+      .is('aluno_id', null)
+      .maybeSingle()
 
     if (verifyError) {
-      console.error(
-        'Erro ao validar horário:',
-        verifyError,
-      )
-
-      setError(
-        'Não foi possível confirmar a disponibilidade do horário.',
-      )
-
+      console.error('Erro ao validar horário:', verifyError)
+      setError('Não foi possível confirmar a disponibilidade do horário.')
       return false
     }
 
     if (!data) {
-      setError(
-        'Este horário acabou de ser reservado. Escolha outro horário.',
-      )
-
+      setError('Este horário acabou de ser reservado. Escolha outro horário.')
       await loadSchedules(language)
-
       setSelectedSchedule(null)
-
       return false
     }
 
@@ -867,17 +829,18 @@ export default function Matricula() {
         idioma: language,
         tipo_plano: effectivePlan?.tipo ?? 'mensal',
         turma_token: collectiveEnrollment?.token ?? null,
-        turma_participante_id: collectiveEnrollment?.participanteId ?? null,
+        turma_participante_id: collectiveEnrollment?.participanteId ?? selectedSchedule.participante_id ?? null,
+        turma_id: collectiveEnrollment?.turmaId ?? selectedSchedule.turma_id ?? null,
         horario_formacao_id: isWaitingFormation ? (formationSlotId || selectedSchedule.id) : null,
         aguardando_formacao: isWaitingFormation,
 
         objetivos: null,
 
-        aulas_semana: collectiveEnrollment ? null : effectivePlan?.tipo === 'avulso' ? null : effectivePlan?.tipo === 'intensivo' ? 3 : effectivePlan?.tipo === 'personalizado' ? 2 : 1,
+        aulas_semana: effectivePlan?.tipo === 'avulso' ? null : (effectivePlan?.aulas_semana ?? (effectivePlan?.tipo === 'intensivo' ? 3 : effectivePlan?.tipo === 'personalizado' ? 2 : 1)),
 
         valor_aula: collectiveEnrollment ? null : effectivePlan?.tipo === 'avulso' ? Number(effectivePlan.preco) : effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0) / (effectivePlan?.tipo === 'intensivo' ? 12 : effectivePlan?.tipo === 'personalizado' ? 8 : 4),
 
-        valor_mensal: collectiveEnrollment?.valorMensal ?? (isWaitingFormation ? selectedPlanPrice : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0))),
+        valor_mensal: collectiveEnrollment?.valorMensal ?? (selectedSchedule.valor_mensal ?? (isWaitingFormation ? selectedPlanPrice : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0)))),
 
         valor_anual: collectiveEnrollment ? null : effectivePlan?.tipo === 'anual' ? Number(effectivePlan.preco) : null,
 
@@ -891,7 +854,7 @@ export default function Matricula() {
 
         dados_aluno: dadosAluno,
 
-        valor: collectiveEnrollment?.valorMensal ?? selectedPlanPrice,
+        valor: collectiveEnrollment?.valorMensal ?? selectedSchedule.valor_mensal ?? selectedPlanPrice,
       }
 
       const {
@@ -1356,31 +1319,13 @@ export default function Matricula() {
                     <div className="collective-schedule-selector">
                       <div className="selection-heading">
                         <div>
-                          <h3>Como você quer escolher seu horário?</h3>
+                          <h3>Escolha o horário da sua turma</h3>
                           <p>
-                            Primeiro veja os horários que já estão disponíveis para {plan?.modalidade === 'dupla' ? 'duplas' : 'grupos'}.
-                            Se nenhum funcionar, escolha outro horário e aguarde a formação.
+                            Horários com alunos já inscritos aparecem aqui e podem ser ocupados por novos alunos da mesma modalidade.
+                            Um horário livre passa automaticamente a ser reservado para sua {plan?.modalidade === 'dupla' ? 'dupla' : 'turma'}.
                           </p>
                         </div>
                       </div>
-                      <div className="collective-schedule-options">
-                        <button type="button" className={`collective-schedule-option ${collectiveScheduleMode === 'existing' ? 'selected' : ''}`} onClick={() => { setCollectiveScheduleMode('existing'); setSelectedSchedule(null); setSelectedWeekday(null) }}>
-                          <strong>Escolher horário já existente</strong>
-                          <span>Escolha um horário que já está configurado para esta modalidade.</span>
-                        </button>
-                        <button type="button" className={`collective-schedule-option ${collectiveScheduleMode === 'waiting' ? 'selected' : ''}`} onClick={() => { setCollectiveScheduleMode('waiting'); setSelectedSchedule(null); setSelectedWeekday(null) }}>
-                          <strong>Não posso nesses horários</strong>
-                          <span>Escolha outro horário disponível e uma {plan?.modalidade === 'dupla' ? 'dupla' : 'turma'} entrará futuramente.</span>
-                        </button>
-                      </div>
-                      {collectiveScheduleMode === 'waiting' && (
-                        <div className="collective-schedule-notice">
-                          <strong>Formação futura</strong>
-                          <p>
-                            Você poderá escolher qualquer horário disponível. O horário será direcionado para a formação de uma {plan?.modalidade === 'dupla' ? 'dupla' : 'turma'} e, enquanto aguardamos outro aluno, você terá <strong>10% de desconto sobre o valor individual</strong>.
-                          </p>
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -1516,6 +1461,13 @@ export default function Matricula() {
                                     horario.hora_fim,
                                   )}
                                 </span>
+                                {isCollectivePlan && (
+                                  <small>
+                                    {horario.participantes > 0
+                                      ? `${horario.participantes}/${horario.capacidade} alunos • ${horario.vagas_restantes} vaga(s)`
+                                      : 'Horário livre • será sua nova turma'}
+                                  </small>
+                                )}
                               </button>
                             )
                           },
@@ -1659,7 +1611,7 @@ export default function Matricula() {
 
                       <strong>
                         {formatCurrency(
-                          selectedPlanPrice,
+                          selectedSchedule?.valor_mensal ?? selectedPlanPrice,
                         )}
                       </strong>
                     </div>
@@ -1821,7 +1773,7 @@ export default function Matricula() {
 
                 <strong>
                   {plan
-                    ? formatCurrency(selectedPlanPrice) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
+                    ? formatCurrency(selectedSchedule?.valor_mensal ?? selectedPlanPrice) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
                     : '—'}
                 </strong>
               </div>
