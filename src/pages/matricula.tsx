@@ -198,9 +198,15 @@ export default function Matricula() {
   const [responsibleName, setResponsibleName] = useState('')
   const [responsiblePhone, setResponsiblePhone] = useState('')
   const [language, setLanguage] = useState<Language | ''>('')
-  const [conversationLevel] = useState('')
-  const [writingLevel] = useState('')
-  const [comprehensionLevel] = useState('')
+  const [conversationLevel, setConversationLevel] = useState('')
+  const [writingLevel, setWritingLevel] = useState('')
+  const [comprehensionLevel, setComprehensionLevel] = useState('')
+  const [levelMethod, setLevelMethod] = useState<'informar' | 'teste' | ''>('')
+  const [levelTestStarted, setLevelTestStarted] = useState(false)
+  const [levelTestAnswers, setLevelTestAnswers] = useState<Record<number, string>>({})
+  const [levelTestResult, setLevelTestResult] = useState('')
+  const [contractAccepted, setContractAccepted] = useState(false)
+  const [contractSignatureStatus, setContractSignatureStatus] = useState<'pending' | 'signed'>('pending')
   const [plan, setPlan] = useState<Plan | null>(null)
   const [collectiveEnrollment, setCollectiveEnrollment] = useState<{ token: string; turmaId: string; participanteId: string; valorMensal: number; condicaoMeses: number | null; condicaoInicio: string | null; condicaoFim: string | null } | null>(null)
   const [availableSchedules, setAvailableSchedules] = useState<Horario[]>([])
@@ -807,6 +813,15 @@ export default function Matricula() {
     }
 
     if (step === 2) {
+      if (!conversationLevel && !writingLevel && !comprehensionLevel) {
+        setError('Informe seu nível ou faça o teste de proficiência antes de continuar.')
+        return
+      }
+      setStep(3)
+      return
+    }
+
+    if (step === 3) {
       if (availabilityMode !== 'flexible' && availabilityDays.length !== requiredWeeklyLessons) {
         setError(
           requiredWeeklyLessons === 1
@@ -831,18 +846,27 @@ export default function Matricula() {
       if (!schedulesLoaded) return
       setAvailabilityReady(true)
       setSelectedWeekday(null)
-      setStep(3)
-      return
-    }
-
-    if (step === 3) {
-      if (!validateSchedule()) return
       setStep(4)
       return
     }
 
     if (step === 4) {
+      if (!validateSchedule()) return
+      setStep(5)
+      return
+    }
+
+    if (step === 7) {
       if (!validatePersonalData()) return
+      setStep(6)
+      return
+    }
+
+    if (step === 6) {
+      if (!contractAccepted || contractSignatureStatus !== 'signed') {
+        setError('O contrato precisa ser assinado pelo fluxo de assinatura gov.br antes da finalização.')
+        return
+      }
       setLoadingSchedules(true)
       const reserved = await reserveSelectedSchedules()
       if (!reserved) {
@@ -852,7 +876,7 @@ export default function Matricula() {
       const confirmed = await verifyScheduleAgain()
       setLoadingSchedules(false)
       if (!confirmed) return
-      setStep(5)
+      setStep(7)
     }
   }
 
@@ -1175,6 +1199,32 @@ export default function Matricula() {
     }
   }
 
+  const levelTestQuestions = language === 'alemao'
+    ? [
+        { id: 1, text: 'Wie würden Sie sich auf Deutsch vorstellen?', options: ['Ich heiße Anna und komme aus Brasilien.', 'Ich bin Name Anna Brasilien.', 'Anna ich sein Brasilien.', 'Ich heiße sein Anna.'] },
+        { id: 2, text: 'Welche Antwort passt? „Wie geht es dir?“', options: ['Danke, gut!', 'Ich bin aus Brasilien.', 'Ich habe zwanzig Jahre.', 'Morgen um acht.'] },
+        { id: 3, text: 'Welche frase está correta?', options: ['Ich habe gestern gearbeitet.', 'Ich gestern habe gearbeitet.', 'Gestern ich gearbeitet habe.', 'Ich gearbeitet gestern habe.'] },
+        { id: 4, text: 'Qual opção expressa uma hipótese?', options: ['Wenn ich Zeit hätte, würde ich reisen.', 'Ich reise gestern.', 'Ich bin gerade angekommen.', 'Ich werde morgen arbeiten.'] },
+        { id: 5, text: 'Qual frase apresenta uma estrutura mais avançada?', options: ['Obwohl es geregnet hat, sind wir spazieren gegangen.', 'Ich gehe nach Hause.', 'Ich lerne Deutsch.', 'Das ist mein Buch.'] },
+      ]
+    : [
+        { id: 1, text: 'How would you introduce yourself?', options: ['My name is Anna and I am from Brazil.', 'I name Anna Brazil.', 'Anna be Brazil.', 'My name are Anna.'] },
+        { id: 2, text: 'Which answer fits? “How are you?”', options: ['I’m fine, thank you!', 'I’m from Brazil.', 'I’m twenty years.', 'Tomorrow at eight.'] },
+        { id: 3, text: 'Which sentence is correct?', options: ['I worked yesterday.', 'I yesterday worked.', 'Yesterday I have work.', 'I work yesterday was.'] },
+        { id: 4, text: 'Which sentence expresses a hypothetical situation?', options: ['If I had time, I would travel.', 'I traveled yesterday.', 'I am arriving now.', 'I will work tomorrow.'] },
+        { id: 5, text: 'Which sentence uses a more advanced structure?', options: ['Although it was raining, we went for a walk.', 'I go home.', 'I study English.', 'This is my book.'] },
+      ]
+
+  const calculateLevelTest = () => {
+    const correct = language === 'alemao' ? ['0','0','0','0','0'] : ['0','0','0','0','0']
+    const score = levelTestQuestions.reduce((total, question) => total + (levelTestAnswers[question.id] === correct[question.id - 1] ? 1 : 0), 0)
+    const level = score <= 1 ? 'A1' : score === 2 ? 'A2' : score === 3 ? 'B1' : score === 4 ? 'B2' : 'C1'
+    setLevelTestResult(level)
+    setConversationLevel(level)
+    setWritingLevel(level)
+    setComprehensionLevel(level)
+  }
+
   return (
     <div className="enrollment-page">
       <header className="enrollment-header">
@@ -1216,9 +1266,11 @@ export default function Matricula() {
           <div className="enrollment-progress">
             {[
               'Plano selecionado',
+              'Nível',
               'Disponibilidade',
               'Horário',
               'Dados pessoais',
+              'Contrato',
               'Pagamento',
             ].map(
               (label, index) => {
@@ -1266,16 +1318,22 @@ export default function Matricula() {
                       'Plano selecionado'}
 
                     {step === 2 &&
-                      'Quando você pode estudar?'}
+                      'Identificação do seu nível'}
 
                     {step === 3 &&
-                      'Horários compatíveis com você'}
+                      'Quando você pode estudar?'}
 
                     {step === 4 &&
-                      'Seus dados pessoais'}
+                      'Horários compatíveis com você'}
 
                     {step === 5 &&
-                      'Revise sua matrícula'}
+                      'Seus dados pessoais'}
+
+                    {step === 6 &&
+                      'Contrato de matrícula'}
+
+                    {step === 7 &&
+                      'Finalização e pagamento'}
                   </h2>
 
                   <p>
@@ -1283,16 +1341,22 @@ export default function Matricula() {
                       'Confira o plano escolhido na página de planos.'}
 
                     {step === 2 &&
-                      'Escolha uma única forma de informar sua disponibilidade: dias e períodos, faixas de horário por dia ou flexibilidade total.'}
+                      'Informe seu nível ou faça um breve teste de proficiência.'}
 
                     {step === 3 &&
-                      'Escolha entre os horários reais compatíveis com sua disponibilidade.'}
+                      'Escolha uma única forma de informar sua disponibilidade.'}
 
                     {step === 4 &&
-                      'Informe os dados necessários para sua matrícula.'}
+                      'Veja primeiro as turmas já formadas e compatíveis com seu nível.'}
 
                     {step === 5 &&
-                      'Revise todas as informações antes de continuar para o pagamento.'}
+                      'Informe os dados necessários para sua matrícula.'}
+
+                    {step === 6 &&
+                      'Leia o contrato e conclua a assinatura eletrônica.'}
+
+                    {step === 7 &&
+                      'Matrícula pronta para a etapa de pagamento.'}
                   </p>
                 </div>
               </div>
@@ -1349,6 +1413,45 @@ export default function Matricula() {
                   )}
 
                   <a href="/planos" className="enrollment-change-plan">Alterar plano</a>
+                </div>
+              )}
+
+              {step === 2 && (
+                <div className="level-section">
+                  <div className="selection-heading"><div><h3>Qual é o seu nível?</h3><p>Você pode informar seu nível atual ou fazer um breve teste de proficiência.</p></div></div>
+                  <div className="availability-mode-selector">
+                    <strong>Como deseja identificar seu nível?</strong>
+                    <div className="availability-mode-options">
+                      <button type="button" className={'availability-mode-option ' + (levelMethod === 'informar' ? 'selected' : '')} onClick={() => setLevelMethod('informar')}>
+                        <span>Eu sei meu nível</span><small>Selecione o nível que melhor representa seu conhecimento.</small>
+                      </button>
+                      <button type="button" className={'availability-mode-option ' + (levelMethod === 'teste' ? 'selected' : '')} onClick={() => { setLevelMethod('teste'); setLevelTestStarted(true) }}>
+                        <span>Fazer teste de proficiência</span><small>Teste rápido para estimar seu nível.</small>
+                      </button>
+                    </div>
+                  </div>
+                  {levelMethod === 'informar' && (
+                    <div className="level-fields">
+                      {(['A1','A2','B1','B2','C1','C2'] as const).map((level) => (
+                        <button type="button" key={level} className={'availability-mode-option ' + (conversationLevel === level ? 'selected' : '')} onClick={() => { setConversationLevel(level); setWritingLevel(level); setComprehensionLevel(level) }}>
+                          <span>{level}</span><small>{level === 'A1' ? 'Iniciante' : level === 'A2' ? 'Básico' : level === 'B1' ? 'Intermediário' : level === 'B2' ? 'Intermediário superior' : level === 'C1' ? 'Avançado' : 'Proficiente'}</small>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  {levelMethod === 'teste' && levelTestStarted && (
+                    <div className="level-test">
+                      {levelTestQuestions.map((question) => (
+                        <div className="level-test-question" key={question.id}>
+                          <strong>{question.id}. {question.text}</strong>
+                          <div>{question.options.map((option, index) => <button type="button" key={option} className={levelTestAnswers[question.id] === String(index) ? 'selected' : ''} onClick={() => setLevelTestAnswers((current) => ({ ...current, [question.id]: String(index) }))}>{option}</button>)}</div>
+                        </div>
+                      ))}
+                      <button type="button" className="enrollment-primary-button" onClick={calculateLevelTest} disabled={Object.keys(levelTestAnswers).length !== levelTestQuestions.length}>Calcular meu nível</button>
+                      {levelTestResult && <div className="enrollment-success">Nível estimado: <strong>{levelTestResult}</strong></div>}
+                    </div>
+                  )}
+                  <div className="availability-actions"><button type="button" className="enrollment-primary-button" onClick={nextStep}>Continuar <ArrowRight size={18} /></button></div>
                 </div>
               )}
 
@@ -1427,7 +1530,7 @@ export default function Matricula() {
             </div>
           )}
 
-          {step === 3 && (
+          {step === 4 && (
             <div className="schedule-section">
               <div className="selection-heading">
                 <div>
@@ -1557,7 +1660,28 @@ export default function Matricula() {
           )}
 
 
-              {step === 4 && (
+              {step === 6 && (
+                <div className="contract-section">
+                  <div className="selection-heading"><div><h3>Contrato virtual</h3><p>Leia as condições da matrícula antes da assinatura.</p></div></div>
+                  <div className="contract-card">
+                    <strong>Contrato AB Academy Idiomas</strong>
+                    <p>O documento será gerado com seus dados, plano, turma/horários e condições financeiras. A assinatura eletrônica deve ser realizada pelo próprio titular.</p>
+                    <label><input type="checkbox" checked={contractAccepted} onChange={(event) => setContractAccepted(event.target.checked)} /> Li e concordo com o conteúdo do contrato.</label>
+                    <button type="button" className="enrollment-primary-button" disabled={!contractAccepted} onClick={() => setContractSignatureStatus('signed')}>Assinar contrato com gov.br <ArrowRight size={18} /></button>
+                    {contractSignatureStatus === 'signed' && <div className="enrollment-success">Assinatura registrada para este fluxo.</div>}
+                    <small>Integração real com a API de Assinatura GOV.BR depende da habilitação oficial e das credenciais do serviço.</small>
+                  </div>
+                </div>
+              )}
+
+              {step === 7 && (
+                <div className="review-section">
+                  <div className="selection-heading"><div><h3>Finalização e pagamento</h3><p>Confira o resumo e prossiga para o checkout.</p></div></div>
+                  <div className="availability-selection-summary"><strong>Contrato assinado e matrícula pronta para pagamento.</strong><span>Nível: {conversationLevel || 'não informado'}</span><span>Horário principal: {selectedSchedule ? formatTime(selectedSchedule.hora_inicio) + ' - ' + formatTime(selectedSchedule.hora_fim) : 'não selecionado'}</span></div>
+                </div>
+              )}
+
+              {step === 5 && (
                 <div className="enrollment-fields">
                   <div className="enrollment-field">
                     <label>
@@ -1876,8 +2000,8 @@ export default function Matricula() {
                     <ArrowRight size={18} />
                   </button>
                 ) : (
-                  <button type="button" className="enrollment-submit" onClick={createEnrollment} disabled={loading || !plan || !selectedSchedule}>
-                    {loading ? 'Criando matrícula...' : 'Continuar para pagamento'}
+                  <button type="button" className="enrollment-submit" onClick={createEnrollment} disabled={loading || !plan || !selectedSchedule || !contractAccepted || contractSignatureStatus !== 'signed'}>
+                    {loading ? 'Criando matrícula...' : 'Finalizar e ir para pagamento'}
                     {!loading && <ArrowRight size={18} />}
                   </button>
                 )}
@@ -1947,7 +2071,7 @@ export default function Matricula() {
                 <span>Valor:</span>
                 <strong>
                   {isCollectivePlan
-                    ? (step === 5 && selectedSchedule?.valor_mensal != null
+                    ? (step >= 5 && selectedSchedule?.valor_mensal != null
                       ? formatCurrency(selectedSchedule.valor_mensal) + '/mês'
                       : 'Calculado após a análise do horário')
                     : plan
