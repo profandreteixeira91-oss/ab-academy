@@ -113,56 +113,6 @@ function jsonResponse(
  * =========================================================
  */
 
-async function getAuthenticatedUser(
-  req: Request,
-) {
-  const authHeader =
-    req.headers.get(
-      'Authorization',
-    )
-
-  if (!authHeader) {
-    throw new Error(
-      'Usuário não autenticado.',
-    )
-  }
-
-  const token =
-    authHeader
-      .replace(
-        'Bearer ',
-        '',
-      )
-      .trim()
-
-  if (!token) {
-    throw new Error(
-      'Token de autenticação inválido.',
-    )
-  }
-
-  const {
-    data: {
-      user,
-    },
-    error,
-  } =
-    await supabaseAdmin.auth.getUser(
-      token,
-    )
-
-  if (
-    error ||
-    !user
-  ) {
-    throw new Error(
-      'Sessão do usuário inválida ou expirada.',
-    )
-  }
-
-  return user
-}
-
 /*
  * =========================================================
  * ASAAS
@@ -433,7 +383,6 @@ async function asaasRequest(
 
 async function getPagamento(
   pagamentoId: string,
-  userId: string,
 ) {
   const {
     data,
@@ -480,14 +429,6 @@ async function getPagamento(
 
     throw new Error(
       'Intenção de pagamento não encontrada.',
-    )
-  }
-
-  if (
-    data.user_id !== userId
-  ) {
-    throw new Error(
-      'Você não tem permissão para acessar este pagamento.',
     )
   }
 
@@ -1309,7 +1250,6 @@ Deno.serve(
       const pagamento =
         await getPagamento(
           body.pagamento_id,
-          user.id,
         )
 
       /*
@@ -1827,10 +1767,7 @@ Deno.serve(
       const localUpdated = await updateLocalPayment(pagamento.id, {
         asaas_payment_id: asaasPayment.id, status: localStatus, valor, parcelas,
       })
-      let enrollmentResult: { aluno_id: string | null; matricula_id: string; status: string } | null = null
-      if (localStatus === 'pago') {
-        enrollmentResult = await finalizeEnrollment({ ...pagamento, status: 'pago', asaas_payment_id: asaasPayment.id, asaas_subscription_id: null, parcelas, valor }, user.id)
-      }
+      const enrollmentResult: { aluno_id: string | null; matricula_id: string; status: string } | null = null
       return jsonResponse({
         success: true, metodo: 'cartao', pagamento_id: localUpdated.id, asaas_payment_id: asaasPayment.id,
         status: localStatus, asaas_status: asaasPayment.status, valor, parcelas, valor_parcela: valorParcela,
