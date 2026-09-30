@@ -211,7 +211,6 @@ export default function Matricula() {
   const [availabilityDays, setAvailabilityDays] = useState<number[]>([])
   const [availabilityPeriods, setAvailabilityPeriods] = useState<string[]>([])
   const [availabilityRanges, setAvailabilityRanges] = useState<Record<number, { start: string; end: string }>>({})
-  const [availabilityFlexible, setAvailabilityFlexible] = useState(false)
   const [availabilityReady, setAvailabilityReady] = useState(false)
    const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
@@ -549,7 +548,6 @@ export default function Matricula() {
 
   const selectAvailabilityMode = (mode: 'periods' | 'ranges' | 'flexible') => {
     setAvailabilityMode(mode)
-    setAvailabilityFlexible(mode === 'flexible')
     if (mode === 'periods') {
       setAvailabilityRanges({})
     } else if (mode === 'ranges') {
