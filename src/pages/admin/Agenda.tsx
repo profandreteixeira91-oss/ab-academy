@@ -678,14 +678,32 @@ export default function Agenda() {
 
       const targetDay = targetDateObject.getDay()
 
-      const conflictingHorario = getConflictingHorario(
-        targetDay,
-        rescheduleStart,
-        rescheduleEnd,
-        [rescheduleSource.id],
-        rescheduleSource.idioma,
-        rescheduleSource.professor_id,
-      )
+      const conflictingHorario = rescheduleSource.professor_id
+        ? horarios.find((horario) => {
+            if (
+              horario.id === rescheduleSource.id ||
+              horario.dia_semana !== targetDay ||
+              horario.professor_id !== rescheduleSource.professor_id
+            ) {
+              return false
+            }
+
+            const existingStart = timeToMinutes(horario.hora_inicio.slice(0, 5))
+            const existingEnd = timeToMinutes(horario.hora_fim.slice(0, 5))
+
+            return (
+              startMinutes < existingEnd &&
+              endMinutes > existingStart
+            )
+          })
+        : getConflictingHorario(
+            targetDay,
+            rescheduleStart,
+            rescheduleEnd,
+            [rescheduleSource.id],
+            rescheduleSource.idioma,
+            null,
+          )
 
       if (conflictingHorario) {
         throw new Error(
