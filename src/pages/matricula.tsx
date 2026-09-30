@@ -749,31 +749,38 @@ export default function Matricula() {
   }
 
   const verifyScheduleAgain = async () => {
-    if (!language || !selectedSchedule || selectedSchedules.length === 0) return false
+    if (!selectedSchedule || !language) return false
+    const aulasSemana = effectivePlan?.aulas_semana ?? (effectivePlan?.tipo === 'intensivo' ? 3 : effectivePlan?.tipo === 'personalizado' ? 2 : 1)
+    const modalidade = effectivePlan?.modalidade ?? 'individual'
 
-    if (isCollectivePlan && selectedSchedule.turma_id && selectedSchedule.participante_id) return true
+    const { data, error } = await supabase.rpc('analisar_horario_matricula', {
+      p_horario_id: selectedSchedule.id,
+      p_idioma: language,
+      p_modalidade: modalidade,
+      p_aulas_semana: aulasSemana,
+    })
 
-    const { data, error: verifyError } = await supabase
-      .from('horarios')
-      .select('id,idioma,dia_semana,hora_inicio,hora_fim,disponivel,aluno_id')
-      .eq('id', selectedSchedule.id)
-      .eq('idioma', language)
-      .eq('disponivel', true)
-      .is('aluno_id', null)
-      .maybeSingle()
-
-    if (verifyError) {
-      console.error('Erro ao validar horário:', verifyError)
-      setError('Não foi possível confirmar a disponibilidade do horário.')
-      return false
-    }
-
-    if (!data) {
-      setError('Este horário acabou de ser reservado. Escolha outro horário.')
+    if (error || !data?.[0]) {
+      const message = error?.message || 'Este horário não está mais disponível.'
+      setError(message.toLowerCase().includes('preenchido')
+        ? 'Este horário acabou de ser preenchido. Atualizamos as opções disponíveis para você.'
+        : message)
       await loadSchedules(language)
       setSelectedSchedule(null)
       return false
     }
+
+    const latest = data[0]
+    setSelectedSchedule((current) => current ? ({
+      ...current,
+      turma_id: latest.turma_id ?? null,
+      participantes: latest.quantidade_atual_alunos != null ? Number(latest.quantidade_atual_alunos) : null,
+      capacidade: latest.capacidade != null ? Number(latest.capacidade) : null,
+      valor_mensal: latest.valor_final != null ? Number(latest.valor_final) : null,
+      status_formacao: latest.status_formacao ?? null,
+      tipo_valor: latest.tipo_valor ?? null,
+      professor_id: latest.professor_id ?? null,
+    }) : current)
 
     return true
   }
