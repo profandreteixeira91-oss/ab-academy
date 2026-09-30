@@ -254,7 +254,10 @@ export default function Matricula() {
 
   const visibleSchedules = activeScheduleWeekday === null
     ? []
-    : availableSchedules.filter((item) => item.dia_semana === activeScheduleWeekday)
+    : availableSchedules.filter((item) =>
+        item.dia_semana === activeScheduleWeekday
+        && (!isCollectivePlan || !selectedSchedule?.turma_id || item.turma_id === selectedSchedule.turma_id)
+      )
 
   const groupedSchedulePeriods = ['manha', 'tarde', 'noite']
     .map((period) => ({
