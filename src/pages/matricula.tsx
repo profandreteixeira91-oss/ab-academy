@@ -74,6 +74,33 @@ type SelectedSchedule = {
   nivel_referencia: string | null
 }
 
+type CollectiveCampaign = {
+  turma_id: string
+  idioma: Language
+  modalidade: 'dupla' | 'grupo'
+  aulas_semana: number
+  data_inicio: string
+  professor_id: string | null
+  professor_nome: string | null
+  participantes: number
+  capacidade: number
+  vagas_restantes: number
+  nivel_referencia: string | null
+  status_formacao: string
+  horarios: Array<{
+    horario_id: string
+    dia_semana: number
+    hora_inicio: string
+    hora_fim: string
+    ordem: number
+  }>
+}
+
+type CollectiveLeadTarget = {
+  campaign: CollectiveCampaign
+  horario_id: string
+}
+
 type StudentData = {
   nome_completo: string
   cpf: string
@@ -214,6 +241,10 @@ export default function Matricula() {
   const [signingContract, setSigningContract] = useState(false)
   const [plan, setPlan] = useState<Plan | null>(null)
   const [collectiveEnrollment, setCollectiveEnrollment] = useState<{ token: string; turmaId: string; participanteId: string; valorMensal: number; condicaoMeses: number | null; condicaoInicio: string | null; condicaoFim: string | null } | null>(null)
+  const [collectiveCampaigns, setCollectiveCampaigns] = useState<CollectiveCampaign[]>([])
+  const [collectiveCampaignsLoading, setCollectiveCampaignsLoading] = useState(false)
+  const [collectiveLeadTarget, setCollectiveLeadTarget] = useState<CollectiveLeadTarget | null>(null)
+  const [collectiveLeadSaving, setCollectiveLeadSaving] = useState(false)
   const [availableSchedules, setAvailableSchedules] = useState<Horario[]>([])
   const [selectedSchedule, setSelectedSchedule] = useState<SelectedSchedule | null>(null)
   const [selectedSchedules, setSelectedSchedules] = useState<SelectedSchedule[]>([])
@@ -227,6 +258,7 @@ export default function Matricula() {
    const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
   const [reservaToken] = useState(() => crypto.randomUUID())
+  const [formationOrigin, setFormationOrigin] = useState<{ turmaId: string; horarioId: string; modalidade: 'dupla' | 'grupo'; aulasSemana: number } | null>(null)
   const selectedLanguageLabel =
     language === 'ingles'
       ? 'Inglês'
@@ -445,6 +477,39 @@ export default function Matricula() {
 
     setPlan(data as Plan)
   }
+
+  const loadCollectiveCampaigns = async (selectedPlan: Plan) => {
+    setCollectiveCampaignsLoading(true)
+    setError('')
+
+    try {
+      const aulasSemana = selectedPlan.aulas_semana ?? (selectedPlan.modalidade === 'dupla' ? 1 : 2)
+      const { data, error: campaignsError } = await supabase.rpc('listar_turmas_coletivas_matricula', {
+        p_idioma: selectedPlan.idioma,
+        p_modalidade: selectedPlan.modalidade,
+        p_aulas_semana: aulasSemana,
+      })
+
+      if (campaignsError) {
+        console.error('Erro ao carregar campanhas coletivas:', campaignsError)
+        setCollectiveCampaigns([])
+        setError('Não foi possível carregar as turmas disponíveis.')
+        return
+      }
+
+      setCollectiveCampaigns((data ?? []) as CollectiveCampaign[])
+    } finally {
+      setCollectiveCampaignsLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (plan && (plan.modalidade === 'dupla' || plan.modalidade === 'grupo')) {
+      void loadCollectiveCampaigns(plan)
+    } else {
+      setCollectiveCampaigns([])
+    }
+  }, [plan?.id, plan?.modalidade, plan?.aulas_semana])
 
   const loadSchedules = async (
     selectedLanguage: Language,
@@ -908,6 +973,12 @@ export default function Matricula() {
         setError('O plano selecionado não está disponível.')
         return
       }
+
+      if (isCollectivePlan) {
+        setError('Escolha uma turma disponível ou opte por iniciar individualmente.')
+        return
+      }
+
       setStep(2)
       return
     }
@@ -1041,6 +1112,101 @@ export default function Matricula() {
     const next = [...selectedSchedules, schedule]
     setSelectedSchedules(next)
     setSelectedSchedule(next[0] ?? null)
+  }
+
+  const startIndividualFromCollective = async (campaign: CollectiveCampaign) => {
+    setLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const { data: individualPlan, error: individualPlanError } = await supabase
+        .from('planos')
+        .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, modalidade, aulas_semana, min_alunos, max_alunos')
+        .eq('idioma', campaign.idioma)
+        .eq('modalidade', 'individual')
+        .eq('ativo', true)
+        .eq('tipo', campaign.aulas_semana === 2 ? 'personalizado' : 'mensal')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (individualPlanError || !individualPlan) {
+        setError('Não encontramos o plano individual correspondente para esta frequência.')
+        return
+      }
+
+      const { data: discountedPrice, error: priceError } = await supabase.rpc('preco_formacao_coletiva', {
+        p_idioma: campaign.idioma,
+        p_modalidade: campaign.modalidade,
+        p_aulas_semana: campaign.aulas_semana,
+      })
+
+      if (priceError || Number(discountedPrice ?? 0) <= 0) {
+        setError('Não foi possível calcular a condição especial para começar individualmente.')
+        return
+      }
+
+      const firstEncounter = campaign.horarios[0]
+      setFormationOrigin({
+        turmaId: campaign.turma_id,
+        horarioId: firstEncounter.horario_id,
+        modalidade: campaign.modalidade,
+        aulasSemana: campaign.aulas_semana,
+      })
+      setPlan(individualPlan as Plan)
+      setSelectedSchedule(null)
+      setSelectedSchedules([])
+      setAvailabilityReady(false)
+      setSuccess(`Você poderá iniciar individualmente com a condição especial de formação: ${formatCurrency(Number(discountedPrice))}/mês.`)
+      setStep(2)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const reserveCollectiveLead = async () => {
+    if (!collectiveLeadTarget || !language) return
+    if (!name.trim() || !email.trim() || cleanDigits(phone).length < 10) {
+      setError('Informe nome, e-mail e WhatsApp para reservar a vaga.')
+      return
+    }
+
+    setCollectiveLeadSaving(true)
+    setError('')
+    setSuccess('')
+
+    const { error: leadError } = await supabase
+      .from('leads')
+      .insert({
+        nome: name.trim(),
+        email: email.trim().toLowerCase(),
+        telefone: cleanDigits(phone),
+        idioma_interesse: collectiveLeadTarget.campaign.idioma,
+        objetivo: null,
+        nivel: collectiveLeadTarget.campaign.nivel_referencia,
+        origem: 'matricula',
+        landing_page: window.location.pathname,
+        status: 'novo',
+        observacoes: `Reserva de vaga para turma com início em ${formatDate(collectiveLeadTarget.campaign.data_inicio)}.`,
+        modalidade: collectiveLeadTarget.campaign.modalidade,
+        quantidade_participantes: 1,
+        horario_preferido: collectiveLeadTarget.campaign.horarios.map((item) => `${WEEKDAYS.find((day) => day.value === item.dia_semana)?.short ?? ''} ${formatTime(item.hora_inicio)}-${formatTime(item.hora_fim)}`).join(' | '),
+        aulas_semana: collectiveLeadTarget.campaign.aulas_semana,
+        formacao_turma: 'reservar_vaga',
+        horario_id: collectiveLeadTarget.horario_id,
+        turma_id: collectiveLeadTarget.campaign.turma_id,
+      })
+
+    if (leadError) {
+      console.error('Erro ao registrar lead da turma:', leadError)
+      setError('Não foi possível registrar sua reserva de vaga. Tente novamente.')
+    } else {
+      setCollectiveLeadTarget(null)
+      setSuccess('Sua solicitação de vaga foi registrada. A equipe da AB Academy entrará em contato para confirmar a turma e os próximos passos.')
+    }
+
+    setCollectiveLeadSaving(false)
   }
 
   const reserveSelectedSchedules = async () => {
@@ -1504,6 +1670,91 @@ export default function Matricula() {
                 </div>
               )}
 
+                  {isCollectivePlan && (
+                    <div className="collective-campaign-section">
+                      <div className="selection-heading">
+                        <div>
+                          <h3>Turmas disponíveis</h3>
+                          <p>Escolha uma turma criada pela AB Academy. O nível, o professor e a data de início já foram definidos pela administração.</p>
+                        </div>
+                      </div>
+
+                      {collectiveCampaignsLoading ? (
+                        <div className="enrollment-loading">Buscando turmas disponíveis...</div>
+                      ) : collectiveCampaigns.length === 0 ? (
+                        <div className="enrollment-empty">
+                          <strong>Nenhuma turma disponível no momento.</strong>
+                          <p>Você pode iniciar individualmente ou deixar seus dados para a equipe organizar uma nova turma.</p>
+                        </div>
+                      ) : (
+                        <div className="collective-campaign-grid">
+                          {collectiveCampaigns.map((campaign) => (
+                            <article className="collective-campaign-card" key={campaign.turma_id}>
+                              <div className="collective-campaign-top">
+                                <span>{campaign.modalidade === 'dupla' ? 'Dupla' : 'Grupo'}</span>
+                                <strong>{campaign.nivel_referencia || 'Nível a definir'}</strong>
+                              </div>
+                              <h3>{campaign.idioma === 'ingles' ? 'Inglês' : 'Alemão'} · Nível {campaign.nivel_referencia || '—'}</h3>
+                              <p className="collective-campaign-date">Início: <strong>{formatDate(campaign.data_inicio)}</strong></p>
+                              <div className="collective-campaign-schedule">
+                                {campaign.horarios.map((item) => (
+                                  <span key={item.horario_id}>
+                                    {WEEKDAYS.find((day) => day.value === item.dia_semana)?.short} · {formatTime(item.hora_inicio)}–{formatTime(item.hora_fim)}
+                                  </span>
+                                ))}
+                              </div>
+                              <div className="collective-campaign-meta">
+                                <span>{campaign.professor_nome || 'Professor a confirmar'}</span>
+                                <span>{campaign.participantes}/{campaign.capacidade} vagas ocupadas</span>
+                                <strong>{campaign.vagas_restantes} vaga{campaign.vagas_restantes === 1 ? '' : 's'} disponível{campaign.vagas_restantes === 1 ? '' : 'is'}</strong>
+                              </div>
+                              <div className="collective-campaign-actions">
+                                <button type="button" className="enrollment-secondary-button" onClick={() => void startIndividualFromCollective(campaign)} disabled={loading}>
+                                  Iniciar individualmente
+                                </button>
+                                <button type="button" className="enrollment-primary-button" onClick={() => setCollectiveLeadTarget({ campaign, horario_id: campaign.horarios[0]?.horario_id })} disabled={loading}>
+                                  Reservar vaga
+                                </button>
+                              </div>
+                            </article>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {collectiveLeadTarget && (
+                    <div className="collective-lead-form">
+                      <div className="selection-heading">
+                        <div>
+                          <h3>Reserve sua vaga</h3>
+                          <p>{collectiveLeadTarget.campaign.modalidade === 'dupla' ? 'Dupla' : 'Grupo'} · {collectiveLeadTarget.campaign.nivel_referencia} · início {formatDate(collectiveLeadTarget.campaign.data_inicio)}</p>
+                        </div>
+                      </div>
+                      <div className="enrollment-fields">
+                        <div className="enrollment-field">
+                          <label>Nome completo *</label>
+                          <input type="text" value={name} onChange={(event) => setName(event.target.value)} placeholder="Seu nome completo" autoComplete="name" />
+                        </div>
+                        <div className="enrollment-field">
+                          <label>E-mail *</label>
+                          <input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="seu@email.com" autoComplete="email" />
+                        </div>
+                        <div className="enrollment-field">
+                          <label>WhatsApp *</label>
+                          <input type="tel" value={phone} onChange={(event) => setPhone(formatPhone(event.target.value))} placeholder="(00) 00000-0000" autoComplete="tel" />
+                        </div>
+                      </div>
+                      <div className="availability-actions">
+                        <button type="button" className="enrollment-back-button" onClick={() => setCollectiveLeadTarget(null)} disabled={collectiveLeadSaving}>Cancelar</button>
+                        <button type="button" className="enrollment-primary-button" onClick={() => void reserveCollectiveLead()} disabled={collectiveLeadSaving}>
+                          {collectiveLeadSaving ? 'Registrando...' : 'Confirmar reserva'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+
               {step === 4 && (
                 <div className="proficiency-section">
                   <div className="selection-heading">
@@ -1869,7 +2120,7 @@ export default function Matricula() {
                 )}
                 <div />
                 {step < 6 ? (
-                  <button type="button" className="enrollment-submit" onClick={nextStep} disabled={loading || (step === 1 && !plan)}>
+                  <button type="button" className="enrollment-submit" onClick={nextStep} disabled={loading || (step === 1 && (!plan || isCollectivePlan))}>
                     Continuar
                     <ArrowRight size={18} />
                   </button>
