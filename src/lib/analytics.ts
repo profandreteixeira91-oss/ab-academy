@@ -145,7 +145,28 @@ export function trackActiveVisitor(path: string, pageTitle: string) {
     last_seen_at: new Date().toISOString(),
   }
 
-  void supabase.from('site_active_visitors').upsert(payload, { onConflict: 'session_id' })
+  void supabase
+    .from('site_active_visitors')
+    .insert(payload)
+    .then(async ({ error }) => {
+      if (!error) return
+
+      // A visitor already registered cannot use upsert reliably with the
+      // public RLS policy because PostgREST may require SELECT on conflict.
+      if (error.code === '23505') {
+        const { error: updateError } = await supabase
+          .from('site_active_visitors')
+          .update(payload)
+          .eq('session_id', sessionId)
+
+        if (updateError) {
+          console.warn('[AB Academy Analytics] Falha ao atualizar visitante ativo:', updateError.message)
+        }
+        return
+      }
+
+      console.warn('[AB Academy Analytics] Falha ao registrar visitante ativo:', error.message)
+    })
 
   return sessionId
 }
