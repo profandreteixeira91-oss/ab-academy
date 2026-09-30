@@ -151,15 +151,7 @@ function ModalidadeCard({
     if (horariosDaOpcao.some((horario) => horario.participantes > 0) || formationPrices[key] !== undefined) return
 
     setFormationPriceLoading(key)
-    const individualPlan = planos.find((item) =>
-      item.idioma === plano.idioma
-      && item.modalidade === 'individual'
-      && item.ativo
-      && (item.aulas_semana ?? 1) === (plano.aulas_semana ?? 1)
-    )
-    if (individualPlan) {
-      setFormationPrices((current) => ({ ...current, [key]: Number(individualPlan.preco) * 0.9 }))
-    }
+    setFormationPrices((current) => ({ ...current, [key]: Number(plano.preco) * 0.9 }))
     setFormationPriceLoading(null)
   }
 
@@ -233,17 +225,6 @@ function ModalidadeCard({
         <div className="planos-frequency-list">
           {opcoes.map(({ plano, horariosDaOpcao }) => {
             const frequencia = plano.aulas_semana ?? 1
-            const individualPlan = planos.find((item) =>
-              item.idioma === idioma
-              && item.modalidade === 'individual'
-              && item.ativo
-              && (
-                (item.aulas_semana ?? 1) === frequencia
-                || (frequencia === 2 && item.nome.toLowerCase().includes('2x'))
-                || (frequencia === 3 && item.nome.toLowerCase().includes('3x'))
-              )
-              && item.tipo !== 'diagnostica'
-            )
             const vagasRestantes = Math.min(...horariosDaOpcao.map((horario) => horario.vagas_restantes))
             return (
               <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')}>
