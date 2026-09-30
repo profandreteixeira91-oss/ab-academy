@@ -1499,3 +1499,319 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+/* =========================================================
+   DESKTOP — AGENDA DENSITY / DAY VIEW
+   Objetivo: visualizar muitos horários sem alongar a página.
+   Mantém a experiência mobile existente.
+   ========================================================= */
+
+@media (min-width: 901px) {
+  .agenda-page {
+    padding-bottom: 20px;
+  }
+
+  .agenda-page-header {
+    padding: 16px 20px;
+    margin-bottom: 12px;
+    border-radius: 14px;
+  }
+
+  .agenda-page-header h1 {
+    font-size: 22px;
+  }
+
+  .agenda-page-header p {
+    margin-top: 3px;
+    font-size: 12px;
+  }
+
+  .agenda-primary-button,
+  .agenda-secondary-header-button {
+    min-height: 38px;
+    border-radius: 9px;
+    font-size: 12px;
+  }
+
+  .agenda-day-selector {
+    gap: 7px;
+    margin-bottom: 12px;
+  }
+
+  .agenda-day-button {
+    min-height: 58px;
+    padding: 7px 8px;
+    border-radius: 11px;
+  }
+
+  .agenda-day-short {
+    font-size: 10px;
+  }
+
+  .agenda-day-name {
+    font-size: 11px;
+  }
+
+  .agenda-day-count {
+    min-width: 18px;
+    height: 18px;
+    font-size: 9px;
+  }
+
+  .agenda-filters {
+    gap: 8px;
+    margin: 10px 0 12px;
+    padding: 9px 10px;
+    border-radius: 11px;
+  }
+
+  .agenda-filters .agenda-form-field {
+    min-width: 170px;
+  }
+
+  .agenda-filters .agenda-form-field {
+    gap: 4px;
+  }
+
+  .agenda-filters .agenda-form-field label {
+    font-size: 10px;
+  }
+
+  .agenda-filters .agenda-form-field select {
+    min-height: 34px;
+    padding: 0 9px;
+    border-radius: 8px;
+    font-size: 11px;
+  }
+
+  .agenda-filters .agenda-secondary-button {
+    min-height: 34px;
+    padding: 0 11px;
+    font-size: 11px;
+    border-radius: 8px;
+  }
+
+  .agenda-summary {
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+
+  .agenda-summary-item {
+    min-height: 58px;
+    padding: 9px 12px;
+    gap: 9px;
+    border-radius: 11px;
+  }
+
+  .agenda-summary-item > svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .agenda-summary-item strong {
+    font-size: 14px;
+  }
+
+  .agenda-summary-item span {
+    margin-top: 1px;
+    font-size: 10px;
+  }
+
+  .agenda-panel {
+    border-radius: 13px;
+  }
+
+  .agenda-panel-header {
+    min-height: 58px;
+    padding: 10px 16px;
+  }
+
+  .agenda-panel-header h2 {
+    font-size: 14px;
+  }
+
+  .agenda-panel-header p {
+    margin-top: 2px;
+    font-size: 10px;
+  }
+
+  .agenda-select-all-button {
+    min-height: 30px;
+    padding: 0 9px;
+    font-size: 10px;
+    border-radius: 7px;
+  }
+
+  .agenda-panel-header-right {
+    gap: 8px;
+  }
+
+  /*
+   * O painel de horários ganha sua própria área de rolagem.
+   * O cabeçalho da página, filtros e seletor de dia permanecem visíveis.
+   */
+  .agenda-panel-content {
+    min-height: 0;
+    max-height: calc(100vh - 430px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: #cbd5e1 transparent;
+  }
+
+  .agenda-panel-content::-webkit-scrollbar {
+    width: 7px;
+  }
+
+  .agenda-panel-content::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .agenda-panel-content::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 999px;
+  }
+
+  .agenda-panel-content::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+  }
+
+  .agenda-list {
+    width: 100%;
+  }
+
+  /*
+   * Linha compacta: o horário fica visualmente dominante,
+   * informações secundárias ocupam a mesma faixa e as ações
+   * ficam concentradas à direita.
+   */
+  .agenda-item {
+    min-height: 68px;
+    padding: 9px 16px;
+    gap: 10px;
+  }
+
+  .agenda-select-checkbox {
+    width: 24px;
+    height: 24px;
+  }
+
+  .agenda-time {
+    width: 66px;
+    gap: 2px;
+  }
+
+  .agenda-time strong {
+    font-size: 15px;
+  }
+
+  .agenda-time span {
+    font-size: 9px;
+  }
+
+  .agenda-item-main {
+    display: grid;
+    grid-template-columns: minmax(260px, 1.15fr) minmax(260px, 1fr);
+    grid-template-rows: auto auto;
+    column-gap: 18px;
+    align-items: center;
+  }
+
+  .agenda-item-top {
+    grid-column: 1 / -1;
+    gap: 6px;
+    flex-wrap: nowrap;
+    min-width: 0;
+  }
+
+  .agenda-language {
+    font-size: 12px;
+    white-space: nowrap;
+  }
+
+  .agenda-status {
+    min-height: 18px;
+    padding: 0 6px;
+    font-size: 8px;
+    white-space: nowrap;
+  }
+
+  .agenda-student {
+    min-width: 0;
+    margin-top: 3px;
+    gap: 4px;
+    font-size: 10px;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .agenda-student svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .agenda-student:nth-of-type(2) {
+    grid-column: 2;
+  }
+
+  .agenda-lesson-status {
+    display: none;
+  }
+
+  .agenda-actions {
+    gap: 4px;
+  }
+
+  .agenda-action-button {
+    width: 30px;
+    height: 30px;
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .agenda-action-button svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .agenda-item:hover {
+    background: #f8fbff;
+  }
+
+  .agenda-item.selected {
+    box-shadow: inset 3px 0 0 #2563eb;
+  }
+
+  .agenda-bulk-toolbar {
+    min-height: 48px;
+    padding: 7px 16px;
+  }
+
+  .agenda-bulk-info,
+  .agenda-bulk-info strong {
+    font-size: 11px;
+  }
+
+  .agenda-bulk-actions {
+    gap: 5px;
+  }
+
+  .agenda-bulk-edit-button,
+  .agenda-bulk-delete-button {
+    min-height: 30px;
+    padding: 0 9px;
+    font-size: 10px;
+    border-radius: 7px;
+  }
+
+  .agenda-empty {
+    min-height: 240px;
+  }
+
+  .agenda-loading {
+    min-height: 220px;
+  }
+}
