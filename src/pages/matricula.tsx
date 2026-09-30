@@ -546,6 +546,11 @@ export default function Matricula() {
     return true
   }
 
+  const getRequiredWeeklyLessons = () =>
+    plan?.aulas_semana ?? (plan?.tipo === 'intensivo' ? 3 : plan?.tipo === 'personalizado' ? 2 : 1)
+
+  const requiredWeeklyLessons = getRequiredWeeklyLessons()
+
   const selectAvailabilityMode = (mode: 'periods' | 'ranges' | 'flexible') => {
     setAvailabilityMode(mode)
     if (mode === 'periods') {
@@ -563,11 +568,28 @@ export default function Matricula() {
   }
 
   const toggleAvailabilityDay = (day: number) => {
-    setAvailabilityDays((current) =>
-      current.includes(day)
-        ? current.filter((item) => item !== day)
-        : [...current, day],
-    )
+    setError('')
+    setAvailabilityDays((current) => {
+      if (current.includes(day)) {
+        setAvailabilityRanges((ranges) => {
+          const next = { ...ranges }
+          delete next[day]
+          return next
+        })
+        return current.filter((item) => item !== day)
+      }
+
+      if (current.length >= requiredWeeklyLessons) {
+        setError(
+          requiredWeeklyLessons === 1
+            ? 'Este plano tem 1 aula por semana. Escolha apenas 1 dia.'
+            : `Este plano tem ${requiredWeeklyLessons} aulas por semana. Escolha exatamente ${requiredWeeklyLessons} dias diferentes.`,
+        )
+        return current
+      }
+
+      return [...current, day]
+    })
   }
 
   const toggleAvailabilityPeriod = (period: string) => {
@@ -594,9 +616,26 @@ export default function Matricula() {
   }
 
   const validateSchedule = () => {
-    if (!selectedSchedule) {
+    if (selectedSchedules.length !== requiredWeeklyLessons) {
       setError(
-        'Selecione um horário disponível.',
+        requiredWeeklyLessons === 1
+          ? 'Selecione 1 horário para continuar.'
+          : `Selecione exatamente ${requiredWeeklyLessons} horários, um em cada dia da semana escolhido.`,
+      )
+      return false
+    }
+
+    if (!selectedSchedule) {
+      setError('Selecione um horário disponível.')
+      return false
+    }
+
+    const selectedDays = new Set(selectedSchedules.map((item) => item.weekday))
+    if (selectedDays.size !== requiredWeeklyLessons) {
+      setError(
+        requiredWeeklyLessons === 1
+          ? 'Escolha 1 dia da semana.'
+          : `Escolha ${requiredWeeklyLessons} dias diferentes da semana para suas ${requiredWeeklyLessons} aulas.`,
       )
       return false
     }
@@ -618,8 +657,12 @@ export default function Matricula() {
     }
 
     if (step === 2) {
-      if (availabilityMode !== 'flexible' && availabilityDays.length === 0) {
-        setError('Selecione pelo menos um dia em que você pode estudar.')
+      if (availabilityMode !== 'flexible' && availabilityDays.length !== requiredWeeklyLessons) {
+        setError(
+          requiredWeeklyLessons === 1
+            ? 'Escolha exatamente 1 dia da semana para sua aula.'
+            : `Este plano tem ${requiredWeeklyLessons} aulas por semana. Escolha exatamente ${requiredWeeklyLessons} dias diferentes.`,
+        )
         return
       }
       if (availabilityMode === 'periods' && availabilityPeriods.length === 0) {
@@ -687,7 +730,12 @@ export default function Matricula() {
     }
 
     if (selectedSchedules.length >= aulasSemana) {
-      setError(`Este plano exige ${aulasSemana} horário(s) por semana. Remova um horário para escolher outro.`)
+      setError(`Este plano tem ${aulasSemana} aula(s) por semana. Você já selecionou todas as aulas necessárias.`)
+      return
+    }
+
+    if (selectedSchedules.some((item) => item.weekday === horario.dia_semana)) {
+      setError('Escolha apenas um horário por dia da semana. Selecione outro dia.')
       return
     }
 
@@ -1148,7 +1196,7 @@ export default function Matricula() {
               <div className="selection-heading">
                 <div>
                   <h3>Quando você pode estudar?</h3>
-                  <p>Informe sua disponibilidade. Depois mostraremos apenas os horários reais compatíveis com você.</p>
+                  <p>Este plano tem <strong>{requiredWeeklyLessons} aula{requiredWeeklyLessons === 1 ? '' : 's'} por semana</strong>. Escolha exatamente {requiredWeeklyLessons} dia{requiredWeeklyLessons === 1 ? '' : 's'} diferente{requiredWeeklyLessons === 1 ? '' : 's'} em que você pode estudar.</p>
                 </div>
               </div>
 
@@ -1182,7 +1230,7 @@ export default function Matricula() {
 
               {availabilityMode === 'periods' && (
                 <div className="availability-periods">
-                  <strong>Qual período você prefere?</strong>
+                  <strong>Período para os {requiredWeeklyLessons} dia{requiredWeeklyLessons === 1 ? '' : 's'} selecionado{requiredWeeklyLessons === 1 ? '' : 's'}</strong>
                   <div>
                     {[['manha', 'Manhã'], ['tarde', 'Tarde'], ['noite', 'Noite']].map(([value, label]) => (
                       <button type="button" key={value} className={availabilityPeriods.includes(value) ? 'selected' : ''} onClick={() => toggleAvailabilityPeriod(value)}>
@@ -1223,7 +1271,7 @@ export default function Matricula() {
               <div className="selection-heading">
                 <div>
                   <h3>Horários compatíveis com você</h3>
-                  <p>Mostrando horários reais compatíveis com você. O valor final será calculado após a análise do horário escolhido.</p>
+                  <p>Selecione {requiredWeeklyLessons} horário{requiredWeeklyLessons === 1 ? '' : 's'}, um em cada dia da semana escolhido. <strong>{selectedSchedules.length}/{requiredWeeklyLessons} selecionado{requiredWeeklyLessons === 1 ? '' : 's'}</strong></p>
                 </div>
                 <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setSelectedSchedule(null); setSelectedSchedules([]); setStep(2); }}>
                   Alterar disponibilidade
@@ -1262,7 +1310,7 @@ export default function Matricula() {
                         return formationA - formationB || a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio)
                       })
                       .map((horario) => {
-                        const selected = selectedSchedule?.id === horario.id
+                        const selected = selectedSchedules.some((item) => item.id === horario.id)
                         const formation = isCollectivePlan && horario.status_formacao?.includes('_em_formacao')
                         const label = horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'
                         return (
@@ -1294,7 +1342,7 @@ export default function Matricula() {
                   )}
 
                   <div className="availability-actions">
-                    <button type="button" className="enrollment-primary-button" onClick={nextStep} disabled={!selectedSchedule}>
+                    <button type="button" className="enrollment-primary-button" onClick={nextStep} disabled={selectedSchedules.length !== requiredWeeklyLessons}>
                       Continuar <ArrowRight size={18} />
                     </button>
                   </div>
