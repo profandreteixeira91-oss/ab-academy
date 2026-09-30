@@ -2520,3 +2520,115 @@
     height: 14px;
   }
 }
+
+
+/* =========================================================
+   CARDS DESKTOP — TEXTO COMPLETO
+   Evita cortes de nomes, professores e etiquetas.
+========================================================= */
+
+@media (min-width: 901px) {
+  .agenda-card-grid .agenda-item {
+    min-height: 164px;
+    height: auto;
+    align-items: stretch;
+  }
+
+  .agenda-card-grid .agenda-item-main {
+    min-width: 0;
+    width: 100%;
+    overflow: visible;
+  }
+
+  .agenda-card-grid .agenda-item-top {
+    min-width: 0;
+    width: 100%;
+    padding-right: 20px;
+    overflow: visible;
+    align-items: flex-start;
+  }
+
+  .agenda-card-grid .agenda-language {
+    max-width: 100%;
+    min-width: 0;
+    overflow: visible;
+    text-overflow: clip;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+
+  .agenda-card-grid .agenda-status {
+    max-width: 100%;
+    min-width: 0;
+    height: auto;
+    min-height: 18px;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+    text-align: center;
+  }
+
+  .agenda-card-grid .agenda-student {
+    min-width: 0;
+    width: 100%;
+    align-items: flex-start;
+    line-height: 1.3;
+    white-space: normal;
+    overflow: visible;
+    overflow-wrap: anywhere;
+  }
+
+  .agenda-card-grid .agenda-student span {
+    min-width: 0;
+    flex: 1;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .agenda-card-grid .agenda-lesson-status {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .agenda-card-grid .agenda-lesson-status span {
+    min-width: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+    line-height: 1.25;
+  }
+
+  .agenda-card-grid .agenda-actions {
+    align-self: end;
+  }
+}
+
+/* Em cards mais estreitos, priorizamos leitura sem criar overflow. */
+@media (max-width: 1200px) and (min-width: 901px) {
+  .agenda-card-grid .agenda-item {
+    grid-template-columns: 52px minmax(0, 1fr);
+    padding: 11px;
+  }
+
+  .agenda-card-grid .agenda-time strong {
+    font-size: 17px;
+  }
+
+  .agenda-card-grid .agenda-item-top {
+    gap: 4px;
+  }
+
+  .agenda-card-grid .agenda-language,
+  .agenda-card-grid .agenda-status {
+    font-size: 8px;
+  }
+
+  .agenda-card-grid .agenda-student {
+    font-size: 9px;
+  }
+}
