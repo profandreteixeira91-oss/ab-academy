@@ -30,6 +30,7 @@ as $function$
       h.dia_semana,
       h.hora_inicio,
       h.hora_fim,
+      h.disponivel,
       h.professor_id,
       h.tipo_horario,
       h.nivel_referencia,
