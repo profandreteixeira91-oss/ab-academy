@@ -1207,7 +1207,7 @@ export default function Checkout({
                           : ''
                       }
                       onChange={event => {
-                        const value = event.target.value.replace(/\\D/g, '').slice(0, 6)
+                        const value = event.target.value.replace(/\D/g, '').slice(0, 6)
                         updateCard(
                           'expiry_month',
                           value.slice(0, 2),
