@@ -80,6 +80,13 @@ async function getBalance() {
   return await asaasRequest('/finance/balance', { method: 'GET' })
 }
 
+async function lookupPixKey(type: string, key: string) {
+  const normalizedType = type.toUpperCase()
+  const normalizedKey = normalizeKey(normalizedType, key)
+  validateKey(normalizedType, normalizedKey)
+  return await asaasRequest(`/pix/addressKeys/external?type=${encodeURIComponent(normalizedType)}&key=${encodeURIComponent(normalizedKey)}`, { method: 'GET' })
+}
+
 async function createTransfer(userId: string, body: {
   value: number
   pix_key: string
@@ -161,6 +168,12 @@ Deno.serve(async (req) => {
     if (req.method === 'GET') {
       const url = new URL(req.url)
       const action = url.searchParams.get('action') || 'balance'
+      if (action === 'lookup-pix') {
+        const type = url.searchParams.get('type') || ''
+        const key = url.searchParams.get('key') || ''
+        const owner = await lookupPixKey(type, key)
+        return response({ owner })
+      }
       if (action === 'balance') {
         const balance = await getBalance()
         const { data: transfers } = await supabaseAdmin
