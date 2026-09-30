@@ -18,6 +18,7 @@ import {
   TrendingDown,
   TrendingUp,
   Wallet,
+  Send,
   X,
 } from 'lucide-react'
 
@@ -28,6 +29,8 @@ import '../../styles/admin/Financeiro.css'
 type TipoLancamento = 'receita' | 'despesa'
 type StatusLancamento = 'pendente' | 'pago' | 'cancelado'
 type FinanceTab = 'visao-geral' | 'mensalidades' | 'lancamentos' | 'recebimentos'
+
+type AsaasTransfer = { id: string; asaas_transfer_id: string | null; valor: number; chave_pix: string; tipo_chave_pix: string; descricao: string | null; status: string; fail_reason: string | null; created_at: string; updated_at: string }
 
 type Lancamento = {
   id: string
@@ -183,6 +186,17 @@ export default function Financeiro() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState<FormState>(emptyForm)
   const [generatingRecurring, setGeneratingRecurring] = useState(false)
+  const [asaasBalance, setAsaasBalance] = useState<number | null>(null)
+  const [asaasBalanceUpdatedAt, setAsaasBalanceUpdatedAt] = useState<string | null>(null)
+  const [asaasLoading, setAsaasLoading] = useState(false)
+  const [asaasError, setAsaasError] = useState('')
+  const [asaasTransfers, setAsaasTransfers] = useState<AsaasTransfer[]>([])
+  const [transferModalOpen, setTransferModalOpen] = useState(false)
+  const [transferSaving, setTransferSaving] = useState(false)
+  const [transferValue, setTransferValue] = useState('')
+  const [transferKeyType, setTransferKeyType] = useState('CPF')
+  const [transferKey, setTransferKey] = useState('')
+  const [transferDescription, setTransferDescription] = useState('')
 
   async function loadFinanceiro() {
     try {
@@ -257,6 +271,48 @@ export default function Financeiro() {
   useEffect(() => {
     loadFinanceiro()
   }, [])
+  async function loadAsaasFinance() {
+    try {
+      setAsaasLoading(true); setAsaasError('')
+      const { data, error: functionError } = await supabase.functions.invoke('asaas-finance?action=balance', { method: 'GET' })
+      if (functionError) throw functionError
+      if (data?.error) throw new Error(data.error)
+      setAsaasBalance(Number(data?.balance?.balance ?? 0))
+      setAsaasBalanceUpdatedAt(new Date().toISOString())
+      setAsaasTransfers((data?.transfers ?? []) as AsaasTransfer[])
+    } catch (err) {
+      console.error('Erro ao consultar saldo Asaas:', err)
+      setAsaasError(err instanceof Error ? err.message : 'Não foi possível consultar o saldo Asaas.')
+    } finally { setAsaasLoading(false) }
+  }
+
+  useEffect(() => { void loadAsaasFinance() }, [])
+
+  function closeTransferModal() {
+    if (transferSaving) return
+    setTransferModalOpen(false); setTransferValue(''); setTransferKeyType('CPF'); setTransferKey(''); setTransferDescription('')
+  }
+
+  async function handleAsaasTransfer() {
+    try {
+      setTransferSaving(true); setAsaasError('')
+      const value = parseMoney(transferValue)
+      if (!value || value <= 0) throw new Error('Informe um valor válido para a transferência.')
+      if (asaasBalance !== null && value > asaasBalance) throw new Error('O valor é superior ao saldo disponível no Asaas.')
+      if (!transferKey.trim()) throw new Error('Informe a chave Pix de destino.')
+      const { data, error: functionError } = await supabase.functions.invoke('asaas-finance', {
+        body: { action: 'transfer', value, pix_key: transferKey, pix_key_type: transferKeyType, description: transferDescription.trim() || undefined },
+      })
+      if (functionError) throw functionError
+      if (data?.error) throw new Error(data.error)
+      setSuccess('Transferência Pix enviada ao Asaas para processamento.')
+      closeTransferModal(); await loadAsaasFinance()
+    } catch (err) {
+      console.error('Erro ao transferir saldo Asaas:', err)
+      setAsaasError(err instanceof Error ? err.message : 'Não foi possível realizar a transferência.')
+    } finally { setTransferSaving(false) }
+  }
+
 
   const filteredLancamentos = useMemo(() => {
     const normalizedSearch = search.trim().toLowerCase()
@@ -886,6 +942,22 @@ export default function Financeiro() {
 
       {tab === 'visao-geral' && (
         <>
+          <section className="financeiro-asaas-card">
+            <div className="financeiro-asaas-card-main">
+              <div className="financeiro-asaas-card-heading"><span className="financeiro-asaas-icon"><Wallet size={19} /></span><div><span className="financeiro-eyebrow">CONTA ASAAS</span><h3>Saldo disponível</h3></div></div>
+              <strong className="financeiro-asaas-balance">{asaasLoading && asaasBalance === null ? 'Carregando...' : formatCurrency(asaasBalance ?? 0)}</strong>
+              <small>{asaasBalanceUpdatedAt ? 'Atualizado em ' + new Date(asaasBalanceUpdatedAt).toLocaleString('pt-BR') : 'Saldo consultado diretamente no Asaas.'}</small>
+              {asaasError && <p className="financeiro-asaas-error">{asaasError}</p>}
+            </div>
+            <div className="financeiro-asaas-actions">
+              <button type="button" className="financeiro-secondary-button" onClick={() => void loadAsaasFinance()} disabled={asaasLoading}><RefreshCw size={15} className={asaasLoading ? 'financeiro-spin' : ''} />Atualizar saldo</button>
+              <button type="button" className="financeiro-primary-button" onClick={() => setTransferModalOpen(true)} disabled={asaasLoading || (asaasBalance ?? 0) <= 0}><Send size={15} />Transferir por Pix</button>
+            </div>
+          </section>
+          <section className="financeiro-asaas-transfers">
+            <div className="financeiro-panel-header"><div><h3>Transferências do Asaas</h3><p>Últimas transferências de saldo por Pix solicitadas pelo administrador.</p></div></div>
+            {asaasTransfers.length === 0 ? <div className="financeiro-empty-inline">Nenhuma transferência registrada.</div> : <div className="financeiro-table-wrap"><table className="financeiro-table"><thead><tr><th>Data</th><th>Destino</th><th>Valor</th><th>Status</th></tr></thead><tbody>{asaasTransfers.map((transfer) => <tr key={transfer.id}><td>{formatDate(transfer.created_at)}</td><td><strong>{transfer.tipo_chave_pix}</strong><span className="financeiro-transfer-key">{transfer.chave_pix}</span></td><td><strong className="negative-text">- {formatCurrency(Number(transfer.valor))}</strong></td><td><span className={'financeiro-status asaas-transfer-status ' + transfer.status.toLowerCase()}>{transfer.status}</span></td></tr>)}</tbody></table></div>}
+          </section>
           <section className="financeiro-stats">
             <article className="financeiro-stat-card">
               <div className="financeiro-stat-top">
@@ -1281,6 +1353,25 @@ export default function Financeiro() {
             </div>
           )}
         </section>
+      )}
+
+      {transferModalOpen && (
+        <div className="financeiro-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) closeTransferModal() }}>
+          <div className="financeiro-modal financeiro-transfer-modal">
+            <header className="financeiro-modal-header"><div><span className="financeiro-eyebrow">ASAAS · PIX</span><h2>Transferir saldo</h2><p>Envie parte do saldo disponível da conta Asaas para uma chave Pix.</p></div><button type="button" className="financeiro-modal-close" onClick={closeTransferModal} disabled={transferSaving}><X size={19} /></button></header>
+            <div className="financeiro-modal-body">
+              <div className="financeiro-transfer-balance"><span>Saldo disponível</span><strong>{formatCurrency(asaasBalance ?? 0)}</strong></div>
+              <div className="financeiro-form-grid">
+                <label className="financeiro-field"><span>Valor *</span><input type="text" inputMode="decimal" value={transferValue} onChange={(event) => setTransferValue(event.target.value)} placeholder="0,00" disabled={transferSaving} /></label>
+                <label className="financeiro-field"><span>Tipo de chave *</span><select value={transferKeyType} onChange={(event) => setTransferKeyType(event.target.value)} disabled={transferSaving}><option value="CPF">CPF</option><option value="CNPJ">CNPJ</option><option value="EMAIL">E-mail</option><option value="PHONE">Telefone</option><option value="EVP">Chave aleatória</option></select></label>
+                <label className="financeiro-field financeiro-field-full"><span>Chave Pix *</span><input type="text" value={transferKey} onChange={(event) => setTransferKey(event.target.value)} placeholder="Informe a chave Pix de destino" disabled={transferSaving} /></label>
+                <label className="financeiro-field financeiro-field-full"><span>Descrição</span><input type="text" value={transferDescription} onChange={(event) => setTransferDescription(event.target.value)} placeholder="Ex.: transferência para conta da empresa" disabled={transferSaving} /></label>
+              </div>
+              <div className="financeiro-transfer-warning"><strong>Confirme os dados antes de transferir.</strong><span>A transferência será enviada ao Asaas e poderá permanecer pendente até a conclusão.</span></div>
+            </div>
+            <footer className="financeiro-modal-footer"><button type="button" className="financeiro-secondary-button" onClick={closeTransferModal} disabled={transferSaving}>Cancelar</button><button type="button" className="financeiro-primary-button" onClick={handleAsaasTransfer} disabled={transferSaving}>{transferSaving ? <><span className="financeiro-button-spinner" /> Enviando...</> : <><Send size={16} /> Transferir via Pix</>}</button></footer>
+          </div>
+        </div>
       )}
 
       {modalOpen && (
