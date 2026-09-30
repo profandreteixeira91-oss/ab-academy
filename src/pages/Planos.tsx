@@ -87,7 +87,7 @@ function ModalidadeCard({
       (plano) =>
         plano.idioma === idioma &&
         plano.modalidade === modalidade &&
-        plano.tipo === 'mensal' &&
+        plano.tipo === 'mensal',
     )
     .sort((a, b) => (a.aulas_semana ?? 0) - (b.aulas_semana ?? 0))
 
