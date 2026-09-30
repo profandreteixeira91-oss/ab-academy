@@ -387,7 +387,7 @@ export default function Matricula() {
 
   useEffect(() => {
     if (language) void loadSchedules(language)
-  }, [language, plan?.modalidade, plan?.aulas_semana, formationSlotId, waitingFormation, collectiveScheduleMode])
+  }, [language, plan?.modalidade, plan?.aulas_semana, formationSlotId, waitingFormation])
 
   const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
     const { data, error: planError } = await supabase
