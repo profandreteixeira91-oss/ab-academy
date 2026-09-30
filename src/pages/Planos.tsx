@@ -158,6 +158,10 @@ function ModalidadeCard({
                       <span>{formatTime(horario.hora_inicio)}–{formatTime(horario.hora_fim)}</span>
                     </div>
                   ))}
+                  <div className="planos-schedule-row">
+                    <strong>Nível</strong>
+                    <span>{NIVEL_LABELS[(horariosDaOpcao[0]?.nivel_referencia || nivel || '') as keyof typeof NIVEL_LABELS] || horariosDaOpcao[0]?.nivel_referencia || nivel || 'A confirmar'}</span>
+                  </div>
                 </div>
                 <p>
                   {horariosDaOpcao[0]?.professor_nome ? 'Professor: ' + horariosDaOpcao[0].professor_nome : 'Professor a confirmar'}
