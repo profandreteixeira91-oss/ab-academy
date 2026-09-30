@@ -2546,6 +2546,10 @@ export default function Agenda() {
                             <span className="agenda-status available">{horario.nivel_referencia === 'iniciante' ? 'Iniciante' : horario.nivel_referencia === 'basico' ? 'Básico' : horario.nivel_referencia === 'intermediario' ? 'Intermediário' : horario.nivel_referencia === 'avancado' ? 'Avançado' : horario.nivel_referencia}</span>
                           )}
 
+                          {reagendamentoOriginal && (
+                            <span className="agenda-status unavailable">REAGENDADA</span>
+                          )}
+
                           <span
                             className={`agenda-status ${
                               ocupado
@@ -2697,6 +2701,66 @@ export default function Agenda() {
                 },
               )}
 
+              {reposicoesDoDia.length > 0 && (
+                <div className="agenda-list" style={{ marginTop: '18px' }}>
+                  <div className="agenda-panel-header" style={{ marginBottom: '10px' }}>
+                    <div>
+                      <h3>Reposições agendadas</h3>
+                      <p>Aulas que foram retiradas do horário original e serão realizadas neste dia.</p>
+                    </div>
+                  </div>
+
+                  {reposicoesDoDia.map((registro) => {
+                    const horario = horarios.find((item) => item.id === registro.horario_id)
+                    if (!horario || !registro.data_aula_override || !registro.hora_inicio_override || !registro.hora_fim_override) return null
+
+                    return (
+                      <div key={'reposicao-' + registro.id} className="agenda-item occupied">
+                        <div className="agenda-time">
+                          <strong>{formatHour(registro.hora_inicio_override)}</strong>
+                          <span>{formatHour(registro.hora_fim_override)}</span>
+                        </div>
+
+                        <div className="agenda-item-main">
+                          <div className="agenda-item-top">
+                            <span className="agenda-language">{getIdiomaLabel(horario.idioma)}</span>
+                            <span className="agenda-language">
+                              {horario.tipo_horario === 'dupla' ? 'Dupla' : horario.tipo_horario === 'grupo' ? 'Grupo' : 'Individual'}
+                            </span>
+                            <span className="agenda-status unavailable">REPOSIÇÃO</span>
+                          </div>
+
+                          <div className="agenda-student">
+                            <UserRound size={16} />
+                            <span>{getAlunoNome(registro.aluno_id) || 'Aluno'}</span>
+                          </div>
+
+                          <div className="agenda-student">
+                            <UserRound size={16} />
+                            <span>{getProfessorNome(horario.professor_id) ? 'Professor: ' + getProfessorNome(horario.professor_id) : 'Nenhum professor atribuído'}</span>
+                          </div>
+
+                          <div className="agenda-lesson-status">
+                            <Video size={15} />
+                            <span>Aula disponível na AB Academy</span>
+                          </div>
+                        </div>
+
+                        <div className="agenda-actions">
+                          <button
+                            type="button"
+                            className="agenda-action-button"
+                            onClick={() => openTeacherRoom(horario)}
+                            title="Entrar na reposição"
+                          >
+                            <Video size={17} />
+                          </button>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              )}
             </div>
           )}
 
