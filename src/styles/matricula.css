@@ -2147,3 +2147,72 @@
     animation-iteration-count: 1 !important;
   }
 }
+
+
+/* =========================================================
+   MODO DE DISPONIBILIDADE
+========================================================= */
+
+.availability-mode-selector {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--background-light);
+}
+
+.availability-mode-options {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.availability-mode-option {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--background);
+  color: var(--text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color .2s ease, background .2s ease, box-shadow .2s ease, transform .2s ease;
+}
+
+.availability-mode-option:hover {
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+
+.availability-mode-option.selected {
+  border-color: var(--primary);
+  background: var(--primary-light);
+  box-shadow: 0 0 0 2px rgba(22, 70, 216, 0.08);
+}
+
+.availability-mode-option span {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.availability-mode-option small {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+@media (max-width: 700px) {
+  .availability-mode-options {
+    grid-template-columns: 1fr;
+  }
+
+  .availability-mode-option {
+    padding: 13px 14px;
+  }
+}
