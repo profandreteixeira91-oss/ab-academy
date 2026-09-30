@@ -61,6 +61,8 @@ type Pagamento = {
   status: string
   valor: number
   parcelas: number | null
+  recorrencia_autorizada: boolean
+  recorrencia_autorizada_em: string | null
   asaas_customer_id: string | null
   asaas_payment_id: string | null
   asaas_subscription_id: string | null
@@ -446,6 +448,8 @@ async function getPagamento(
         status,
         valor,
         parcelas,
+        recorrencia_autorizada,
+        recorrencia_autorizada_em,
         asaas_customer_id,
         asaas_payment_id,
         asaas_subscription_id,
@@ -1215,7 +1219,7 @@ Deno.serve(
 
       if (
         pagamento.asaas_subscription_id &&
-        pagamento.tipo_plano === 'mensal' &&
+        pagamento.tipo_plano === 'mensalidade' &&
         body.metodo === 'cartao'
       ) {
         return jsonResponse(
@@ -1567,7 +1571,10 @@ Deno.serve(
         )
       }
 
-      if (pagamento.tipo_plano === 'mensal') {
+      if (
+        pagamento.tipo_plano === 'mensalidade' &&
+        pagamento.recorrencia_autorizada
+      ) {
         const nextDueDate = new Date().toISOString().slice(0, 10)
         const subscription = await asaasRequest('/subscriptions', {
           method: 'POST',
