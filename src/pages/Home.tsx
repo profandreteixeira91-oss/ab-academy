@@ -152,12 +152,13 @@ function Home() {
           </a>
 
           <nav className="navigation">
-            <a href="#inicio">Início</a>
-            <a href="#sobre">Sobre</a>
-            <a href="#cursos">Cursos</a>
-            <a href="#metodologia">Metodologia</a>
-            <a href="#enterprise">AB Enterprise</a>
-            <a href="#contato">Contato</a>
+            <a href="/">Início</a>
+            <a href="/aulas">Cursos</a>
+            <a href="/planos">Planos</a>
+            <a href="/diagnostica">Aula diagnóstica</a>
+            <a href="/quero-aprender">Quero aprender</a>
+            <a href="/aluno">Área do aluno</a>
+            <a href="/professor">Portal do professor</a>
           </nav>
 
           <div className="header-actions">
@@ -194,13 +195,11 @@ function Home() {
           </div>
 
           <div className={`mobile-navigation ${mobileMenuOpen ? 'open' : ''}`}>
-            <a href="#inicio" onClick={() => setMobileMenuOpen(false)}>Início</a>
-            <a href="#sobre" onClick={() => setMobileMenuOpen(false)}>Sobre</a>
-            <a href="#cursos" onClick={() => setMobileMenuOpen(false)}>Cursos</a>
-            <a href="#metodologia" onClick={() => setMobileMenuOpen(false)}>Metodologia</a>
-            <a href="#enterprise" onClick={() => setMobileMenuOpen(false)}>AB Enterprise</a>
-            <a href="#contato" onClick={() => setMobileMenuOpen(false)}>Contato</a>
-            <a href="/matricula" onClick={() => setMobileMenuOpen(false)}>Matricule-se</a>
+            <a href="/" onClick={() => setMobileMenuOpen(false)}>Início</a>
+            <a href="/aulas" onClick={() => setMobileMenuOpen(false)}>Cursos</a>
+            <a href="/planos" onClick={() => setMobileMenuOpen(false)}>Planos</a>
+            <a href="/diagnostica" onClick={() => setMobileMenuOpen(false)}>Aula diagnóstica</a>
+            <a href="/quero-aprender" onClick={() => setMobileMenuOpen(false)}>Quero aprender</a>
             <a href="/aluno" onClick={() => setMobileMenuOpen(false)}>Área do aluno</a>
             <a href="/professor" onClick={() => setMobileMenuOpen(false)}>Portal do professor</a>
           </div>
