@@ -198,9 +198,9 @@ export default function Matricula() {
   const [responsibleName, setResponsibleName] = useState('')
   const [responsiblePhone, setResponsiblePhone] = useState('')
   const [language, setLanguage] = useState<Language | ''>('')
-  const [conversationLevel, setConversationLevel] = useState('')
-  const [writingLevel, setWritingLevel] = useState('')
-  const [comprehensionLevel, setComprehensionLevel] = useState('')
+  const [conversationLevel] = useState('')
+  const [writingLevel] = useState('')
+  const [comprehensionLevel] = useState('')
   const [plan, setPlan] = useState<Plan | null>(null)
   const [collectiveEnrollment, setCollectiveEnrollment] = useState<{ token: string; turmaId: string; participanteId: string; valorMensal: number; condicaoMeses: number | null; condicaoInicio: string | null; condicaoFim: string | null } | null>(null)
   const [availableSchedules, setAvailableSchedules] = useState<Horario[]>([])
@@ -212,9 +212,7 @@ export default function Matricula() {
   const [availabilityRanges, setAvailabilityRanges] = useState<Record<number, { start: string; end: string }>>({})
   const [availabilityFlexible, setAvailabilityFlexible] = useState(false)
   const [availabilityReady, setAvailabilityReady] = useState(false)
-  const [waitingIndividualPlan, setWaitingIndividualPlan] = useState<Plan | null>(null)
-  const [collectiveScheduleMode, setCollectiveScheduleMode] = useState<'existing' | 'waiting'>('existing')
-  const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
+   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
   const [reservaToken] = useState(() => crypto.randomUUID())
   const selectedLanguageLabel =
@@ -225,7 +223,7 @@ export default function Matricula() {
         : ''
 
   const isCollectivePlan = plan?.modalidade === 'dupla' || plan?.modalidade === 'grupo'
-  const isWaitingFormation = waitingFormation || (isCollectivePlan && collectiveScheduleMode === 'waiting' && !formationSlotId)
+  const isWaitingFormation = waitingFormation
   const effectivePlan = plan
 
 
@@ -393,7 +391,6 @@ export default function Matricula() {
 
   useEffect(() => {
     if (!language || (!isCollectivePlan && !isWaitingFormation)) {
-      setWaitingIndividualPlan(null)
       return
     }
 
@@ -409,7 +406,7 @@ export default function Matricula() {
         .limit(1)
         .maybeSingle()
 
-      setWaitingIndividualPlan(data ? data as Plan : null)
+      void data
     }
 
     void loadWaitingIndividualPlan()
