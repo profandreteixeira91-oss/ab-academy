@@ -221,6 +221,12 @@ export default function Agenda() {
   const [selectedDay, setSelectedDay] =
     useState<number>(new Date().getDay())
 
+  const [openPeriod, setOpenPeriod] =
+    useState<'manha' | 'tarde' | 'noite'>(() => {
+      const hour = new Date().getHours()
+      return hour < 12 ? 'manha' : hour < 20 ? 'tarde' : 'noite'
+    })
+
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -2495,9 +2501,45 @@ export default function Agenda() {
 
           ) : (
 
-            <div className="agenda-list">
+            <div className="agenda-periods">
+              {([
+                { key: 'manha' as const, label: 'Manhã', range: '08:00 — 12:00', start: 8 * 60, end: 12 * 60 },
+                { key: 'tarde' as const, label: 'Tarde', range: '14:00 — 20:00', start: 14 * 60, end: 20 * 60 },
+                { key: 'noite' as const, label: 'Noite', range: '20:00 — 22:00', start: 20 * 60, end: 24 * 60 },
+              ]).map((period) => {
+                const periodHorarios = horariosDoDia.filter((horario) => {
+                  const inicio = timeToMinutes(formatHour(horario.hora_inicio))
+                  return inicio >= period.start && inicio < period.end
+                })
+                const periodReposicoes = reposicoesDoDia.filter((registro) => {
+                  if (!registro.hora_inicio_override) return false
+                  const inicio = timeToMinutes(formatHour(registro.hora_inicio_override))
+                  return inicio >= period.start && inicio < period.end
+                })
 
-              {horariosDoDia.map(
+                return (
+                  <div key={period.key} className="agenda-period">
+                    <button
+                      type="button"
+                      className={`agenda-period-menu ${openPeriod === period.key ? 'active' : ''}`}
+                      onClick={() => setOpenPeriod(openPeriod === period.key ? period.key : period.key)}
+                      aria-expanded={openPeriod === period.key}
+                    >
+                      <span className="agenda-period-menu-main">
+                        <strong>{period.label}</strong>
+                        <small>{period.range}</small>
+                      </span>
+                      <span className="agenda-period-menu-count">
+                        {periodHorarios.length + periodReposicoes.length}
+                      </span>
+                      <span className="agenda-period-chevron">{openPeriod === period.key ? '−' : '+'}</span>
+                    </button>
+
+                    {openPeriod === period.key && (
+                      <div className="agenda-period-content">
+                        {periodHorarios.length > 0 ? (
+                          <div className="agenda-card-grid">
+              {periodHorarios.map(
                 (horario) => {
                   const alunoNome =
                     getAlunoNome(
@@ -2753,8 +2795,21 @@ export default function Agenda() {
                 },
               )}
 
-              {reposicoesDoDia.length > 0 && (
-                <div className="agenda-list" style={{ marginTop: '18px' }}>
+                          </div>
+                        ) : null}
+
+              {periodReposicoes.length > 0 && (
+                <div className="agenda-replacement-section">
+                  <div className="agenda-replacement-heading">
+                    <div>
+                      <h3>Reposições agendadas</h3>
+                      <p>Aulas remanejadas para este período.</p>
+                    </div>
+                    <span>{periodReposicoes.length}</span>
+                  </div>
+
+                  <div className="agenda-card-grid">
+                  {periodReposicoes.map((registro) => {
                   <div className="agenda-panel-header" style={{ marginBottom: '10px' }}>
                     <div>
                       <h3>Reposições agendadas</h3>
@@ -2811,8 +2866,14 @@ export default function Agenda() {
                       </div>
                     )
                   })}
+                  </div>
                 </div>
               )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           )}
 
