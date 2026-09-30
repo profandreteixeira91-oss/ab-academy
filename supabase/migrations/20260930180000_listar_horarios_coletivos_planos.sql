@@ -1,3 +1,5 @@
+drop function if exists public.listar_horarios_coletivos_planos(text,text);
+
 create or replace function public.listar_horarios_coletivos_planos(
   p_idioma text,
   p_modalidade text
@@ -8,6 +10,7 @@ returns table(
   dia_semana integer,
   hora_inicio time,
   hora_fim time,
+  disponivel boolean,
   professor_id uuid,
   professor_nome text,
   tipo_horario text,
@@ -84,6 +87,7 @@ as $function$
     c.dia_semana,
     c.hora_inicio,
     c.hora_fim,
+    c.disponivel,
     c.professor_id,
     p.nome_completo,
     c.tipo_horario,
