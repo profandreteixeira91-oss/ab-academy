@@ -458,7 +458,6 @@ export default function Agenda() {
     )
   }, [registrosAulas, horarios, selectedDay, filterTipo, filterProfessor, filterNivel])
 
-  const [agendaNow, setAgendaNow] = useState(() => new Date())
   const agendaToday = agendaNow.getDay()
   const agendaNowMinutes = agendaNow.getHours() * 60 + agendaNow.getMinutes()
 
