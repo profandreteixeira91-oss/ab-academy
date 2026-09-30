@@ -151,13 +151,14 @@ function ModalidadeCard({
     if (horariosDaOpcao.some((horario) => horario.participantes > 0) || formationPrices[key] !== undefined) return
 
     setFormationPriceLoading(key)
-    const { data, error: priceError } = await supabase.rpc('preco_formacao_coletiva', {
-      p_idioma: idioma,
-      p_modalidade: modalidade,
-      p_aulas_semana: plano.aulas_semana ?? 1,
-    })
-    if (!priceError && Number(data ?? 0) > 0) {
-      setFormationPrices((current) => ({ ...current, [key]: Number(data) }))
+    const individualPlan = planos.find((item) =>
+      item.idioma === plano.idioma
+      && item.modalidade === 'individual'
+      && item.ativo
+      && (item.aulas_semana ?? 1) === (plano.aulas_semana ?? 1)
+    )
+    if (individualPlan) {
+      setFormationPrices((current) => ({ ...current, [key]: Number(individualPlan.preco) * 0.9 }))
     }
     setFormationPriceLoading(null)
   }
