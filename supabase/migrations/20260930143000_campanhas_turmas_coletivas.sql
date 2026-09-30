@@ -304,7 +304,7 @@ where coalesce(c.total,0) < b.quantidade_maxima
     select 1
     from encounters ce
     where ce.turma_id = b.id
-      and public.professor_horario_ocupado(
+      and private.professor_horario_ocupado(
         b.professor_id,
         ce.dia_semana,
         ce.hora_inicio,
