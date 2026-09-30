@@ -207,6 +207,7 @@ export default function Matricula() {
   const [selectedSchedule, setSelectedSchedule] = useState<SelectedSchedule | null>(null)
   const [selectedSchedules, setSelectedSchedules] = useState<SelectedSchedule[]>([])
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
+  const [expandedSchedulePeriods, setExpandedSchedulePeriods] = useState<Record<string, boolean>>({})
   const [availabilityMode, setAvailabilityMode] = useState<'periods' | 'ranges' | 'flexible'>('periods')
   const [availabilityDays, setAvailabilityDays] = useState<number[]>([])
   const [availabilityPeriods, setAvailabilityPeriods] = useState<string[]>([])
@@ -227,26 +228,47 @@ export default function Matricula() {
   const effectivePlan = plan
 
 
-  const visibleSchedules =
-    selectedWeekday === null
-      ? availableSchedules
-      : availableSchedules.filter(
-          (item) =>
-            item.dia_semana === selectedWeekday,
-        )
+  const getSchedulePeriod = (time: string) => {
+    const hour = Number(time.slice(0, 2))
+    if (hour < 12) return 'manha'
+    if (hour < 18) return 'tarde'
+    return 'noite'
+  }
+
+  const schedulePeriodLabels: Record<string, string> = {
+    manha: 'Manhã',
+    tarde: 'Tarde',
+    noite: 'Noite',
+  }
 
   const groupedSchedules = WEEKDAYS.map(
     (weekday) => ({
       ...weekday,
       schedules: availableSchedules.filter(
-        (item) =>
-          item.dia_semana === weekday.value,
+        (item) => item.dia_semana === weekday.value,
       ),
     }),
-  ).filter(
-    (weekday) =>
-      weekday.schedules.length > 0,
-  )
+  ).filter((weekday) => weekday.schedules.length > 0)
+
+  const activeScheduleWeekday = selectedWeekday ?? groupedSchedules[0]?.value ?? null
+
+  const visibleSchedules = activeScheduleWeekday === null
+    ? []
+    : availableSchedules.filter((item) => item.dia_semana === activeScheduleWeekday)
+
+  const groupedSchedulePeriods = ['manha', 'tarde', 'noite']
+    .map((period) => ({
+      period,
+      label: schedulePeriodLabels[period],
+      schedules: visibleSchedules
+        .filter((item) => getSchedulePeriod(item.hora_inicio) === period)
+        .sort((a, b) => {
+          const formationA = a.participantes > 0 && a.participantes < a.capacidade ? 0 : a.participantes === a.capacidade ? 1 : 2
+          const formationB = b.participantes > 0 && b.participantes < b.capacidade ? 0 : b.participantes === b.capacidade ? 1 : 2
+          return formationA - formationB || a.hora_inicio.localeCompare(b.hora_inicio)
+        }),
+    }))
+    .filter((group) => group.schedules.length > 0)
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
@@ -1305,40 +1327,81 @@ export default function Matricula() {
               ) : (
                 <>
                   <div className="schedule-calendar">
-                    <button type="button" className={`schedule-date ${selectedWeekday === null ? 'selected' : ''}`} onClick={() => setSelectedWeekday(null)}>
-                      <strong>Todos</strong><span>horários</span>
-                    </button>
                     {groupedSchedules.map((weekday) => (
-                      <button type="button" key={weekday.value} className={`schedule-date ${selectedWeekday === weekday.value ? 'selected' : ''}`} onClick={() => setSelectedWeekday(weekday.value)}>
-                        <strong>{weekday.short}</strong><span>{weekday.schedules.length} opções</span>
+                      <button
+                        type="button"
+                        key={weekday.value}
+                        className={'schedule-date ' + (activeScheduleWeekday === weekday.value ? 'selected' : '')}
+                        onClick={() => setSelectedWeekday(weekday.value)}
+                      >
+                        <strong>{weekday.short}</strong>
+                        <span>{weekday.schedules.length} opções</span>
                       </button>
                     ))}
                   </div>
 
-                  <div className="schedule-times">
-                    {visibleSchedules
-                      .slice()
-                      .sort((a, b) => {
-                        const formationA = a.participantes > 0 && a.participantes < a.capacidade ? 0 : a.participantes === a.capacidade ? 1 : 2
-                        const formationB = b.participantes > 0 && b.participantes < b.capacidade ? 0 : b.participantes === b.capacidade ? 1 : 2
-                        return formationA - formationB || a.dia_semana - b.dia_semana || a.hora_inicio.localeCompare(b.hora_inicio)
-                      })
-                      .map((horario) => {
-                        const selected = selectedSchedules.some((item) => item.id === horario.id)
-                        const formation = isCollectivePlan && horario.status_formacao?.includes('_em_formacao')
-                        const label = horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'
-                        return (
-                          <button type="button" key={horario.id} className={`schedule-time ${selected ? 'selected' : ''}`} onClick={() => handleSelectSchedule(horario)}>
-                            <strong>{formatTime(horario.hora_inicio)}</strong>
-                            <span>até {formatTime(horario.hora_fim)}</span>
-                            {isCollectivePlan && (
-                              <small>
-                                {formation ? `${label} em formação • ${horario.participantes}/${horario.capacidade} alunos` : horario.participantes >= horario.capacidade ? `${label} formada • ${horario.participantes}/${horario.capacidade}` : `Nova ${label.toLowerCase()} • 0/${horario.capacidade}`}
-                              </small>
-                            )}
-                          </button>
-                        )
-                      })}
+                  <div className="schedule-day-heading">
+                    <strong>{WEEKDAYS.find((day) => day.value === activeScheduleWeekday)?.label}</strong>
+                    <span>Escolha 1 horário neste dia</span>
+                  </div>
+
+                  <div className="schedule-periods">
+                    {groupedSchedulePeriods.map((group) => {
+                      const periodKey = String(activeScheduleWeekday) + '-' + group.period
+                      const expanded = expandedSchedulePeriods[periodKey] ?? false
+                      const schedules = expanded ? group.schedules : group.schedules.slice(0, 4)
+                      const hasMore = group.schedules.length > 4
+
+                      return (
+                        <section className="schedule-period" key={group.period}>
+                          <div className="schedule-period-header">
+                            <div>
+                              <strong>{group.label}</strong>
+                              <span>{group.schedules.length} horários</span>
+                            </div>
+                          </div>
+
+                          <div className="schedule-times">
+                            {schedules.map((horario) => {
+                              const selected = selectedSchedules.some((item) => item.id === horario.id)
+                              const formation = isCollectivePlan && horario.status_formacao?.includes('_em_formacao')
+                              const label = horario.tipo_horario === 'dupla' ? 'Dupla' : 'Grupo'
+
+                              return (
+                                <button
+                                  type="button"
+                                  key={horario.id}
+                                  className={'schedule-time ' + (selected ? 'selected' : '')}
+                                  onClick={() => handleSelectSchedule(horario)}
+                                >
+                                  <strong>{formatTime(horario.hora_inicio)}</strong>
+                                  <span>até {formatTime(horario.hora_fim)}</span>
+                                  {isCollectivePlan && (
+                                    <small>
+                                      {formation
+                                        ? label + " em formação • " + horario.participantes + "/" + horario.capacidade + " alunos"
+                                        : horario.participantes >= horario.capacidade
+                                          ? label + " formada • " + horario.participantes + "/" + horario.capacidade
+                                          : "Nova " + label.toLowerCase() + " • 0/" + horario.capacidade}
+                                    </small>
+                                  )}
+                                </button>
+                              )
+                            })}
+                          </div>
+
+                          {hasMore && (
+                            <button
+                              type="button"
+                              className="schedule-show-more"
+                              onClick={() => setExpandedSchedulePeriods((current) => ({ ...current, [periodKey]: !expanded }))}
+                            >
+                              {expanded ? 'Mostrar menos' : 'Ver mais ' + (group.schedules.length - 4) + ' horários'}
+                            </button>
+                          )}
+                        </section>
+                      )
+                    })}
                   </div>
 
                   {selectedSchedules.length > 0 && (
