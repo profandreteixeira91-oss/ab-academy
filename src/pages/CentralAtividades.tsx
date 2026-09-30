@@ -9,7 +9,7 @@ import { supabase } from '../lib/supabase'
 import '../styles/central-atividades.css'
 
 type Language = 'ingles' | 'alemao'
-type Level = 'iniciante' | 'basico' | 'intermediario' | 'avancado' | 'fluente'
+type Level = 'iniciante' | 'basico' | 'intermediario' | 'avancado'
 type Category = 'vocabulario' | 'gramatica' | 'leitura' | 'compreensao' | 'escrita' | 'cotidiano' | 'revisao'
 
 type CentralActivity = {
@@ -40,7 +40,6 @@ const LEVELS: { value: Level; label: string; description: string }[] = [
   { value: 'basico', label: 'Básico', description: 'Estruturas e situações fundamentais.' },
   { value: 'intermediario', label: 'Intermediário', description: 'Comunicação com mais autonomia.' },
   { value: 'avancado', label: 'Avançado', description: 'Uso mais preciso e complexo.' },
-  { value: 'fluente', label: 'Fluente', description: 'Prática para alta desenvoltura.' },
 ]
 
 const CATEGORIES: { value: Category; label: string; icon: typeof BookOpen }[] = [
@@ -55,7 +54,7 @@ const CATEGORIES: { value: Category; label: string; icon: typeof BookOpen }[] = 
 
 const LANGUAGE_LABELS: Record<Language, string> = { ingles: 'Inglês', alemao: 'Alemão' }
 
-const LEVEL_ORDER: Level[] = ['iniciante', 'basico', 'intermediario', 'avancado', 'fluente']
+const LEVEL_ORDER: Level[] = ['iniciante', 'basico', 'intermediario', 'avancado']
 
 function getRecommendedLevel(profile: StudentProfile | null): Level {
   if (!profile) return 'iniciante'
