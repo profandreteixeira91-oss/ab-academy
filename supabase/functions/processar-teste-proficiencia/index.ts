@@ -13,7 +13,7 @@ function json(body: unknown, status = 200) {
 }
 
 const allowedMime = new Set(['application/pdf'])
-const allowedLevels = new Set(['A1','A2','B1','B2','C1','C2'])
+const allowedLevels = new Set(['iniciante','basico','intermediario','avancado'])
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
@@ -81,14 +81,14 @@ Deno.serve(async (req) => {
 
 Extraia somente os resultados que estiverem efetivamente presentes no documento. Não invente pontuações.
 
-Classifique o nível geral usando CEFR, somente entre A1, A2, B1, B2, C1 e C2. Quando houver resultados separados para conversação, escrita e compreensão, classifique cada dimensão separadamente. Quando o documento apresentar apenas um nível geral, use esse mesmo nível nas três dimensões.
+Classifique em uma das quatro categorias do sistema: iniciante, basico, intermediario ou avancado. Quando houver resultados separados para conversação, escrita e compreensão, classifique cada dimensão separadamente. Quando o documento apresentar apenas um nível geral, use esse mesmo nível nas três dimensões.
 
 Retorne SOMENTE JSON válido neste formato:
 {
-  "nivel_geral": "A1|A2|B1|B2|C1|C2",
-  "nivel_conversacao": "A1|A2|B1|B2|C1|C2",
-  "nivel_escrita": "A1|A2|B1|B2|C1|C2",
-  "nivel_compreensao": "A1|A2|B1|B2|C1|C2",
+  "nivel_geral": "iniciante|basico|intermediario|avancado",
+  "nivel_conversacao": "iniciante|basico|intermediario|avancado",
+  "nivel_escrita": "iniciante|basico|intermediario|avancado",
+  "nivel_compreensao": "iniciante|basico|intermediario|avancado",
   "pontuacoes": [],
   "observacoes": "string"
 }
