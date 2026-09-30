@@ -440,8 +440,10 @@ export default function Planos() {
         idioma: form.idioma,
         tipo: form.tipo,
         modalidade: form.modalidade,
-        min_alunos: minAlunos,
-        max_alunos: maxAlunos,
+        // O banco exige NULL para capacidade em planos individuais.
+        // Duplas e grupos continuam usando os limites informados no editor.
+        min_alunos: form.modalidade === 'individual' ? null : minAlunos,
+        max_alunos: form.modalidade === 'individual' ? null : maxAlunos,
         aulas_semana: aulasSemana,
         nome: form.nome.trim(),
         descricao: form.descricao.trim() || null,
