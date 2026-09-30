@@ -163,6 +163,184 @@ async function getAuthenticatedUser(
  * =========================================================
  */
 
+function digits(value: string) {
+  return value.replace(/\D/g, '')
+}
+
+function luhnValid(value: string) {
+  const number = digits(value)
+  let sum = 0
+  let doubleDigit = false
+
+  for (let index = number.length - 1; index >= 0; index -= 1) {
+    let digit = Number(number[index])
+
+    if (doubleDigit) {
+      digit *= 2
+      if (digit > 9) digit -= 9
+    }
+
+    sum += digit
+    doubleDigit = !doubleDigit
+  }
+
+  return number.length > 0 && sum % 10 === 0
+}
+
+function getClientIp(req: Request) {
+  const forwardedFor =
+    req.headers.get('x-forwarded-for')
+
+  if (forwardedFor) {
+    const firstIp =
+      forwardedFor
+        .split(',')
+        .map(value => value.trim())
+        .find(Boolean)
+
+    if (firstIp) return firstIp
+  }
+
+  return (
+    req.headers.get('cf-connecting-ip') ||
+    req.headers.get('x-real-ip') ||
+    ''
+  ).trim()
+}
+
+function normalizeCreditCard(
+  card: NonNullable<RequestBody['credit_card']>,
+) {
+  return {
+    holderName:
+      card.holder_name
+        .trim()
+        .replace(/\s+/g, ' '),
+
+    number:
+      digits(card.number),
+
+    expiryMonth:
+      digits(card.expiry_month)
+        .padStart(2, '0'),
+
+    expiryYear:
+      digits(card.expiry_year),
+
+    ccv:
+      digits(card.ccv),
+  }
+}
+
+function normalizeCardHolder(
+  holder: NonNullable<RequestBody['credit_card_holder_info']>,
+) {
+  return {
+    name:
+      holder.name
+        .trim()
+        .replace(/\s+/g, ' '),
+
+    email:
+      holder.email.trim(),
+
+    cpfCnpj:
+      digits(holder.cpf_cnpj),
+
+    postalCode:
+      digits(holder.postal_code),
+
+    addressNumber:
+      holder.address_number.trim(),
+
+    addressComplement:
+      holder.address_complement?.trim() || null,
+
+    phone:
+      digits(holder.phone),
+
+    mobilePhone:
+      digits(holder.mobile_phone || holder.phone),
+  }
+}
+
+function validateCreditCard(
+  card: ReturnType<typeof normalizeCreditCard>,
+  holder: ReturnType<typeof normalizeCardHolder>,
+) {
+  if (!card.holderName) {
+    throw new Error('Nome impresso no cartão é obrigatório.')
+  }
+
+  const lengths = [13, 14, 15, 16, 17, 18, 19]
+
+  if (!lengths.includes(card.number.length)) {
+    throw new Error('Número do cartão inválido.')
+  }
+
+  if (!luhnValid(card.number)) {
+    throw new Error('Número do cartão inválido.')
+  }
+
+  const month = Number(card.expiryMonth)
+  const year = Number(card.expiryYear)
+  const now = new Date()
+
+  if (
+    !/^\d{2}$/.test(card.expiryMonth) ||
+    month < 1 ||
+    month > 12
+  ) {
+    throw new Error('Mês de validade inválido.')
+  }
+
+  if (
+    !/^\d{4}$/.test(card.expiryYear) ||
+    year < now.getFullYear() ||
+    (
+      year === now.getFullYear() &&
+      month < now.getMonth() + 1
+    )
+  ) {
+    throw new Error('Ano de validade inválido ou cartão vencido.')
+  }
+
+  if (!/^\d{3,4}$/.test(card.ccv)) {
+    throw new Error('Código de segurança inválido.')
+  }
+
+  if (!holder.name) {
+    throw new Error('Nome do titular é obrigatório.')
+  }
+
+  if (
+    !/^(\d{11}|\d{14})$/.test(
+      holder.cpfCnpj,
+    )
+  ) {
+    throw new Error('CPF/CNPJ do titular inválido.')
+  }
+
+  if (holder.postalCode.length !== 8) {
+    throw new Error('CEP do titular inválido.')
+  }
+
+  if (!holder.addressNumber) {
+    throw new Error('Número do endereço é obrigatório.')
+  }
+
+  if (
+    holder.phone.length < 10 ||
+    holder.phone.length > 11
+  ) {
+    throw new Error('Telefone do titular inválido.')
+  }
+
+  if (!holder.email) {
+    throw new Error('E-mail do titular é obrigatório.')
+  }
+}
+
 async function asaasRequest(
   path: string,
   options: RequestInit = {},
@@ -1331,8 +1509,47 @@ Deno.serve(
        * Plano mensal = assinatura recorrente.
        * Outros planos = cobrança parcelada tradicional.
        */
-      if (!body.credit_card) return jsonResponse({ error: 'Dados do cartão são obrigatórios.' }, 400)
-      if (!body.credit_card_holder_info) return jsonResponse({ error: 'Dados do titular do cartão são obrigatórios.' }, 400)
+      if (!body.credit_card) {
+        return jsonResponse(
+          { error: 'Dados do cartão são obrigatórios.' },
+          400,
+        )
+      }
+
+      if (!body.credit_card_holder_info) {
+        return jsonResponse(
+          { error: 'Dados do titular do cartão são obrigatórios.' },
+          400,
+        )
+      }
+
+      const creditCard =
+        normalizeCreditCard(
+          body.credit_card,
+        )
+
+      const creditCardHolderInfo =
+        normalizeCardHolder(
+          body.credit_card_holder_info,
+        )
+
+      validateCreditCard(
+        creditCard,
+        creditCardHolderInfo,
+      )
+
+      const remoteIp =
+        getClientIp(req)
+
+      if (!remoteIp) {
+        return jsonResponse(
+          {
+            error:
+              'Não foi possível identificar o IP do dispositivo para processar o cartão com segurança.',
+          },
+          400,
+        )
+      }
 
       if (pagamento.tipo_plano === 'mensal') {
         const nextDueDate = new Date().toISOString().slice(0, 10)
@@ -1346,14 +1563,9 @@ Deno.serve(
             cycle: 'MONTHLY',
             description: 'Mensalidade AB Academy - ' + planoNome,
             externalReference: pagamento.id,
-            creditCard: {
-              holderName: body.credit_card.holder_name,
-              number: body.credit_card.number,
-              expiryMonth: body.credit_card.expiry_month,
-              expiryYear: body.credit_card.expiry_year,
-              ccv: body.credit_card.ccv,
-            },
-            creditCardHolderInfo: body.credit_card_holder_info,
+            creditCard,
+            creditCardHolderInfo,
+            remoteIp,
           }),
         }) as { id?: string }
         const subscriptionId = subscription.id ? String(subscription.id) : null
@@ -1382,11 +1594,9 @@ Deno.serve(
           dueDate: new Date().toISOString().slice(0, 10),
           description: 'Matrícula AB Academy - ' + planoNome,
           installmentCount: parcelas, installmentValue: valorParcela,
-          creditCard: {
-            holderName: body.credit_card.holder_name, number: body.credit_card.number,
-            expiryMonth: body.credit_card.expiry_month, expiryYear: body.credit_card.expiry_year, ccv: body.credit_card.ccv,
-          },
-          creditCardHolderInfo: body.credit_card_holder_info,
+          creditCard,
+          creditCardHolderInfo,
+          remoteIp,
         }),
       }) as { id: string; status: string; value: number }
       let localStatus = 'processando'
