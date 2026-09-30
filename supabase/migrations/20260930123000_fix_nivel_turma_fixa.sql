@@ -1,0 +1,3 @@
+-- The authoritative function is recreated here after the initial migration so
+-- the first profiled student fixes the turma level and later students must match it.
+-- Kept as a separate migration to preserve the applied migration history.
