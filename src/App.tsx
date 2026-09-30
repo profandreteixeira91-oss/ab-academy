@@ -112,7 +112,7 @@ function App() {
     const isPublicTrackedPage = path === '/' || Object.prototype.hasOwnProperty.call(pageDescriptions, path)
     if (!isPublicTrackedPage) return
 
-    const sessionId = trackActiveVisitor(path, pageTitle)
+    trackActiveVisitor(path, pageTitle)
     const heartbeat = window.setInterval(() => {
       trackActiveVisitor(path, pageTitle)
     }, 20000)
