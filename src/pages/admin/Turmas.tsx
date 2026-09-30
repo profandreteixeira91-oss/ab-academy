@@ -27,7 +27,7 @@ export default function Turmas() {
   const [fixedAulasSemana, setFixedAulasSemana] = useState(1)
   const [fixedProfessor, setFixedProfessor] = useState('')
   const [fixedMax, setFixedMax] = useState(6)
-  const [fixedLevel, setFixedLevel] = useState('B1')
+  const [fixedLevel, setFixedLevel] = useState('intermediario')
   const [fixedStartDate, setFixedStartDate] = useState(() => new Date().toISOString().slice(0, 10))
   const [fixedDays, setFixedDays] = useState<number[]>([1])
   const [fixedTimes, setFixedTimes] = useState<{ start: string; end: string }[]>([{ start: '18:00', end: '19:00' }])
@@ -62,7 +62,7 @@ export default function Turmas() {
     setFixedAulasSemana(1)
     setFixedProfessor('')
     setFixedMax(6)
-    setFixedLevel('B1')
+    setFixedLevel('intermediario')
     setFixedStartDate(new Date().toISOString().slice(0, 10))
     setFixedDays([1])
     setFixedTimes([{ start: '18:00', end: '19:00' }])
@@ -261,7 +261,7 @@ export default function Turmas() {
             <label>Modalidade<select value={fixedModalidade} onChange={e => setFixedModalidade(e.target.value as 'dupla' | 'grupo')}><option value="dupla">Dupla · até 2</option><option value="grupo">Grupo · até 6</option></select></label>
             <label>Aulas por semana<select value={fixedAulasSemana} onChange={e => changeFixedFrequency(Number(e.target.value))}><option value={1}>1</option><option value={2}>2</option><option value={3}>3</option></select></label>
             <label>Professor<select value={fixedProfessor} onChange={e => setFixedProfessor(e.target.value)}><option value="">Selecione</option>{professores.map(p => <option key={p.id} value={p.id}>{p.nome_completo}</option>)}</select></label>
-            <label>Nível<select value={fixedLevel} onChange={e => setFixedLevel(e.target.value)}>{['A1','A2','B1','B2','C1','C2'].map(level => <option key={level} value={level}>{level}</option>)}</select></label>
+            <label>Nível<select value={fixedLevel} onChange={e => setFixedLevel(e.target.value)}>{['iniciante','basico','intermediario','avancado'].map(level => <option key={level} value={level}>{level === 'iniciante' ? 'Iniciante' : level === 'basico' ? 'Básico' : level === 'intermediario' ? 'Intermediário' : 'Avançado'}</option>)}</select></label>
             <label>Início da turma<input type="date" min={new Date().toISOString().slice(0, 10)} value={fixedStartDate} onChange={e => setFixedStartDate(e.target.value)} /></label>
             {fixedModalidade === 'grupo' && <label>Capacidade<select value={fixedMax} onChange={e => setFixedMax(Number(e.target.value))}>{[3,4,5,6].map(value => <option key={value} value={value}>{value} alunos</option>)}</select></label>}
           </div>
@@ -281,7 +281,7 @@ export default function Turmas() {
           const draft = drafts[turma.id] || { nome: '', email: '', telefone: '' }
           const isOpen = open === turma.id
           return <article className="admin-turma-card" key={turma.id}>
-            <div className="admin-turma-heading"><div><span className="admin-turma-date">{new Date(turma.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span><h3>{modalityLabel[turma.modalidade]} · {langLabel[turma.idioma]} {turma.fixa ? '· Horário fixo' : ''}</h3><p>{turma.aulas_semana}x por semana · {confirmed}/{turma.quantidade_maxima} confirmados{turma.nivel_referencia ? ' · nível ' + turma.nivel_referencia : ''}{turma.data_inicio ? ' · início ' + new Date(turma.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : ''}</p></div>
+            <div className="admin-turma-heading"><div><span className="admin-turma-date">{new Date(turma.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span><h3>{modalityLabel[turma.modalidade]} · {langLabel[turma.idioma]} {turma.fixa ? '· Horário fixo' : ''}</h3><p>{turma.aulas_semana}x por semana · {confirmed}/{turma.quantidade_maxima} confirmados{turma.nivel_referencia ? ' · nível ' + ({ iniciante: 'Iniciante', basico: 'Básico', intermediario: 'Intermediário', avancado: 'Avançado' } as Record<string,string>)[turma.nivel_referencia] || turma.nivel_referencia : ''}{turma.data_inicio ? ' · início ' + new Date(turma.data_inicio + 'T12:00:00').toLocaleDateString('pt-BR') : ''}</p></div>
               <div className="admin-turma-heading-actions"><span className={'admin-turma-status status-' + turma.status}>{statusLabel[turma.status] || turma.status}</span><button type="button" onClick={() => setOpen(isOpen ? null : turma.id)}>{isOpen ? 'Fechar' : 'Gerenciar'}</button></div>
             </div>
             <div className="admin-turma-progress"><span style={{ width: Math.min(100, (confirmed / turma.quantidade_maxima) * 100) + '%' }} /></div>
