@@ -1245,7 +1245,11 @@ export default function Agenda() {
           bulkEditForm.tipo_horario || horario.tipo_horario
 
         if (horario.aluno_id && nextTipo !== horario.tipo_horario) {
-          throw new Error('O horário ' + formatHour(horario.hora_inicio) + ' possui aluno vinculado e não pode mudar de tipo.')
+          throw new Error(
+            'O horário ' +
+              formatHour(horario.hora_inicio) +
+              ' possui aluno vinculado e não pode mudar de tipo.',
+          )
         }
 
         const nextIdioma =
