@@ -1841,10 +1841,6 @@ Deno.serve(async (req) => {
         updated_at: new Date().toISOString(),
       }
 
-      if (transfer.externalReference) {
-        transferUpdate.id = transfer.externalReference
-      }
-
       const { error: transferError } = await supabaseAdmin
         .from('asaas_transferencias')
         .update(transferUpdate)
