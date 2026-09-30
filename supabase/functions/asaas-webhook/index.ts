@@ -487,6 +487,109 @@ async function createMonthlyPixSubscription(
 }
 
 /* =========================================================
+   SINCRONIZA PREÇO DA TURMA FORMADA
+   ========================================================= */
+
+async function syncCollectiveBilling(
+  turmaId: string,
+  modalidade: 'dupla' | 'grupo',
+  idioma: string,
+  aulasSemana: number,
+) {
+  const capacidade = modalidade === 'dupla' ? 2 : 3
+
+  const { count } = await supabaseAdmin
+    .from('turma_participantes')
+    .select('id', { count: 'exact', head: true })
+    .eq('turma_id', turmaId)
+    .eq('status', 'confirmado')
+
+  if ((count ?? 0) < capacidade) return null
+
+  const { data: regularPrice, error: priceError } =
+    await supabaseAdmin.rpc('preco_coletivo', {
+      p_idioma: idioma,
+      p_modalidade: modalidade,
+      p_aulas_semana: aulasSemana,
+      p_participantes: capacidade,
+    })
+
+  if (priceError || regularPrice == null) {
+    throw new Error('Não foi possível calcular o preço regular da turma formada.')
+  }
+
+  const valorRegular = Number(regularPrice)
+  const hoje = new Date().toISOString().slice(0, 10)
+
+  const { data: participantes } = await supabaseAdmin
+    .from('turma_participantes')
+    .select('id,aluno_id')
+    .eq('turma_id', turmaId)
+    .eq('status', 'confirmado')
+
+  await supabaseAdmin
+    .from('turma_participantes')
+    .update({
+      valor_coletivo: valorRegular,
+      valor_coletivo_normal: valorRegular,
+      condicao_fim: hoje,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('turma_id', turmaId)
+    .eq('status', 'confirmado')
+
+  const participantIds = (participantes ?? []).map((item) => item.id)
+  if (participantIds.length === 0) return valorRegular
+
+  const { data: pagamentos } = await supabaseAdmin
+    .from('pagamentos')
+    .select('id,matricula_id,turma_participante_id,asaas_subscription_id,metodo,status')
+    .eq('turma_id', turmaId)
+    .in('turma_participante_id', participantIds)
+
+  for (const pagamento of pagamentos ?? []) {
+    if (!pagamento.asaas_subscription_id) continue
+
+    try {
+      await asaasRequest(
+        `/subscriptions/${pagamento.asaas_subscription_id}`,
+        {
+          method: 'PUT',
+          body: JSON.stringify({
+            value: valorRegular,
+            updatePendingPayments: false,
+          }),
+        },
+      )
+    } catch (error) {
+      console.error(
+        'Não foi possível atualizar a assinatura coletiva para o próximo ciclo:',
+        {
+          pagamento_id: pagamento.id,
+          turma_id: turmaId,
+          subscription_id: pagamento.asaas_subscription_id,
+          valor_regular: valorRegular,
+          error,
+        },
+      )
+    }
+
+    if (pagamento.matricula_id) {
+      await supabaseAdmin
+        .from('matriculas')
+        .update({
+          valor_mensal: valorRegular,
+          valor_coletivo: valorRegular,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', pagamento.matricula_id)
+    }
+  }
+
+  return valorRegular
+}
+
+/* =========================================================
    BUSCA PAGAMENTO
    ========================================================= */
 
@@ -1550,10 +1653,35 @@ async function finalizarMatricula(
 
     await atualizarPagamento(pagamento.id, 'pago', matricula.id)
 
+    let subscriptionId: string | null = null
+
+    if (pagamento.metodo === 'pix' && pagamento.tipo_plano === 'mensal') {
+      const customerId = payment.customer ?? pagamento.asaas_customer_id
+      if (customerId) {
+        subscriptionId = await createMonthlyPixSubscription(
+          {
+            ...pagamento,
+            status: 'pago',
+            asaas_customer_id: customerId,
+          },
+          customerId,
+        )
+      }
+    } else {
+      subscriptionId = pagamento.asaas_subscription_id
+    }
+
+    await syncCollectiveBilling(
+      turma.id,
+      turma.quantidade_minima === 2 ? 'dupla' : 'grupo',
+      String(pagamento.idioma ?? ''),
+      Number(turma.aulas_semana ?? 1),
+    )
+
     return {
       alunoId,
       matriculaId: matricula.id,
-      subscriptionId: null,
+      subscriptionId,
     }
   }
 
