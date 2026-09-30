@@ -1653,7 +1653,6 @@
    */
   .agenda-panel-content {
     min-height: 0;
-    max-height: calc(100vh - 430px);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
