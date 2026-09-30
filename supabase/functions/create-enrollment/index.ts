@@ -706,7 +706,7 @@ Deno.serve(async (req) => {
             turmaOrigem.modalidade !== body.formacao_modalidade ||
             turmaOrigem.aulas_semana !== body.aulas_semana ||
             turmaOrigem.fixa !== true ||
-            turmaOrigem.status in ['cancelada', 'encerrada'] ||
+            ['cancelada', 'encerrada'].includes(turmaOrigem.status) ||
             !turmaOrigem.data_inicio ||
             turmaOrigem.data_inicio < new Date().toISOString().slice(0, 10)
           ) {
