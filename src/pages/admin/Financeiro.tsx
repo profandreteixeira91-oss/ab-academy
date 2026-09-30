@@ -192,6 +192,7 @@ export default function Financeiro() {
   const [asaasError, setAsaasError] = useState('')
   const [asaasTransfers, setAsaasTransfers] = useState<AsaasTransfer[]>([])
   const [transferModalOpen, setTransferModalOpen] = useState(false)
+  const [transferConfirmOpen, setTransferConfirmOpen] = useState(false)
   const [transferSaving, setTransferSaving] = useState(false)
   const [transferValue, setTransferValue] = useState('')
   const [transferKeyType, setTransferKeyType] = useState('CPF')
@@ -290,12 +291,12 @@ export default function Financeiro() {
 
   function closeTransferModal() {
     if (transferSaving) return
-    setTransferModalOpen(false); setTransferValue(''); setTransferKeyType('CPF'); setTransferKey(''); setTransferDescription('')
+    setTransferModalOpen(false); setTransferConfirmOpen(false); setTransferValue(''); setTransferKeyType('CPF'); setTransferKey(''); setTransferDescription('')
   }
 
-  async function handleAsaasTransfer() {
+  function requestAsaasTransfer() {
     try {
-      setTransferSaving(true); setAsaasError('')
+      setAsaasError('')
       const value = parseMoney(transferValue)
       if (!value || value <= 0) throw new Error('Informe um valor válido para a transferência.')
       if (asaasBalance !== null && value > asaasBalance) throw new Error('O valor é superior ao saldo disponível no Asaas.')
@@ -305,8 +306,16 @@ export default function Financeiro() {
       })
       if (functionError) throw functionError
       if (data?.error) throw new Error(data.error)
-      setSuccess('Transferência Pix enviada ao Asaas para processamento.')
-      closeTransferModal(); await loadAsaasFinance()
+      setTransferConfirmOpen(true)
+    } catch (err) {
+      console.error('Erro ao validar transferência Asaas:', err)
+      setAsaasError(err instanceof Error ? err.message : 'Não foi possível validar a transferência.')
+    }
+  }
+
+  async function handleAsaasTransfer() {
+    try {
+      setTransferSaving(true); setAsaasError('')
     } catch (err) {
       console.error('Erro ao transferir saldo Asaas:', err)
       setAsaasError(err instanceof Error ? err.message : 'Não foi possível realizar a transferência.')
@@ -1369,7 +1378,44 @@ export default function Financeiro() {
               </div>
               <div className="financeiro-transfer-warning"><strong>Confirme os dados antes de transferir.</strong><span>A transferência será enviada ao Asaas e poderá permanecer pendente até a conclusão.</span></div>
             </div>
-            <footer className="financeiro-modal-footer"><button type="button" className="financeiro-secondary-button" onClick={closeTransferModal} disabled={transferSaving}>Cancelar</button><button type="button" className="financeiro-primary-button" onClick={handleAsaasTransfer} disabled={transferSaving}>{transferSaving ? <><span className="financeiro-button-spinner" /> Enviando...</> : <><Send size={16} /> Transferir via Pix</>}</button></footer>
+            <footer className="financeiro-modal-footer"><button type="button" className="financeiro-secondary-button" onClick={closeTransferModal} disabled={transferSaving}>Cancelar</button><button type="button" className="financeiro-primary-button" onClick={requestAsaasTransfer} disabled={transferSaving}>{transferSaving ? <><span className="financeiro-button-spinner" /> Validando...</> : <><Send size={16} /> Continuar</>}</button></footer>
+          </div>
+        </div>
+      )}
+
+      {transferConfirmOpen && (
+        <div className="financeiro-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget && !transferSaving) setTransferConfirmOpen(false) }}>
+          <div className="financeiro-modal financeiro-transfer-modal">
+            <header className="financeiro-modal-header">
+              <div>
+                <span className="financeiro-eyebrow">CONFIRMAÇÃO · PIX</span>
+                <h2>Confirmar transferência</h2>
+                <p>Revise os dados abaixo. A confirmação enviará a solicitação ao Asaas.</p>
+              </div>
+              <button type="button" className="financeiro-modal-close" onClick={() => setTransferConfirmOpen(false)} disabled={transferSaving}><X size={19} /></button>
+            </header>
+            <div className="financeiro-modal-body">
+              <div className="financeiro-transfer-balance">
+                <span>Valor da transferência</span>
+                <strong>{formatCurrency(parseMoney(transferValue))}</strong>
+              </div>
+              <div className="financeiro-transfer-confirmation-grid">
+                <div><span>Tipo de chave</span><strong>{transferKeyType}</strong></div>
+                <div><span>Chave Pix</span><strong>{transferKey}</strong></div>
+                <div><span>Descrição</span><strong>{transferDescription.trim() || 'Sem descrição'}</strong></div>
+                <div><span>Saldo após a solicitação</span><strong>{formatCurrency(Math.max(0, (asaasBalance ?? 0) - parseMoney(transferValue)))}</strong></div>
+              </div>
+              <div className="financeiro-transfer-warning">
+                <strong>Esta ação envia uma ordem financeira real.</strong>
+                <span>Confira principalmente o valor e a chave Pix. Depois de enviada ao Asaas, a transferência poderá permanecer pendente até a confirmação.</span>
+              </div>
+            </div>
+            <footer className="financeiro-modal-footer">
+              <button type="button" className="financeiro-secondary-button" onClick={() => setTransferConfirmOpen(false)} disabled={transferSaving}>Voltar</button>
+              <button type="button" className="financeiro-primary-button" onClick={handleAsaasTransfer} disabled={transferSaving}>
+                {transferSaving ? <><span className="financeiro-button-spinner" /> Enviando...</> : <><Send size={16} /> Confirmar e transferir</>}
+              </button>
+            </footer>
           </div>
         </div>
       )}
