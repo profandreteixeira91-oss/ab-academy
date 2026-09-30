@@ -2443,8 +2443,8 @@ export default function Agenda() {
 
             </div>
 
-          ) : horariosDoDia.length ===
-            0 ? (
+          ) : horariosDoDia.length === 0 &&
+            reposicoesDoDia.length === 0 ? (
 
             <div className="agenda-empty">
 
