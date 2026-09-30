@@ -1429,6 +1429,28 @@ export default function Agenda() {
         throw new Error('A reorganização gera um horário inválido ou ultrapassa 24:00.')
       }
 
+      for (let index = 0; index < updates.length; index += 1) {
+        const current = updates[index]
+        for (let otherIndex = index + 1; otherIndex < updates.length; otherIndex += 1) {
+          const other = updates[otherIndex]
+          if (
+            current.dia === other.dia &&
+            current.horario.idioma === other.horario.idioma &&
+            current.horario.professor_id &&
+            current.horario.professor_id === other.horario.professor_id &&
+            current.horario.tipo_horario === other.horario.tipo_horario &&
+            timeToMinutes(current.inicio) < timeToMinutes(other.fim) &&
+            timeToMinutes(current.fim) > timeToMinutes(other.inicio)
+          ) {
+            throw new Error(
+              'A reorganização criaria conflito entre os próprios horários selecionados em ' +
+                getDayLabel(current.dia) +
+                '.',
+            )
+          }
+        }
+      }
+
       for (const item of updates) {
         const conflict = getConflictingHorario(
           item.dia,
