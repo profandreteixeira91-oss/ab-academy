@@ -36,6 +36,9 @@ type DailyRow = {
 
 type ConversionSummary = {
   leads: number
+  attributed_leads: number
+  attributed_lead_rate: number
+  attributed_enrollment_rate: number
   contacted: number
   diagnostico: number
   proposta_enviada: number
@@ -90,7 +93,7 @@ const emptySummary: AnalyticsSummary = {
   campaigns: [],
   daily: [],
   conversion: {
-    leads: 0, contacted: 0, diagnostico: 0, proposta_enviada: 0, negociacao: 0, matriculado: 0, perdido: 0,
+    leads: 0, attributed_leads: 0, attributed_lead_rate: 0, attributed_enrollment_rate: 0, contacted: 0, diagnostico: 0, proposta_enviada: 0, negociacao: 0, matriculado: 0, perdido: 0,
     lead_rate: 0, enrollment_rate: 0, lead_to_enrollment: 0, funnel: [], sources: [],
   },
 }
@@ -356,8 +359,9 @@ export default function Analytics() {
           <Target size={19} />
         </div>
         <div className="admin-analytics-conversion-kpis">
-          <article><div className="admin-analytics-kpi-icon"><UserCheck size={18} /></div><span>Leads</span><strong>{loading ? '—' : formatNumber(summary.conversion.leads)}</strong><small>{summary.conversion.lead_rate.toFixed(2)}% dos visitantes</small></article>
-          <article><div className="admin-analytics-kpi-icon"><Target size={18} /></div><span>Matriculados</span><strong>{loading ? '—' : formatNumber(summary.conversion.matriculado)}</strong><small>{summary.conversion.enrollment_rate.toFixed(2)}% dos visitantes</small></article>
+          <article><div className="admin-analytics-kpi-icon"><UserCheck size={18} /></div><span>Leads</span><strong>{loading ? '—' : formatNumber(summary.conversion.leads)}</strong><small>{summary.conversion.lead_rate.toFixed(2)}% das sessões</small></article>
+          <article><div className="admin-analytics-kpi-icon"><Target size={18} /></div><span>Matriculados</span><strong>{loading ? '—' : formatNumber(summary.conversion.matriculado)}</strong><small>{summary.conversion.enrollment_rate.toFixed(2)}% das sessões</small></article>
+          <article><div className="admin-analytics-kpi-icon"><Users size={18} /></div><span>Leads atribuídos</span><strong>{loading ? '—' : formatNumber(summary.conversion.attributed_leads)}</strong><small>{summary.conversion.attributed_lead_rate.toFixed(2)}% das sessões com origem identificada</small></article>
           <article><div className="admin-analytics-kpi-icon"><ArrowUp size={18} /></div><span>Lead → matrícula</span><strong>{loading ? '—' : `${summary.conversion.lead_to_enrollment.toFixed(1)}%`}</strong><small>dos leads do período</small></article>
         </div>
         <div className="admin-analytics-conversion-grid">
