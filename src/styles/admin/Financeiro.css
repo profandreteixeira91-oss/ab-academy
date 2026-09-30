@@ -1147,3 +1147,5 @@
     grid-template-columns: 1fr;
   }
 }
+
+.financeiro-transfer-owner{display:flex;flex-direction:column;gap:4px;padding:14px 16px;border:1px solid #bfdbfe;border-radius:12px;background:#eff6ff;margin:14px 0}.financeiro-transfer-owner strong{font-size:.78rem;text-transform:uppercase;letter-spacing:.04em}.financeiro-transfer-owner span{font-size:1rem;font-weight:700}.financeiro-transfer-owner small{color:#475569}@media(max-width:640px){.financeiro-transfer-owner{margin:12px 0;padding:12px}}
