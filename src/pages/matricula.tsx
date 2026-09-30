@@ -1667,8 +1667,9 @@ export default function Matricula() {
                     <strong>Contrato AB Academy Idiomas</strong>
                     <p>O documento será gerado com seus dados, plano, turma/horários e condições financeiras. A assinatura eletrônica deve ser realizada pelo próprio titular.</p>
                     <label><input type="checkbox" checked={contractAccepted} onChange={(event) => setContractAccepted(event.target.checked)} /> Li e concordo com o conteúdo do contrato.</label>
-                    <button type="button" className="enrollment-primary-button" disabled={!contractAccepted} onClick={() => setContractSignatureStatus('signed')}>Assinar contrato com gov.br <ArrowRight size={18} /></button>
-                    {contractSignatureStatus === 'signed' && <div className="enrollment-success">Assinatura registrada para este fluxo.</div>}
+                    <button type="button" className="enrollment-primary-button" disabled={!contractAccepted} disabled
+                      >Assinar contrato com gov.br <ArrowRight size={18} /></button>
+                    <div className="enrollment-empty">A integração com a API de assinatura GOV.BR ainda precisa ser habilitada para a AB Academy. A etapa permanece bloqueada até que o retorno oficial da assinatura seja recebido.</div>
                     <small>Integração real com a API de Assinatura GOV.BR depende da habilitação oficial e das credenciais do serviço.</small>
                   </div>
                 </div>
