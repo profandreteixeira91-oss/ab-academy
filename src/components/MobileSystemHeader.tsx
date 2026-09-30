@@ -14,6 +14,7 @@ const links = [
   { label: 'Planos', href: '/planos' },
   { label: 'Aula diagnóstica', href: '/diagnostica' },
   { label: 'Enterprise', href: '/enterprise' },
+  { label: 'Trabalhe conosco', href: '/trabalhe-conosco' },
   { label: 'Contato', href: '/quero-aprender' },
   { label: 'Área do aluno', href: '/aluno' },
   { label: 'Portal do professor', href: '/professor' },
