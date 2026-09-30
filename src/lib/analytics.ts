@@ -97,3 +97,44 @@ export function trackPublicPageView(path: string, pageTitle: string) {
     screen_width: window.innerWidth,
   })
 }
+
+export type ActiveVisitor = {
+  session_id: string
+  path: string
+  page_title: string | null
+  referrer_domain: string | null
+  device_type: string | null
+  browser: string | null
+  os: string | null
+  language: string | null
+  screen_width: number | null
+  first_seen_at: string
+  last_seen_at: string
+}
+
+export function trackActiveVisitor(path: string, pageTitle: string) {
+  if (!PUBLIC_PATHS.has(path)) return ()
+
+  const sessionId = getSessionId()
+  const params = new URLSearchParams(window.location.search)
+  const payload = {
+    session_id: sessionId,
+    path,
+    page_title: pageTitle,
+    referrer_domain: getReferrerDomain(),
+    device_type: getDeviceType(),
+    browser: getBrowser(),
+    os: getOs(),
+    language: navigator.language || null,
+    screen_width: window.innerWidth,
+    last_seen_at: new Date().toISOString(),
+  }
+
+  void supabase.from('site_active_visitors').upsert(payload, { onConflict: 'session_id' })
+
+  return sessionId
+}
+
+export async function removeActiveVisitor(sessionId: string) {
+  await supabase.from('site_active_visitors').delete().eq('session_id', sessionId)
+}
