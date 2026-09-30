@@ -406,9 +406,17 @@ export default function Planos() {
         .from('planos')
         .select('id')
         .eq('idioma', form.idioma)
-        .eq('tipo', form.tipo)
         .eq('modalidade', form.modalidade)
+        .eq('aulas_semana', aulasSemana)
         .limit(1)
+
+      if (form.modalidade === 'individual') {
+        duplicateQuery = duplicateQuery.eq('tipo', form.tipo)
+      } else {
+        duplicateQuery = duplicateQuery
+          .eq('min_alunos', minAlunos)
+          .eq('max_alunos', maxAlunos)
+      }
 
       if (editingPlano) {
         duplicateQuery = duplicateQuery.neq('id', editingPlano.id)
@@ -424,7 +432,7 @@ export default function Planos() {
       }
 
       if (planoExistente) {
-        setError('Já existe um plano para este idioma, modalidade e tipo. Edite o plano existente.')
+        setError('Já existe um plano com esta combinação de idioma, modalidade, frequência e capacidade. Edite o plano existente.')
         return
       }
 
@@ -480,7 +488,7 @@ export default function Planos() {
 
       if (err?.code === '23505') {
         setError(
-          'Já existe um plano para este idioma, modalidade e tipo.',
+          'Já existe um plano com esta combinação de idioma, modalidade, frequência e capacidade.',
         )
       } else {
         setError(
