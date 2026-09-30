@@ -187,6 +187,21 @@ function luhnValid(value: string) {
   return number.length > 0 && sum % 10 === 0
 }
 
+function getInstallmentBrand(number: string) {
+  const cardNumber = digits(number)
+  const firstTwo = Number(cardNumber.slice(0, 2))
+  const firstFour = Number(cardNumber.slice(0, 4))
+
+  if (cardNumber.startsWith('4')) return 'Visa'
+
+  if (
+    (firstTwo >= 51 && firstTwo <= 55) ||
+    (firstFour >= 2221 && firstFour <= 2720)
+  ) return 'Mastercard'
+
+  return 'other'
+}
+
 function getClientIp(req: Request) {
   const forwardedFor =
     req.headers.get('x-forwarded-for')
@@ -336,8 +351,8 @@ function validateCreditCard(
     throw new Error('Telefone do titular inválido.')
   }
 
-  if (!holder.email) {
-    throw new Error('E-mail do titular é obrigatório.')
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(holder.email)) {
+    throw new Error('E-mail do titular inválido.')
   }
 }
 
