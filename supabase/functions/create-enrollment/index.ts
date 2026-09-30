@@ -371,7 +371,7 @@ Deno.serve(async (req) => {
 
       const { data: participante, error: participanteError } = await supabaseAdmin
         .from('turma_participantes')
-        .select('id,turma_id,user_id,status,reserva_expira_em,reserva_token,email')
+        .select('id,turma_id,user_id,status,reserva_expira_em,reserva_token,email,valor_coletivo,valor_coletivo_normal')
         .eq('id', body.turma_participante_id)
         .maybeSingle()
 
@@ -560,6 +560,7 @@ Deno.serve(async (req) => {
     }
 
     let collectiveEnrollment: { turma_id: string; participante_id: string; valor_mensal: number; condicao_meses: number | null; condicao_inicio: string | null; condicao_fim: string | null } | null = null
+    let valorFinal = Number(body.valor)
 
     if (body.turma_token) {
       const { data: collective, error: collectiveError } = await supabaseAdmin
@@ -657,28 +658,36 @@ Deno.serve(async (req) => {
 
         const participantTotal = participantesCount ?? 1
         const capacidadeDaTurma = turma.quantidade_maxima
-        const { data: valorData, error: valorError } = participantTotal === 1
-          ? await supabaseAdmin.rpc('preco_formacao_coletiva', {
-              p_idioma: body.idioma,
-              p_modalidade: turma.modalidade,
-              p_aulas_semana: turma.aulas_semana,
-            })
-          : await supabaseAdmin.rpc('preco_coletivo', {
-              p_idioma: body.idioma,
-              p_modalidade: turma.modalidade,
-              p_aulas_semana: turma.aulas_semana,
-              p_participantes: capacidadeDaTurma,
-            })
+        const { data: valorData, error: valorError } = participante.valor_coletivo != null
+          ? { data: Number(participante.valor_coletivo), error: null }
+          : participantTotal === 1
+            ? await supabaseAdmin.rpc('preco_formacao_coletiva', {
+                p_idioma: body.idioma,
+                p_modalidade: turma.modalidade,
+                p_aulas_semana: turma.aulas_semana,
+              })
+            : await supabaseAdmin.rpc('preco_coletivo', {
+                p_idioma: body.idioma,
+                p_modalidade: turma.modalidade,
+                p_aulas_semana: turma.aulas_semana,
+                p_participantes: capacidadeDaTurma,
+              })
 
-        if (valorError || valorData == null || Math.abs(Number(valorData) - Number(body.valor)) > 0.01) {
-          return jsonResponse({ error: 'O valor da matrícula coletiva não corresponde à condição atual da turma.' }, 409)
+        if (valorError || valorData == null) {
+          return jsonResponse({ error: 'Não foi possível determinar o valor oficial desta matrícula coletiva.' }, 409)
+        }
+
+        valorFinal = Number(valorData)
+        if (!Number.isFinite(valorFinal) || Math.abs(valorFinal - Number(body.valor)) > 0.01) {
+          return jsonResponse({ error: 'O valor da matrícula coletiva não corresponde à condição reservada para este participante.' }, 409)
         }
       } else {
         const requiredSchedules = plano.tipo === 'intensivo' ? 3 : plano.tipo === 'personalizado' ? 2 : (plano.aulas_semana ?? 1)
         if (horarioIds.length !== requiredSchedules) {
           return jsonResponse({ error: `Este plano exige ${requiredSchedules} horário(s) por semana.` }, 409)
         }
-        if (Math.abs(Number(plano.preco) - Number(body.valor)) > 0.01) {
+        valorFinal = Number(plano.preco)
+        if (Math.abs(valorFinal - Number(body.valor)) > 0.01) {
           return jsonResponse({ error: 'O valor enviado não corresponde ao valor oficial do plano.' }, 409)
         }
       }
@@ -702,7 +711,7 @@ Deno.serve(async (req) => {
 
       turma_id: body.turma_id ?? collectiveEnrollment?.turma_id ?? null,
       turma_participante_id: body.turma_participante_id ?? collectiveEnrollment?.participante_id ?? null,
-      valor_coletivo: collectiveEnrollment?.valor_mensal ?? null,
+      valor_coletivo: collectiveEnrollment?.valor_mensal ?? (body.modalidade !== 'individual' ? valorFinal : null),
       condicao_meses: collectiveEnrollment?.condicao_meses ?? null,
       condicao_inicio: collectiveEnrollment?.condicao_inicio ?? null,
       condicao_fim: collectiveEnrollment?.condicao_fim ?? null,
@@ -736,7 +745,7 @@ Deno.serve(async (req) => {
         body.valor_aula,
 
       valor_mensal:
-        body.valor_mensal,
+        body.modalidade !== 'individual' ? valorFinal : body.valor_mensal,
 
       valor_anual:
         body.valor_anual,
@@ -916,7 +925,7 @@ Deno.serve(async (req) => {
             'pendente',
 
           valor:
-            body.valor,
+            valorFinal,
 
           parcelas:
             null,
@@ -976,7 +985,7 @@ Deno.serve(async (req) => {
           participante_id: collectiveParticipanteId,
           token,
           status: 'pagamento_pendente',
-          valor_mensal: Number(body.valor),
+          valor_mensal: valorFinal,
           matricula_id: matricula.id,
           pagamento_id: pagamento.id,
           created_at: new Date().toISOString(),
