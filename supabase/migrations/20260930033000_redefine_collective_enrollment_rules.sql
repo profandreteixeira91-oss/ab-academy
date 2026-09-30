@@ -154,7 +154,7 @@ begin
       when r.participantes < r.capacidade then public.preco_formacao_coletiva(p_idioma,p_modalidade,p_aulas_semana)
       else public.preco_coletivo(p_idioma,p_modalidade,p_aulas_semana,r.capacidade)
     end
-  from ranked r order by r.prioridade,r.dia_semana,r.hora_inicio;
+  from ranked r order by r.prioridade, greatest(0,r.capacidade-r.participantes), r.dia_semana,r.hora_inicio;
 end; $$;
 
 grant execute on function public.buscar_horarios_disponiveis_matricula(text,text,integer,integer[],text[],jsonb) to anon,authenticated;
