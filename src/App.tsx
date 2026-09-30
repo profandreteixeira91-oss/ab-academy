@@ -44,7 +44,7 @@ import AulaModalidade from './pages/AulaModalidade'
 import HorariosFormacao from './pages/HorariosFormacao'
 import SiteFooter from './components/SiteFooter'
 import MobileSystemHeader from './components/MobileSystemHeader'
-import { trackPublicPageView } from './lib/analytics'
+import { trackActiveVisitor, trackPublicPageView } from './lib/analytics'
 
 function App() {
   const withFooter = (content: ReactNode) => (
@@ -108,6 +108,18 @@ function App() {
 
   useEffect(() => {
     trackPublicPageView(path, pageTitle)
+
+    const isPublicTrackedPage = path === '/' || Object.prototype.hasOwnProperty.call(pageDescriptions, path)
+    if (!isPublicTrackedPage) return
+
+    const sessionId = trackActiveVisitor(path, pageTitle)
+    const heartbeat = window.setInterval(() => {
+      trackActiveVisitor(path, pageTitle)
+    }, 20000)
+
+    return () => {
+      window.clearInterval(heartbeat)
+    }
   }, [path, pageTitle])
 
   const pageDescriptions: Record<string, string> = {
