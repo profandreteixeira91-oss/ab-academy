@@ -6,7 +6,6 @@ import Home from './pages/Home'
 import Enterprise from './pages/Enterprise'
 
 import Matricula from './pages/matricula'
-import MatriculaColetiva from './pages/MatriculaColetiva'
 
 import Checkout from './pages/checkout'
 
@@ -307,10 +306,6 @@ function App() {
   }
 
   if (path === '/matricula') {
-    const matriculaModalidade = new URLSearchParams(window.location.search).get('modalidade')
-    if (matriculaModalidade === 'dupla' || matriculaModalidade === 'grupo') {
-      return <><MobileSystemHeader title={matriculaModalidade === 'grupo' ? 'Matrícula em grupo' : 'Matrícula em dupla'} />{withFooter(<MatriculaColetiva modalidade={matriculaModalidade} />)}</>
-    }
     return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<Matricula />)}</>
   }
 
