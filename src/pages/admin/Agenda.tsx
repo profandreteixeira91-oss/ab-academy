@@ -2460,6 +2460,14 @@ export default function Agenda() {
                       horario.professor_id,
                     )
 
+                  const todayDate = dateKey(new Date())
+                  const reagendamentoOriginal = registrosAulas.find(
+                    (registro) =>
+                      registro.horario_id === horario.id &&
+                      registro.data_aula >= todayDate &&
+                      Boolean(registro.data_aula_override),
+                  )
+
                   const ocupado =
                     !!horario.aluno_id
 
