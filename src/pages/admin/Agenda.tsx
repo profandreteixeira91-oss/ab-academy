@@ -2984,38 +2984,128 @@ export default function Agenda() {
       )}
 
       {rescheduleOpen && rescheduleSource && (
-        <div className="agenda-modal-overlay" onMouseDown={(event) => { if (event.target === event.currentTarget) closeRescheduleModal() }}>
-          <div className="agenda-modal">
-            <div className="agenda-modal-header">
+        <div
+          className="agenda-modal-overlay"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeRescheduleModal()
+            }
+          }}
+        >
+          <div className="agenda-modal agenda-reschedule-modal">
+            <div className="agenda-modal-header agenda-reschedule-header">
               <div>
+                <span className="agenda-modal-kicker">
+                  <CalendarClock size={14} />
+                  Ajuste de uma única ocorrência
+                </span>
                 <h2>Reagendar aula</h2>
-                <p>Altere somente esta ocorrência. O horário recorrente original permanecerá igual.</p>
+                <p>
+                  Escolha qualquer data e horário livre. O horário recorrente
+                  original continuará intacto.
+                </p>
               </div>
-              <button type="button" className="agenda-modal-close" onClick={closeRescheduleModal} disabled={saving}><X size={19} /></button>
+
+              <button
+                type="button"
+                className="agenda-modal-close"
+                onClick={closeRescheduleModal}
+                disabled={saving}
+              >
+                <X size={19} />
+              </button>
             </div>
+
             <div className="agenda-form">
-              <div className="agenda-bulk-edit-warning">
-                <Clock3 size={17} />
-                <span><strong>{getAlunoNome(rescheduleSource.aluno_id) || 'Aluno'}</strong> • {getProfessorNome(rescheduleSource.professor_id) || 'Professor'}<br />Aula atual: {getDayLabel(rescheduleSource.dia_semana)} {formatHour(rescheduleSource.hora_inicio)}–{formatHour(rescheduleSource.hora_fim)}</span>
+              <div className="agenda-reschedule-summary">
+                <div className="agenda-reschedule-summary-icon">
+                  <UserRound size={18} />
+                </div>
+                <div>
+                  <strong>
+                    {getAlunoNome(rescheduleSource.aluno_id) || 'Aluno'}
+                  </strong>
+                  <span>
+                    {getProfessorNome(rescheduleSource.professor_id) ||
+                      'Professor'}{' '}
+                    · {getIdiomaLabel(rescheduleSource.idioma)}
+                  </span>
+                </div>
+                <div className="agenda-reschedule-original">
+                  <small>Aula atual</small>
+                  <b>
+                    {getDayLabel(rescheduleSource.dia_semana)} ·{' '}
+                    {formatHour(rescheduleSource.hora_inicio)}–
+                    {formatHour(rescheduleSource.hora_fim)}
+                  </b>
+                </div>
               </div>
-              <div className="agenda-form-field">
-                <label>Novo horário disponível</label>
-                <select value={rescheduleTargetId} onChange={(event) => setRescheduleTargetId(event.target.value)}>
-                  <option value="">Selecione o destino</option>
-                  {rescheduleTargets.map((target) => {
-                    const occurrence = getNextOccurrence(target.dia_semana, target.hora_inicio, target.hora_fim)
-                    const sourceDuration = timeToMinutes(formatHour(rescheduleSource.hora_fim)) - timeToMinutes(formatHour(rescheduleSource.hora_inicio))
-                    const targetDuration = timeToMinutes(formatHour(target.hora_fim)) - timeToMinutes(formatHour(target.hora_inicio))
-                    const finalEnd = minutesToTime(timeToMinutes(target.hora_inicio.slice(0, 5)) + sourceDuration)
-                    return <option key={target.id} value={target.id}>{getDayLabel(target.dia_semana)} • {formatDateKey(dateKey(occurrence.startAt))} • {formatHour(target.hora_inicio)}–{sourceDuration === targetDuration ? formatHour(target.hora_fim) : finalEnd}</option>
-                  })}
-                </select>
-                <small>O aluno e o professor serão preservados. Se a duração da aula for diferente da duração do slot, o término será calculado pela duração original.</small>
+
+              <div className="agenda-reschedule-fields">
+                <div className="agenda-form-field">
+                  <label>Nova data</label>
+                  <input
+                    type="date"
+                    value={rescheduleDate}
+                    min={dateKey(new Date())}
+                    onChange={(event) => setRescheduleDate(event.target.value)}
+                  />
+                </div>
+
+                <div className="agenda-form-field">
+                  <label>Horário inicial</label>
+                  <input
+                    type="time"
+                    value={rescheduleStart}
+                    onChange={(event) => setRescheduleStart(event.target.value)}
+                  />
+                </div>
+
+                <div className="agenda-form-field">
+                  <label>Horário final</label>
+                  <input
+                    type="time"
+                    value={rescheduleEnd}
+                    onChange={(event) => setRescheduleEnd(event.target.value)}
+                  />
+                </div>
+              </div>
+
+              <div className="agenda-reschedule-note">
+                <CheckCircle2 size={17} />
+                <div>
+                  <strong>Validação automática</strong>
+                  <span>
+                    O sistema verifica conflito com a agenda do professor e
+                    com outras aulas reagendadas antes de salvar.
+                  </span>
+                </div>
               </div>
             </div>
+
             <div className="agenda-modal-footer">
-              <button type="button" className="agenda-cancel-button" onClick={closeRescheduleModal} disabled={saving}>Cancelar</button>
-              <button type="button" className="agenda-save-button" onClick={() => void handleReschedule()} disabled={saving || !rescheduleTargetId}>{saving ? 'Reagendando...' : 'Reagendar aula'}</button>
+              <button
+                type="button"
+                className="agenda-cancel-button"
+                onClick={closeRescheduleModal}
+                disabled={saving}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="agenda-save-button"
+                onClick={() => void handleReschedule()}
+                disabled={
+                  saving ||
+                  !rescheduleDate ||
+                  !rescheduleStart ||
+                  !rescheduleEnd
+                }
+              >
+                {saving ? 'Reagendando...' : 'Confirmar reagendamento'}
+              </button>
             </div>
           </div>
         </div>
