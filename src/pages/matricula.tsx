@@ -207,6 +207,7 @@ export default function Matricula() {
   const [selectedSchedule, setSelectedSchedule] = useState<SelectedSchedule | null>(null)
   const [selectedSchedules, setSelectedSchedules] = useState<SelectedSchedule[]>([])
   const [selectedWeekday, setSelectedWeekday] = useState<number | null>(null)
+  const [availabilityMode, setAvailabilityMode] = useState<'periods' | 'ranges' | 'flexible'>('periods')
   const [availabilityDays, setAvailabilityDays] = useState<number[]>([])
   const [availabilityPeriods, setAvailabilityPeriods] = useState<string[]>([])
   const [availabilityRanges, setAvailabilityRanges] = useState<Record<number, { start: string; end: string }>>({})
@@ -467,9 +468,9 @@ export default function Matricula() {
         p_idioma: selectedLanguage,
         p_modalidade: modalidade,
         p_aulas_semana: aulasSemana,
-        p_dias: withAvailability && !availabilityFlexible ? availabilityDays : null,
-        p_periodos: withAvailability && !availabilityFlexible ? availabilityPeriods : null,
-        p_disponibilidade: withAvailability && !availabilityFlexible && Object.keys(availabilityRanges).length > 0
+        p_dias: withAvailability && availabilityMode !== 'flexible' ? availabilityDays : null,
+        p_periodos: withAvailability && availabilityMode === 'periods' ? availabilityPeriods : null,
+        p_disponibilidade: withAvailability && availabilityMode === 'ranges' && Object.keys(availabilityRanges).length > 0
           ? availabilityRanges
           : null,
       })
@@ -546,6 +547,23 @@ export default function Matricula() {
     return true
   }
 
+  const selectAvailabilityMode = (mode: 'periods' | 'ranges' | 'flexible') => {
+    setAvailabilityMode(mode)
+    setAvailabilityFlexible(mode === 'flexible')
+    if (mode === 'periods') {
+      setAvailabilityRanges({})
+    } else if (mode === 'ranges') {
+      setAvailabilityPeriods([])
+    } else {
+      setAvailabilityDays([])
+      setAvailabilityPeriods([])
+      setAvailabilityRanges({})
+    }
+    setAvailabilityReady(false)
+    setSelectedSchedule(null)
+    setSelectedSchedules([])
+  }
+
   const toggleAvailabilityDay = (day: number) => {
     setAvailabilityDays((current) =>
       current.includes(day)
@@ -602,12 +620,16 @@ export default function Matricula() {
     }
 
     if (step === 2) {
-      if (availabilityDays.length === 0 && !availabilityFlexible) {
+      if (availabilityMode !== 'flexible' && availabilityDays.length === 0) {
         setError('Selecione pelo menos um dia em que você pode estudar.')
         return
       }
-      if (!availabilityFlexible && availabilityPeriods.length === 0 && Object.keys(availabilityRanges).length === 0) {
-        setError('Informe pelo menos um período ou intervalo de horário.')
+      if (availabilityMode === 'periods' && availabilityPeriods.length === 0) {
+        setError('Selecione pelo menos um período disponível.')
+        return
+      }
+      if (availabilityMode === 'ranges' && Object.keys(availabilityRanges).length === 0) {
+        setError('Informe pelo menos uma faixa de horário.')
         return
       }
       if (!language) {
@@ -1054,7 +1076,7 @@ export default function Matricula() {
                       'Confira o plano escolhido na página de planos.'}
 
                     {step === 2 &&
-                      'Informe os dias e períodos em que você pode estudar.'}
+                      'Escolha uma única forma de informar sua disponibilidade: dias e períodos, faixas de horário por dia ou flexibilidade total.'}
 
                     {step === 3 &&
                       'Escolha entre os horários reais compatíveis com sua disponibilidade.'}
@@ -1132,73 +1154,58 @@ export default function Matricula() {
                 </div>
               </div>
 
-              <div className="availability-days">
-                {WEEKDAYS.filter((day) => day.value !== 0 && day.value !== 6).map((day) => (
-                  <button
-                    type="button"
-                    key={day.value}
-                    className={availabilityDays.includes(day.value) ? 'selected' : ''}
-                    onClick={() => toggleAvailabilityDay(day.value)}
-                  >
-                    <span>✓</span>
-                    {day.label}
+              <div className="availability-mode-selector">
+                <strong>Como você prefere informar sua disponibilidade?</strong>
+                <div className="availability-mode-options">
+                  <button type="button" className={`availability-mode-option ${availabilityMode === 'periods' ? 'selected' : ''}`} onClick={() => selectAvailabilityMode('periods')}>
+                    <span>Dias e períodos</span>
+                    <small>Escolha os dias e indique manhã, tarde ou noite.</small>
                   </button>
-                ))}
-              </div>
-
-              <div className="availability-periods">
-                <strong>Qual período você prefere?</strong>
-                <div>
-                  {[
-                    ['manha', 'Manhã'],
-                    ['tarde', 'Tarde'],
-                    ['noite', 'Noite'],
-                  ].map(([value, label]) => (
-                    <button
-                      type="button"
-                      key={value}
-                      className={availabilityPeriods.includes(value) ? 'selected' : ''}
-                      onClick={() => toggleAvailabilityPeriod(value)}
-                    >
-                      {availabilityPeriods.includes(value) ? '✓ ' : ''}{label}
-                    </button>
-                  ))}
+                  <button type="button" className={`availability-mode-option ${availabilityMode === 'ranges' ? 'selected' : ''}`} onClick={() => selectAvailabilityMode('ranges')}>
+                    <span>Faixa de horário por dia</span>
+                    <small>Escolha os dias e informe exatamente o horário disponível.</small>
+                  </button>
+                  <button type="button" className={`availability-mode-option ${availabilityMode === 'flexible' ? 'selected' : ''}`} onClick={() => selectAvailabilityMode('flexible')}>
+                    <span>Total flexibilidade</span>
+                    <small>Mostre todos os horários compatíveis com o plano.</small>
+                  </button>
                 </div>
               </div>
 
-              <label className="availability-flexible">
-                <input
-                  type="checkbox"
-                  checked={availabilityFlexible}
-                  onChange={(event) => setAvailabilityFlexible(event.target.checked)}
-                />
-                <span>
-                  <strong>Tenho flexibilidade de horário</strong>
-                  <small>Mostrar todos os horários compatíveis com o idioma, frequência e modalidade.</small>
-                </span>
-              </label>
+              {availabilityMode !== 'flexible' && (
+                <div className="availability-days">
+                  {WEEKDAYS.filter((day) => day.value !== 0 && day.value !== 6).map((day) => (
+                    <button type="button" key={day.value} className={availabilityDays.includes(day.value) ? 'selected' : ''} onClick={() => toggleAvailabilityDay(day.value)}>
+                      <span>✓</span>{day.label}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-              {availabilityDays.length > 0 && !availabilityFlexible && (
+              {availabilityMode === 'periods' && (
+                <div className="availability-periods">
+                  <strong>Qual período você prefere?</strong>
+                  <div>
+                    {[['manha', 'Manhã'], ['tarde', 'Tarde'], ['noite', 'Noite']].map(([value, label]) => (
+                      <button type="button" key={value} className={availabilityPeriods.includes(value) ? 'selected' : ''} onClick={() => toggleAvailabilityPeriod(value)}>
+                        {availabilityPeriods.includes(value) ? '✓ ' : ''}{label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {availabilityMode === 'ranges' && availabilityDays.length > 0 && (
                 <div className="availability-ranges">
-                  <strong>Ou informe um intervalo específico por dia</strong>
+                  <strong>Informe a faixa de horário para cada dia</strong>
                   {availabilityDays.map((day) => (
                     <div className="availability-range" key={day}>
                       <span>{WEEKDAYS.find((item) => item.value === day)?.label}</span>
-                      <label>
-                        das
-                        <input
-                          type="time"
-                          value={availabilityRanges[day]?.start ?? '18:00'}
-                          onChange={(event) => setAvailabilityRange(day, 'start', event.target.value)}
-                        />
+                      <label>das
+                        <input type="time" value={availabilityRanges[day]?.start ?? '18:00'} onChange={(event) => setAvailabilityRange(day, 'start', event.target.value)} />
                       </label>
-                      <label>
-                        até
-                        <input
-                          type="time"
-                          value={availabilityRanges[day]?.end ?? '21:00'}
-                          onChange={(event) => setAvailabilityRange(day, 'end', event.target.value)}
-                        />
+                      <label>até
+                        <input type="time" value={availabilityRanges[day]?.end ?? '21:00'} onChange={(event) => setAvailabilityRange(day, 'end', event.target.value)} />
                       </label>
                     </div>
                   ))}
