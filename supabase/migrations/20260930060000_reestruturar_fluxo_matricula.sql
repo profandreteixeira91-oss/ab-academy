@@ -184,32 +184,143 @@ create or replace function private.selecionar_horario_matricula_v2(
   p_turma_id uuid default null,p_reserva_token text default null,p_nome text default null,p_email text default null
 )
 returns jsonb language plpgsql security definer set search_path=''
-as $$
-declare v_h public.horarios;v_t public.turmas;v_p public.turma_participantes;v_count integer;
-  v_max integer;v_price numeric;v_ordem integer;v_token text:=nullif(trim(coalesce(p_reserva_token,'')),'');
-  v_nome text:=nullif(trim(coalesce(p_nome,'')),'');v_email text:=lower(trim(coalesce(p_email,'')));
-  v_status text;v_tipo_valor text;
+as $function$
+declare
+  v_h public.horarios; v_t public.turmas; v_p public.turma_participantes;
+  v_count integer; v_max integer; v_price numeric; v_ordem integer;
+  v_token text:=nullif(trim(coalesce(p_reserva_token,'')),'');
+  v_nome text:=nullif(trim(coalesce(p_nome,'')),'');
+  v_email text:=lower(trim(coalesce(p_email,'')));
+  v_status text; v_tipo_valor text;
 begin
-  if p_idioma not in ('ingles','alemao') or p_modalidade not in ('individual','dupla','grupo') or p_aulas_semana not in (1,2,3)
-    then raise exception 'Parâmetros de matrícula inválidos.'; end if;
-  if p_modalidade<>'individual' and (v_token is null or v_nome is null or v_email is null)
-    then raise exception 'Informe os dados básicos da matrícula antes de reservar o horário.'; end if;
+  if p_idioma not in ('ingles','alemao') or p_modalidade not in ('individual','dupla','grupo') or p_aulas_semana not in (1,2,3) then
+    raise exception 'Parâmetros de matrícula inválidos.';
+  end if;
+  if p_modalidade<>'individual' and (v_token is null or v_nome is null or v_email is null) then
+    raise exception 'Informe os dados básicos da matrícula antes de reservar o horário.';
+  end if;
   select * into v_h from public.horarios where id=p_horario_id and idioma=p_idioma and disponivel=true for update;
   if not found then raise exception 'Este horário não está mais disponível.'; end if;
+
   if p_modalidade='individual' then
-    if p_turma_id is not null or v_h.aluno_id is not null or coalesce(v_h.tipo_horario,'individual')<>'individual'
-      then raise exception 'Este horário não está disponível para aula individual.'; end if;
-    select p.preco into v_price from public.planos p where p.idioma=p_idioma and p.modalidade='individual'
-      and p.tipo='mensal' and p.aulas_semana=p_aulas_semana and p.ativo=true
-      order by p.updated_at desc,p.created_at desc limit 1;
+    if p_turma_id is not null or v_h.aluno_id is not null or coalesce(v_h.tipo_horario,'individual')<>'individual' then
+      raise exception 'Este horário não está disponível para aula individual.';
+    end if;
+    select p.preco into v_price from public.planos p
+    where p.idioma=p_idioma and p.modalidade='individual' and p.tipo='mensal'
+      and p.aulas_semana=p_aulas_semana and p.ativo=true
+    order by p.updated_at desc,p.created_at desc limit 1;
     if v_price is null then raise exception 'Preço individual não configurado.'; end if;
-    return jsonb_build_object('id',v_h.id,'idioma',v_h.idioma,'dia_semana',v_h.dia_semana,'hora_inicio',v_h.hora_inicio,
-      'hora_fim',v_h.hora_fim,'tipo_horario','individual','disponivel',true,'turma_id',null,'participante_id',null,
-      'participantes',0,'capacidade',1,'vagas_restantes',1,'valor_mensal',v_price,'status_formacao','individual',
-      'tipo_valor','individual','professor_id',v_h.professor_id);
+    return jsonb_build_object(
+      'id',v_h.id,'idioma',v_h.idioma,'dia_semana',v_h.dia_semana,'hora_inicio',v_h.hora_inicio,'hora_fim',v_h.hora_fim,
+      'tipo_horario','individual','disponivel',true,'turma_id',null,'participante_id',null,'participantes',0,
+      'capacidade',1,'vagas_restantes',1,'valor_mensal',v_price,'status_formacao','individual',
+      'tipo_valor','individual','professor_id',v_h.professor_id
+    );
   end if;
-  -- The full reservation implementation remains transactionally locked and stores the
-  -- participant-specific price so a later group completion cannot retroactively reprice it.
-  -- (The deployed function contains the complete existing reservation logic.)
+
+  if p_turma_id is null then
+    update public.turma_participantes set status='cancelado',updated_at=now()
+    where reserva_token=v_token and status='convidado' and reserva_expira_em is not null and reserva_expira_em<now();
+
+    select * into v_t from public.turmas
+    where idioma=p_idioma and modalidade=p_modalidade and aulas_semana=p_aulas_semana
+      and status in ('em_formacao','aguardando_confirmacoes','pronta','ativa')
+      and (horario_id=p_horario_id or exists(
+        select 1 from public.turma_horarios th where th.turma_id=turmas.id and th.horario_id=p_horario_id))
+    order by case when status in ('em_formacao','aguardando_confirmacoes') then 0 else 1 end,created_at asc
+    limit 1 for update;
+
+    if not found then
+      v_max:=case when p_modalidade='dupla' then 2 else 3 end;
+      insert into public.turmas(
+        modalidade,idioma,aulas_semana,quantidade_minima,quantidade_maxima,horario_preferido,status,horario_id,created_at,updated_at
+      ) values(
+        p_modalidade,p_idioma,p_aulas_semana,
+        case when p_modalidade='dupla' then 2 else 3 end,v_max,
+        to_char(v_h.hora_inicio,'HH24:MI'),'em_formacao',p_horario_id,now(),now()
+      ) returning * into v_t;
+    end if;
+  else
+    select * into v_t from public.turmas
+    where id=p_turma_id and idioma=p_idioma and modalidade=p_modalidade and aulas_semana=p_aulas_semana
+      and status in ('em_formacao','aguardando_confirmacoes','pronta','ativa')
+    for update;
+    if not found then raise exception 'A turma selecionada não está mais disponível.'; end if;
+  end if;
+
+  if v_t.modalidade<>p_modalidade or v_t.idioma<>p_idioma or v_t.aulas_semana<>p_aulas_semana then
+    raise exception 'A turma não é compatível com a modalidade selecionada.';
+  end if;
+  if v_t.quantidade_maxima <> (case when p_modalidade='dupla' then 2 else 3 end) then
+    raise exception 'A capacidade da turma não corresponde à modalidade.';
+  end if;
+
+  if not exists(select 1 from public.turma_horarios where turma_id=v_t.id and horario_id=p_horario_id) then
+    if exists(select 1 from public.turma_horarios th where th.horario_id=p_horario_id and th.turma_id<>v_t.id) then
+      raise exception 'Este horário já pertence a outra turma.';
+    end if;
+    select coalesce(max(ordem),0)+1 into v_ordem from public.turma_horarios where turma_id=v_t.id;
+    if v_ordem>p_aulas_semana then raise exception 'A turma já possui todos os horários desta modalidade.'; end if;
+    insert into public.turma_horarios(turma_id,horario_id,ordem) values(v_t.id,p_horario_id,v_ordem);
+  end if;
+
+  select count(*)::integer into v_count from public.turma_participantes
+  where turma_id=v_t.id and status in ('convidado','confirmado')
+    and (status<>'convidado' or reserva_expira_em is null or reserva_expira_em>=now());
+  if v_count>=v_t.quantidade_maxima then raise exception 'Esta turma está completa.'; end if;
+
+  select * into v_p from public.turma_participantes
+  where turma_id=v_t.id and reserva_token=v_token and status in ('convidado','confirmado')
+  order by created_at desc limit 1 for update;
+
+  if not found then
+    insert into public.turma_participantes(
+      turma_id,user_id,nome,email,papel,status,convidado_em,forma_inicio,
+      reserva_expira_em,reserva_token,created_at,updated_at,valor_individual
+    ) values(
+      v_t.id,null,v_nome,v_email,case when v_count=0 then 'organizador' else 'participante' end,
+      'convidado',now(),'coletivo',now()+interval '30 minutes',v_token,now(),now(),
+      (select p.preco from public.planos p where p.idioma=p_idioma and p.modalidade='individual'
+        and p.tipo='mensal' and p.aulas_semana=1 and p.ativo=true
+        order by p.updated_at desc,p.created_at desc limit 1)
+    ) returning * into v_p;
+    v_count:=v_count+1;
+  else
+    update public.turma_participantes set nome=v_nome,email=v_email,updated_at=now() where id=v_p.id;
+    select * into v_p from public.turma_participantes where id=v_p.id;
+  end if;
+
+  if v_t.status in ('em_formacao','aguardando_confirmacoes') then
+    v_price:=public.preco_formacao_coletiva(p_idioma,p_modalidade,p_aulas_semana);
+    v_status:=case when p_modalidade='dupla' then 'dupla_em_formacao' else 'grupo_em_formacao' end;
+    v_tipo_valor:='coletiva_em_formacao';
+  else
+    v_price:=public.preco_coletivo(p_idioma,p_modalidade,p_aulas_semana,v_t.quantidade_maxima);
+    v_status:=case when p_modalidade='dupla' then 'dupla_formada' else 'grupo_formado' end;
+    v_tipo_valor:='coletiva_formada';
+  end if;
+
+  update public.turma_participantes set
+    valor_individual=coalesce(valor_individual,(
+      select p.preco from public.planos p where p.idioma=p_idioma and p.modalidade='individual'
+        and p.tipo='mensal' and p.aulas_semana=1 and p.ativo=true
+      order by p.updated_at desc,p.created_at desc limit 1)),
+    valor_coletivo=v_price,
+    valor_coletivo_normal=case
+      when v_t.status in ('em_formacao','aguardando_confirmacoes')
+        then public.preco_coletivo(p_idioma,p_modalidade,p_aulas_semana,v_t.quantidade_maxima)
+      else v_price end,
+    updated_at=now()
+  where id=v_p.id;
+
+  update public.horarios set tipo_horario=p_modalidade where id=p_horario_id;
+
+  return jsonb_build_object(
+    'id',v_h.id,'idioma',v_h.idioma,'dia_semana',v_h.dia_semana,'hora_inicio',v_h.hora_inicio,'hora_fim',v_h.hora_fim,
+    'tipo_horario',p_modalidade,'disponivel',true,'turma_id',v_t.id,'participante_id',v_p.id,
+    'participantes',v_count,'capacidade',v_t.quantidade_maxima,'vagas_restantes',v_t.quantidade_maxima-v_count,
+    'valor_mensal',v_price,'status_formacao',v_status,'tipo_valor',v_tipo_valor,'professor_id',v_h.professor_id
+  );
 end;
-$$;
+$function$;
