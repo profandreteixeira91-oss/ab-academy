@@ -329,28 +329,6 @@ export default function Checkout({
           console.error('Erro ao carregar pagamento:', pagamentoError)
           throw new Error('Não foi possível carregar a intenção de pagamento.')
         }
-   async function loadPagamento() {
-      try {
-        setLoading(true)
-        setError('')
-
-        /*
-         * Busca somente a intenção de pagamento.
-         *
-         * Nenhuma matrícula ou aluno é criado
-         * neste momento.
-         */
-
-        const { data: pagamentoRows, error: pagamentoError } = await supabase.rpc('obter_pagamento_checkout', {
-          p_pagamento_id: pagamentoId,
-        })
-
-        const data = Array.isArray(pagamentoRows) ? pagamentoRows[0] : pagamentoRows
-
-        if (pagamentoError || !data) {
-          console.error('Erro ao carregar pagamento:', pagamentoError)
-          throw new Error('Não foi possível carregar a intenção de pagamento.')
-        }
 
         /*
          * =====================================================
