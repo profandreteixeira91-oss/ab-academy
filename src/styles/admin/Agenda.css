@@ -2315,3 +2315,209 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
+
+/* =========================================================
+   AUDITORIA FINAL — FLUIDEZ / ZERO OVERFLOW HORIZONTAL
+   ========================================================= */
+
+.agenda-page,
+.agenda-page-header,
+.agenda-header-actions,
+.agenda-filters,
+.agenda-panel,
+.agenda-panel-header,
+.agenda-panel-header > *,
+.agenda-panel-content,
+.agenda-periods,
+.agenda-period,
+.agenda-period-content,
+.agenda-card-grid,
+.agenda-item,
+.agenda-item-main,
+.agenda-item-top,
+.agenda-actions,
+.agenda-replacement-section {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.agenda-page,
+.agenda-panel,
+.agenda-panel-content,
+.agenda-period,
+.agenda-period-content,
+.agenda-card-grid,
+.agenda-item {
+  overflow-x: hidden;
+}
+
+.agenda-item-top {
+  overflow: hidden;
+}
+
+.agenda-card-grid .agenda-item {
+  overflow: hidden;
+}
+
+.agenda-card-grid .agenda-language,
+.agenda-card-grid .agenda-status {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.agenda-card-grid .agenda-language {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agenda-card-grid .agenda-status {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.agenda-period-menu,
+.agenda-period-menu-main {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.agenda-period-menu-main {
+  overflow: hidden;
+}
+
+.agenda-period-menu-main strong,
+.agenda-period-menu-main small {
+  min-width: 0;
+}
+
+.agenda-period-menu-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* O seletor mantém os 7 dias e a ordem existente, mas ocupa menos espaço. */
+.agenda-day-selector {
+  min-width: 0;
+  width: 100%;
+}
+
+.agenda-day-button {
+  min-width: 0;
+  min-height: 52px;
+  padding: 6px 7px;
+  border-radius: 10px;
+}
+
+.agenda-day-short {
+  font-size: 9px;
+}
+
+.agenda-day-name {
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 10px;
+}
+
+.agenda-day-count {
+  min-width: 17px;
+  height: 17px;
+  font-size: 8px;
+}
+
+/* Hoje fica sempre identificado, inclusive quando outro dia está selecionado. */
+.agenda-day-button.today {
+  box-shadow: inset 0 0 0 1px rgba(37, 99, 235, 0.22);
+}
+
+.agenda-day-button.today:not(.active) {
+  border-color: #bfdbfe;
+  background: #f8fbff;
+}
+
+.agenda-day-button.today::after {
+  content: 'HOJE';
+  position: absolute;
+  top: 4px;
+  right: 5px;
+  padding: 1px 4px;
+  border-radius: 999px;
+  background: #dbeafe;
+  color: #2563eb;
+  font-size: 6px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: 0.05em;
+}
+
+@media (max-width: 900px) {
+  .agenda-day-selector {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 5px;
+  }
+
+  .agenda-day-button {
+    min-height: 50px;
+    padding: 5px 3px;
+    border-radius: 9px;
+  }
+
+  .agenda-day-name {
+    font-size: 8px;
+  }
+
+  .agenda-day-short {
+    font-size: 8px;
+  }
+
+  .agenda-day-count {
+    min-width: 15px;
+    height: 15px;
+    font-size: 7px;
+  }
+}
+
+@media (max-width: 600px) {
+  .agenda-day-selector {
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+  }
+
+  .agenda-day-button {
+    min-height: 46px;
+    padding: 4px 2px;
+  }
+
+  .agenda-day-name {
+    display: none;
+  }
+
+  .agenda-day-short {
+    font-size: 8px;
+  }
+
+  .agenda-day-button.today::after {
+    top: 3px;
+    right: 3px;
+    padding: 1px 3px;
+    font-size: 5px;
+  }
+}
+
+/* Em telas estreitas, nenhum filho deve criar uma faixa lateral. */
+@media (max-width: 420px) {
+  .agenda-day-selector {
+    gap: 3px;
+  }
+
+  .agenda-day-button {
+    min-height: 44px;
+  }
+
+  .agenda-day-count {
+    min-width: 14px;
+    height: 14px;
+  }
+}
