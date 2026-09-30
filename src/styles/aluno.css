@@ -4514,6 +4514,16 @@ body {
 .student-payment-method-info,.student-payment-waiting,.student-payment-confirmed{display:flex;flex-direction:column;align-items:center;text-align:center;padding:30px 12px}
 .student-payment-method-info h3,.student-payment-waiting h3,.student-payment-confirmed h3{margin:12px 0 7px;font:800 21px Montserrat,sans-serif;color:#0f172a}
 .student-payment-method-info p,.student-payment-waiting p,.student-payment-confirmed p{max-width:520px;margin:0 0 20px;color:#64748b;line-height:1.6}
+.student-payment-third-party-toggle{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:4px;padding:14px 15px;border:1px solid #dbe3ef;border-radius:13px;background:#f8fafc;transition:.2s ease}
+.student-payment-third-party-toggle.active{border-color:#9bb9f5;background:#f5f8ff}
+.student-payment-third-party-toggle>div{display:flex;flex-direction:column;gap:4px}
+.student-payment-third-party-toggle strong{font:700 13px Montserrat,sans-serif;color:#0f172a}
+.student-payment-third-party-toggle span{font:500 11px Montserrat,sans-serif;color:#64748b;line-height:1.4}
+.student-payment-switch{position:relative;flex:0 0 auto;width:46px;height:26px;padding:0;border:0;border-radius:999px;background:#cbd5e1;cursor:pointer;transition:.2s ease}
+.student-payment-switch span{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(15,23,42,.18);transition:.2s ease}
+.student-payment-switch.on{background:#0f4cdb}
+.student-payment-switch.on span{transform:translateX(20px)}
+.student-payment-card-holder-label{display:flex;align-items:center;gap:7px;margin:3px 0 1px;color:#0f4cdb;font:700 11px Montserrat,sans-serif;text-transform:uppercase;letter-spacing:.04em}
 .student-payment-card-form{display:flex;flex-direction:column;gap:10px}
 .student-payment-card-form input,.student-payment-copy input{width:100%;box-sizing:border-box;border:1px solid #dbe3ef;border-radius:10px;padding:12px 13px;font:500 13px Montserrat,sans-serif;color:#0f172a;outline:none}
 .student-payment-fields-2,.student-payment-fields-3{display:grid;gap:10px}
