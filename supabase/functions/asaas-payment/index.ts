@@ -1349,14 +1349,30 @@ Deno.serve(
             .in('status', ['convidado','confirmado'])
 
           if (turmaError || !turma) throw new Error('Turma coletiva não encontrada.')
-          const { data: valorColetivo, error: valorError } = await supabaseAdmin.rpc('preco_coletivo', {
-            p_idioma: turma.idioma,
-            p_modalidade: turma.modalidade,
-            p_aulas_semana: turma.aulas_semana,
-            p_participantes: participantesCount ?? 1,
-          })
-          if (valorError || valorColetivo == null) throw new Error('Não foi possível calcular o valor da turma.')
-          valor = Number(valorColetivo)
+          const participantTotal = participantesCount ?? 1
+
+          // Quando a turma ainda está sendo formada, o primeiro aluno
+          // paga a condição de formação (individual com desconto).
+          // A partir do segundo participante, aplica-se o preço coletivo
+          // correspondente ao tamanho atual da turma.
+          const { data: valorCalculado, error: valorError } = participantTotal <= 1
+            ? await supabaseAdmin.rpc('preco_formacao_coletiva', {
+                p_idioma: turma.idioma,
+                p_modalidade: turma.modalidade,
+                p_aulas_semana: turma.aulas_semana,
+              })
+            : await supabaseAdmin.rpc('preco_coletivo', {
+                p_idioma: turma.idioma,
+                p_modalidade: turma.modalidade,
+                p_aulas_semana: turma.aulas_semana,
+                p_participantes: participantTotal,
+              })
+
+          if (valorError || valorCalculado == null) {
+            throw new Error('Não foi possível calcular o valor da turma.')
+          }
+
+          valor = Number(valorCalculado)
         } else {
           valor = Number(plano.preco)
         }
