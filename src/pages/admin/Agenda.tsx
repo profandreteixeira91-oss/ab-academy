@@ -2432,75 +2432,29 @@ export default function Agenda() {
         <div className="agenda-panel-content">
 
           {loading ? (
-
             <div className="agenda-loading">
-
               <div className="agenda-loading-spinner" />
-
-              <p>
-                Carregando horários...
-              </p>
-
+              <p>Carregando horários...</p>
             </div>
-
-          ) : horariosDoDia.length === 0 &&
-            reposicoesDoDia.length === 0 ? (
-
+          ) : horariosDoDia.length === 0 && reposicoesDoDia.length === 0 ? (
             <div className="agenda-empty">
-
               <div className="agenda-empty-icon">
-                <CalendarDays
-                  size={28}
-                />
+                <CalendarDays size={28} />
               </div>
-
-              <h3>
-                Nenhum horário
-                cadastrado
-              </h3>
-
-              <p>
-                Não existem horários
-                cadastrados para
-                este dia.
-              </p>
-
+              <h3>Nenhum horário cadastrado</h3>
+              <p>Não existem horários cadastrados para este dia.</p>
               <div className="agenda-empty-actions">
-
-                <button
-                  type="button"
-                  className="agenda-secondary-button"
-                  onClick={
-                    openCreateModal
-                  }
-                >
-                  <Plus
-                    size={17}
-                  />
-
+                <button type="button" className="agenda-secondary-button" onClick={openCreateModal}>
+                  <Plus size={17} />
                   Criar horário
                 </button>
-
-                <button
-                  type="button"
-                  className="agenda-secondary-button"
-                  onClick={
-                    openBulkCreateModal
-                  }
-                >
-                  <CalendarDays
-                    size={17}
-                  />
-
+                <button type="button" className="agenda-secondary-button" onClick={openBulkCreateModal}>
+                  <CalendarDays size={17} />
                   Criar em massa
                 </button>
-
               </div>
-
             </div>
-
           ) : (
-
             <div className="agenda-periods">
               {[
                 { key: 'manha' as const, label: 'Manhã', range: '08:00 — 12:00', start: 8 * 60, end: 12 * 60 },
@@ -2522,7 +2476,7 @@ export default function Agenda() {
                   <div key={period.key} className="agenda-period">
                     <button
                       type="button"
-                      className={`agenda-period-menu ${openPeriod === period.key ? 'active' : ''}`}
+                      className={'agenda-period-menu ' + (openPeriod === period.key ? 'active' : '')}
                       onClick={() => setOpenPeriod(openPeriod === period.key ? null : period.key)}
                       aria-expanded={openPeriod === period.key}
                     >
@@ -2545,8 +2499,6 @@ export default function Agenda() {
                             {periodHorarios.map((horario) => {
                               const alunoNome = getAlunoNome(horario.aluno_id)
                               const professorNome = getProfessorNome(horario.professor_id)
-                              const ocupado = Boolean(horario.aluno_id)
-                              const selected = selectedIds.includes(horario.id)
                               const todayDate = dateKey(new Date())
                               const reagendamentoOriginal = registrosAulas.find(
                                 (registro) =>
@@ -2554,15 +2506,21 @@ export default function Agenda() {
                                   registro.data_aula >= todayDate &&
                                   Boolean(registro.data_aula_override),
                               )
+                              const ocupado = Boolean(horario.aluno_id)
+                              const selected = selectedIds.includes(horario.id)
+                              const itemClassName = [
+                                'agenda-item',
+                                horario.id === horarioAtualId ? 'current' : '',
+                                horario.id === proximoHorarioId ? 'next' : '',
+                                ocupado ? 'occupied' : 'available',
+                                selected ? 'selected' : '',
+                              ].filter(Boolean).join(' ')
 
                               return (
-                                <div
-                                  key={horario.id}
-                                  className={`agenda-item ${horario.id === horarioAtualId ? 'current ' : ''}${horario.id === proximoHorarioId ? 'next ' : ''}${ocupado ? 'occupied' : 'available'}${selected ? ' selected' : ''}`}
-                                >
+                                <div key={horario.id} className={itemClassName}>
                                   <button
                                     type="button"
-                                    className={`agenda-select-checkbox ${selected ? 'checked' : ''}`}
+                                    className={'agenda-select-checkbox ' + (selected ? 'checked' : '')}
                                     onClick={() => toggleSelection(horario.id)}
                                     aria-label={selected ? 'Desmarcar horário' : 'Selecionar horário'}
                                   >
@@ -2584,6 +2542,7 @@ export default function Agenda() {
                                             ? 'Grupo'
                                             : 'Individual'}
                                       </span>
+
                                       {horario.nivel_referencia && (
                                         <span className="agenda-status available">
                                           {horario.nivel_referencia === 'iniciante'
@@ -2597,17 +2556,20 @@ export default function Agenda() {
                                                   : horario.nivel_referencia}
                                         </span>
                                       )}
+
                                       {reagendamentoOriginal && (
                                         <span className="agenda-status unavailable">REAGENDADA</span>
                                       )}
+
                                       <span
-                                        className={`agenda-status ${
-                                          ocupado
+                                        className={
+                                          'agenda-status ' +
+                                          (ocupado
                                             ? 'occupied'
                                             : horario.disponivel
                                               ? 'available'
-                                              : 'unavailable'
-                                        }`}
+                                              : 'unavailable')
+                                        }
                                       >
                                         {ocupado
                                           ? 'Ocupado'
@@ -2626,7 +2588,7 @@ export default function Agenda() {
                                       <UserRound size={16} />
                                       <span>
                                         {professorNome
-                                          ? `Professor: ${professorNome}`
+                                          ? 'Professor: ' + professorNome
                                           : 'Nenhum professor atribuído'}
                                       </span>
                                     </div>
@@ -2717,9 +2679,7 @@ export default function Agenda() {
 
                             <div className="agenda-card-grid">
                               {periodReposicoes.map((registro) => {
-                                const horario = horarios.find(
-                                  (item) => item.id === registro.horario_id,
-                                )
+                                const horario = horarios.find((item) => item.id === registro.horario_id)
 
                                 if (
                                   !horario ||
@@ -2733,10 +2693,7 @@ export default function Agenda() {
                                 const professorNome = getProfessorNome(horario.professor_id)
 
                                 return (
-                                  <div
-                                    key={`reposicao-${registro.id}`}
-                                    className="agenda-item occupied"
-                                  >
+                                  <div key={'reposicao-' + registro.id} className="agenda-item occupied">
                                     <div className="agenda-time">
                                       <strong>{formatHour(registro.hora_inicio_override)}</strong>
                                       <span>{formatHour(registro.hora_fim_override)}</span>
@@ -2759,16 +2716,14 @@ export default function Agenda() {
 
                                       <div className="agenda-student">
                                         <UserRound size={16} />
-                                        <span>
-                                          {getAlunoNome(registro.aluno_id) || 'Aluno'}
-                                        </span>
+                                        <span>{getAlunoNome(registro.aluno_id) || 'Aluno'}</span>
                                       </div>
 
                                       <div className="agenda-student">
                                         <UserRound size={16} />
                                         <span>
                                           {professorNome
-                                            ? `Professor: ${professorNome}`
+                                            ? 'Professor: ' + professorNome
                                             : 'Nenhum professor atribuído'}
                                         </span>
                                       </div>
@@ -2802,7 +2757,6 @@ export default function Agenda() {
               })}
             </div>
           )}
-
         </div>
       </div>
 
@@ -3934,3 +3888,326 @@ export default function Agenda() {
               <div className="agenda-form-field">
 
                 <label>
+                  Idioma
+                </label>
+
+                <select
+                  value={
+                    bulkEditForm.idioma
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setBulkEditForm(
+                      (
+                        current,
+                      ) => ({
+                        ...current,
+                        idioma:
+                          event
+                            .target
+                            .value as
+                            | ''
+                            | 'ingles'
+                            | 'alemao',
+                      }),
+                    )
+                  }
+                >
+                  <option value="">
+                    Manter atual
+                  </option>
+
+                  {idiomas.map(
+                    (
+                      idioma,
+                    ) => (
+                      <option
+                        key={
+                          idioma.value
+                        }
+                        value={
+                          idioma.value
+                        }
+                      >
+                        {
+                          idioma.label
+                        }
+                      </option>
+                    ),
+                  )}
+                </select>
+
+              </div>
+
+              <div className="agenda-form-field">
+
+                <label>
+                  Professor responsável
+                </label>
+
+                <select
+                  value={
+                    bulkEditForm.professor_id
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setBulkEditForm(
+                      (
+                        current,
+                      ) => ({
+                        ...current,
+                        professor_id:
+                          event
+                            .target
+                            .value as
+                            | ''
+                            | '__none__'
+                            | string,
+                      }),
+                    )
+                  }
+                >
+                  <option value="">
+                    Manter atual
+                  </option>
+
+                  <option value="__none__">
+                    Remover professor
+                  </option>
+
+                  {professores.map(
+                    (
+                      professor,
+                    ) => (
+                      <option
+                        key={
+                          professor.id
+                        }
+                        value={
+                          professor.id
+                        }
+                      >
+                        {
+                          professor.nome_completo
+                        }
+                      </option>
+                    ),
+                  )}
+                </select>
+
+              </div>
+
+              <div className="agenda-form-field">
+
+                <label>
+                  Dia da semana
+                </label>
+
+                <select
+                  value={
+                    bulkEditForm.dia_semana
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setBulkEditForm(
+                      (
+                        current,
+                      ) => ({
+                        ...current,
+                        dia_semana:
+                          event.target
+                            .value ===
+                          ''
+                            ? ''
+                            : Number(
+                                event
+                                  .target
+                                  .value,
+                              ),
+                      }),
+                    )
+                  }
+                >
+                  <option value="">
+                    Manter atual
+                  </option>
+
+                  {diasSemana.map(
+                    (
+                      dia,
+                    ) => (
+                      <option
+                        key={
+                          dia.value
+                        }
+                        value={
+                          dia.value
+                        }
+                      >
+                        {
+                          dia.label
+                        }
+                      </option>
+                    ),
+                  )}
+                </select>
+
+              </div>
+
+              <div className="agenda-form-row">
+
+                <div className="agenda-form-field">
+
+                  <label>
+                    Novo horário inicial
+                  </label>
+
+                  <input
+                    type="time"
+                    value={
+                      bulkEditForm.hora_inicio
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setBulkEditForm(
+                        (
+                          current,
+                        ) => ({
+                          ...current,
+                          hora_inicio:
+                            event
+                              .target
+                              .value,
+                        }),
+                      )
+                    }
+                  />
+
+                  <small>
+                    Deixe vazio para manter.
+                  </small>
+
+                </div>
+
+                <div className="agenda-form-field">
+
+                  <label>
+                    Novo horário final
+                  </label>
+
+                  <input
+                    type="time"
+                    value={
+                      bulkEditForm.hora_fim
+                    }
+                    onChange={(
+                      event,
+                    ) =>
+                      setBulkEditForm(
+                        (
+                          current,
+                        ) => ({
+                          ...current,
+                          hora_fim:
+                            event
+                              .target
+                              .value,
+                        }),
+                      )
+                    }
+                  />
+
+                  <small>
+                    Deixe vazio para manter.
+                  </small>
+
+                </div>
+
+              </div>
+
+              <div className="agenda-form-field">
+
+                <label>
+                  Disponibilidade
+                </label>
+
+                <select
+                  value={
+                    bulkEditForm.disponivel
+                  }
+                  onChange={(
+                    event,
+                  ) =>
+                    setBulkEditForm(
+                      (
+                        current,
+                      ) => ({
+                        ...current,
+                        disponivel:
+                          event
+                            .target
+                            .value as
+                            | ''
+                            | 'true'
+                            | 'false',
+                      }),
+                    )
+                  }
+                >
+                  <option value="">
+                    Manter atual
+                  </option>
+
+                  <option value="true">
+                    Disponível
+                  </option>
+
+                  <option value="false">
+                    Indisponível
+                  </option>
+                </select>
+
+              </div>
+
+            </div>
+
+            <div className="agenda-modal-footer">
+
+              <button
+                type="button"
+                className="agenda-cancel-button"
+                onClick={
+                  closeBulkEditModal
+                }
+                disabled={saving}
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                className="agenda-save-button"
+                onClick={() =>
+                  void handleBulkEdit()
+                }
+                disabled={saving}
+              >
+                {saving
+                  ? 'Salvando...'
+                  : 'Salvar alterações'}
+              </button>
+
+            </div>
+
+          </div>
+        </div>
+      )}
+
+    </section>
+  )
+}
+
