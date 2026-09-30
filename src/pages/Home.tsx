@@ -143,7 +143,7 @@ function Home() {
       {/* HEADER */}
       <header className="header">
         <div className="container header-container">
-          <a href="#inicio" className="logo">
+          <a href="/" className="logo">
             <img
               src={logo}
               alt="AB Academy"
@@ -151,14 +151,14 @@ function Home() {
             />
           </a>
 
-          <nav className="navigation">
-            <a href="/">Início</a>
+          <nav className="navigation" aria-label="Navegação principal">
+            <a href="#inicio">Início</a>
+            <a href="#sobre">Sobre</a>
             <a href="/aulas">Cursos</a>
+            <a href="#metodologia">Metodologia</a>
             <a href="/planos">Planos</a>
-            <a href="/diagnostica">Aula diagnóstica</a>
-            <a href="/quero-aprender">Quero aprender</a>
-            <a href="/aluno">Área do aluno</a>
-            <a href="/professor">Portal do professor</a>
+            <a href="/enterprise">Enterprise</a>
+            <a href="/quero-aprender">Contato</a>
           </nav>
 
           <div className="header-actions">
@@ -194,12 +194,15 @@ function Home() {
             </button>
           </div>
 
-          <div className={`mobile-navigation ${mobileMenuOpen ? 'open' : ''}`}>
-            <a href="/" onClick={() => setMobileMenuOpen(false)}>Início</a>
+          <div className={`mobile-navigation ${mobileMenuOpen ? 'open' : ''}`} aria-label="Navegação principal">
+            <a href="#inicio" onClick={() => setMobileMenuOpen(false)}>Início</a>
+            <a href="#sobre" onClick={() => setMobileMenuOpen(false)}>Sobre</a>
             <a href="/aulas" onClick={() => setMobileMenuOpen(false)}>Cursos</a>
+            <a href="#metodologia" onClick={() => setMobileMenuOpen(false)}>Metodologia</a>
             <a href="/planos" onClick={() => setMobileMenuOpen(false)}>Planos</a>
             <a href="/diagnostica" onClick={() => setMobileMenuOpen(false)}>Aula diagnóstica</a>
-            <a href="/quero-aprender" onClick={() => setMobileMenuOpen(false)}>Quero aprender</a>
+            <a href="/enterprise" onClick={() => setMobileMenuOpen(false)}>Enterprise</a>
+            <a href="/quero-aprender" onClick={() => setMobileMenuOpen(false)}>Contato</a>
             <a href="/aluno" onClick={() => setMobileMenuOpen(false)}>Área do aluno</a>
             <a href="/professor" onClick={() => setMobileMenuOpen(false)}>Portal do professor</a>
           </div>
@@ -233,7 +236,7 @@ function Home() {
               </p>
 
               <div className="hero-actions">
-                <a href="#cursos" className="btn btn-primary">
+                <a href="/aulas" className="btn btn-primary">
                   Conheça nossos cursos
                   <ArrowRight size={18} />
                 </a>
@@ -1006,7 +1009,7 @@ function Home() {
               </div>
 
               <div className="cta-actions">
-                <a href="#cursos" className="btn btn-secondary">
+                <a href="/aulas" className="btn btn-secondary">
                   Conhecer os cursos
                   <ArrowRight size={18} />
                 </a>
