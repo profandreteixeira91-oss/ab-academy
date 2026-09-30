@@ -44,6 +44,7 @@ type EnrollmentRequest = {
   valor: number
   turma_token?: string | null
   turma_participante_id?: string | null
+  turma_id?: string | null
   horario_formacao_id?: string | null
   aguardando_formacao?: boolean
 }
@@ -580,116 +581,82 @@ Deno.serve(async (req) => {
       const {
         data: plano,
         error: planoError,
-      } =
-        await supabaseAdmin
-          .from('planos')
-          .select(
-            'id, idioma, tipo, preco, ativo, modalidade',
-          )
-          .eq(
-            'id',
-            body.plano_id,
-          )
-          .maybeSingle()
+      } = await supabaseAdmin
+        .from('planos')
+        .select('id, idioma, tipo, preco, ativo, modalidade, aulas_semana')
+        .eq('id', body.plano_id)
+        .maybeSingle()
 
-      if (planoError) {
-        console.error(
-          'Erro ao verificar plano:',
-          planoError,
-        )
-
-        return jsonResponse(
-          {
-            error:
-              'Não foi possível verificar o plano selecionado.',
-            details:
-              planoError.message,
-          },
-          500,
-        )
+      if (planoError || !plano) {
+        return jsonResponse({ error: 'Não foi possível verificar o plano selecionado.' }, 500)
       }
 
-      if (!plano) {
-        return jsonResponse(
-          {
-            error:
-              'O plano selecionado não existe mais.',
-          },
-          400,
-        )
-      }
+      if (!plano.ativo) return jsonResponse({ error: 'O plano selecionado não está disponível.' }, 400)
+      if (plano.idioma !== body.idioma) return jsonResponse({ error: 'O plano selecionado não corresponde ao idioma escolhido.' }, 400)
 
-      if (!plano.ativo) {
-        return jsonResponse(
-          {
-            error:
-              'O plano selecionado não está disponível.',
-          },
-          400,
-        )
-      }
+      const isCollective = plano.modalidade === 'dupla' || plano.modalidade === 'grupo'
 
-      if (
-        plano.idioma !==
-        body.idioma
-      ) {
-        return jsonResponse(
-          {
-            error:
-              'O plano selecionado não corresponde ao idioma escolhido.',
-          },
-          400,
-        )
-      }
-
-      if (plano.modalidade !== 'individual') {
-        return jsonResponse(
-          {
-            error:
-              'Este plano pertence a uma dupla ou grupo. A matrícula precisa ser liberada a partir de uma turma confirmada.',
-          },
-          409,
-        )
-      }
-
-      const isWaitingFormation = Boolean(body.aguardando_formacao && body.horario_formacao_id)
-
-      if (isWaitingFormation) {
-        const { data: formationSlot, error: formationSlotError } = await supabaseAdmin
-          .from('horarios')
-          .select('id, idioma, disponivel, aluno_id, tipo_horario')
-          .eq('id', body.horario_formacao_id)
-          .maybeSingle()
-
-        if (formationSlotError || !formationSlot || formationSlot.idioma !== body.idioma || !formationSlot.disponivel || formationSlot.aluno_id || !['dupla', 'grupo'].includes(formationSlot.tipo_horario)) {
-          return jsonResponse({ error: 'O horário escolhido para formação não está mais disponível.' }, 409)
+      if (isCollective) {
+        if (!body.turma_id || !body.turma_participante_id) {
+          return jsonResponse({ error: 'Selecione uma dupla ou turma antes de continuar.' }, 409)
         }
 
-        const discountedPrice = Math.round(Number(plano.preco) * 0.9 * 100) / 100
-        if (Math.abs(discountedPrice - Number(body.valor)) > 0.01) {
-          return jsonResponse({ error: 'O valor inicial deve corresponder ao plano individual com 10% de desconto enquanto a formação estiver pendente.' }, 409)
+        const { data: turma, error: turmaError } = await supabaseAdmin
+          .from('turmas')
+          .select('id,idioma,modalidade,aulas_semana,quantidade_maxima,status')
+          .eq('id', body.turma_id)
+          .maybeSingle()
+
+        const { data: participante, error: participanteError } = await supabaseAdmin
+          .from('turma_participantes')
+          .select('id,turma_id,user_id,status,reserva_expira_em')
+          .eq('id', body.turma_participante_id)
+          .maybeSingle()
+
+        if (turmaError || participanteError || !turma || !participante) {
+          return jsonResponse({ error: 'A turma selecionada não está mais disponível.' }, 409)
         }
-      } else if (Math.abs(Number(plano.preco) - Number(body.valor)) > 0.01) {
-        return jsonResponse(
-          {
-            error:
-              'O valor enviado não corresponde ao valor oficial do plano.',
-          },
-          409,
-        )
+
+        if (participante.turma_id !== turma.id || participante.user_id !== user.id) {
+          return jsonResponse({ error: 'A reserva desta turma não pertence ao usuário atual.' }, 403)
+        }
+
+        if (!['convidado','confirmado'].includes(participante.status)) {
+          return jsonResponse({ error: 'A reserva desta turma não está mais ativa.' }, 409)
+        }
+
+        if (participante.status === 'convidado' && participante.reserva_expira_em && new Date(participante.reserva_expira_em).getTime() < Date.now()) {
+          return jsonResponse({ error: 'A reserva desta turma expirou. Escolha o horário novamente.' }, 409)
+        }
+
+        if (turma.idioma !== body.idioma || turma.modalidade !== plano.modalidade || turma.aulas_semana !== (plano.aulas_semana ?? body.aulas_semana)) {
+          return jsonResponse({ error: 'A turma não corresponde ao plano selecionado.' }, 409)
+        }
+
+        const { count: participantesCount } = await supabaseAdmin
+          .from('turma_participantes')
+          .select('id', { count: 'exact', head: true })
+          .eq('turma_id', turma.id)
+          .in('status', ['convidado','confirmado'])
+
+        const { data: valorData, error: valorError } = await supabaseAdmin.rpc('preco_coletivo', {
+          p_idioma: body.idioma,
+          p_modalidade: turma.modalidade,
+          p_aulas_semana: turma.aulas_semana,
+          p_participantes: participantesCount ?? 1,
+        })
+
+        if (valorError || valorData == null || Math.abs(Number(valorData) - Number(body.valor)) > 0.01) {
+          return jsonResponse({ error: 'O valor da matrícula coletiva não corresponde à composição atual da turma.' }, 409)
+        }
+      } else {
+        if (Math.abs(Number(plano.preco) - Number(body.valor)) > 0.01) {
+          return jsonResponse({ error: 'O valor enviado não corresponde ao valor oficial do plano.' }, 409)
+        }
       }
 
-      if (
-        plano.tipo !==
-        body.tipo_plano
-      ) {
-        return jsonResponse(
-          {
-            error:
-              'O tipo do plano selecionado não corresponde ao tipo informado.',
-          },
-          400,
-        )
+      if (plano.tipo !== body.tipo_plano) {
+        return jsonResponse({ error: 'O tipo do plano selecionado não corresponde ao tipo informado.' }, 400)
       }
     }
 
@@ -705,8 +672,8 @@ Deno.serve(async (req) => {
       plano_id:
         body.plano_id,
 
-      turma_id: collectiveEnrollment?.turma_id ?? null,
-      turma_participante_id: collectiveEnrollment?.participante_id ?? null,
+      turma_id: body.turma_id ?? collectiveEnrollment?.turma_id ?? null,
+      turma_participante_id: body.turma_participante_id ?? collectiveEnrollment?.participante_id ?? null,
       valor_coletivo: collectiveEnrollment?.valor_mensal ?? null,
       condicao_meses: collectiveEnrollment?.condicao_meses ?? null,
       condicao_inicio: collectiveEnrollment?.condicao_inicio ?? null,
@@ -900,10 +867,10 @@ Deno.serve(async (req) => {
             body.plano_id,
 
           turma_id:
-            collectiveEnrollment?.turma_id ?? null,
+            body.turma_id ?? collectiveEnrollment?.turma_id ?? null,
 
           turma_participante_id:
-            collectiveEnrollment?.participante_id ?? null,
+            body.turma_participante_id ?? collectiveEnrollment?.participante_id ?? null,
 
           horario_formacao_id:
             body.aguardando_formacao ? body.horario_formacao_id ?? null : null,
@@ -973,6 +940,31 @@ Deno.serve(async (req) => {
         },
         500,
       )
+    }
+
+    const collectiveTurmaId = body.turma_id ?? collectiveEnrollment?.turma_id ?? null
+    const collectiveParticipanteId = body.turma_participante_id ?? collectiveEnrollment?.participante_id ?? null
+
+    if (collectiveTurmaId && collectiveParticipanteId) {
+      const token = crypto.randomUUID()
+      const { error: turmaMatriculaError } = await supabaseAdmin
+        .from('turma_matriculas')
+        .insert({
+          turma_id: collectiveTurmaId,
+          participante_id: collectiveParticipanteId,
+          token,
+          status: 'pagamento_pendente',
+          valor_mensal: Number(body.valor),
+          matricula_id: matricula.id,
+          pagamento_id: pagamento.id,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+      if (turmaMatriculaError) {
+        await supabaseAdmin.from('pagamentos').delete().eq('id', pagamento.id)
+        await supabaseAdmin.from('matriculas').delete().eq('id', matricula.id)
+        return jsonResponse({ error: 'Não foi possível registrar a participação na turma.', details: turmaMatriculaError.message }, 500)
+      }
     }
 
     /*
