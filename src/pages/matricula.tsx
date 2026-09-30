@@ -559,6 +559,7 @@ export default function Matricula() {
           status_formacao: plan.modalidade === 'dupla' ? 'dupla_em_formacao' : 'grupo_em_formacao',
           tipo_valor: 'coletiva_em_formacao',
           professor_id: data.professor_id ?? null,
+          nivel_referencia: data.nivel_referencia ?? null,
         }])
         return true
       }
@@ -615,7 +616,7 @@ export default function Matricula() {
 
         for (const item of fixedSchedules ?? []) {
           const participantes = Number(item.participantes ?? 0)
-          const capacidade = Number(item.capacidade ?? (modalidade === 'dupla' ? 2 : 6))
+          const capacidade = Number(item.capacidade ?? (modalidade === 'dupla' ? 2 : 3))
           const formsOnJoin = participantes === 0
           const valorMensal = formsOnJoin
             ? formationPrice
@@ -1177,6 +1178,11 @@ export default function Matricula() {
       }
 
       const firstEncounter = campaign.horarios[0]
+      if (!firstEncounter) {
+        setError('A turma selecionada não possui um encontro válido para iniciar a formação.')
+        return
+      }
+
       const formationSchedules: SelectedSchedule[] = campaign.horarios
         .slice()
         .sort((a, b) => a.ordem - b.ordem)
@@ -1204,6 +1210,9 @@ export default function Matricula() {
         return
       }
 
+      setContractAccepted(false)
+      setContractSignatureStatus('pending')
+      setSignatureName('')
       setFormationOrigin({
         turmaId: campaign.turma_id,
         horarioId: firstEncounter.horario_id,
@@ -1309,7 +1318,7 @@ export default function Matricula() {
 
     const participantId = data.participante_id ?? null
     const participants = Number(data.participantes ?? 0)
-    const capacity = Number(data.capacidade ?? (modalidade === 'dupla' ? 2 : 6))
+    const capacity = Number(data.capacidade ?? (modalidade === 'dupla' ? 2 : 3))
     const value = data.valor_mensal != null ? Number(data.valor_mensal) : null
 
     setSelectedSchedules((current) => current.map((item) => ({
