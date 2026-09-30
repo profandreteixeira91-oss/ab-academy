@@ -2151,6 +2151,7 @@ export default function Agenda() {
                 }
                 type="button"
                 className={`agenda-day-button ${dia.value === agendaToday ? 'today ' : ''}${active ? 'active' : ''}`}
+                aria-current={dia.value === agendaToday ? 'date' : undefined}
                 onClick={() => {
                   setSelectedDay(
                     dia.value,
