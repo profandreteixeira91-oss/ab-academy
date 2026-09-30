@@ -47,6 +47,7 @@ type EnrollmentRequest = {
   turma_id?: string | null
   horario_formacao_id?: string | null
   aguardando_formacao?: boolean
+  formacao_modalidade?: 'dupla' | 'grupo'
   reserva_token?: string | null
   modalidade?: 'individual' | 'dupla' | 'grupo'
 }
@@ -687,9 +688,61 @@ Deno.serve(async (req) => {
         if (horarioIds.length !== requiredSchedules) {
           return jsonResponse({ error: `Este plano exige ${requiredSchedules} horário(s) por semana.` }, 409)
         }
-        valorFinal = Number(plano.preco)
-        if (Math.abs(valorFinal - Number(body.valor)) > 0.01) {
-          return jsonResponse({ error: 'O valor enviado não corresponde ao valor oficial do plano.' }, 409)
+        if (body.aguardando_formacao) {
+          if (!body.formacao_modalidade || !body.turma_id || !body.horario_formacao_id) {
+            return jsonResponse({ error: 'A condição de início individual exige a turma de origem.' }, 409)
+          }
+
+          const { data: turmaOrigem, error: turmaOrigemError } = await supabaseAdmin
+            .from('turmas')
+            .select('id,idioma,modalidade,aulas_semana,fixa,data_inicio,status')
+            .eq('id', body.turma_id)
+            .maybeSingle()
+
+          if (
+            turmaOrigemError ||
+            !turmaOrigem ||
+            turmaOrigem.idioma !== body.idioma ||
+            turmaOrigem.modalidade !== body.formacao_modalidade ||
+            turmaOrigem.aulas_semana !== body.aulas_semana ||
+            turmaOrigem.fixa !== true ||
+            turmaOrigem.status in ['cancelada', 'encerrada'] ||
+            !turmaOrigem.data_inicio ||
+            turmaOrigem.data_inicio < new Date().toISOString().slice(0, 10)
+          ) {
+            return jsonResponse({ error: 'A turma de origem desta condição não está mais disponível.' }, 409)
+          }
+
+          const { data: horarioOrigem, error: horarioOrigemError } = await supabaseAdmin
+            .from('turma_horarios')
+            .select('horario_id')
+            .eq('turma_id', body.turma_id)
+            .eq('horario_id', body.horario_formacao_id)
+            .maybeSingle()
+
+          if (horarioOrigemError || !horarioOrigem) {
+            return jsonResponse({ error: 'O horário de origem da condição não pertence à turma selecionada.' }, 409)
+          }
+
+          const { data: discountedPrice, error: discountedPriceError } = await supabaseAdmin.rpc('preco_formacao_coletiva', {
+            p_idioma: body.idioma,
+            p_modalidade: body.formacao_modalidade,
+            p_aulas_semana: body.aulas_semana,
+          })
+
+          if (discountedPriceError || discountedPrice == null || Number(discountedPrice) <= 0) {
+            return jsonResponse({ error: 'Não foi possível determinar o desconto de formação.' }, 409)
+          }
+
+          valorFinal = Number(discountedPrice)
+          if (Math.abs(valorFinal - Number(body.valor)) > 0.01) {
+            return jsonResponse({ error: 'O valor com desconto não corresponde à condição oficial de formação.' }, 409)
+          }
+        } else {
+          valorFinal = Number(plano.preco)
+          if (Math.abs(valorFinal - Number(body.valor)) > 0.01) {
+            return jsonResponse({ error: 'O valor enviado não corresponde ao valor oficial do plano.' }, 409)
+          }
         }
       }
 
@@ -713,8 +766,8 @@ Deno.serve(async (req) => {
       turma_id: body.turma_id ?? collectiveEnrollment?.turma_id ?? null,
       turma_participante_id: body.turma_participante_id ?? collectiveEnrollment?.participante_id ?? null,
       valor_coletivo: collectiveEnrollment?.valor_mensal ?? (body.modalidade !== 'individual' ? valorFinal : null),
-      condicao_meses: collectiveEnrollment?.condicao_meses ?? null,
-      condicao_inicio: collectiveEnrollment?.condicao_inicio ?? null,
+      condicao_meses: collectiveEnrollment?.condicao_meses ?? (body.aguardando_formacao ? 3 : null),
+      condicao_inicio: collectiveEnrollment?.condicao_inicio ?? (body.aguardando_formacao ? dataInicio : null),
       condicao_fim: collectiveEnrollment?.condicao_fim ?? null,
       horario_formacao_id: body.aguardando_formacao ? body.horario_formacao_id ?? null : null,
 
@@ -746,7 +799,7 @@ Deno.serve(async (req) => {
         body.valor_aula,
 
       valor_mensal:
-        body.modalidade !== 'individual' ? valorFinal : body.valor_mensal,
+        body.modalidade !== 'individual' || body.aguardando_formacao ? valorFinal : body.valor_mensal,
 
       valor_anual:
         body.valor_anual,
@@ -873,7 +926,7 @@ Deno.serve(async (req) => {
         body.valor_aula,
 
       valor_mensal:
-        body.modalidade !== 'individual' ? valorFinal : body.valor_mensal,
+        body.modalidade !== 'individual' || body.aguardando_formacao ? valorFinal : body.valor_mensal,
 
       valor_anual:
         body.valor_anual,
