@@ -890,12 +890,6 @@ Deno.serve(async (req) => {
           valor:
             body.valor,
 
-          turma_id:
-            collectiveEnrollment?.turma_id ?? null,
-
-          turma_participante_id:
-            collectiveEnrollment?.participante_id ?? null,
-
           parcelas:
             null,
 
