@@ -25,6 +25,7 @@ type Plano = {
 }
 
 const ordemTipos: Plano['tipo'][] = ['mensal', 'anual', 'personalizado', 'intensivo']
+const DESCONTO_FORMACAO_COLETIVA = 0.10
 
 function formatCurrency(value: number) {
   return new Intl.NumberFormat('pt-BR', {
@@ -78,7 +79,7 @@ function ModalidadeCard({
     .sort((a, b) => Number(a.preco) - Number(b.preco))[0]
 
   const valorFormacao = individual1x
-    ? Number((Number(individual1x.preco) * 0.9).toFixed(2))
+    ? Number((Number(individual1x.preco) * (1 - DESCONTO_FORMACAO_COLETIVA)).toFixed(2))
     : null
 
   const regulares = planos
@@ -196,7 +197,7 @@ function ModalidadeCard({
           </div>
           <div className="planos-example-row">
             <span>10% de desconto</span>
-            <strong>- {formatCurrency(Number(individual1x.preco) * 0.1)}</strong>
+            <strong>- {formatCurrency(Number(individual1x.preco) * DESCONTO_FORMACAO_COLETIVA)}</strong>
           </div>
           <div className="planos-example-row planos-example-row--total">
             <span>Durante a formação</span>
