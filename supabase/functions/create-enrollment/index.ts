@@ -657,7 +657,7 @@ Deno.serve(async (req) => {
 
         const participantTotal = participantesCount ?? 1
         const capacidadeDaTurma = turma.quantidade_maxima
-        const { data: valorData, error: valorError } = participantTotal < capacidadeDaTurma
+        const { data: valorData, error: valorError } = participantTotal === 1
           ? await supabaseAdmin.rpc('preco_formacao_coletiva', {
               p_idioma: body.idioma,
               p_modalidade: turma.modalidade,
@@ -667,7 +667,7 @@ Deno.serve(async (req) => {
               p_idioma: body.idioma,
               p_modalidade: turma.modalidade,
               p_aulas_semana: turma.aulas_semana,
-              p_participantes: participantTotal,
+              p_participantes: capacidadeDaTurma,
             })
 
         if (valorError || valorData == null || Math.abs(Number(valorData) - Number(body.valor)) > 0.01) {
