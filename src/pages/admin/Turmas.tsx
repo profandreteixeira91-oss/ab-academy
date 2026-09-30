@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState } from 'react'
-import { CheckCircle2, Copy, Plus, Users, XCircle } from 'lucide-react'
+import { CheckCircle2, Clock3, Copy, Plus, Users, XCircle } from 'lucide-react'
+import '../../styles/admin/Turmas.css'
 import { supabase } from '../../lib/supabase'
 
-type Turma = { id: string; modalidade: 'dupla' | 'grupo'; idioma: 'ingles' | 'alemao'; aulas_semana: number; quantidade_minima: number; quantidade_maxima: number; horario_preferido: string | null; status: string; origem_lead_id: string | null; created_at: string }
-type Participante = { id: string; turma_id: string; nome: string; email: string; telefone: string | null; papel: 'organizador' | 'participante'; status: 'convidado' | 'confirmado' | 'recusado' | 'cancelado'; forma_inicio: 'coletivo' | 'individual_aguardando'; valor_individual: number | null; valor_coletivo: number | null; valor_coletivo_normal: number | null; condicao_meses: number | null; condicao_inicio: string | null; condicao_fim: string | null }
+type Turma = { id: string; modalidade: 'dupla' | 'grupo'; idioma: 'ingles' | 'alemao'; aulas_semana: number; quantidade_minima: number; quantidade_maxima: number; horario_preferido: string | null; status: string; origem_lead_id: string | null; created_at: string; fixa?: boolean; professor_id?: string | null; nivel_referencia?: string | null }
+type Professor = { id: string; nome_completo: string; ativo: boolean }\ntype Participante = { id: string; turma_id: string; nome: string; email: string; telefone: string | null; papel: 'organizador' | 'participante'; status: 'convidado' | 'confirmado' | 'recusado' | 'cancelado'; forma_inicio: 'coletivo' | 'individual_aguardando'; valor_individual: number | null; valor_coletivo: number | null; valor_coletivo_normal: number | null; condicao_meses: number | null; condicao_inicio: string | null; condicao_fim: string | null }
 
 const statusLabel: Record<string, string> = { em_formacao: 'Em formação', aguardando_confirmacoes: 'Aguardando confirmações', pronta: 'Pronta para matrícula', ativa: 'Ativa', encerrada: 'Encerrada', cancelada: 'Cancelada' }
 const langLabel: Record<string, string> = { ingles: 'Inglês', alemao: 'Alemão' }
@@ -17,17 +18,30 @@ export default function Turmas() {
   const [saving, setSaving] = useState<string | null>(null)
   const [drafts, setDrafts] = useState<Record<string, { nome: string; email: string; telefone: string }>>({})
   const [releasedLinks, setReleasedLinks] = useState<Record<string, string>>({})
+  const [professores, setProfessores] = useState<Professor[]>([])
+  const [fixedOpen, setFixedOpen] = useState(false)
+  const [fixedSaving, setFixedSaving] = useState(false)
+  const [fixedIdioma, setFixedIdioma] = useState<'ingles' | 'alemao'>('ingles')
+  const [fixedModalidade, setFixedModalidade] = useState<'dupla' | 'grupo'>('dupla')
+  const [fixedAulasSemana, setFixedAulasSemana] = useState(1)
+  const [fixedProfessor, setFixedProfessor] = useState('')
+  const [fixedMax, setFixedMax] = useState(6)
+  const [fixedDays, setFixedDays] = useState<number[]>([1])
+  const [fixedTimes, setFixedTimes] = useState<{ start: string; end: string }[]>([{ start: '18:00', end: '19:00' }])
 
   useEffect(() => { void load() }, [])
 
   async function load() {
     setLoading(true)
-    const [{ data: turmaData, error: turmaError }, { data: participantData, error: participantError }] = await Promise.all([
+    const [{ data: turmaData, error: turmaError }, { data: participantData, error: participantError }, { data: professorData, error: professorError }] = await Promise.all([
       supabase.from('turmas').select('*').order('created_at', { ascending: false }),
       supabase.from('turma_participantes').select('*').order('created_at', { ascending: true }),
+      supabase.from('professores').select('id,nome_completo,ativo').eq('ativo', true).order('nome_completo'),
     ])
     if (turmaError) console.error(turmaError)
     if (participantError) console.error(participantError)
+    if (professorError) console.error(professorError)
+    setProfessores((professorData || []) as Professor[])
     setTurmas((turmaData || []) as Turma[])
     setParticipantes((participantData || []) as Participante[])
     setLoading(false)
@@ -38,6 +52,70 @@ export default function Turmas() {
     prontas: turmas.filter(t => t.status === 'pronta').length,
     ativas: turmas.filter(t => t.status === 'ativa').length,
   }), [turmas])
+
+  function resetFixedForm() {
+    setFixedIdioma('ingles')
+    setFixedModalidade('dupla')
+    setFixedAulasSemana(1)
+    setFixedProfessor('')
+    setFixedMax(6)
+    setFixedDays([1])
+    setFixedTimes([{ start: '18:00', end: '19:00' }])
+  }
+
+  function changeFixedFrequency(value: number) {
+    setFixedAulasSemana(value)
+    setFixedDays((current) => current.slice(0, value).length === value ? current.slice(0, value) : [...current.slice(0, value), ...[1,2,3,4,5,6,0].filter((day) => !current.includes(day))].slice(0, value))
+    setFixedTimes((current) => Array.from({ length: value }, (_, index) => current[index] || { start: '18:00', end: '19:00' }))
+  }
+
+  function toggleFixedDay(day: number) {
+    setFixedDays((current) => {
+      if (current.includes(day)) return current.length === 1 ? current : current.filter((item) => item !== day)
+      if (current.length >= fixedAulasSemana) return current
+      return [...current, day]
+    })
+  }
+
+  function updateFixedTime(index: number, field: 'start' | 'end', value: string) {
+    setFixedTimes((current) => current.map((item, itemIndex) => itemIndex === index ? { ...item, [field]: value } : item))
+  }
+
+  async function createFixedTurma() {
+    if (!fixedProfessor) {
+      window.alert('Selecione o professor responsável pela turma fixa.')
+      return
+    }
+    if (fixedDays.length !== fixedAulasSemana) {
+      window.alert('Selecione exatamente um dia para cada aula semanal.')
+      return
+    }
+    if (fixedTimes.length !== fixedAulasSemana || fixedTimes.some((item) => !item.start || !item.end || item.start >= item.end)) {
+      window.alert('Confira os horários de todos os encontros.')
+      return
+    }
+
+    setFixedSaving(true)
+    const { error } = await supabase.rpc('criar_turma_fixa_admin', {
+      p_idioma: fixedIdioma,
+      p_modalidade: fixedModalidade,
+      p_aulas_semana: fixedAulasSemana,
+      p_dias: fixedDays,
+      p_horas_inicio: fixedTimes.map((item) => item.start),
+      p_horas_fim: fixedTimes.map((item) => item.end),
+      p_professor_id: fixedProfessor,
+      p_quantidade_maxima: fixedModalidade === 'dupla' ? 2 : fixedMax,
+    })
+    if (error) {
+      window.alert(error.message || 'Não foi possível criar a turma fixa.')
+    } else {
+      window.alert('Turma fixa criada. Ela já estará disponível no seletor inteligente de horários da matrícula.')
+      setFixedOpen(false)
+      resetFixedForm()
+      await load()
+    }
+    setFixedSaving(false)
+  }
 
   async function addParticipant(turma: Turma) {
     const draft = drafts[turma.id]
@@ -167,7 +245,24 @@ export default function Turmas() {
   return (
     <div className="admin-turmas">
       <div className="admin-turmas-header"><div><span className="admin-turmas-eyebrow">Formação de turmas</span><h2>Duplas e grupos</h2><p>Confirme quem realmente fará parte da turma. Quem começou no individual migra para o valor coletivo a partir do próximo ciclo, com condição especial por 3 meses.</p></div>
-        <div className="admin-turmas-summary"><div><strong>{counts.formacao}</strong><span>em formação</span></div><div><strong>{counts.prontas}</strong><span>prontas</span></div><div><strong>{counts.ativas}</strong><span>ativas</span></div></div>
+        <button type="button" className="admin-turmas-create-fixed" onClick={() => setFixedOpen((current) => !current)}><Clock3 size={17} /> {fixedOpen ? 'Fechar criação' : 'Criar horário fixo'}</button>
+      {fixedOpen && (
+        <section className="admin-turmas-fixed-form">
+          <div><span className="admin-turmas-eyebrow">HORÁRIOS FIXOS</span><h3>Nova turma coletiva</h3><p>Crie os encontros recorrentes que serão oferecidos no seletor inteligente da matrícula. O primeiro aluno definirá o nível da turma.</p></div>
+          <div className="admin-turmas-fixed-grid">
+            <label>Idioma<select value={fixedIdioma} onChange={e => setFixedIdioma(e.target.value as 'ingles' | 'alemao')}><option value="ingles">Inglês</option><option value="alemao">Alemão</option></select></label>
+            <label>Modalidade<select value={fixedModalidade} onChange={e => setFixedModalidade(e.target.value as 'dupla' | 'grupo')}><option value="dupla">Dupla · até 2</option><option value="grupo">Grupo · até 6</option></select></label>
+            <label>Aulas por semana<select value={fixedAulasSemana} onChange={e => changeFixedFrequency(Number(e.target.value))}><option value={1}>1</option><option value={2}>2</option><option value={3}>3</option></select></label>
+            <label>Professor<select value={fixedProfessor} onChange={e => setFixedProfessor(e.target.value)}><option value="">Selecione</option>{professores.map(p => <option key={p.id} value={p.id}>{p.nome_completo}</option>)}</select></label>
+            {fixedModalidade === 'grupo' && <label>Capacidade<select value={fixedMax} onChange={e => setFixedMax(Number(e.target.value))}>{[3,4,5,6].map(value => <option key={value} value={value}>{value} alunos</option>)}</select></label>}
+          </div>
+          <div className="admin-turmas-fixed-days"><strong>Dias</strong><div>{[{v:1,l:'Seg'},{v:2,l:'Ter'},{v:3,l:'Qua'},{v:4,l:'Qui'},{v:5,l:'Sex'},{v:6,l:'Sáb'},{v:0,l:'Dom'}].map(day => <button type="button" key={day.v} className={fixedDays.includes(day.v) ? 'active' : ''} onClick={() => toggleFixedDay(day.v)}>{day.l}</button>)}</div></div>
+          <div className="admin-turmas-fixed-encounters">{fixedDays.slice().sort((a,b) => a-b).map((day, index) => <div key={day}><strong>{['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'][day]}</strong><label>Início<input type="time" value={fixedTimes[index]?.start || '18:00'} onChange={e => updateFixedTime(index,'start',e.target.value)} /></label><label>Fim<input type="time" value={fixedTimes[index]?.end || '19:00'} onChange={e => updateFixedTime(index,'end',e.target.value)} /></label></div>)}</div>
+          <div className="admin-turmas-fixed-actions"><button type="button" onClick={() => { setFixedOpen(false); resetFixedForm() }}>Cancelar</button><button type="button" disabled={fixedSaving} onClick={() => void createFixedTurma()}>{fixedSaving ? 'Criando...' : 'Criar turma fixa'}</button></div>
+        </section>
+      )}
+
+      <div className="admin-turmas-summary"><div><strong>{counts.formacao}</strong><span>em formação</span></div><div><strong>{counts.prontas}</strong><span>prontas</span></div><div><strong>{counts.ativas}</strong><span>ativas</span></div></div>
       </div>
       <div className="admin-turmas-rule"><Users size={18} /><div><strong>Regra comercial</strong><span>Dupla exige 2 participantes confirmados. Grupo exige no mínimo 3. A quantidade confirmada é a que define a faixa de preço. Para quem iniciou no individual, a condição coletiva começa no ciclo seguinte à formação.</span></div></div>
       {loading ? <div className="admin-turmas-empty">Carregando turmas...</div> : !turmas.length ? <div className="admin-turmas-empty"><Users size={28} /><strong>Nenhuma turma em formação.</strong><span>Duplas e grupos iniciados a partir dos leads aparecerão aqui.</span></div> :
@@ -177,7 +272,7 @@ export default function Turmas() {
           const draft = drafts[turma.id] || { nome: '', email: '', telefone: '' }
           const isOpen = open === turma.id
           return <article className="admin-turma-card" key={turma.id}>
-            <div className="admin-turma-heading"><div><span className="admin-turma-date">{new Date(turma.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span><h3>{modalityLabel[turma.modalidade]} · {langLabel[turma.idioma]}</h3><p>{turma.aulas_semana}x por semana · {confirmed}/{turma.quantidade_maxima} confirmados</p></div>
+            <div className="admin-turma-heading"><div><span className="admin-turma-date">{new Date(turma.created_at).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' })}</span><h3>{modalityLabel[turma.modalidade]} · {langLabel[turma.idioma]} {turma.fixa ? '· Horário fixo' : ''}</h3><p>{turma.aulas_semana}x por semana · {confirmed}/{turma.quantidade_maxima} confirmados{turma.nivel_referencia ? ' · nível ' + turma.nivel_referencia : ' · nível ainda não definido'}</p></div>
               <div className="admin-turma-heading-actions"><span className={'admin-turma-status status-' + turma.status}>{statusLabel[turma.status] || turma.status}</span><button type="button" onClick={() => setOpen(isOpen ? null : turma.id)}>{isOpen ? 'Fechar' : 'Gerenciar'}</button></div>
             </div>
             <div className="admin-turma-progress"><span style={{ width: Math.min(100, (confirmed / turma.quantidade_maxima) * 100) + '%' }} /></div>
