@@ -140,7 +140,22 @@ export default function Checkout({
       ccv: '',
     })
 
+  const [cardHolderIsThirdParty, setCardHolderIsThirdParty] =
+    useState(false)
+
   const [holder, setHolder] =
+    useState<CreditCardHolderInfo>({
+      name: '',
+      email: '',
+      cpf_cnpj: '',
+      postal_code: '',
+      address_number: '',
+      address_complement: '',
+      phone: '',
+      mobile_phone: '',
+    })
+
+  const [studentHolderData, setStudentHolderData] =
     useState<CreditCardHolderInfo>({
       name: '',
       email: '',
@@ -483,7 +498,7 @@ export default function Checkout({
          * =====================================================
          */
 
-        setHolder({
+        const defaultStudentHolder: CreditCardHolderInfo = {
           name:
             String(
               dados?.nome_completo ??
@@ -522,7 +537,11 @@ export default function Checkout({
               dados?.telefone ??
                 '',
             ),
-        })
+        }
+
+        setStudentHolderData(defaultStudentHolder)
+        setHolder(defaultStudentHolder)
+        setCardHolderIsThirdParty(false)
 
         /*
          * =====================================================
@@ -1265,12 +1284,47 @@ export default function Checkout({
                 )}
 
                 <div className="checkout-holder-title">
-                  Dados do titular
+                  Dados do titular do cartão
+                </div>
+
+                <label className="checkout-third-party-toggle">
+                  <input
+                    type="checkbox"
+                    checked={cardHolderIsThirdParty}
+                    onChange={event => {
+                      const isThirdParty = event.target.checked
+                      setCardHolderIsThirdParty(isThirdParty)
+
+                      if (isThirdParty) {
+                        setHolder({
+                          name: '',
+                          email: '',
+                          cpf_cnpj: '',
+                          postal_code: '',
+                          address_number: '',
+                          address_complement: '',
+                          phone: '',
+                          mobile_phone: '',
+                        })
+                      } else {
+                        setHolder(studentHolderData)
+                      }
+                    }}
+                  />
+                  <span>
+                    O cartão pertence a outra pessoa (terceiro)
+                  </span>
+                </label>
+
+                <div className="checkout-cardholder-notice">
+                  {cardHolderIsThirdParty
+                    ? 'Preencha os dados da pessoa que é realmente titular do cartão. O nome, CPF/CNPJ e demais dados devem corresponder ao titular informado ao emissor.'
+                    : 'Os dados abaixo serão usados como os dados do titular do cartão.'}
                 </div>
 
                 <div className="checkout-field">
                   <label>
-                    Nome completo
+                    Nome completo do titular
                   </label>
 
                   <input
