@@ -150,7 +150,10 @@ begin
   )
   select r.id,p_modalidade,r.idioma,r.dia_semana,r.hora_inicio,r.hora_fim,r.disponivel,r.aluno_id,r.created_at,r.meet_url,r.meet_space_name,r.turma_id,
     null::uuid,r.participantes,r.capacidade,r.vagas,
-    case when r.participantes<r.capacidade then public.preco_coletivo(p_idioma,p_modalidade,p_aulas_semana,r.capacidade) end
+    case
+      when r.participantes < r.capacidade then public.preco_formacao_coletiva(p_idioma,p_modalidade,p_aulas_semana)
+      else public.preco_coletivo(p_idioma,p_modalidade,p_aulas_semana,r.capacidade)
+    end
   from ranked r order by r.prioridade,r.dia_semana,r.hora_inicio;
 end; $$;
 
