@@ -237,8 +237,12 @@ function ModalidadeCard({
               item.idioma === idioma
               && item.modalidade === 'individual'
               && item.ativo
-              && item.tipo === (frequencia === 1 ? 'mensal' : frequencia === 2 ? 'personalizado' : 'intensivo')
-              && (item.aulas_semana ?? 1) === frequencia
+              && (
+                (item.aulas_semana ?? 1) === frequencia
+                || (frequencia === 2 && item.nome.toLowerCase().includes('2x'))
+                || (frequencia === 3 && item.nome.toLowerCase().includes('3x'))
+              )
+              && item.tipo !== 'diagnostica'
             )
             const vagasRestantes = Math.min(...horariosDaOpcao.map((horario) => horario.vagas_restantes))
             return (
