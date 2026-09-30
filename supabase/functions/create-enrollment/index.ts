@@ -598,7 +598,7 @@ Deno.serve(async (req) => {
 
         const { data: participante, error: participanteError } = await supabaseAdmin
           .from('turma_participantes')
-          .select('id,turma_id,user_id,status,reserva_expira_em')
+          .select('id,turma_id,user_id,status,reserva_expira_em,reserva_token,email')
           .eq('id', body.turma_participante_id)
           .maybeSingle()
 
