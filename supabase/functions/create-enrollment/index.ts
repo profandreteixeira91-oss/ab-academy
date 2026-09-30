@@ -671,7 +671,7 @@ Deno.serve(async (req) => {
                 p_idioma: body.idioma,
                 p_modalidade: turma.modalidade,
                 p_aulas_semana: turma.aulas_semana,
-                p_participantes: capacidadeDaTurma,
+                p_participantes: Math.min(participantTotal, capacidadeDaTurma),
               })
 
         if (valorError || valorData == null) {
