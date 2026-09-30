@@ -47,6 +47,7 @@ type EnrollmentRequest = {
   turma_id?: string | null
   horario_formacao_id?: string | null
   aguardando_formacao?: boolean
+  reserva_token?: string | null
 }
 
 function jsonResponse(
@@ -153,69 +154,6 @@ Deno.serve(async (req) => {
             'Configuração do servidor incompleta.',
         },
         500,
-      )
-    }
-
-    /*
-     * =====================================================
-     * AUTENTICAÇÃO
-     * =====================================================
-     */
-
-    const authorization =
-      req.headers.get('Authorization')
-
-    if (!authorization) {
-      return jsonResponse(
-        {
-          error:
-            'Usuário não autenticado.',
-        },
-        401,
-      )
-    }
-
-    const token =
-      authorization.replace(
-        /^Bearer\s+/i,
-        '',
-      )
-
-    const supabaseAuth = createClient(
-      supabaseUrl,
-      supabaseAnonKey,
-      {
-        global: {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        },
-      },
-    )
-
-    const {
-      data: {
-        user,
-      },
-      error: userError,
-    } =
-      await supabaseAuth.auth.getUser()
-
-    if (
-      userError ||
-      !user
-    ) {
-      console.error(
-        'Erro ao validar usuário:',
-        userError,
-      )
-
-      return jsonResponse(
-        {
-          error:
-            'Sessão de usuário inválida ou expirada.',
-        },
-        401,
       )
     }
 
@@ -617,8 +555,8 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: 'A turma selecionada não está mais disponível.' }, 409)
         }
 
-        if (participante.turma_id !== turma.id || participante.user_id !== user.id) {
-          return jsonResponse({ error: 'A reserva desta turma não pertence ao usuário atual.' }, 403)
+        if (participante.turma_id !== turma.id || participante.reserva_token !== body.reserva_token || participante.email.trim().toLowerCase() !== body.dados_aluno.email.trim().toLowerCase()) {
+          return jsonResponse({ error: 'A reserva desta turma não pertence a esta matrícula.' }, 403)
         }
 
         if (!['convidado','confirmado'].includes(participante.status)) {
@@ -779,7 +717,7 @@ Deno.serve(async (req) => {
 
     const dadosMatricula = {
       user_id:
-        user.id,
+        null,
 
       matricula_id:
         matricula.id,
@@ -872,7 +810,7 @@ Deno.serve(async (req) => {
         .from('pagamentos')
         .insert({
           user_id:
-            user.id,
+            null,
 
           matricula_id:
             matricula.id,
