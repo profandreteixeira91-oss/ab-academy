@@ -523,6 +523,14 @@ Deno.serve(async (req) => {
     const diaSemana =
       principalSlot.dia_semana
 
+    const formationConditionEnd = (() => {
+      if (!body.aguardando_formacao) return null
+      const end = new Date(`${dataInicio}T12:00:00`)
+      end.setMonth(end.getMonth() + 3)
+      end.setDate(end.getDate() - 1)
+      return end.toISOString().slice(0, 10)
+    })()
+
     /*
      * =====================================================
      * HORÁRIO PRINCIPAL
@@ -768,7 +776,7 @@ Deno.serve(async (req) => {
       valor_coletivo: collectiveEnrollment?.valor_mensal ?? (body.modalidade !== 'individual' ? valorFinal : null),
       condicao_meses: collectiveEnrollment?.condicao_meses ?? (body.aguardando_formacao ? 3 : null),
       condicao_inicio: collectiveEnrollment?.condicao_inicio ?? (body.aguardando_formacao ? dataInicio : null),
-      condicao_fim: collectiveEnrollment?.condicao_fim ?? null,
+      condicao_fim: collectiveEnrollment?.condicao_fim ?? formationConditionEnd,
       horario_formacao_id: body.aguardando_formacao ? body.horario_formacao_id ?? null : null,
 
       idioma:
