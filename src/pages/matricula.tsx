@@ -628,8 +628,23 @@ export default function Matricula() {
     }
 
     if (step === 3) {
-      if (!validateSchedule()) return
+      if (availabilityDays.length === 0 && !availabilityFlexible) {
+        setError('Selecione pelo menos um dia em que você pode estudar.')
+        return
+      }
+      if (!availabilityFlexible && availabilityPeriods.length === 0 && Object.keys(availabilityRanges).length === 0) {
+        setError('Informe pelo menos um período ou intervalo de horário.')
+        return
+      }
+      setAvailabilityReady(true)
+      setSelectedWeekday(availabilityDays[0] ?? null)
       setStep(4)
+      return
+    }
+
+    if (step === 4) {
+      if (!validateSchedule()) return
+      setStep(5)
     }
   }
 
