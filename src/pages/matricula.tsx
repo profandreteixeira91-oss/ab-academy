@@ -607,7 +607,7 @@ export default function Matricula() {
     return true
   }
 
-  const nextStep = () => {
+  const nextStep = async () => {
     setError('')
     setSuccess('')
 
@@ -1386,8 +1386,10 @@ export default function Matricula() {
                       <span>Dia: {WEEKDAYS.find((day) => day.value === selectedSchedule.weekday)?.label}</span>
                       <span>Horário: {formatTime(selectedSchedule.hora_inicio)} — {formatTime(selectedSchedule.hora_fim)}</span>
                       {isCollectivePlan && (
-                        <span>Situação: {selectedSchedule.status_formacao === 'dupla_formada' ? 'Dupla já formada' : selectedSchedule.status_formacao === 'grupo_formado' ? 'Grupo já formado' : selectedSchedule.status_formacao === 'dupla_em_formacao' ? 'Nova dupla em formação' : 'Grupo em formação'}</span>
-                        <span>Alunos na turma: {selectedSchedule.participantes ?? '—'} de {selectedSchedule.capacidade ?? '—'}</span>
+                        <>
+                          <span>Situação: {selectedSchedule.status_formacao === 'dupla_formada' ? 'Dupla já formada' : selectedSchedule.status_formacao === 'grupo_formado' ? 'Grupo já formado' : selectedSchedule.status_formacao === 'dupla_em_formacao' ? 'Nova dupla em formação' : 'Grupo em formação'}</span>
+                          <span>Alunos na turma: {selectedSchedule.participantes ?? '—'} de {selectedSchedule.capacidade ?? '—'}</span>
+                        </>
                       )}
                     </div>
                   )}
