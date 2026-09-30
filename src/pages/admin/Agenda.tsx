@@ -34,7 +34,7 @@ type Professor = {
   ativo: boolean
 }
 
-type Nivel = 'A1' | 'A2' | 'B1' | 'B2' | 'C1' | 'C2'
+type Nivel = 'iniciante' | 'basico' | 'intermediario' | 'avancado'
 
 type Horario = {
   id: string
@@ -146,12 +146,10 @@ const idiomas = [
 ]
 
 const niveis: { value: Nivel; label: string }[] = [
-  { value: 'A1', label: 'A1 — Iniciante' },
-  { value: 'A2', label: 'A2 — Básico' },
-  { value: 'B1', label: 'B1 — Intermediário' },
-  { value: 'B2', label: 'B2 — Intermediário superior' },
-  { value: 'C1', label: 'C1 — Avançado' },
-  { value: 'C2', label: 'C2 — Proficiente' },
+  { value: 'iniciante', label: 'Iniciante' },
+  { value: 'basico', label: 'Básico' },
+  { value: 'intermediario', label: 'Intermediário' },
+  { value: 'avancado', label: 'Avançado' },
 ]
 
 /*
@@ -2288,7 +2286,7 @@ export default function Agenda() {
                             {horario.tipo_horario === 'dupla' ? 'Dupla' : horario.tipo_horario === 'grupo' ? 'Grupo' : 'Individual'}
                           </span>
                           {horario.nivel_referencia && (
-                            <span className="agenda-status available">{horario.nivel_referencia}</span>
+                            <span className="agenda-status available">{horario.nivel_referencia === 'iniciante' ? 'Iniciante' : horario.nivel_referencia === 'basico' ? 'Básico' : horario.nivel_referencia === 'intermediario' ? 'Intermediário' : horario.nivel_referencia === 'avancado' ? 'Avançado' : horario.nivel_referencia}</span>
                           )}
 
                           <span
