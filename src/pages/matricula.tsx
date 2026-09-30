@@ -1620,6 +1620,7 @@ export default function Matricula() {
                               : step === 5
                                 ? 'Seus dados pessoais'
                                 : 'Contrato de matrícula'}
+                  </h2>
 
                   <p>
                     {isIndividualFormationFlow
