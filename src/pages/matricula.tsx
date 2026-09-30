@@ -1678,9 +1678,9 @@ export default function Matricula() {
                             <article className="collective-campaign-card" key={campaign.turma_id}>
                               <div className="collective-campaign-top">
                                 <span>{campaign.modalidade === 'dupla' ? 'Dupla' : 'Grupo'}</span>
-                                <strong>{campaign.nivel_referencia || 'Nível a definir'}</strong>
+                                <strong>{formatNivel(campaign.nivel_referencia)}</strong>
                               </div>
-                              <h3>{campaign.idioma === 'ingles' ? 'Inglês' : 'Alemão'} · Nível {campaign.nivel_referencia || '—'}</h3>
+                              <h3>{campaign.idioma === 'ingles' ? 'Inglês' : 'Alemão'} · Nível {formatNivel(campaign.nivel_referencia)}</h3>
                               <p className="collective-campaign-date">Início: <strong>{formatDate(campaign.data_inicio)}</strong></p>
                               <div className="collective-campaign-schedule">
                                 {campaign.horarios.map((item) => (
@@ -1714,7 +1714,7 @@ export default function Matricula() {
                       <div className="selection-heading">
                         <div>
                           <h3>Reserve sua vaga</h3>
-                          <p>{collectiveLeadTarget.campaign.modalidade === 'dupla' ? 'Dupla' : 'Grupo'} · {collectiveLeadTarget.campaign.nivel_referencia} · início {formatDate(collectiveLeadTarget.campaign.data_inicio)}</p>
+                          <p>{collectiveLeadTarget.campaign.modalidade === 'dupla' ? 'Dupla' : 'Grupo'} · {formatNivel(collectiveLeadTarget.campaign.nivel_referencia)} · início {formatDate(collectiveLeadTarget.campaign.data_inicio)}</p>
                         </div>
                       </div>
                       <div className="enrollment-fields">
@@ -1766,7 +1766,7 @@ export default function Matricula() {
                   <div className="proficiency-card">
                     <div className="proficiency-card-icon"><FileText size={22} /></div>
                     <strong>2. Anexe o resultado</strong>
-                    <p>Envie o PDF gerado pelo teste. O sistema analisará o documento e identificará A1, A2, B1, B2, C1 ou C2.</p>
+                    <p>Envie o PDF gerado pelo teste. O sistema analisará o documento e classificará o nível como iniciante, básico, intermediário ou avançado.</p>
                     <input type="file" accept="application/pdf,.pdf" onChange={(event) => setProficiencyFile(event.target.files?.[0] ?? null)} />
                     {proficiencyFile && <small>{proficiencyFile.name}</small>}
                     <button type="button" className="enrollment-primary-button" onClick={() => void processProficiencyDocument()} disabled={!proficiencyFile || proficiencyProcessing || !proficiencyTestUrl}>
@@ -1778,10 +1778,10 @@ export default function Matricula() {
                   {proficiencyResult && (
                     <div className="proficiency-result">
                       <strong>Resultado identificado</strong>
-                      <span>Nível geral: <b>{proficiencyResult.nivel_geral || '—'}</b></span>
-                      <span>Conversação: <b>{proficiencyResult.nivel_conversacao || '—'}</b></span>
-                      <span>Escrita: <b>{proficiencyResult.nivel_escrita || '—'}</b></span>
-                      <span>Compreensão: <b>{proficiencyResult.nivel_compreensao || '—'}</b></span>
+                      <span>Nível geral: <b>{formatNivel(proficiencyResult.nivel_geral)}</b></span>
+                      <span>Conversação: <b>{formatNivel(proficiencyResult.nivel_conversacao)}</b></span>
+                      <span>Escrita: <b>{formatNivel(proficiencyResult.nivel_escrita)}</b></span>
+                      <span>Compreensão: <b>{formatNivel(proficiencyResult.nivel_compreensao)}</b></span>
                       {proficiencyResult.observacoes && <small>{proficiencyResult.observacoes}</small>}
                     </div>
                   )}
