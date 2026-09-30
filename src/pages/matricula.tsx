@@ -289,6 +289,7 @@ export default function Matricula() {
     const diagnosticRequested = params.get('diagnostica') === '1'
     const requestedLanguage = params.get('idioma')
     const requestedPlanId = params.get('plano')
+    const requestedModality = params.get('modalidade')
     const turmaToken = params.get('turma_token')
 
     const loadCollectiveEnrollment = async (token: string) => {
@@ -377,13 +378,44 @@ export default function Matricula() {
         return
       }
 
+      setLanguage(requestedLanguage)
+
+      if (requestedPlanId) {
+        await loadSelectedPlan(requestedLanguage, requestedPlanId)
+        return
+      }
+
+      if (requestedModality === 'dupla' || requestedModality === 'grupo') {
+        // O fluxo anterior já definiu a modalidade. A matrícula apenas
+        // recupera o plano comercial correspondente e deixa o aluno
+        // escolher os horários nesta etapa.
+        const aulasSemanaPadrao = requestedModality === 'dupla' ? 1 : 2
+        const { data: collectivePlan, error: collectivePlanError } = await supabase
+          .from('planos')
+          .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, modalidade, aulas_semana, min_alunos, max_alunos')
+          .eq('idioma', requestedLanguage)
+          .eq('modalidade', requestedModality)
+          .eq('tipo', 'mensal')
+          .eq('aulas_semana', aulasSemanaPadrao)
+          .eq('ativo', true)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle()
+
+        if (collectivePlanError || !collectivePlan) {
+          console.error('Erro ao carregar plano coletivo da matrícula:', collectivePlanError)
+          setError('Não foi possível carregar a modalidade selecionada. Volte e tente novamente.')
+          return
+        }
+
+        setPlan(collectivePlan as Plan)
+        return
+      }
+
       if (!requestedPlanId) {
         setError('Nenhum plano foi selecionado. Volte à página de planos e escolha uma opção.')
         return
       }
-
-      setLanguage(requestedLanguage)
-      await loadSelectedPlan(requestedLanguage, requestedPlanId)
     }
 
     void initializeEnrollment()
