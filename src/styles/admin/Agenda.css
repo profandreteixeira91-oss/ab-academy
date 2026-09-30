@@ -1815,3 +1815,231 @@
     min-height: 220px;
   }
 }
+
+/* =========================================================
+   ETAPA 2 — VISÃO OPERACIONAL DO DIA
+   Hierarquia visual para ocupado/livre/reposição/agora/próxima.
+   Desktop only; mobile permanece com o comportamento existente.
+   ========================================================= */
+
+@media (min-width: 901px) {
+  .agenda-day-button {
+    position: relative;
+  }
+
+  .agenda-day-button.today::after {
+    content: 'HOJE';
+    position: absolute;
+    top: 5px;
+    right: 7px;
+    padding: 2px 5px;
+    border-radius: 999px;
+    background: #eff6ff;
+    color: #2563eb;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: .06em;
+  }
+
+  .agenda-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .agenda-summary-next {
+    border-color: #dbeafe;
+    background: linear-gradient(135deg, #f8fbff, #ffffff);
+  }
+
+  .agenda-summary-next strong {
+    color: #1d4ed8;
+  }
+
+  .agenda-panel-header-right {
+    align-items: center;
+  }
+
+  .agenda-panel-legend {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-right: 4px;
+    color: #64748b;
+    font-size: 9px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+
+  .agenda-panel-legend span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .agenda-legend-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  .agenda-legend-dot.occupied {
+    background: #2563eb;
+  }
+
+  .agenda-legend-dot.available {
+    background: #16a34a;
+  }
+
+  .agenda-legend-dot.replacement {
+    background: #f59e0b;
+  }
+
+  .agenda-legend-dot.current {
+    background: #7c3aed;
+    box-shadow: 0 0 0 3px rgba(124, 58, 237, .10);
+  }
+
+  .agenda-item {
+    position: relative;
+    border-left: 3px solid transparent;
+    transition:
+      background .16s ease,
+      border-color .16s ease,
+      box-shadow .16s ease;
+  }
+
+  .agenda-item.occupied {
+    border-left-color: #2563eb;
+  }
+
+  .agenda-item.available {
+    border-left-color: #16a34a;
+  }
+
+  .agenda-item.current {
+    background: linear-gradient(90deg, #faf5ff 0%, #ffffff 72%);
+    border-left-color: #7c3aed;
+    box-shadow: inset 0 1px 0 rgba(124, 58, 237, .08), inset 0 -1px 0 rgba(124, 58, 237, .08);
+  }
+
+  .agenda-item.current .agenda-time strong {
+    color: #6d28d9;
+  }
+
+  .agenda-item.current::after {
+    content: 'AGORA';
+    position: absolute;
+    top: 7px;
+    left: 86px;
+    padding: 2px 5px;
+    border-radius: 999px;
+    background: #f3e8ff;
+    color: #7c3aed;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    pointer-events: none;
+  }
+
+  .agenda-item.next:not(.current) {
+    background: linear-gradient(90deg, #f0fdf4 0%, #ffffff 72%);
+    border-left-color: #16a34a;
+  }
+
+  .agenda-item.next:not(.current) .agenda-time strong {
+    color: #15803d;
+  }
+
+  .agenda-item.next:not(.current)::after {
+    content: 'PRÓXIMA';
+    position: absolute;
+    top: 7px;
+    left: 86px;
+    padding: 2px 5px;
+    border-radius: 999px;
+    background: #dcfce7;
+    color: #15803d;
+    font-size: 7px;
+    font-weight: 800;
+    letter-spacing: .06em;
+    pointer-events: none;
+  }
+
+  .agenda-item.available:not(.next):not(.current) {
+    background: linear-gradient(90deg, #ffffff 0%, #fbfffc 100%);
+  }
+
+  .agenda-item.occupied:not(.current):not(.selected) {
+    background: linear-gradient(90deg, #ffffff 0%, #fbfdff 100%);
+  }
+
+  .agenda-item.selected {
+    border-left-color: #2563eb;
+  }
+
+  .agenda-item-top {
+    min-height: 20px;
+  }
+
+  .agenda-item-top .agenda-language:nth-child(2) {
+    padding: 2px 6px;
+    border: 1px solid #e2e8f0;
+    border-radius: 999px;
+    background: #f8fafc;
+    color: #475569;
+    font-size: 8px;
+    font-weight: 700;
+  }
+
+  .agenda-item .agenda-student {
+    color: #475569;
+  }
+
+  .agenda-item.occupied .agenda-student:first-of-type {
+    color: #1e293b;
+    font-weight: 600;
+  }
+
+  .agenda-item.available .agenda-student:first-of-type {
+    color: #64748b;
+  }
+
+  /* Reposição: o bloco já usa occupied; o marcador interno diferencia
+     visualmente a ocorrência sem alterar a lógica. */
+  .agenda-status.unavailable {
+    border-color: #fde68a;
+    background: #fffbeb;
+    color: #b45309;
+  }
+
+  .agenda-list > .agenda-list {
+    margin-top: 14px !important;
+    padding-top: 4px;
+    border-top: 1px solid #eef2f7;
+  }
+
+  .agenda-list > .agenda-list .agenda-panel-header {
+    min-height: 48px;
+    padding: 8px 16px;
+    background: transparent;
+    border-bottom: 0;
+  }
+
+  .agenda-list > .agenda-list .agenda-panel-header h3 {
+    margin: 0;
+    font-size: 12px;
+    color: #334155;
+  }
+
+  .agenda-list > .agenda-list .agenda-panel-header p {
+    margin-top: 2px;
+    font-size: 9px;
+    color: #94a3b8;
+  }
+}
+
+@media (max-width: 900px) {
+  .agenda-panel-legend {
+    display: none;
+  }
+}
