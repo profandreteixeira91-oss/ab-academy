@@ -557,6 +557,46 @@ export default function Matricula() {
     return true
   }
 
+  const toggleAvailabilityDay = (day: number) => {
+    setAvailabilityDays((current) =>
+      current.includes(day)
+        ? current.filter((item) => item !== day)
+        : [...current, day],
+    )
+  }
+
+  const toggleAvailabilityPeriod = (period: string) => {
+    setAvailabilityPeriods((current) =>
+      current.includes(period)
+        ? current.filter((item) => item !== period)
+        : [...current, period],
+    )
+  }
+
+  const setAvailabilityRange = (
+    day: number,
+    field: 'start' | 'end',
+    value: string,
+  ) => {
+    setAvailabilityRanges((current) => ({
+      ...current,
+      [day]: {
+        start: current[day]?.start ?? '08:00',
+        end: current[day]?.end ?? '22:00',
+        [field]: value,
+      },
+    }))
+  }
+
+  const clearAvailability = () => {
+    setAvailabilityDays([])
+    setAvailabilityPeriods([])
+    setAvailabilityRanges({})
+    setAvailabilityFlexible(false)
+    setAvailabilityReady(false)
+    setAvailableSchedules([])
+  }
+
   const validateSchedule = () => {
     if (!selectedSchedule) {
       setError(
