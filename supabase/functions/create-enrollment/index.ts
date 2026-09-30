@@ -231,6 +231,18 @@ Deno.serve(async (req) => {
       )
     }
 
+    if (
+      !body.modalidade ||
+      !['individual', 'dupla', 'grupo'].includes(body.modalidade)
+    ) {
+      return jsonResponse(
+        {
+          error: 'Modalidade da matrícula inválida.',
+        },
+        400,
+      )
+    }
+
     /*
      * =====================================================
      * HORÁRIOS
