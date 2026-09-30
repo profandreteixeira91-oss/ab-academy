@@ -64,7 +64,7 @@ export default function MatriculaColetiva({ modalidade: propModalidade }: { moda
   const initialLanguage = params.get('idioma') as Language
   const [step, setStep] = useState(1)
   const [language, setLanguage] = useState<Language | null>(['ingles', 'alemao'].includes(initialLanguage) ? initialLanguage : null)
-  const [frequency, setFrequency] = useState(modalidade === 'grupo' ? 2 : 1)
+  const [frequency, setFrequency] = useState(1)
   const [name, setName] = useState(''); const [cpf, setCpf] = useState(''); const [email, setEmail] = useState('')
   const [birthDate, setBirthDate] = useState(''); const [phone, setPhone] = useState('')
   const [responsibleName, setResponsibleName] = useState(''); const [responsiblePhone, setResponsiblePhone] = useState('')
