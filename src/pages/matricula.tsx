@@ -831,6 +831,11 @@ export default function Matricula() {
         return
       }
 
+      const authoritativeValue =
+        effectivePlan?.tipo === 'anual' || effectivePlan?.tipo === 'avulso'
+          ? Number(effectivePlan.preco)
+          : Number(primarySchedule.valor_mensal ?? effectivePlan?.preco ?? 0)
+
       const cleanCpf = cleanDigits(cpf)
       const cleanPhone = cleanDigits(phone)
       const cleanResponsiblePhone =
@@ -882,7 +887,7 @@ export default function Matricula() {
         dados_aluno: dadosAluno,
         reserva_token: reservaToken,
 
-        valor: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? primarySchedule.valor_mensal : (isWaitingFormation ? primarySchedule.valor_mensal : primarySchedule.valor_mensal ?? Number(effectivePlan?.preco ?? 0))),
+        valor: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? Number(primarySchedule.valor_mensal ?? 0) : authoritativeValue),
       }
 
       const {
