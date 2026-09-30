@@ -5,7 +5,6 @@ import {
   Languages,
   ShieldCheck,
 } from 'lucide-react'
-import type { User } from '@supabase/supabase-js'
 
 import '../styles/matricula.css'
 import logo from '../assets/logo_abacademy.png'
@@ -180,17 +179,12 @@ const getPlanPaymentDescription = (plan: Plan) => {
 }
 
 export default function Matricula() {
-  const [user, setUser] = useState<User | null>(null)
-  const [loadingUser, setLoadingUser] = useState(true)
 
   const [step, setStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [loadingSchedules, setLoadingSchedules] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [authPassword, setAuthPassword] = useState('')
-  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup')
-  const [authLoading, setAuthLoading] = useState(false)
   const [name, setName] = useState('')
   const [cpf, setCpf] = useState('')
   const [email, setEmail] = useState('')
@@ -212,6 +206,7 @@ export default function Matricula() {
   const [waitingIndividualPlan, setWaitingIndividualPlan] = useState<Plan | null>(null)
   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
+  const [reservaToken] = useState(() => crypto.randomUUID())
   const [selectionLocked] = useState(() => {
     const params = new URLSearchParams(window.location.search)
     return ['dupla', 'grupo'].includes(params.get('modalidade') || '') && ['ingles', 'alemao'].includes(params.get('idioma') || '')
@@ -235,36 +230,6 @@ export default function Matricula() {
   }, [plan, waitingIndividualPlan, isWaitingFormation])
 
   const effectivePlan = isWaitingFormation && waitingIndividualPlan ? waitingIndividualPlan : plan
-
-  useEffect(() => {
-    let mounted = true
-
-    const initializeAuth = async () => {
-      const {
-        data: { session },
-      } = await supabase.auth.getSession()
-
-      if (!mounted) return
-
-      setUser(session?.user ?? null)
-      setLoadingUser(false)
-    }
-
-    initializeAuth()
-
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (!mounted) return
-      setUser(session?.user ?? null)
-      setLoadingUser(false)
-    })
-
-    return () => {
-      mounted = false
-      subscription.unsubscribe()
-    }
-  }, [])
 
 
   const visibleSchedules =
@@ -426,8 +391,8 @@ export default function Matricula() {
   }, [])
 
   useEffect(() => {
-    if (language && user) void loadSchedules(language)
-  }, [language, user, plan?.modalidade, plan?.aulas_semana, formationSlotId, waitingFormation, collectiveScheduleMode])
+    if (language) void loadSchedules(language)
+  }, [language, plan?.modalidade, plan?.aulas_semana, formationSlotId, waitingFormation, collectiveScheduleMode])
 
   useEffect(() => {
     if (!language || !isWaitingFormation) {
@@ -534,90 +499,12 @@ export default function Matricula() {
     setLoadingSchedules(false)
   }
 
-  const handleNativeAuth = async () => {
-    const normalizedEmail = email.trim().toLowerCase()
-
-    if (!normalizedEmail) {
-      setError('Informe seu e-mail.')
-      return
-    }
-
-    if (!authPassword || authPassword.length < 8) {
-      setError('Informe uma senha com pelo menos 8 caracteres.')
-      return
-    }
-
-    setAuthLoading(true)
-    setError('')
-    setSuccess('')
-
-    try {
-      if (authMode === 'signup') {
-        const { data, error: signUpError } =
-          await supabase.auth.signUp({
-            email: normalizedEmail,
-            password: authPassword,
-            options: {
-              data: {
-                nome_completo: name.trim(),
-              },
-              emailRedirectTo:
-                `${window.location.origin}/matricula`,
-            },
-          })
-
-        if (signUpError) {
-          throw signUpError
-        }
-
-        if (!data.session) {
-          setSuccess(
-            'Conta criada. Verifique seu e-mail para confirmar a conta e depois entre novamente.',
-          )
-          return
-        }
-
-        setUser(data.user)
-        setSuccess('Conta criada com sucesso. Continue sua matrícula.')
-        return
-      }
-
-      const { data, error: loginError } =
-        await supabase.auth.signInWithPassword({
-          email: normalizedEmail,
-          password: authPassword,
-        })
-
-      if (loginError) {
-        throw loginError
-      }
-
-      setUser(data.user)
-      setSuccess('Login realizado. Continue sua matrícula.')
-    } catch (authError) {
-      console.error('Erro no Auth nativo:', authError)
-      setError(
-        authError instanceof Error
-          ? authError.message
-          : 'Não foi possível autenticar sua conta.',
-      )
-    } finally {
-      setAuthLoading(false)
-    }
-  }
 
   const validatePersonalData = () => {
     const cleanCpf = cleanDigits(cpf)
     const cleanPhone = cleanDigits(phone)
     const cleanResponsiblePhone =
       cleanDigits(responsiblePhone)
-
-    if (!user) {
-      setError(
-        'Entre ou crie sua conta para continuar.',
-      )
-      return false
-    }
 
     if (!name.trim()) {
       setError(
@@ -744,6 +631,9 @@ export default function Matricula() {
       p_modalidade: requestedType,
       p_aulas_semana: aulasSemana,
       p_turma_id: selectedSchedule?.turma_id ?? null,
+      p_reserva_token: reservaToken,
+      p_nome: name.trim(),
+      p_email: email.trim().toLowerCase(),
     })
 
     setLoadingSchedules(false)
@@ -823,13 +713,6 @@ export default function Matricula() {
   }
 
   const createEnrollment = async () => {
-    if (!user) {
-      setError(
-        'Sua sessão expirou. Faça login novamente.',
-      )
-      return
-    }
-
     if ((!plan && !collectiveEnrollment) || !selectedSchedule || selectedSchedules.length === 0 || !language) {
       setError(
         'Complete todas as etapas da matrícula.',
@@ -903,6 +786,7 @@ export default function Matricula() {
         schedules: selectedSchedules,
 
         dados_aluno: dadosAluno,
+        reserva_token: reservaToken,
 
         valor: collectiveEnrollment?.valorMensal ?? selectedSchedule.valor_mensal ?? selectedPlanPrice,
       }
@@ -961,20 +845,6 @@ export default function Matricula() {
     } finally {
       setLoading(false)
     }
-  }
-
-  if (loadingUser) {
-    return (
-      <div className="enrollment-page">
-        <div className="enrollment-main">
-          <div className="enrollment-container">
-            <div className="enrollment-card">
-              Carregando...
-            </div>
-          </div>
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -1110,83 +980,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {!user && step === 2 && (
-                <div className="enrollment-auth-box">
-                  <div className="selection-heading">
-                    <div>
-                      <h3>
-                        {authMode === 'signup'
-                          ? 'Crie sua conta'
-                          : 'Entre na sua conta'}
-                      </h3>
-                      <p>
-                        Use seu e-mail e uma senha para acessar o Portal do Aluno.
-                      </p>
-                    </div>
-                  </div>
 
-                  <div className="enrollment-fields">
-                    <div className="enrollment-field">
-                      <label>E-mail *</label>
-                      <input
-                        type="email"
-                        value={email}
-                        onChange={(event) => setEmail(event.target.value)}
-                        placeholder="seu@email.com"
-                        autoComplete="email"
-                        disabled={authLoading}
-                      />
-                    </div>
-
-                    <div className="enrollment-field">
-                      <label>Senha *</label>
-                      <input
-                        type="password"
-                        value={authPassword}
-                        onChange={(event) => setAuthPassword(event.target.value)}
-                        placeholder="Mínimo de 8 caracteres"
-                        autoComplete={
-                          authMode === 'signup'
-                            ? 'new-password'
-                            : 'current-password'
-                        }
-                        disabled={authLoading}
-                      />
-                    </div>
-                  </div>
-
-                  <button
-                    type="button"
-                    className="enrollment-primary-button"
-                    onClick={handleNativeAuth}
-                    disabled={authLoading}
-                  >
-                    {authLoading
-                      ? 'Processando...'
-                      : authMode === 'signup'
-                        ? 'Criar conta e continuar'
-                        : 'Entrar e continuar'}
-                  </button>
-
-                  <button
-                    type="button"
-                    className="enrollment-change-plan"
-                    onClick={() => {
-                      setAuthMode(
-                        authMode === 'signup' ? 'login' : 'signup',
-                      )
-                      setAuthPassword('')
-                      setError('')
-                      setSuccess('')
-                    }}
-                    disabled={authLoading}
-                  >
-                    {authMode === 'signup'
-                      ? 'Já tenho uma conta'
-                      : 'Ainda não tenho uma conta'}
-                  </button>
-                </div>
-              )}
 
               {step === 1 && (
                 <div className="plan-selection">
@@ -1239,7 +1033,6 @@ export default function Matricula() {
                         )
                       }
                       placeholder="Seu nome completo"
-                      disabled={!user}
                     />
                   </div>
 
@@ -1260,7 +1053,6 @@ export default function Matricula() {
                       }
                       placeholder="000.000.000-00"
                       maxLength={14}
-                      disabled={!user}
                     />
                   </div>
 
@@ -1278,7 +1070,6 @@ export default function Matricula() {
                         )
                       }
                       placeholder="seu@email.com"
-                      disabled={!user}
                     />
                   </div>
 
@@ -1295,7 +1086,6 @@ export default function Matricula() {
                           event.target.value,
                         )
                       }
-                      disabled={!user}
                     />
                   </div>
 
@@ -1315,7 +1105,6 @@ export default function Matricula() {
                         )
                       }
                       placeholder="(00) 00000-0000"
-                      disabled={!user}
                     />
                   </div>
 
@@ -1335,7 +1124,6 @@ export default function Matricula() {
                         )
                       }
                       placeholder="Se aplicável"
-                      disabled={!user}
                     />
                   </div>
 
@@ -1357,7 +1145,6 @@ export default function Matricula() {
                         )
                       }
                       placeholder="(00) 00000-0000"
-                      disabled={!user}
                     />
                   </div>
                 </div>
