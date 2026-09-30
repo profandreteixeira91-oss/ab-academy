@@ -46,6 +46,40 @@ import SiteFooter from './components/SiteFooter'
 import MobileSystemHeader from './components/MobileSystemHeader'
 import { trackActiveVisitor, trackPublicPageView } from './lib/analytics'
 
+function QueroAprenderRedirect() {
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const modalidade = params.get('modalidade')
+    const idioma = params.get('idioma')
+
+    if (!['dupla', 'grupo'].includes(modalidade || '') || !['ingles', 'alemao'].includes(idioma || '')) {
+      window.location.replace('/matricula')
+      return
+    }
+
+    const matriculaParams = new URLSearchParams()
+    matriculaParams.set('modalidade', modalidade as string)
+    matriculaParams.set('idioma', idioma as string)
+
+    // Mantém o contexto comercial/marketing já recebido no fluxo anterior.
+    ;['plano', 'horario_id', 'turma_id', 'turma_token', 'utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'].forEach((key) => {
+      const value = params.get(key)
+      if (value) matriculaParams.set(key, value)
+    })
+
+    window.location.replace(`/matricula?${matriculaParams.toString()}`)
+  }, [])
+
+  return (
+    <main style={{ minHeight: '60vh', display: 'grid', placeItems: 'center', padding: '40px 20px' }}>
+      <div style={{ textAlign: 'center' }}>
+        <strong>Preparando sua matrícula...</strong>
+        <p>Você será direcionado para escolher seu plano e horário.</p>
+      </div>
+    </main>
+  )
+}
+
 function App() {
   const withFooter = (content: ReactNode) => (
     <>
@@ -232,6 +266,14 @@ function App() {
   }
 
   if (path === '/quero-aprender') {
+    const params = new URLSearchParams(window.location.search)
+    const modalidade = params.get('modalidade')
+    const idioma = params.get('idioma')
+
+    if (['dupla', 'grupo'].includes(modalidade || '') && ['ingles', 'alemao'].includes(idioma || '')) {
+      return <><MobileSystemHeader title="Matrícula" /><QueroAprenderRedirect /></>
+    }
+
     return <><MobileSystemHeader title={pageHeaderTitle} /><LeadCapture /></>
   }
 
