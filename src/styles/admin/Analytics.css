@@ -1,0 +1,25 @@
+.admin-analytics-live{margin-bottom:16px;border:1px solid #dbe5ef;border-radius:16px;background:#fff;box-shadow:0 4px 16px rgba(15,23,42,.035);overflow:hidden}
+.admin-analytics-live-header{display:flex;align-items:center;justify-content:space-between;gap:20px;padding:18px 20px;border-bottom:1px solid #edf1f5}
+.admin-analytics-live-header h3{margin:0;color:#172033;font-size:17px}
+.admin-analytics-live-header p{margin:4px 0 0;color:#64748b;font-size:11px}
+.admin-analytics-live-count{display:flex;align-items:baseline;gap:6px;padding:9px 13px;border:1px solid #d9f0e1;border-radius:11px;background:#f3fcf6}
+.admin-analytics-live-count i{width:8px;height:8px;border-radius:50%;background:#16a34a;box-shadow:0 0 0 4px rgba(22,163,74,.1)}
+.admin-analytics-live-count strong{color:#166534;font-size:21px}
+.admin-analytics-live-count span{color:#64748b;font-size:10px;font-weight:700}
+.admin-analytics-live-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+.admin-analytics-live-row{display:flex;align-items:center;gap:11px;min-width:0;padding:13px 16px;border-right:1px solid #edf1f5;border-bottom:1px solid #edf1f5}
+.admin-analytics-live-row:nth-child(2n){border-right:0}
+.admin-analytics-live-device{width:34px;height:34px;flex:0 0 34px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:#eef5ff;color:#2563eb}
+.admin-analytics-live-main{min-width:0;display:flex;flex-direction:column;gap:3px}
+.admin-analytics-live-main strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#1e293b;font-size:11px}
+.admin-analytics-live-main span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#94a3b8;font-size:9px}
+.admin-analytics-live-meta{margin-left:auto;min-width:90px;display:flex;flex-direction:column;align-items:flex-end;gap:3px}
+.admin-analytics-live-meta span{color:#475569;font-size:9px;font-weight:700}
+.admin-analytics-live-meta small{color:#94a3b8;font-size:8px}
+.admin-analytics-live-empty{grid-column:1/-1;padding:24px;text-align:center;color:#94a3b8;font-size:11px}
+@media(max-width:760px){
+  .admin-analytics-live-header{align-items:flex-start;flex-direction:column}
+  .admin-analytics-live-list{grid-template-columns:1fr}
+  .admin-analytics-live-row,.admin-analytics-live-row:nth-child(2n){border-right:0}
+  .admin-analytics-live-meta{min-width:75px}
+}
