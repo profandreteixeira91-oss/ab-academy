@@ -182,7 +182,7 @@ function ModalidadeCard({
       email: reserveEmail.trim().toLowerCase(),
       telefone: phoneDigits,
       idioma_interesse: reserveTarget.plano.idioma,
-      origem: 'planos',
+      origem: 'matricula',
       landing_page: window.location.pathname,
       status: 'novo',
       observacoes: 'Reserva de vaga em horário coletivo: ' + scheduleText + '.',
@@ -288,7 +288,9 @@ function ModalidadeCard({
                         </div>
                         <div className="planos-schedule-choice-actions">
                           <a
-                            href={'/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id) + '&aguardando_formacao=1'}
+                            href={individualPlan
+                              ? '/matricula?modalidade=individual&idioma=' + idioma + '&plano=' + individualPlan.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id) + '&aguardando_formacao=1'
+                              : '/matricula?modalidade=' + modalidade + '&idioma=' + idioma + '&plano=' + plano.id + '&horario_id=' + encodeURIComponent(horariosDaOpcao[0].id) + '&aguardando_formacao=1'}
                             className="planos-schedule-choice-button planos-schedule-choice-button--individual"
                           >
                             <span>Desejo iniciar individualmente</span>
