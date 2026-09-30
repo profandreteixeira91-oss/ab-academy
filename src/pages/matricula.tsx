@@ -1029,11 +1029,7 @@ export default function Matricula() {
       meet_space_name: horario.meet_space_name ?? null,
       turma_id: horario.turma_id ?? null,
       participante_id: horario.participante_id ?? null,
-      valor_mensal: horario.valor_mensal != null
-        ? Number(horario.valor_mensal)
-        : isCollectivePlan
-          ? Number(horario.tipo_valor === 'coletiva_em_formacao' ? (plan?.idioma === 'ingles' ? 357.3 : 384.3) : 0)
-          : null,
+      valor_mensal: horario.valor_mensal != null ? Number(horario.valor_mensal) : null,
       participantes: horario.participantes != null ? Number(horario.participantes) : null,
       capacidade: horario.capacidade != null ? Number(horario.capacidade) : null,
       status_formacao: horario.status_formacao ?? null,
