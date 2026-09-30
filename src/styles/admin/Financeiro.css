@@ -1074,3 +1074,39 @@
     border-radius: 0;
   }
 }
+
+/* =========================================================
+   ASAAS — saldo e transferências
+========================================================= */
+.financeiro-asaas-card {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px;
+  margin-bottom: 16px;
+  border: 1px solid #dbe7f5;
+  border-radius: 16px;
+  background: linear-gradient(135deg, #f8fbff, #fff);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .05);
+}
+.financeiro-asaas-card-main { min-width: 0; }
+.financeiro-asaas-card-heading { display: flex; align-items: center; gap: 10px; }
+.financeiro-asaas-card-heading h3 { margin: 2px 0 0; font-size: 15px; color: #0f172a; }
+.financeiro-asaas-icon { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 10px; background: #eff6ff; color: #2563eb; }
+.financeiro-asaas-balance { display: block; margin-top: 13px; font-size: 28px; color: #0f172a; }
+.financeiro-asaas-card-main small { display: block; margin-top: 5px; color: #64748b; font-size: 11px; }
+.financeiro-asaas-actions { display: flex; align-items: center; gap: 8px; align-self: center; flex-wrap: wrap; justify-content: flex-end; }
+.financeiro-asaas-error { margin: 8px 0 0; color: #b91c1c; font-size: 11px; }
+.financeiro-asaas-transfers { margin-bottom: 18px; padding: 18px 20px; border: 1px solid #e7ebf1; border-radius: 14px; background: #fff; }
+.financeiro-transfer-key { display: block; margin-top: 3px; color: #64748b; font-size: 11px; }
+.asaas-transfer-status.pending { background: #eff6ff; color: #2563eb; }
+.asaas-transfer-status.done { background: #f0fdf4; color: #15803d; }
+.asaas-transfer-status.failed, .asaas-transfer-status.cancelled { background: #fef2f2; color: #b91c1c; }
+.financeiro-transfer-balance { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; margin-bottom: 16px; border-radius: 10px; background: #f8fafc; color: #64748b; font-size: 12px; }
+.financeiro-transfer-balance strong { color: #0f172a; font-size: 18px; }
+.financeiro-transfer-warning { display: flex; flex-direction: column; gap: 3px; margin-top: 14px; padding: 12px 14px; border-radius: 10px; background: #fffbeb; color: #92400e; font-size: 11px; }
+@media (max-width: 700px) {
+  .financeiro-asaas-card { flex-direction: column; padding: 18px; }
+  .financeiro-asaas-actions { justify-content: stretch; }
+  .financeiro-asaas-actions button { flex: 1; }
+}
