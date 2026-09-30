@@ -1739,11 +1739,6 @@ export default function Matricula() {
                     <span>Turma de referência: {formationOrigin.modalidade === 'dupla' ? 'Dupla' : 'Grupo'} · início {formatDate(selectedSchedules[0]?.date ?? '')}</span>
                   </div>
 
-                  <div className="availability-actions">
-                    <button type="button" className="enrollment-primary-button" onClick={() => setStep(2)} disabled={loading}>
-                      Confirmar plano e horário <ArrowRight size={18} />
-                    </button>
-                  </div>
                 </div>
               )}
 
