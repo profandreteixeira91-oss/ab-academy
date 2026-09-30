@@ -633,6 +633,16 @@ Deno.serve(async (req) => {
           return jsonResponse({ error: 'A turma não corresponde ao plano selecionado.' }, 409)
         }
 
+        const { count: turmaHorarioCount } = await supabaseAdmin
+          .from('turma_horarios')
+          .select('horario_id', { count: 'exact', head: true })
+          .eq('turma_id', turma.id)
+          .in('horario_id', horarioIds)
+
+        if ((turmaHorarioCount ?? 0) !== horarioIds.length || horarioIds.length !== turma.aulas_semana) {
+          return jsonResponse({ error: 'Os horários selecionados não correspondem à composição semanal da turma.' }, 409)
+        }
+
         const { count: participantesCount } = await supabaseAdmin
           .from('turma_participantes')
           .select('id', { count: 'exact', head: true })
