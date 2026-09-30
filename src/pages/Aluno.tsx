@@ -77,6 +77,8 @@ type Lesson = {
   meetSpaceName?: string
   startAt: string
   endAt: string
+  isRescheduled?: boolean
+  rescheduledTo?: string
 }
 
 type Material = {
@@ -1356,45 +1358,72 @@ function Aluno() {
       ]),
     )
 
-    const normalizedLessons: Lesson[] = (horarios || []).map((horario) => {
-      const { startAt: recurringStartAt, endAt: recurringEndAt } = getNextLessonOccurrence(
+    const normalizedLessons: Lesson[] = (horarios || []).flatMap((horario) => {
+      const { startAt: recurringStartAt } = getNextLessonOccurrence(
         Number(horario.dia_semana),
         horario.hora_inicio,
         horario.hora_fim,
       )
 
       const lessonDate = recurringStartAt.getFullYear() + '-' + String(recurringStartAt.getMonth() + 1).padStart(2, '0') + '-' + String(recurringStartAt.getDate()).padStart(2, '0')
+      const registro = (registros || []).find(
+        (item) => item.horario_id === horario.id && item.data_aula === lessonDate,
+      )
+      const [year, month, day] = lessonDate.split('-').map(Number)
+      const [hours, minutes] = horario.hora_inicio.slice(0, 5).split(':').map(Number)
+      const [endHours, endMinutes] = horario.hora_fim.slice(0, 5).split(':').map(Number)
+      const recurringStartAtLocal = new Date(year, month - 1, day, hours, minutes, 0, 0)
+      const recurringEndAtLocal = new Date(year, month - 1, day, endHours, endMinutes, 0, 0)
 
-      const registro = (registros || []).find((item) => item.horario_id === horario.id && item.data_aula === lessonDate)
-      const actualDate = registro?.data_aula_override || lessonDate
-      const actualStart = registro?.hora_inicio_override || horario.hora_inicio
-      const actualEnd = registro?.hora_fim_override || horario.hora_fim
-      const [year, month, day] = actualDate.split('-').map(Number)
-      const [hours, minutes] = actualStart.slice(0, 5).split(':').map(Number)
-      const [endHours, endMinutes] = actualEnd.slice(0, 5).split(':').map(Number)
-      const startAt = new Date(year, month - 1, day, hours, minutes, 0, 0)
-      const endAt = new Date(year, month - 1, day, endHours, endMinutes, 0, 0)
-
-      return {
+      const baseLesson: Lesson = {
         id: horario.id,
-        language:
-          horario.idioma === 'ingles'
-            ? 'Inglês'
-            : 'Alemão',
-        date: startAt.toLocaleDateString('pt-BR'),
-        time: actualStart.slice(0, 5),
-        teacher:
-          professoresMap.get(horario.professor_id) ||
-          'Professor',
-        status:
-          registro?.status === 'falta'
-            ? 'falta'
-            : 'agendada',
+        language: horario.idioma === 'ingles' ? 'Inglês' : 'Alemão',
+        date: recurringStartAtLocal.toLocaleDateString('pt-BR'),
+        time: horario.hora_inicio.slice(0, 5),
+        teacher: professoresMap.get(horario.professor_id) || 'Professor',
+        status: registro?.data_aula_override ? 'cancelada' : registro?.status === 'falta' ? 'falta' : 'agendada',
         meetUrl: horario.meet_url || undefined,
         meetSpaceName: horario.meet_space_name || undefined,
-        startAt: startAt.toISOString(),
-        endAt: endAt.toISOString(),
+        startAt: recurringStartAtLocal.toISOString(),
+        endAt: recurringEndAtLocal.toISOString(),
+        isRescheduled: Boolean(registro?.data_aula_override),
+        rescheduledTo: registro?.data_aula_override
+          ? registro.data_aula_override + 'T' + (registro.hora_inicio_override || horario.hora_inicio).slice(0, 5)
+          : undefined,
       }
+
+      const replacementLessons: Lesson[] = (registros || [])
+        .filter(
+          (item) =>
+            item.horario_id === horario.id &&
+            item.data_aula === lessonDate &&
+            Boolean(item.data_aula_override),
+        )
+        .map((item) => {
+          const actualDate = item.data_aula_override as string
+          const actualStart = (item.hora_inicio_override || horario.hora_inicio).slice(0, 5)
+          const actualEnd = (item.hora_fim_override || horario.hora_fim).slice(0, 5)
+          const [targetYear, targetMonth, targetDay] = actualDate.split('-').map(Number)
+          const [targetHours, targetMinutes] = actualStart.split(':').map(Number)
+          const [targetEndHours, targetEndMinutes] = actualEnd.split(':').map(Number)
+          const targetStartAt = new Date(targetYear, targetMonth - 1, targetDay, targetHours, targetMinutes, 0, 0)
+          const targetEndAt = new Date(targetYear, targetMonth - 1, targetDay, targetEndHours, targetEndMinutes, 0, 0)
+
+          return {
+            id: horario.id + ':reposicao:' + item.id,
+            language: horario.idioma === 'ingles' ? 'Inglês' : 'Alemão',
+            date: targetStartAt.toLocaleDateString('pt-BR'),
+            time: actualStart,
+            teacher: professoresMap.get(horario.professor_id) || 'Professor',
+            status: item.status === 'falta' ? 'falta' : 'agendada',
+            meetUrl: horario.meet_url || undefined,
+            meetSpaceName: horario.meet_space_name || undefined,
+            startAt: targetStartAt.toISOString(),
+            endAt: targetEndAt.toISOString(),
+          } satisfies Lesson
+        })
+
+      return [baseLesson, ...replacementLessons]
     })
 
     normalizedLessons.sort(
@@ -2985,7 +3014,7 @@ function Aluno() {
       return [...lessons]
         .filter(
           (lesson) =>
-            lesson.status === 'agendada',
+            lesson.status === 'agendada' && !lesson.isRescheduled,
         )
         .sort(
           (a, b) =>
@@ -4823,16 +4852,15 @@ function MinhasAulas({
                   </div>
 
                   <div className="student-lesson-status">
-                    {lesson.status ===
-                    'agendada'
-                      ? 'Agendada'
-                      : lesson.status ===
-                          'realizada'
-                        ? 'Presente'
-                        : lesson.status ===
-                            'falta'
-                          ? 'Falta'
-                          : 'Cancelada'}
+                    {lesson.isRescheduled
+                      ? 'REAGENDADA'
+                      : lesson.status === 'agendada'
+                        ? 'Agendada'
+                        : lesson.status === 'realizada'
+                          ? 'Presente'
+                          : lesson.status === 'falta'
+                            ? 'Falta'
+                            : 'Cancelada'}
                   </div>
 
                   {(lesson.status ===
