@@ -52,6 +52,8 @@ type Pagamento = {
   tipo_plano: string | null
   valor: number
   parcelas: number | null
+  recorrencia_autorizada: boolean
+  recorrencia_autorizada_em: string | null
   status: string
   metodo: string
   asaas_payment_id: string | null
@@ -162,7 +164,13 @@ function isMonthlyRecurringPayment(
   return (
     (pagamento.metodo === 'pix' ||
       pagamento.metodo === 'cartao') &&
-    pagamento.tipo_plano === 'mensal'
+    (
+      pagamento.tipo_plano === 'mensal' ||
+      (
+        pagamento.tipo_plano === 'mensalidade' &&
+        pagamento.recorrencia_autorizada
+      )
+    )
   )
 }
 
@@ -494,6 +502,8 @@ async function getPagamento(
       asaas_payment_id,
       asaas_customer_id,
       asaas_subscription_id,
+      recorrencia_autorizada,
+      recorrencia_autorizada_em,
       matricula_id,
       dados_matricula,
       horario_ids
@@ -543,6 +553,8 @@ async function getPagamentoBySubscription(
       asaas_payment_id,
       asaas_customer_id,
       asaas_subscription_id,
+      recorrencia_autorizada,
+      recorrencia_autorizada_em,
       matricula_id,
       dados_matricula,
       horario_ids
@@ -677,7 +689,7 @@ async function createRecurringPaymentRecord(
       .select(`
         id, user_id, plano_id, idioma, tipo_plano, valor, parcelas,
         status, metodo, asaas_payment_id, asaas_customer_id,
-        asaas_subscription_id, matricula_id, dados_matricula, horario_ids
+        asaas_subscription_id, recorrencia_autorizada, recorrencia_autorizada_em, matricula_id, dados_matricula, horario_ids
       `)
       .eq('id', payment.externalReference)
       .maybeSingle()
@@ -704,6 +716,58 @@ async function createRecurringPaymentRecord(
     )
   ) {
     return null
+  }
+
+  /*
+   * A primeira cobrança de uma assinatura criada a partir
+   * de uma mensalidade existente deve permanecer vinculada
+   * ao pagamento original.
+   */
+  if (
+    !pagamentoBase.asaas_payment_id &&
+    pagamentoBase.status === 'processando'
+  ) {
+    const firstChargeStatus = getLocalPaymentStatus(
+      payment.status ?? '',
+    )
+
+    const { data: updatedBase, error: updateBaseError } =
+      await supabaseAdmin
+        .from('pagamentos')
+        .update({
+          asaas_payment_id: payment.id,
+          asaas_customer_id:
+            payment.customer ?? pagamentoBase.asaas_customer_id,
+          status: firstChargeStatus,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', pagamentoBase.id)
+        .select(`
+          id,
+          user_id,
+          plano_id,
+          idioma,
+          tipo_plano,
+          valor,
+          parcelas,
+          status,
+          metodo,
+          asaas_payment_id,
+          asaas_customer_id,
+          asaas_subscription_id,
+          recorrencia_autorizada,
+          recorrencia_autorizada_em,
+          matricula_id,
+          dados_matricula,
+          horario_ids
+        `)
+        .single()
+
+    if (updateBaseError || !updatedBase) {
+      throw new Error('Não foi possível vincular a primeira cobrança recorrente ao pagamento original.')
+    }
+
+    return updatedBase as Pagamento
   }
 
   const pagamentoExistente =
@@ -762,6 +826,12 @@ async function createRecurringPaymentRecord(
       asaas_subscription_id:
         subscriptionId,
 
+      recorrencia_autorizada:
+        pagamentoBase.recorrencia_autorizada,
+
+      recorrencia_autorizada_em:
+        pagamentoBase.recorrencia_autorizada_em,
+
       matricula_id:
         pagamentoBase.matricula_id,
 
@@ -790,6 +860,8 @@ async function createRecurringPaymentRecord(
       asaas_payment_id,
       asaas_customer_id,
       asaas_subscription_id,
+      recorrencia_autorizada,
+      recorrencia_autorizada_em,
       matricula_id,
       dados_matricula,
       horario_ids
