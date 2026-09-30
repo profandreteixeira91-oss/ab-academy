@@ -443,6 +443,28 @@ export default function Agenda() {
     )
   }, [registrosAulas, horarios, selectedDay, filterTipo, filterProfessor, filterNivel])
 
+  const agendaNow = new Date()
+  const agendaToday = agendaNow.getDay()
+  const agendaNowMinutes = agendaNow.getHours() * 60 + agendaNow.getMinutes()
+
+  const proximoHorarioId =
+    selectedDay === agendaToday
+      ? horariosDoDia.find((horario) => {
+          const inicio = timeToMinutes(formatHour(horario.hora_inicio))
+          const fim = timeToMinutes(formatHour(horario.hora_fim))
+          return fim > agendaNowMinutes && inicio >= agendaNowMinutes
+        })?.id || null
+      : null
+
+  const horarioAtualId =
+    selectedDay === agendaToday
+      ? horariosDoDia.find((horario) => {
+          const inicio = timeToMinutes(formatHour(horario.hora_inicio))
+          const fim = timeToMinutes(formatHour(horario.hora_fim))
+          return inicio <= agendaNowMinutes && fim > agendaNowMinutes
+        })?.id || null
+      : null
+
   /*
    * =======================================================
    * SELEÇÃO
@@ -2115,6 +2137,7 @@ export default function Agenda() {
                 }
                 type="button"
                 className={`agenda-day-button ${
+                  dia.value === agendaToday ? 'today ' : ''
                   active
                     ? 'active'
                     : ''
@@ -2210,6 +2233,28 @@ export default function Agenda() {
 
         </div>
 
+        <div className="agenda-summary-item agenda-summary-next">
+          <CalendarClock size={18} />
+          <div>
+            <strong>
+              {horarioAtualId
+                ? 'Em andamento'
+                : proximoHorarioId
+                  ? formatHour(horariosDoDia.find((horario) => horario.id === proximoHorarioId)?.hora_inicio || '')
+                  : '—'}
+            </strong>
+            <span>
+              {horarioAtualId
+                ? 'Aula atual'
+                : proximoHorarioId
+                  ? 'Próxima aula'
+                  : selectedDay === agendaToday
+                    ? 'Sem próxima aula'
+                    : 'Selecione hoje'}
+            </span>
+          </div>
+        </div>
+
         <div className="agenda-summary-item">
 
           <UserRound
@@ -2285,6 +2330,15 @@ export default function Agenda() {
                   : 'Selecionar todos'}
               </button>
             )}
+
+            <div className="agenda-panel-legend" aria-label="Legenda da agenda">
+              <span><i className="agenda-legend-dot occupied" />Ocupado</span>
+              <span><i className="agenda-legend-dot available" />Livre</span>
+              <span><i className="agenda-legend-dot replacement" />Reposição</span>
+              {selectedDay === agendaToday && (
+                <span><i className="agenda-legend-dot current" />Agora</span>
+              )}
+            </div>
 
             <Clock3
               size={20}
@@ -2482,6 +2536,8 @@ export default function Agenda() {
                         horario.id
                       }
                       className={`agenda-item ${
+                        horario.id === horarioAtualId ? 'current ' : ''
+                        horario.id === proximoHorarioId ? 'next ' : ''
                         ocupado
                           ? 'occupied'
                           : 'available'
