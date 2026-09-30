@@ -19,6 +19,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
   if (req.method !== 'POST') return json({ error: 'Método não permitido.' }, 405)
 
+  let rowId: string | null = null
+  let admin: ReturnType<typeof createClient> | null = null
+
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
@@ -37,14 +40,14 @@ Deno.serve(async (req) => {
     if (!allowedMime.has(file.type)) return json({ error: 'O documento deve ser um PDF.' }, 400)
     if (file.size > 10 * 1024 * 1024) return json({ error: 'O PDF deve ter no máximo 10 MB.' }, 400)
 
-    const admin = createClient(supabaseUrl, serviceRoleKey)
+    admin = createClient(supabaseUrl, serviceRoleKey)
     const { data: existing } = await admin
       .from('matricula_proficiencia')
       .select('id')
       .eq('reserva_token', reservaToken)
       .maybeSingle()
 
-    const rowId = existing?.id || crypto.randomUUID()
+    rowId = existing?.id || crypto.randomUUID()
     const path = reservaToken + '/' + rowId + '-' + file.name.replace(/[^a-zA-Z0-9._-]/g, '_')
 
     const { error: uploadError } = await admin.storage
@@ -159,6 +162,13 @@ Se não houver dados suficientes para classificar com segurança, retorne os ní
     })
   } catch (error) {
     console.error('Erro ao processar teste de proficiência:', error)
+    if (admin && rowId) {
+      await admin.from('matricula_proficiencia').update({
+        status: 'erro',
+        erro: error instanceof Error ? error.message : 'Erro desconhecido.',
+        updated_at: new Date().toISOString(),
+      }).eq('id', rowId)
+    }
     return json({
       error: error instanceof Error ? error.message : 'Não foi possível processar o teste de proficiência.',
     }, 500)
