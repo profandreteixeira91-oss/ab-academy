@@ -769,6 +769,7 @@ export default function Matricula() {
 
       const payload = {
         plano_id: effectivePlan?.id ?? null,
+        modalidade: effectivePlan?.modalidade ?? 'individual',
         idioma: language,
         tipo_plano: effectivePlan?.tipo ?? 'mensal',
         turma_token: collectiveEnrollment?.token ?? null,
