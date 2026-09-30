@@ -193,107 +193,36 @@ export default function Checkout({
 
   async function checkPaymentStatus() {
     try {
-      const {
-        data: {
-          user,
-        },
-      } =
-        await supabase.auth.getUser()
+      const { data, error: statusError } = await supabase.rpc('obter_pagamento_checkout', {
+        p_pagamento_id: pagamentoId,
+      })
 
-      if (!user) {
+      const payment = Array.isArray(data) ? data[0] : data
+
+      if (statusError || !payment) {
+        console.error('Erro ao consultar status do pagamento:', statusError)
         return
       }
 
-      const {
-        data,
-        error: statusError,
-      } =
-        await supabase
-          .from('pagamentos')
-          .select(`
-            id,
-            status,
-            matricula_id
-          `)
-          .eq(
-            'id',
-            pagamentoId,
-          )
-          .eq(
-            'user_id',
-            user.id,
-          )
-          .maybeSingle()
+      if (payment.status === 'pago' && payment.matricula_id) {
+        setPaymentConfirmed(true)
+        setCheckingPayment(false)
+        setSuccess('Pagamento confirmado! Sua matrícula foi realizada com sucesso.')
 
-      if (statusError) {
-        console.error(
-          'Erro ao consultar status do pagamento:',
-          statusError,
-        )
-
-        return
-      }
-
-      if (!data) {
-        return
-      }
-
-      /*
-       * O webhook só considera a matrícula concluída
-       * quando o pagamento está pago e a matrícula
-       * já foi vinculada.
-       */
-
-      if (
-        data.status ===
-          'pago' &&
-        data.matricula_id
-      ) {
-        setPaymentConfirmed(
-          true,
-        )
-
-        setCheckingPayment(
-          false,
-        )
-
-        setSuccess(
-          'Pagamento confirmado! Sua matrícula foi realizada com sucesso.',
-        )
-
-        if (
-          redirectTimeoutRef.current
-        ) {
-          clearTimeout(
-            redirectTimeoutRef.current,
-          )
-        }
-
-        redirectTimeoutRef.current =
-          setTimeout(() => {
-            window.location.assign(
-              '/aluno',
-            )
-          }, 1800)
-      } else if (
-        data.status === 'recusado' ||
-        data.status === 'cancelado' ||
-        data.status === 'expirado'
-      ) {
+        if (redirectTimeoutRef.current) clearTimeout(redirectTimeoutRef.current)
+        redirectTimeoutRef.current = setTimeout(() => {
+          window.location.assign('/aluno')
+        }, 1800)
+      } else if (['recusado', 'cancelado', 'expirado'].includes(payment.status)) {
         setCheckingPayment(false)
         setProcessing(false)
         setPaymentResult(null)
-        setError(
-          data.status === 'recusado'
-            ? 'O pagamento com cartão não foi autorizado. Verifique os dados do cartão ou utilize outro cartão.'
-            : 'Esta tentativa de pagamento foi cancelada. Você pode tentar novamente.',
-        )
+        setError(payment.status === 'recusado'
+          ? 'O pagamento com cartão não foi autorizado. Verifique os dados do cartão ou utilize outro cartão.'
+          : 'Esta tentativa de pagamento foi cancelada. Você pode tentar novamente.')
       }
     } catch (err) {
-      console.error(
-        'Erro ao verificar pagamento:',
-        err,
-      )
+      console.error('Erro ao verificar pagamento:', err)
     }
   }
 
@@ -383,18 +312,27 @@ export default function Checkout({
         setLoading(true)
         setError('')
 
-        const {
-          data: {
-            user,
-          },
-        } =
-          await supabase.auth.getUser()
+        /*
+         * Busca somente a intenção de pagamento.
+         *
+         * Nenhuma matrícula ou aluno é criado
+         * neste momento.
+         */
 
-        if (!user) {
-          throw new Error(
-            'Você precisa estar autenticado para acessar o checkout.',
-          )
+        const { data: pagamentoRows, error: pagamentoError } = await supabase.rpc('obter_pagamento_checkout', {
+          p_pagamento_id: pagamentoId,
+        })
+
+        const data = Array.isArray(pagamentoRows) ? pagamentoRows[0] : pagamentoRows
+
+        if (pagamentoError || !data) {
+          console.error('Erro ao carregar pagamento:', pagamentoError)
+          throw new Error('Não foi possível carregar a intenção de pagamento.')
         }
+   async function loadPagamento() {
+      try {
+        setLoading(true)
+        setError('')
 
         /*
          * Busca somente a intenção de pagamento.
