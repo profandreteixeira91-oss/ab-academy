@@ -1600,20 +1600,78 @@ Deno.serve(
       }
 
       const parcelas = Number(body.parcelas ?? 1)
-      if (!Number.isInteger(parcelas) || parcelas < 1 || parcelas > 12) return jsonResponse({ error: 'O número de parcelas deve estar entre 1 e 12.' }, 400)
-      const valorParcela = Number((valor / parcelas).toFixed(2))
-      const asaasPayment = await asaasRequest('/payments', {
-        method: 'POST',
-        body: JSON.stringify({
-          customer: customer.id, billingType: 'CREDIT_CARD', value: valor,
-          dueDate: new Date().toISOString().slice(0, 10),
-          description: 'Matrícula AB Academy - ' + planoNome,
-          installmentCount: parcelas, installmentValue: valorParcela,
-          creditCard,
-          creditCardHolderInfo,
-          remoteIp,
-        }),
-      }) as { id: string; status: string; value: number }
+      const installmentBrand =
+        getInstallmentBrand(
+          creditCard.number,
+        )
+
+      const maxInstallments =
+        installmentBrand === 'Visa' ||
+        installmentBrand === 'Mastercard'
+          ? 21
+          : 12
+
+      if (
+        !Number.isInteger(parcelas) ||
+        parcelas < 1 ||
+        parcelas > maxInstallments
+      ) {
+        return jsonResponse(
+          {
+            error:
+              'O número de parcelas informado não é permitido para a bandeira identificada.',
+          },
+          400,
+        )
+      }
+
+      const valorParcela =
+        Number(
+          (valor / parcelas).toFixed(2),
+        )
+
+      const installmentFields =
+        parcelas > 1
+          ? {
+              installmentCount:
+                parcelas,
+              installmentValue:
+                valorParcela,
+            }
+          : {}
+
+      const asaasPayment =
+        await asaasRequest(
+          '/payments',
+          {
+            method:
+              'POST',
+            body:
+              JSON.stringify({
+                customer:
+                  customer.id,
+                billingType:
+                  'CREDIT_CARD',
+                value:
+                  valor,
+                dueDate:
+                  new Date()
+                    .toISOString()
+                    .slice(0, 10),
+                description:
+                  'Matrícula AB Academy - ' +
+                  planoNome,
+                ...installmentFields,
+                creditCard,
+                creditCardHolderInfo,
+                remoteIp,
+              }),
+          },
+        ) as {
+          id: string
+          status: string
+          value: number
+        }
       let localStatus = 'processando'
       if (asaasPayment.status === 'CONFIRMED') localStatus = 'pago'
       if (asaasPayment.status === 'OVERDUE') localStatus = 'recusado'
