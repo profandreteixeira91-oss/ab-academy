@@ -1046,7 +1046,9 @@ function LiveClassroom({
 
 export default function SalaAula() {
   const [user, setUser] =
-    useState<any>(null)
+    useState<{
+      id: string
+    } | null>(null)
 
   const [data, setData] =
     useState<LessonData | null>(
@@ -1070,19 +1072,23 @@ export default function SalaAula() {
   const [now, setNow] =
     useState(new Date())
 
-  const getLessonIdFromUrl =
-    () => {
-      const parts =
-        window.location.pathname
-          .split('/')
-          .filter(Boolean)
+  const getLessonIdFromUrl = () => {
+    const parts = window.location.pathname
+      .split('/')
+      .filter(Boolean)
 
-      return (
-        parts[
-          parts.length - 1
-        ] || null
-      )
+    const rawLessonId = parts[parts.length - 1]
+
+    if (!rawLessonId) {
+      return null
     }
+
+    try {
+      return decodeURIComponent(rawLessonId).trim() || null
+    } catch {
+      return rawLessonId.trim() || null
+    }
+  }
 
   /* =========================================================
      SESSÃO
@@ -1195,10 +1201,13 @@ export default function SalaAula() {
             )
           }
 
-          const [baseLessonId, replacementMarker, replacementRecordId] =
-            lessonId.split(':')
+          const lessonParts = lessonId.split(':')
+          const baseLessonId = lessonParts[0]?.trim() || lessonId
+          const replacementMarker = lessonParts[1]?.trim() || ''
+          const replacementRecordId = lessonParts[2]?.trim() || ''
 
           const isReplacement =
+            lessonParts.length === 3 &&
             replacementMarker === 'reposicao' &&
             Boolean(replacementRecordId)
 
