@@ -1471,16 +1471,6 @@ export default function Matricula() {
     }
   }
 
-    : [
-        { id: 1, text: 'How would you introduce yourself?', options: ['My name is Anna and I am from Brazil.', 'I name Anna Brazil.', 'Anna be Brazil.', 'My name are Anna.'] },
-        { id: 2, text: 'Which answer fits? “How are you?”', options: ['I’m fine, thank you!', 'I’m from Brazil.', 'I’m twenty years.', 'Tomorrow at eight.'] },
-        { id: 3, text: 'Which sentence is correct?', options: ['I worked yesterday.', 'I yesterday worked.', 'Yesterday I have work.', 'I work yesterday was.'] },
-        { id: 4, text: 'Which sentence expresses a hypothetical situation?', options: ['If I had time, I would travel.', 'I traveled yesterday.', 'I am arriving now.', 'I will work tomorrow.'] },
-        { id: 5, text: 'Which sentence uses a more advanced structure?', options: ['Although it was raining, we went for a walk.', 'I go home.', 'I study English.', 'This is my book.'] },
-      ]
-
-
-
   return (
     <div className="enrollment-page">
       <header className="enrollment-header">
