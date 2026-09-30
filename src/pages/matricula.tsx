@@ -101,6 +101,24 @@ type CollectiveLeadTarget = {
   horario_id: string
 }
 
+type FormationSlot = {
+  horario_id: string
+  idioma: Language
+  tipo_horario: 'dupla' | 'grupo'
+  turma_id: string
+  aulas_semana: number
+  data_inicio: string
+  professor_id: string | null
+  nivel_referencia: string | null
+  encontros: Array<{
+    horario_id: string
+    dia_semana: number
+    hora_inicio: string
+    hora_fim: string
+    ordem: number
+  }>
+}
+
 type StudentData = {
   nome_completo: string
   cpf: string
@@ -255,7 +273,7 @@ export default function Matricula() {
   const [availabilityPeriods, setAvailabilityPeriods] = useState<string[]>([])
   const [availabilityRanges, setAvailabilityRanges] = useState<Record<number, { start: string; end: string }>>({})
   const [availabilityReady, setAvailabilityReady] = useState(false)
-   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
+  const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
   const [reservaToken] = useState(() => crypto.randomUUID())
   const [formationOrigin, setFormationOrigin] = useState<{ turmaId: string; horarioId: string; modalidade: 'dupla' | 'grupo'; aulasSemana: number; valorDesconto: number } | null>(null)
@@ -415,7 +433,16 @@ export default function Matricula() {
       setLanguage(requestedLanguage)
 
       if (requestedPlanId) {
-        await loadSelectedPlan(requestedLanguage, requestedPlanId)
+        const loadedPlan = await loadSelectedPlan(requestedLanguage, requestedPlanId)
+
+        if (waitingFormation && loadedPlan) {
+          await initializeIndividualFormationFromUrl(
+            loadedPlan,
+            formationSlotId,
+            params.get('turma_id'),
+          )
+        }
+
         return
       }
 
@@ -456,7 +483,10 @@ export default function Matricula() {
   }, [])
 
 
-  const loadSelectedPlan = async (selectedLanguage: Language, selectedPlanId: string) => {
+  const loadSelectedPlan = async (
+    selectedLanguage: Language,
+    selectedPlanId: string,
+  ): Promise<Plan | null> => {
     const { data, error: planError } = await supabase
       .from('planos')
       .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, modalidade, aulas_semana, min_alunos, max_alunos')
@@ -468,15 +498,124 @@ export default function Matricula() {
     if (planError) {
       console.error('Erro ao carregar plano selecionado:', planError)
       setError('Não foi possível carregar o plano selecionado.')
-      return
+      return null
     }
 
     if (!data) {
       setError('O plano selecionado não está mais disponível. Volte à página de planos e escolha outro.')
+      return null
+    }
+
+    const selectedPlan = data as Plan
+    setPlan(selectedPlan)
+    return selectedPlan
+  }
+
+  const initializeIndividualFormationFromUrl = async (
+    selectedPlan: Plan,
+    requestedSlotId: string | null,
+    requestedTurmaId: string | null,
+  ) => {
+    if (!requestedSlotId || selectedPlan.modalidade !== 'individual') {
+      setError('O link de início individual não possui um horário de formação válido.')
       return
     }
 
-    setPlan(data as Plan)
+    setLoadingSchedules(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      const { data: response, error: formationError } = await supabase.functions.invoke(
+        'list-formation-slots',
+        {
+          body: { horario_id: requestedSlotId },
+        },
+      )
+
+      if (formationError) {
+        console.error('Erro ao validar horário de formação:', formationError)
+        setError('Não foi possível validar o horário da dupla. Volte aos planos e tente novamente.')
+        return
+      }
+
+      const slots = (response?.data ?? []) as FormationSlot[]
+      const origin = slots.find((slot) => slot.horario_id === requestedSlotId)
+
+      if (!origin) {
+        setError('Este horário de dupla não está mais disponível para início individual.')
+        return
+      }
+
+      if (requestedTurmaId && origin.turma_id !== requestedTurmaId) {
+        setError('A turma deste link mudou. Volte aos planos e escolha o horário novamente.')
+        return
+      }
+
+      const { data: discountedPrice, error: priceError } = await supabase.rpc(
+        'preco_formacao_coletiva',
+        {
+          p_idioma: origin.idioma,
+          p_modalidade: origin.tipo_horario,
+          p_aulas_semana: origin.aulas_semana,
+        },
+      )
+
+      if (priceError || Number(discountedPrice ?? 0) <= 0) {
+        console.error('Erro ao calcular condição especial de formação:', priceError)
+        setError('Não foi possível calcular a condição especial deste horário.')
+        return
+      }
+
+      const formationSchedules: SelectedSchedule[] = origin.encontros
+        .slice()
+        .sort((a, b) => a.ordem - b.ordem)
+        .map((schedule) => ({
+          id: schedule.horario_id,
+          date: origin.data_inicio,
+          weekday: schedule.dia_semana,
+          hora_inicio: schedule.hora_inicio,
+          hora_fim: schedule.hora_fim,
+          meet_url: null,
+          meet_space_name: null,
+          turma_id: origin.turma_id,
+          participante_id: null,
+          valor_mensal: Number(discountedPrice),
+          participantes: null,
+          capacidade: null,
+          status_formacao: origin.tipo_horario === 'dupla'
+            ? 'dupla_em_formacao'
+            : 'grupo_em_formacao',
+          tipo_valor: 'coletiva_em_formacao',
+          professor_id: origin.professor_id,
+          nivel_referencia: origin.nivel_referencia,
+        }))
+
+      if (formationSchedules.length !== origin.aulas_semana) {
+        setError('A turma de formação não possui todos os encontros semanais configurados.')
+        return
+      }
+
+      setContractAccepted(false)
+      setContractSignatureStatus('pending')
+      setSignatureName('')
+      setFormationOrigin({
+        turmaId: origin.turma_id,
+        horarioId: origin.horario_id,
+        modalidade: origin.tipo_horario,
+        aulasSemana: origin.aulas_semana,
+        valorDesconto: Number(discountedPrice),
+      })
+      setSelectedSchedules(formationSchedules)
+      setSelectedSchedule(formationSchedules[0] ?? null)
+      setAvailabilityReady(true)
+      setStep(1)
+      setSuccess(
+        `Você poderá iniciar individualmente com a condição especial de formação: ${formatCurrency(Number(discountedPrice))}/mês.`,
+      )
+    } finally {
+      setLoadingSchedules(false)
+    }
   }
 
   const loadCollectiveCampaigns = async (selectedPlan: Plan) => {
