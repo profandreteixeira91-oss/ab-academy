@@ -1697,28 +1697,6 @@ Deno.serve(
         error,
       )
 
-      try {
-        const bodyPaymentId =
-          typeof body?.pagamento_id === 'string'
-            ? body.pagamento_id
-            : null
-
-        if (bodyPaymentId) {
-          await updateLocalPayment(
-            bodyPaymentId,
-            {
-              status:
-                'recusado',
-            },
-          )
-        }
-      } catch (updateError) {
-        console.error(
-          'Não foi possível marcar o pagamento como recusado:',
-          updateError,
-        )
-      }
-
       return jsonResponse(
         {
           error:
