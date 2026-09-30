@@ -419,6 +419,20 @@
   white-space: nowrap;
 }
 
+.planos-frequency-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid #dce8fb;
+  border-radius: 999px;
+  background: #f5f8ff;
+  color: #2458d8;
+  font-size: 12px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
 .planos-no-value {
   color: #9ca3af;
 }
