@@ -948,43 +948,20 @@ async function createOrUpdateAluno(
   let userId = pagamento.user_id
 
   if (!userId) {
-    let authUser = null
+    const { data: usersPage, error: usersError } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 })
+    if (usersError) throw new Error('Não foi possível localizar o acesso do aluno.')
 
-    const { data: invited, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(email, {
-      data: { nome_completo: nome },
-    })
-
-    if (!inviteError && invited?.user) {
-      authUser = invited.user
-    } else {
-      const { data: usersPage, error: usersError } = await supabaseAdmin.auth.admin.listUsers({
-        page: 1,
-        perPage: 1000,
+    let authUser = usersPage.users.find(user => user.email?.toLowerCase() === email)
+    if (!authUser) {
+      const temporaryPassword = crypto.randomUUID() + 'Aa1!'
+      const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
+        email,
+        password: temporaryPassword,
+        email_confirm: true,
+        user_metadata: { nome_completo: nome },
       })
-
-      if (usersError) {
-        console.error('Erro ao localizar usuário existente:', usersError)
-        throw new Error('Não foi possível criar o acesso ao Portal do Aluno.')
-      }
-
-      authUser = usersPage.users.find(user => user.email?.toLowerCase() === email) ?? null
-
-      if (!authUser) {
-        const temporaryPassword = crypto.randomUUID() + 'Aa1!'
-        const { data: created, error: createError } = await supabaseAdmin.auth.admin.createUser({
-          email,
-          password: temporaryPassword,
-          email_confirm: true,
-          user_metadata: { nome_completo: nome },
-        })
-
-        if (createError || !created?.user) {
-          console.error('Erro ao criar usuário após pagamento:', createError)
-          throw new Error('Não foi possível criar o acesso ao Portal do Aluno.')
-        }
-
-        authUser = created.user
-      }
+      if (createError || !created?.user) throw new Error('Não foi possível criar o acesso ao Portal do Aluno.')
+      authUser = created.user
     }
 
     userId = authUser.id
@@ -994,11 +971,7 @@ async function createOrUpdateAluno(
       .update({ user_id: userId, updated_at: new Date().toISOString() })
       .eq('id', pagamento.id)
 
-    if (paymentUserError) {
-      console.error('Erro ao vincular usuário ao pagamento:', paymentUserError)
-      throw new Error('Não foi possível vincular o acesso do aluno ao pagamento.')
-    }
-
+    if (paymentUserError) throw new Error('Não foi possível vincular o acesso do aluno ao pagamento.')
     pagamento.user_id = userId
   }
 
