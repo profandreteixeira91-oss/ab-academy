@@ -613,6 +613,17 @@ export default function Matricula() {
         return
       }
 
+      const selectedFrequency = selectedPlan.aulas_semana
+        ?? (selectedPlan.tipo === 'intensivo' ? 3 : selectedPlan.tipo === 'personalizado' ? 2 : 1)
+
+      if (
+        origin.idioma !== selectedPlan.idioma
+        || origin.aulas_semana !== selectedFrequency
+      ) {
+        setError('O plano e o horário de formação selecionados não correspondem. Volte a Planos e escolha novamente.')
+        return
+      }
+
       if (requestedTurmaId && origin.turma_id !== requestedTurmaId) {
         setError('A turma deste link mudou. Volte aos planos e escolha o horário novamente.')
         return
