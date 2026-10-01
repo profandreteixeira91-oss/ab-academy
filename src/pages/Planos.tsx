@@ -120,8 +120,11 @@ function ModalidadeCard({
     .sort((a, b) => (a.aulas_semana ?? 0) - (b.aulas_semana ?? 0))
 
   const filtrados = nivel ? horarios.filter((horario) => horario.nivel_referencia === nivel) : horarios
-  const horariosDisponiveis = filtrados.filter((horario) => horario.disponivel)
-  const horariosIndisponiveis = filtrados.filter((horario) => !horario.disponivel)
+  // Modalidades coletivas só podem ser encaminhadas à matrícula quando o
+  // Admin já criou a turma fixa correspondente. Um horário solto não é uma
+  // turma de formação e não deve gerar um link de matrícula inválido.
+  const horariosDisponiveis = filtrados.filter((horario) => horario.disponivel && horario.turma_id)
+  const horariosIndisponiveis = filtrados.filter((horario) => !horario.disponivel || !horario.turma_id)
   const [expandedScheduleKey, setExpandedScheduleKey] = useState<string | null>(null)
   const [formationPrices, setFormationPrices] = useState<Record<string, number>>({})
   const [formationPriceLoading, setFormationPriceLoading] = useState<string | null>(null)
@@ -199,7 +202,7 @@ function ModalidadeCard({
       aulas_semana: reserveTarget.plano.aulas_semana ?? 1,
       formacao_turma: 'reservar_vaga',
       horario_id: first?.id ?? null,
-      turma_id: null,
+      turma_id: first?.turma_id ?? null,
     })
 
     if (leadError) {
@@ -239,17 +242,19 @@ function ModalidadeCard({
         <div className="planos-frequency-list">
           {opcoes.map(({ plano, horariosDaOpcao }) => {
             const frequencia = plano.aulas_semana ?? 1
+            const individualPlanType: Plano['tipo'] =
+              frequencia === 1
+                ? 'mensal'
+                : frequencia === 2
+                  ? 'personalizado'
+                  : 'intensivo'
+
             const individualPlan = planos.find((item) =>
               item.idioma === idioma
               && item.modalidade === 'individual'
               && item.ativo
-              && item.tipo !== 'diagnostica'
-              && (
-                (frequencia === 1 && item.nome.toLowerCase().includes('1 aula'))
-                || (frequencia === 2 && item.nome.toLowerCase().includes('2x'))
-                || (frequencia === 3 && item.nome.toLowerCase().includes('3x'))
-              )
-              && !item.nome.toLowerCase().includes('anual')
+              && item.tipo === individualPlanType
+              && item.aulas_semana === frequencia
             )
             const vagasRestantes = Math.min(...horariosDaOpcao.map((horario) => horario.vagas_restantes))
             return (
