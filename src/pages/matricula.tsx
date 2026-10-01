@@ -370,15 +370,43 @@ export default function Matricula() {
     const loadCollectiveEnrollment = async (token: string) => {
       const { data, error } = await supabase
         .from('turma_matriculas')
-        .select('token,turma_id,participante_id,valor_mensal,condicao_meses,condicao_inicio,condicao_fim,status,turma:turmas(id,idioma,aulas_semana,status),participante:turma_participantes(id,nome,email,status)')
+        .select('token,turma_id,participante_id,valor_mensal,condicao_meses,condicao_inicio,condicao_fim,status,turma:turmas(id,idioma,modalidade,aulas_semana,status),participante:turma_participantes(id,nome,email,status)')
         .eq('token', token)
         .eq('status', 'liberada')
         .maybeSingle()
+
       if (error || !data || !data.turma || !data.participante || data.turma.status !== 'pronta' || data.participante.status !== 'confirmado') {
         setError('Este link de matrícula coletiva não está mais disponível.')
         return false
       }
-      const turma = data.turma as { id: string; idioma: Language; aulas_semana: number; status: string }
+
+      const turma = data.turma as {
+        id: string
+        idioma: Language
+        modalidade: 'dupla' | 'grupo'
+        aulas_semana: number
+        status: string
+      }
+
+      const { data: collectivePlan, error: collectivePlanError } = await supabase
+        .from('planos')
+        .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, modalidade, aulas_semana, min_alunos, max_alunos')
+        .eq('idioma', turma.idioma)
+        .eq('modalidade', turma.modalidade)
+        .eq('tipo', 'mensal')
+        .eq('aulas_semana', turma.aulas_semana)
+        .eq('ativo', true)
+        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+
+      if (collectivePlanError || !collectivePlan) {
+        console.error('Erro ao carregar plano coletivo do link:', collectivePlanError)
+        setError('O plano coletivo desta turma não está mais disponível.')
+        return false
+      }
+
       const selectedPlan = collectivePlan as Plan
 
       setCollectiveEnrollment({
