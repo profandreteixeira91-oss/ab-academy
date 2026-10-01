@@ -322,6 +322,7 @@ function ModalidadeCard({
                           <span>Você pode começar individualmente com a condição especial de formação ou reservar sua vaga.</span>
                         </div>
                         <div className="planos-schedule-choice-actions">
+                          {individualPlan ? (
                           <a
                             href={(() => {
                               const firstSchedule = horariosDaOpcao[0]
@@ -350,6 +351,12 @@ function ModalidadeCard({
                             </strong>
                             <em>Válido no primeiro mês. Se a dupla/grupo não for formada, a continuidade individual seguirá o valor normal do plano individual.</em>
                           </a>
+                          ) : (
+                            <div className="planos-schedule-choice-copy">
+                              <strong>Plano individual correspondente indisponível.</strong>
+                              <span>A condição de início individual não pode ser criada para esta frequência no momento.</span>
+                            </div>
+                          )}
                           <button
                             type="button"
                             className="planos-schedule-choice-button planos-schedule-choice-button--reserve"
