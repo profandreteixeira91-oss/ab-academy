@@ -712,7 +712,7 @@ export default function Matricula() {
             valor_mensal: Number(selectedPlan.preco),
             participantes: null,
             capacidade: null,
-            status_formacao: 'dupla_formada',
+            status_formacao: selectedPlan.modalidade === 'dupla' ? 'dupla_formada' : 'grupo_formado',
             tipo_valor: 'coletiva_formada',
             professor_id: horario.professor_id,
             nivel_referencia: horario.nivel_referencia,
