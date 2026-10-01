@@ -379,6 +379,8 @@ export default function Matricula() {
         return false
       }
       const turma = data.turma as { id: string; idioma: Language; aulas_semana: number; status: string }
+      const selectedPlan = collectivePlan as Plan
+
       setCollectiveEnrollment({
         token: data.token,
         turmaId: data.turma_id,
@@ -389,7 +391,9 @@ export default function Matricula() {
         condicaoFim: data.condicao_fim,
       })
       setLanguage(turma.idioma)
-      setSuccess('Sua turma foi formada. Complete seus dados para iniciar a matrícula coletiva.')
+      setPlan(selectedPlan)
+      await initializeCollectiveScheduleFromTurma(selectedPlan, data.turma_id)
+      setSuccess('Sua turma foi formada. Os horários e a condição comercial foram carregados. Complete seus dados para iniciar a matrícula coletiva.')
       return true
     }
 
@@ -647,6 +651,86 @@ export default function Matricula() {
       setSuccess(
         `Você poderá iniciar individualmente com a condição especial de formação: ${formatCurrency(Number(discountedPrice))}/mês.`,
       )
+    } finally {
+      setLoadingSchedules(false)
+    }
+  }
+
+  const initializeCollectiveScheduleFromTurma = async (
+    selectedPlan: Plan,
+    turmaId: string,
+  ) => {
+    if (selectedPlan.modalidade !== 'dupla' && selectedPlan.modalidade !== 'grupo') return
+
+    setLoadingSchedules(true)
+    setError('')
+
+    try {
+      const { data: relations, error: relationsError } = await supabase
+        .from('turma_horarios')
+        .select('horario_id,ordem,horario:horarios(id,dia_semana,hora_inicio,hora_fim,idioma,tipo_horario,professor_id,nivel_referencia)')
+        .eq('turma_id', turmaId)
+        .order('ordem', { ascending: true })
+
+      if (relationsError || !relations) {
+        console.error('Erro ao carregar encontros da turma:', relationsError)
+        setError('Não foi possível carregar os horários fixos da turma.')
+        return
+      }
+
+      const aulasSemana = selectedPlan.aulas_semana ?? (selectedPlan.modalidade === 'dupla' ? 1 : 2)
+      if (relations.length !== aulasSemana) {
+        setError('A turma não possui todos os encontros semanais configurados.')
+        return
+      }
+
+      const mappedSchedules: SelectedSchedule[] = relations
+        .map((relation) => {
+          const horario = relation.horario as {
+            id: string
+            dia_semana: number
+            hora_inicio: string
+            hora_fim: string
+            idioma: Language
+            tipo_horario: 'dupla' | 'grupo'
+            professor_id: string | null
+            nivel_referencia: string | null
+          } | null
+
+          if (!horario) return null
+
+          return {
+            id: horario.id,
+            date: getDateForWeekday(horario.dia_semana),
+            weekday: horario.dia_semana,
+            hora_inicio: horario.hora_inicio,
+            hora_fim: horario.hora_fim,
+            meet_url: null,
+            meet_space_name: null,
+            turma_id: turmaId,
+            participante_id: null,
+            valor_mensal: Number(selectedPlan.preco),
+            participantes: null,
+            capacidade: null,
+            status_formacao: 'dupla_formada',
+            tipo_valor: 'coletiva_formada',
+            professor_id: horario.professor_id,
+            nivel_referencia: horario.nivel_referencia,
+          }
+        })
+        .filter((schedule): schedule is SelectedSchedule => schedule !== null)
+
+      if (mappedSchedules.length !== aulasSemana) {
+        setError('Um ou mais encontros da turma não foram encontrados.')
+        return
+      }
+
+      setSelectedSchedules(mappedSchedules)
+      setSelectedSchedule(mappedSchedules[0] ?? null)
+      setScheduleLockedFromPlanos(true)
+      setAvailabilityReady(true)
+      setSelectedWeekday(mappedSchedules[0]?.weekday ?? null)
+      setStep(4)
     } finally {
       setLoadingSchedules(false)
     }
