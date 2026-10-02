@@ -34,6 +34,7 @@ import Professor from './pages/Professor'
 import ProfessorAccess from './pages/ProfessorAccess'
 
 import Error404 from './pages/Error404'
+import ClassroomErrorBoundary from './components/ClassroomErrorBoundary'
 import TrabalheConosco from './pages/TrabalheConosco'
 import Planos from './pages/Planos'
 import Diagnostica from './pages/Diagnostica'
@@ -415,7 +416,9 @@ function App() {
   if (path.startsWith('/professor/aula/')) {
   return (
     <ProfessorAccess>
-      <SalaProfessor />
+      <ClassroomErrorBoundary portalPath="/professor">
+        <SalaProfessor />
+      </ClassroomErrorBoundary>
     </ProfessorAccess>
   )
 }
@@ -433,7 +436,9 @@ function App() {
       <>
         <MobileSystemHeader title={pageHeaderTitle} />
         <AdminAccess>
-          <SalaProfessor />
+          <ClassroomErrorBoundary portalPath="/admin">
+            <SalaProfessor />
+          </ClassroomErrorBoundary>
         </AdminAccess>
       </>
     )
@@ -446,7 +451,16 @@ function App() {
    */
 
   if (path.startsWith('/aluno/aula/')) {
-    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<SalaAula />)}</>
+    return (
+      <>
+        <MobileSystemHeader title={pageHeaderTitle} />
+        {withFooter(
+          <ClassroomErrorBoundary portalPath="/aluno">
+            <SalaAula />
+          </ClassroomErrorBoundary>,
+        )}
+      </>
+    )
   }
 
   /*
