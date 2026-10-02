@@ -284,41 +284,6 @@ function ModalidadeCard({
                       <>
                         <div className="planos-schedule-choice-copy">
                           <strong>Esta turma ainda está em formação.</strong>
-                          <span>Você pode começar individualmente com a condição especial de formação ou reservar sua vaga.</span>
-                        </div>
-                        <div className="planos-schedule-choice-actions">
-                          {individualPlan ? (
-                          <a
-                            href={(() => {
-                              const firstSchedule = horariosDaOpcao[0]
-                              const params = new URLSearchParams({
-                                modalidade: 'individual',
-                                idioma,
-                                plano: individualPlan?.id ?? plano.id,
-                                horario_id: firstSchedule.id,
-                                horario_ids: horariosDaOpcao.map((item) => item.id).join(','),
-                                aguardando_formacao: '1',
-                                nivel: firstSchedule.nivel_referencia ?? nivel,
-                              })
-                              if (firstSchedule.turma_id) params.set('turma_id', firstSchedule.turma_id)
-                              return '/matricula?' + params.toString()
-                            })()}
-                            className="planos-schedule-choice-button planos-schedule-choice-button--individual"
-                          >
-                            <span>Desejo iniciar individualmente</span>
-                            <strong>
-                              {formationPriceLoading === plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')
-                                ? 'Calculando...'
-                                : formationPrices[plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')] !== undefined
-                                  ? formatCurrency(formationPrices[plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')])
-                                  : 'Condição especial'}
-                              <small>{formationPrices[plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')] !== undefined ? '/mês' : ''}</small>
-                            </strong>
-                            <em>Válido no primeiro mês. Se a dupla/grupo não for formada, a continuidade individual seguirá o valor normal do plano individual.</em>
-                          </a>
-                          ) : (
-                            <div className="planos-schedule-choice-copy">
-                          <strong>Esta turma ainda está em formação.</strong>
                           <span>Como ainda não há outro aluno nesta turma, você pode iniciar pela própria modalidade coletiva com 10% de desconto.</span>
                         </div>
                         <div className="planos-schedule-choice-actions">
