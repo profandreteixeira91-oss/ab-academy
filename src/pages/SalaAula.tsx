@@ -567,6 +567,11 @@ function ClassroomControls({
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (!backgroundImage) return
+    return () => URL.revokeObjectURL(backgroundImage)
+  }, [backgroundImage])
+
   async function toggleMicrophone() {
     try {
       await localParticipant.setMicrophoneEnabled(
@@ -590,9 +595,14 @@ function ClassroomControls({
   }
 
   const toggleScreenShare = async () => {
-    await localParticipant.setScreenShareEnabled(
-      !localParticipant.isScreenShareEnabled,
-    )
+    try {
+      await localParticipant.setScreenShareEnabled(
+        !localParticipant.isScreenShareEnabled,
+      )
+    } catch (error) {
+      console.error('Erro ao compartilhar tela:', error)
+      window.alert('Não foi possível compartilhar a tela. Verifique as permissões do navegador.')
+    }
   }
 
   const applyBackground = async (
@@ -1471,14 +1481,6 @@ export default function SalaAula() {
   const connectToLiveKit =
     async () => {
       if (!data) {
-        return
-      }
-
-      // Não abrir e encerrar getUserMedia antes da sala: em celulares isso
-      // pode liberar o dispositivo e fazer o LiveKit falhar na segunda captura.
-      // A própria sala solicita as permissões e mantém os tracks ativos.
-      if (!window.isSecureContext || !navigator.mediaDevices?.getUserMedia) {
-        setError('Para usar câmera e microfone, abra a aula pelo site seguro (HTTPS) em um navegador atualizado, como Chrome ou Safari.')
         return
       }
 
