@@ -358,7 +358,7 @@ Deno.serve(async (req) => {
 
     let accessRole: 'teacher' | 'student' | null = null
     if (isAdmin) accessRole = 'teacher'
-    else if (isTeacher && lesson.professor_id === professor.id) accessRole = 'teacher'
+    else if (isTeacher && lesson.professor_id === professor?.id) accessRole = 'teacher'
     else if (isStudent && lesson.aluno_id === student.id) accessRole = 'student'
 
     if (!accessRole) {
