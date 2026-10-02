@@ -232,7 +232,7 @@ function MainVideo() {
 
   const sortedTracks =
     useMemo(() => {
-      return tracks.sort((a, b) => {
+      return [...tracks].sort((a, b) => {
         const aIsLocal =
           a.participant.isLocal
         const bIsLocal =
