@@ -32,11 +32,12 @@ import {
   VideoTrack,
 } from '@livekit/components-react'
 
-import { LocalVideoTrack, Track } from 'livekit-client'
+import { LocalVideoTrack, RoomEvent, Track } from 'livekit-client'
 import { BackgroundProcessor } from '@livekit/track-processors'
 
 import logo from '../../assets/logo_abacademy.png'
 import { supabase } from '../../lib/supabase'
+import { requestLiveKitAccess, type LiveKitAccessData } from '../../lib/livekit'
 
 import '../../styles/sala-aula.css'
 
@@ -56,14 +57,9 @@ type Lesson = {
   aluno_id: string | null
 }
 
-type LiveKitData = {
-  token: string
-  url: string
-  roomName: string
-  identity: string
-  name: string
-  role: string
-}
+type LiveKitData = LiveKitAccessData
+
+type ClassroomStatus = 'idle' | 'loading' | 'authenticating' | 'preparing' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected' | 'permission-error' | 'network-error' | 'auth-error' | 'room-error' | 'fatal-error'
 
 /*
  * =========================================================
@@ -756,6 +752,23 @@ function ClassroomControls({
  * SALA LIVEKIT DO PROFESSOR
  * =========================================================
  */
+
+function TeacherMediaBootstrap({ onMediaError }: { onMediaError: (kind: 'microphone' | 'camera', error: unknown) => void }) {
+  const { localParticipant } = useLocalParticipant()
+  const room = useRoomContext()
+  const [initialized, setInitialized] = useState(false)
+
+  useEffect(() => {
+    if (initialized || room.state !== 'connected') return
+    setInitialized(true)
+    void (async () => {
+      try { await localParticipant.setMicrophoneEnabled(true) } catch (error) { onMediaError('microphone', error) }
+      try { await localParticipant.setCameraEnabled(true) } catch (error) { onMediaError('camera', error) }
+    })()
+  }, [initialized, room.state, localParticipant, onMediaError])
+
+  return null
+}
 
 function TeacherLiveRoom({
   livekit,
