@@ -697,8 +697,7 @@ export default function Matricula() {
 
     try {
       const aulasSemana = selectedPlan.aulas_semana ?? (selectedPlan.modalidade === 'dupla' ? 1 : 2)
-      const { data, error: schedulesError } = await supabase.rpc('listar_horarios_coletivos_matricula', {
-        p_idioma: selectedPlan.idioma,
+      const { data, error: schedulesError } = await supabase.rpc('listar_horarios_coletivos_matricula', {        p_idioma: selectedPlan.idioma,
         p_modalidade: selectedPlan.modalidade,
         p_aulas_semana: aulasSemana,
         p_dias: null,
@@ -1271,50 +1270,49 @@ export default function Matricula() {
     }
 
     if (step === 2) {
-      if (availabilityMode !== 'flexible' && availabilityDays.length !== requiredWeeklyLessons) {
-        setError(requiredWeeklyLessons === 1
-          ? 'Escolha exatamente 1 dia da semana para sua aula.'
-          : `Este plano tem ${requiredWeeklyLessons} aulas por semana. Escolha exatamente ${requiredWeeklyLessons} dias diferentes.`)
+      if (!availabilityReady) {
+        if (availabilityMode !== 'flexible' && availabilityDays.length !== requiredWeeklyLessons) {
+          setError(requiredWeeklyLessons === 1
+            ? 'Escolha exatamente 1 dia da semana para sua aula.'
+            : `Este plano tem ${requiredWeeklyLessons} aulas por semana. Escolha exatamente ${requiredWeeklyLessons} dias diferentes.`)
+          return
+        }
+        if (availabilityMode === 'periods' && availabilityPeriods.length === 0) {
+          setError('Selecione pelo menos um período disponível.')
+          return
+        }
+        if (availabilityMode === 'ranges' && Object.keys(availabilityRanges).length === 0) {
+          setError('Informe pelo menos uma faixa de horário.')
+          return
+        }
+        if (!language) {
+          setError('O idioma da matrícula não foi definido.')
+          return
+        }
+        const schedulesLoaded = await loadSchedules(language, true)
+        if (!schedulesLoaded) return
+        setAvailabilityReady(true)
+        setSelectedWeekday(null)
         return
       }
-      if (availabilityMode === 'periods' && availabilityPeriods.length === 0) {
-        setError('Selecione pelo menos um período disponível.')
-        return
-      }
-      if (availabilityMode === 'ranges' && Object.keys(availabilityRanges).length === 0) {
-        setError('Informe pelo menos uma faixa de horário.')
-        return
-      }
-      if (!language) {
-        setError('O idioma da matrícula não foi definido.')
-        return
-      }
-      const schedulesLoaded = await loadSchedules(language, true)
-      if (!schedulesLoaded) return
-      setAvailabilityReady(true)
-      setSelectedWeekday(null)
+
+      if (!validateSchedule()) return
       setStep(3)
       return
     }
 
     if (step === 3) {
-      if (!validateSchedule()) return
+      if (!validatePersonalData()) return
       setStep(4)
       return
     }
 
     if (step === 4) {
-      if (!validatePersonalData()) return
-      setStep(5)
-      return
-    }
-
-    if (step === 5) {
       if (!contractAccepted || contractSignatureStatus !== 'signed') {
         setError('Leia, aceite e assine o contrato antes de continuar.')
         return
       }
-      setStep(6)
+      setStep(5)
     }
   }
 
@@ -1397,8 +1395,7 @@ export default function Matricula() {
       tipo_valor: campaign.participantes === 0 ? 'coletiva_em_formacao' : 'coletiva_formada', professor_id: campaign.professor_id, nivel_referencia: campaign.nivel_referencia,
     }))
     if (mapped.length !== campaign.aulas_semana) { setError('A turma selecionada não possui todos os encontros semanais configurados.'); return }
-    setCollectiveFormationDiscount(campaign.participantes === 0)
-    setSelectedSchedules(mapped); setSelectedSchedule(mapped[0] ?? null); setScheduleLockedFromPlanos(true); setSelectedWeekday(mapped[0]?.weekday ?? null); setStep(1)
+    setCollectiveFormationDiscount(campaign.participantes === 0)    setSelectedSchedules(mapped); setSelectedSchedule(mapped[0] ?? null); setScheduleLockedFromPlanos(true); setSelectedWeekday(mapped[0]?.weekday ?? null); setStep(1)
     setError(''); setSuccess('Turma selecionada. Confira o plano, os horários e o valor antes de continuar.')
   }
 
@@ -1746,7 +1743,7 @@ export default function Matricula() {
           <div className="enrollment-progress">
             {(isCollectiveEnrollmentFlow
               ? ['Plano e horário', 'Dados pessoais', 'Contrato', 'Confirmação e pagamento']
-               : ['Plano selecionado', 'Horários', 'Dados pessoais', 'Contrato', 'Confirmação e pagamento']
+               : ['Confirmação do plano', 'Seletor de horários inteligente', 'Dados pessoais', 'Contrato', 'Confirmação e pagamento']
             ).map((label, index) => {
               const number = index + 1
 
@@ -1785,14 +1782,12 @@ export default function Matricula() {
                       : step === 1
                         ? 'Confirmação do plano'
                         : step === 2
-                          ? 'Seleção inteligente de horários'
+                          ? 'Seletor de horários inteligente'
                           : step === 3
-                            ? 'Horários compatíveis com você'
+                            ? 'Seus dados pessoais'
                             : step === 4
-                              ? 'Seus dados pessoais'
-                              : step === 5
-                                ? 'Contrato de matrícula'
-                                : 'Confirmação e pagamento'}
+                              ? 'Contrato de matrícula'
+                              : 'Confirmação e pagamento'}
                   </h2>
 
                   <p>
@@ -1807,14 +1802,14 @@ export default function Matricula() {
                       : step === 1
                         ? 'Confira o plano escolhido na página de planos.'
                         : step === 2
-                          ? 'Informe quando você pode estudar e encontre os horários disponíveis.'
+                          ? availabilityReady
+                            ? 'Escolha os horários compatíveis encontrados pelo sistema.'
+                            : 'Informe quando você pode estudar e encontre os horários disponíveis.'
                           : step === 3
-                            ? 'Escolha os encontros compatíveis encontrados pelo sistema.'
+                            ? 'Informe os dados necessários para sua matrícula.'
                             : step === 4
-                              ? 'Informe os dados necessários para sua matrícula.'
-                              : step === 5
-                                ? 'Leia o contrato e conclua a assinatura eletrônica.'
-                                : 'Revise todos os dados, confirme a matrícula e siga para o pagamento.'}
+                              ? 'Leia o contrato e conclua a assinatura eletrônica.'
+                              : 'Revise todos os dados, confirme a matrícula e siga para o pagamento.'}
                   </p>
                   </div>
                 </div>
@@ -1983,7 +1978,7 @@ export default function Matricula() {
 
 
 
-              {step === 2 && !isCollectiveEnrollmentFlow && (
+              {step === 2 && !isCollectiveEnrollmentFlow && !availabilityReady && (
             <div className="availability-section">
               <div className="selection-heading">
                 <div>
@@ -2058,7 +2053,7 @@ export default function Matricula() {
             </div>
           )}
 
-          {step === 3 && !isCollectiveEnrollmentFlow && scheduleLockedFromPlanos && (
+          {step === 2 && !isCollectiveEnrollmentFlow && scheduleLockedFromPlanos && (
             <div className="schedule-section">
               <div className="selection-heading">
                 <div>
@@ -2082,7 +2077,7 @@ export default function Matricula() {
             </div>
           )}
 
-          {step === 3 && !isCollectiveEnrollmentFlow && !scheduleLockedFromPlanos && (
+          {step === 2 && !isCollectiveEnrollmentFlow && !scheduleLockedFromPlanos && availabilityReady && (
             <div className="schedule-section">
               <div className="selection-heading">
                 <div>
@@ -2097,10 +2092,9 @@ export default function Matricula() {
               {loadingSchedules ? (
                 <div className="enrollment-loading">Buscando os melhores horários...</div>
               ) : availableSchedules.length === 0 ? (
-                <div className="enrollment-empty">
-                  <strong>Não encontramos um horário exatamente dentro da sua disponibilidade.</strong>
+                <div className="enrollment-empty">                  <strong>Não encontramos um horário exatamente dentro da sua disponibilidade.</strong>
                   <p>Revise os dias e períodos para ver outras opções.</p>
-                  <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setStep(2); }}>
+                  <button type="button" className="availability-edit-button" onClick={() => { setAvailabilityReady(false); setSelectedSchedule(null); setSelectedSchedules([]); setStep(2); }}>
                     Ajustar disponibilidade
                   </button>
                 </div>
@@ -2212,7 +2206,7 @@ export default function Matricula() {
           )}
 
 
-              {(step === 4 || (isCollectiveEnrollmentFlow && step === 2)) && (
+              {(step === 3 || (isCollectiveEnrollmentFlow && step === 2)) && (
                 <div className="enrollment-fields">
                   <div className="enrollment-field">
                     <label>Nome completo *</label>
@@ -2245,7 +2239,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {(step === 5 || (isCollectiveEnrollmentFlow && step === 3)) && (
+              {(step === 4 || (isCollectiveEnrollmentFlow && step === 3)) && (
                 <div className="contract-section">
                   <div className="selection-heading"><div><h3>Contrato virtual</h3><p>Leia as condições da matrícula antes da assinatura.</p></div></div>
                   <div className="contract-card">
@@ -2395,7 +2389,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {!isCollectiveEnrollmentFlow && step === 6 && (
+              {!isCollectiveEnrollmentFlow && step === 5 && (
                 <div className="contract-section">
                   <div className="selection-heading">
                     <div>
@@ -2441,17 +2435,15 @@ export default function Matricula() {
                       {!loading && <ArrowRight size={18} />}
                     </button>
                   )
-                ) : step < 6 ? (
+                ) : step < 5 ? (
                   <button type="button" className="enrollment-submit" onClick={nextStep} disabled={loading || (step === 1 && (!plan || isCollectivePlan))}>
                     {step === 1
                       ? 'Confirmar plano'
                       : step === 2
-                        ? 'Continuar para horários'
+                        ? (availabilityReady ? 'Continuar para dados pessoais' : 'Encontrar horários compatíveis')
                         : step === 3
-                          ? 'Continuar para dados pessoais'
-                          : step === 4
-                            ? 'Continuar para contrato'
-                            : 'Continuar para confirmação'}
+                          ? 'Continuar para contrato'
+                          : 'Continuar para confirmação'}
                     <ArrowRight size={18} />
                   </button>
                 ) : (
