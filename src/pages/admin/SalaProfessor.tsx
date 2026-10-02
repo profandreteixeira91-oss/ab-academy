@@ -849,6 +849,14 @@ function TeacherLiveRoom({
           setConnected(false)
           onStatusChange('disconnected')
         }}
+        onMediaDeviceFailure={(failure, kind) => {
+          onStatusChange('permission-error')
+          console.error('[Classroom] Teacher media device failure', { failure, kind })
+        }}
+        onError={(error) => {
+          onStatusChange('room-error')
+          console.error('[Classroom] Teacher LiveKit room error', error)
+        }}
         style={{
           width: '100%',
           height: '100%',
