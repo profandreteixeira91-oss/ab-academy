@@ -761,10 +761,31 @@ function TeacherMediaBootstrap({ onMediaError }: { onMediaError: (kind: 'microph
   useEffect(() => {
     if (initialized || room.state !== 'connected') return
     setInitialized(true)
+    let cancelled = false
+
     void (async () => {
-      try { await localParticipant.setMicrophoneEnabled(true) } catch (error) { onMediaError('microphone', error) }
-      try { await localParticipant.setCameraEnabled(true) } catch (error) { onMediaError('camera', error) }
+      try {
+        if (!localParticipant.isMicrophoneEnabled) {
+          await localParticipant.setMicrophoneEnabled(true)
+        }
+      } catch (error) {
+        if (!cancelled) onMediaError('microphone', error)
+      }
+
+      if (cancelled) return
+
+      try {
+        if (!localParticipant.isCameraEnabled) {
+          await localParticipant.setCameraEnabled(true)
+        }
+      } catch (error) {
+        if (!cancelled) onMediaError('camera', error)
+      }
     })()
+
+    return () => {
+      cancelled = true
+    }
   }, [initialized, room.state, localParticipant, onMediaError])
 
   return null
