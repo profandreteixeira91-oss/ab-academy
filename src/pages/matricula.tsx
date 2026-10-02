@@ -667,7 +667,6 @@ export default function Matricula() {
     setLoadingSchedules(true)
     setError('')
     setSuccess('')
-    setCollectiveFormationDiscount(applyFormationDiscount)
 
     try {
       const aulasSemana = selectedPlan.aulas_semana ?? (selectedPlan.modalidade === 'dupla' ? 1 : 2)
@@ -736,7 +735,7 @@ export default function Matricula() {
         participantes: row.participantes,
         capacidade: row.capacidade,
         status_formacao: row.status_formacao,
-        tipo_valor: 'coletiva_formada',
+        tipo_valor: applyFormationDiscount ? 'coletiva_em_formacao' : 'coletiva_formada',
         professor_id: row.professor_id,
         nivel_referencia: row.nivel_referencia,
       }))
@@ -1914,7 +1913,8 @@ export default function Matricula() {
                     <span>Plano: {plan?.nome ?? '—'}</span>
                     <span>Frequência: {requiredWeeklyLessons} aula{requiredWeeklyLessons === 1 ? '' : 's'} por semana</span>
                     <span>Nível da turma: {formatNivel(selectedSchedules[0]?.nivel_referencia)}</span>
-                    <span>{collectiveFormationDiscount ? 'Condição de formação: 10% de desconto sobre o valor do próprio plano coletivo.' : 'Condição comercial: valor normal do plano coletivo.'}</span>
+                    {collectiveFormationDiscount && <span className="availability-selection-summary-highlight">Você será o primeiro participante desta turma. Condição de formação: 10% de desconto sobre o valor do próprio plano coletivo.</span>}
+                    {!collectiveFormationDiscount && <span>Condição comercial: valor normal do plano coletivo.</span>}
                     <strong>Mensalidade: {formatCurrency(Number(selectedSchedule?.valor_mensal ?? plan?.preco ?? 0))}/mês</strong>
                   </div>
                   <div className="availability-actions"><a href="/planos" className="availability-edit-button">Alterar plano ou horário</a></div>
