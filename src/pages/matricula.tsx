@@ -221,6 +221,33 @@ const getPlanTypeLabel = (tipo: string) => {
   return tipo
 }
 
+const formatNivel = (nivel: string | null | undefined) => {
+  if (!nivel) return 'Não informado'
+
+  const normalized = nivel
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[_-]+/g, ' ')
+
+  const labels: Record<string, string> = {
+    iniciante: 'Iniciante',
+    basico: 'Básico',
+    intermediario: 'Intermediário',
+    avancado: 'Avançado',
+    fluente: 'Fluente',
+    a1: 'A1',
+    a2: 'A2',
+    b1: 'B1',
+    b2: 'B2',
+    c1: 'C1',
+    c2: 'C2',
+  }
+
+  return labels[normalized] ?? nivel.trim()
+}
+
 const getPlanPaymentDescription = (plan: Plan) => {
   if (plan.tipo === 'anual' && plan.parcelas && plan.valor_parcela) {
     return `${plan.parcelas}x de ${formatCurrency(
