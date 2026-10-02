@@ -732,7 +732,7 @@ export default function Matricula() {
         meet_space_name: null,
         turma_id: row.turma_id,
         participante_id: null,
-        valor_mensal: applyFormationDiscount ? Math.round(Number(selectedPlan.preco) * 0.9 * 100) / 100 : Number(selectedPlan.preco),
+        valor_mensal: applyFormationDiscount ? formationPrice : Number(selectedPlan.preco),
         participantes: row.participantes,
         capacidade: row.capacidade,
         status_formacao: row.status_formacao,
@@ -748,7 +748,7 @@ export default function Matricula() {
       setSelectedWeekday(mappedSchedules[0]?.weekday ?? null)
       setStep(1)
       setSuccess(
-        applyFormationDiscount ? `Turma confirmada a partir de Planos. Condição de formação: ${formatCurrency(Math.round(Number(selectedPlan.preco) * 0.9 * 100) / 100)}/mês.` : `Turma confirmada a partir de Planos. Valor da modalidade: ${formatCurrency(Number(selectedPlan.preco))}/mês.`,
+        applyFormationDiscount ? `Turma confirmada a partir de Planos. Condição de formação: ${formatCurrency(formationPrice)}/mês.` : `Turma confirmada a partir de Planos. Valor da modalidade: ${formatCurrency(Number(selectedPlan.preco))}/mês.`,
       )
     } finally {
       setLoadingSchedules(false)
