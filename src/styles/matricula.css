@@ -2959,6 +2959,87 @@
   border-radius: 18px;
   background: var(--enrollment-soft);
 }
+.contract-document {
+  overflow: hidden;
+  border: 1px solid var(--enrollment-line);
+  border-radius: 16px;
+  background: #fff;
+}
+.contract-document-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 18px 20px;
+  border-bottom: 1px solid var(--enrollment-line);
+  background: var(--enrollment-soft);
+  color: var(--enrollment-ink);
+}
+.contract-document-header svg {
+  color: var(--primary);
+  flex: 0 0 auto;
+}
+.contract-document-header div {
+  display: grid;
+  gap: 3px;
+}
+.contract-document-header strong {
+  font-size: 14px;
+  letter-spacing: .01em;
+}
+.contract-document-header span {
+  color: var(--enrollment-muted);
+  font-size: 12px;
+}
+.contract-document-body {
+  max-height: 560px;
+  overflow-y: auto;
+  padding: 24px;
+  color: var(--enrollment-ink);
+  font-size: 13px;
+  line-height: 1.65;
+}
+.contract-document-body section + section {
+  margin-top: 20px;
+}
+.contract-document-body h4 {
+  margin: 0 0 7px;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.contract-document-body p {
+  margin: 0;
+}
+.contract-document-body ul {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+.contract-document-body li + li {
+  margin-top: 5px;
+}
+.contract-document-data {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 10px 0 0;
+}
+.contract-document-data div {
+  padding: 10px 12px;
+  border: 1px solid var(--enrollment-line);
+  border-radius: 10px;
+  background: var(--enrollment-soft);
+}
+.contract-document-data dt {
+  color: var(--enrollment-muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .04em;
+}
+.contract-document-data dd {
+  margin: 2px 0 0;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
 .contract-card label {
   display: flex;
   gap: 10px;
@@ -3018,6 +3099,20 @@
 }
 
 @media (max-width: 720px) {
+  .contract-card {
+    padding: 16px;
+  }
+  .contract-document-header {
+    padding: 15px;
+  }
+  .contract-document-body {
+    max-height: 500px;
+    padding: 18px;
+    font-size: 12.5px;
+  }
+  .contract-document-data {
+    grid-template-columns: 1fr;
+  }
   .level-fields {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
