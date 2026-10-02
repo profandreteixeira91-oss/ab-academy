@@ -276,9 +276,6 @@ export default function Matricula() {
   const [conversationLevel, setConversationLevel] = useState('')
   const [writingLevel, setWritingLevel] = useState('')
   const [comprehensionLevel, setComprehensionLevel] = useState('')
-  const [proficiencyFile, setProficiencyFile] = useState<File | null>(null)
-  const [proficiencyProcessing, setProficiencyProcessing] = useState(false)
-  const [proficiencyResult, setProficiencyResult] = useState<{ nivel_geral: string | null; nivel_conversacao: string | null; nivel_escrita: string | null; nivel_compreensao: string | null; observacoes?: string } | null>(null)
   const [contractAccepted, setContractAccepted] = useState(false)
   const [contractSignatureStatus, setContractSignatureStatus] = useState<'pending' | 'signed'>('pending')
   const [signatureName, setSignatureName] = useState('')
@@ -313,7 +310,6 @@ export default function Matricula() {
 
   const isCollectivePlan = plan?.modalidade === 'dupla' || plan?.modalidade === 'grupo'
   const isCollectiveEnrollmentFlow = isCollectivePlan
-  const proficiencyTestUrl = import.meta.env.VITE_PROFICIENCY_TEST_URL as string | undefined
   const effectivePlan = plan
 
   const contractModalidadeLabel =
@@ -1175,46 +1171,6 @@ export default function Matricula() {
   }
 
   const processProficiencyDocument = async () => {
-    setError('')
-    setSuccess('')
-
-    if (!proficiencyFile) {
-      setError('Anexe o documento gerado pelo teste de proficiência.')
-      return
-    }
-    if (!proficiencyTestUrl) {
-      setError('O link externo do teste de proficiência ainda não foi configurado pela AB Academy.')
-      return
-    }
-
-    setProficiencyProcessing(true)
-    try {
-      const formData = new FormData()
-      formData.append('reserva_token', reservaToken)
-      formData.append('idioma', language)
-      formData.append('arquivo', proficiencyFile)
-
-      const { data, error: functionError } = await supabase.functions.invoke('processar-teste-proficiencia', {
-        body: formData,
-      })
-
-      if (functionError) throw new Error(functionError.message || 'Não foi possível analisar o documento.')
-      if (!data?.success || !data?.resultado) throw new Error(data?.error || 'O documento não apresentou um resultado de proficiência utilizável.')
-
-      const result = data.resultado
-      setProficiencyResult(result)
-      setConversationLevel(result.nivel_conversacao || result.nivel_geral || '')
-      setWritingLevel(result.nivel_escrita || result.nivel_geral || '')
-      setComprehensionLevel(result.nivel_compreensao || result.nivel_geral || '')
-      setSuccess('Teste de proficiência analisado com sucesso.')
-    } catch (processingError) {
-      console.error('Erro ao processar proficiência:', processingError)
-      setProficiencyResult(null)
-      setConversationLevel('')
-      setWritingLevel('')
-      setComprehensionLevel('')
-      setError(processingError instanceof Error ? processingError.message : 'Não foi possível analisar o documento.')
-    } finally {
       setProficiencyProcessing(false)
     }
   }
@@ -1354,30 +1310,16 @@ export default function Matricula() {
     }
 
     if (step === 4) {
-      if (!proficiencyResult || !conversationLevel || !writingLevel || !comprehensionLevel) {
-        setError('Conclua o teste de proficiência e envie o documento para análise antes de continuar.')
-        return
-      }
-
-      if (isCollectivePlan) {
-        const selectedTurma = selectedSchedule?.turma_id
-          ? availableSchedules.find((item) => item.turma_id === selectedSchedule.turma_id)
-          : null
-        const referenceLevel = selectedTurma?.nivel_referencia
-        const studentLevel = conversationLevel || writingLevel || comprehensionLevel
-        if (referenceLevel && referenceLevel.toUpperCase() !== studentLevel.toUpperCase()) {
-          setError(`O horário selecionado está definido para o nível ${referenceLevel}. O resultado do seu teste foi ${studentLevel}. Escolha outro horário compatível.`)
-          setStep(3)
-          return
-        }
-      }
-
+      if (!validatePersonalData()) return
       setStep(5)
       return
     }
 
     if (step === 5) {
-      if (!validatePersonalData()) return
+      if (!contractAccepted || contractSignatureStatus !== 'signed') {
+        setError('Leia, aceite e assine o contrato antes de continuar.')
+        return
+      }
       setStep(6)
     }
   }
@@ -1810,7 +1752,7 @@ export default function Matricula() {
           <div className="enrollment-progress">
             {(isCollectiveEnrollmentFlow
               ? ['Plano e horário', 'Dados pessoais', 'Contrato', 'Confirmação e pagamento']
-              : ['Plano selecionado', 'Plano', 'Horários', 'Disponibilidade', 'Proficiência', 'Dados pessoais', 'Contrato']
+               : ['Plano selecionado', 'Horários', 'Dados pessoais', 'Contrato', 'Confirmação e pagamento']
             ).map((label, index) => {
               const number = index + 1
 
@@ -1821,7 +1763,7 @@ export default function Matricula() {
                 >
                   <div className="enrollment-progress-number">{number}</div>
                   <span>{label}</span>
-                  {number < (isCollectiveEnrollmentFlow ? 4 : 7) && (
+                  {number < (isCollectiveEnrollmentFlow ? 4 : 5) && (
                     <div className="enrollment-progress-line" />
                   )}
                 </div>
@@ -1847,16 +1789,16 @@ export default function Matricula() {
                             ? 'Contrato de matrícula'
                             : 'Confirmação e pagamento'
                       : step === 1
-                        ? 'Plano selecionado'
+                        ? 'Confirmação do plano'
                         : step === 2
                           ? 'Seleção inteligente de horários'
                           : step === 3
                             ? 'Horários compatíveis com você'
                             : step === 4
-                              ? 'Teste de proficiência'
+                              ? 'Seus dados pessoais'
                               : step === 5
-                                ? 'Seus dados pessoais'
-                                : 'Contrato de matrícula'}
+                                ? 'Contrato de matrícula'
+                                : 'Confirmação e pagamento'}
                   </h2>
 
                   <p>
@@ -1871,14 +1813,14 @@ export default function Matricula() {
                       : step === 1
                         ? 'Confira o plano escolhido na página de planos.'
                         : step === 2
-                          ? 'Informe quando você pode estudar e encontre os horários fixos disponíveis.'
+                          ? 'Informe quando você pode estudar e encontre os horários disponíveis.'
                           : step === 3
                             ? 'Escolha os encontros compatíveis encontrados pelo sistema.'
                             : step === 4
-                              ? 'Faça o teste externo, anexe o documento e deixe o sistema analisar seu resultado.'
+                              ? 'Informe os dados necessários para sua matrícula.'
                               : step === 5
-                                ? 'Informe os dados necessários para sua matrícula.'
-                                : 'Leia o contrato e conclua a assinatura eletrônica. Depois, você seguirá para o pagamento.'}
+                                ? 'Leia o contrato e conclua a assinatura eletrônica.'
+                                : 'Revise todos os dados, confirme a matrícula e siga para o pagamento.'}
                   </p>
                   </div>
                 </div>
@@ -2046,54 +1988,6 @@ export default function Matricula() {
                   )}
 
 
-              {step === 4 && !isCollectiveEnrollmentFlow && (
-                <div className="proficiency-section">
-                  <div className="selection-heading">
-                    <div>
-                      <h3>Teste de proficiência</h3>
-                      <p>O teste será realizado em uma página externa. Depois, anexe aqui o documento gerado para que o sistema leia e registre seu nível.</p>
-                    </div>
-                  </div>
-
-                  <div className="proficiency-card">
-                    <div className="proficiency-card-icon"><FileText size={22} /></div>
-                    <strong>1. Faça o teste</strong>
-                    <p>Abra o teste externo, conclua a avaliação e gere o documento com seu resultado.</p>
-                    {proficiencyTestUrl ? (
-                      <a className="enrollment-secondary-button" href={proficiencyTestUrl} target="_blank" rel="noopener noreferrer">
-                        Abrir teste de proficiência <ExternalLink size={17} />
-                      </a>
-                    ) : (
-                      <div className="enrollment-empty">O link externo ainda não foi configurado.</div>
-                    )}
-                  </div>
-
-                  <div className="proficiency-card">
-                    <div className="proficiency-card-icon"><FileText size={22} /></div>
-                    <strong>2. Anexe o resultado</strong>
-                    <p>Envie o PDF gerado pelo teste. O sistema analisará o documento e classificará o nível como iniciante, básico, intermediário ou avançado.</p>
-                    <input type="file" accept="application/pdf,.pdf" onChange={(event) => setProficiencyFile(event.target.files?.[0] ?? null)} />
-                    {proficiencyFile && <small>{proficiencyFile.name}</small>}
-                    <button type="button" className="enrollment-primary-button" onClick={() => void processProficiencyDocument()} disabled={!proficiencyFile || proficiencyProcessing || !proficiencyTestUrl}>
-                      {proficiencyProcessing ? 'Analisando documento...' : 'Analisar resultado'}
-                      {!proficiencyProcessing && <ArrowRight size={18} />}
-                    </button>
-                  </div>
-
-                  {proficiencyResult && (
-                    <div className="proficiency-result">
-                      <strong>Resultado identificado</strong>
-                      <span>Nível geral: <b>{formatNivel(proficiencyResult.nivel_geral)}</b></span>
-                      <span>Conversação: <b>{formatNivel(proficiencyResult.nivel_conversacao)}</b></span>
-                      <span>Escrita: <b>{formatNivel(proficiencyResult.nivel_escrita)}</b></span>
-                      <span>Compreensão: <b>{formatNivel(proficiencyResult.nivel_compreensao)}</b></span>
-                      {proficiencyResult.observacoes && <small>{proficiencyResult.observacoes}</small>}
-                    </div>
-                  )}
-
-                  <div className="availability-actions"><button type="button" className="enrollment-primary-button" onClick={nextStep} disabled={!proficiencyResult}>Continuar <ArrowRight size={18} /></button></div>
-                </div>
-              )}
 
               {step === 2 && !isCollectiveEnrollmentFlow && (
             <div className="availability-section">
@@ -2324,7 +2218,7 @@ export default function Matricula() {
           )}
 
 
-              {(step === 5 || (isCollectiveEnrollmentFlow && step === 2)) && (
+              {(step === 4 || (isCollectiveEnrollmentFlow && step === 2)) && (
                 <div className="enrollment-fields">
                   <div className="enrollment-field">
                     <label>Nome completo *</label>
@@ -2357,7 +2251,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {(step === 6 || (isCollectiveEnrollmentFlow && step === 3)) && (
+              {(step === 5 || (isCollectiveEnrollmentFlow && step === 3)) && (
                 <div className="contract-section">
                   <div className="selection-heading"><div><h3>Contrato virtual</h3><p>Leia as condições da matrícula antes da assinatura.</p></div></div>
                   <div className="contract-card">
@@ -2507,6 +2401,28 @@ export default function Matricula() {
                 </div>
               )}
 
+              {!isCollectiveEnrollmentFlow && step === 6 && (
+                <div className="contract-section">
+                  <div className="selection-heading">
+                    <div>
+                      <h3>Confirmação da matrícula</h3>
+                      <p>Confira os dados, horário, contrato e valor antes de confirmar e seguir para o pagamento.</p>
+                    </div>
+                  </div>
+                  <div className="contract-card">
+                    <div className="enrollment-summary-item"><span>Idioma</span><strong>{selectedLanguageLabel || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>Plano</span><strong>{plan?.nome || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>Aluno</span><strong>{name || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>CPF</span><strong>{cpf || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>E-mail</span><strong>{email || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>WhatsApp</span><strong>{phone || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>Horários</span><strong>{selectedSchedules.map((schedule) => WEEKDAYS.find((day) => day.value === schedule.weekday)?.short + ' ' + formatTime(schedule.hora_inicio) + '–' + formatTime(schedule.hora_fim)).join(' · ') || '—'}</strong></div>
+                    <div className="enrollment-summary-total"><span>Valor</span><strong>{formatCurrency(Number(selectedSchedule?.valor_mensal ?? plan?.preco ?? 0))}{plan?.tipo === 'mensal' ? '/mês' : ''}</strong></div>
+                    <div className="contract-signed-badge"><ShieldCheck size={18} /> Contrato assinado por {name}</div>
+                  </div>
+                </div>
+              )}
+
               <div className="enrollment-actions">
                 {step > 1 && (
                   <button type="button" className="enrollment-back-button" onClick={previousStep} disabled={loading}>
@@ -2533,12 +2449,20 @@ export default function Matricula() {
                   )
                 ) : step < 6 ? (
                   <button type="button" className="enrollment-submit" onClick={nextStep} disabled={loading || (step === 1 && (!plan || isCollectivePlan))}>
-                    Continuar
+                    {step === 1
+                      ? 'Confirmar plano'
+                      : step === 2
+                        ? 'Continuar para horários'
+                        : step === 3
+                          ? 'Continuar para dados pessoais'
+                          : step === 4
+                            ? 'Continuar para contrato'
+                            : 'Continuar para confirmação'}
                     <ArrowRight size={18} />
                   </button>
                 ) : (
                   <button type="button" className="enrollment-submit" onClick={createEnrollment} disabled={loading || !plan || !selectedSchedule || !contractAccepted || contractSignatureStatus !== 'signed'}>
-                    {loading ? 'Criando matrícula...' : 'Finalizar e ir para pagamento'}
+                    {loading ? 'Criando matrícula...' : 'Confirmar matrícula e ir para pagamento'}
                     {!loading && <ArrowRight size={18} />}
                   </button>
                 )}
