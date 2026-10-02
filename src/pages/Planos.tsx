@@ -319,7 +319,7 @@ function ModalidadeCard({
                           ) : (
                             <div className="planos-schedule-choice-copy">
                           <strong>Esta turma ainda está em formação.</strong>
-                          <span>Como ainda não há outro aluno nesta turma, você pode iniciar pela própria modalidade coletiva com a condição especial de formação.</span>
+                          <span>Como ainda não há outro aluno nesta turma, você pode iniciar pela própria modalidade coletiva com 10% de desconto.</span>
                         </div>
                         <div className="planos-schedule-choice-actions">
                           <a
@@ -338,14 +338,11 @@ function ModalidadeCard({
                               })
                               return '/matricula?' + params.toString()
                             })()}
-                            className="planos-schedule-choice-button planos-schedule-choice-button--individual"
+                            className="planos-schedule-choice-button"
                           >
                             <span>Iniciar esta dupla/grupo</span>
-                            <strong>
-                              {formatCurrency(formationPrice)}
-                              <small>/mês</small>
-                            </strong>
-                            <em>Condição especial de formação: 10% de desconto sobre o valor da própria modalidade. Não é plano individual.</em>
+                            <strong>{formatCurrency(formationPrice)}<small>/mês</small></strong>
+                            <em>10% de desconto sobre o valor da própria modalidade. Não é plano individual.</em>
                           </a>
                           <button
                             type="button"
