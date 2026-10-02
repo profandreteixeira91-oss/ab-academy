@@ -303,7 +303,12 @@ function MainVideo() {
       }
     >
       {sortedTracks.map(
-        (trackRef) => (
+        (trackRef) => {
+          if (!trackRef.publication) {
+            return null
+          }
+
+          return (
           <div
             className="academy-video-tile"
             key={
@@ -326,7 +331,8 @@ function MainVideo() {
                     .identity}
             </div>
           </div>
-        ),
+          )
+        },
       )}
     </div>
   )
