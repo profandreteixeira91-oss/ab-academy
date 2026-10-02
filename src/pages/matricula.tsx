@@ -626,7 +626,7 @@ export default function Matricula() {
             participantes: null,
             capacidade: null,
             status_formacao: selectedPlan.modalidade === 'dupla' ? 'dupla_formada' : 'grupo_formado',
-            tipo_valor: formationDiscount ? 'coletiva_em_formacao' : 'coletiva_formada',
+            tipo_valor: 'coletiva_formada',
             professor_id: horario.professor_id,
             nivel_referencia: horario.nivel_referencia,
           }
@@ -721,6 +721,7 @@ export default function Matricula() {
       const applyFormationDiscount = formationDiscount && Number(firstCandidate.participantes ?? 0) === 0
       setCollectiveFormationDiscount(applyFormationDiscount)
 
+      const formationPrice = Math.round(Number(selectedPlan.preco) * 0.9 * 100) / 100
       const mappedSchedules: SelectedSchedule[] = selectedRows.map((row) => ({
         id: row.horario_id,
         date: getDateForWeekday(row.dia_semana),
