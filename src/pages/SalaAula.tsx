@@ -886,6 +886,52 @@ function LiveClassroom({
   const [mediaDetails, setMediaDetails] = useState<string[]>([])
   const [chatOpen, setChatOpen] = useState(false)
 
+  const room = useRoomContext()
+
+  useEffect(() => {
+    const handleConnected = () => {
+      setConnected(true)
+      onStatusChange('connected')
+      console.info('[Classroom] Connected to LiveKit room')
+    }
+
+    const handleReconnecting = () => {
+      setConnected(false)
+      onStatusChange('reconnecting')
+      console.warn('[Classroom] LiveKit reconnecting')
+    }
+
+    const handleReconnected = () => {
+      setConnected(true)
+      onStatusChange('connected')
+      console.info('[Classroom] LiveKit reconnected')
+    }
+
+    const handleDisconnected = () => {
+      setConnected(false)
+      onStatusChange('disconnected')
+      console.warn('[Classroom] LiveKit disconnected')
+    }
+
+    const handleConnectionStateChanged = (state: string) => {
+      if (state === 'reconnecting') handleReconnecting()
+    }
+
+    room.on(RoomEvent.Connected, handleConnected)
+    room.on(RoomEvent.Reconnecting, handleReconnecting)
+    room.on(RoomEvent.Reconnected, handleReconnected)
+    room.on(RoomEvent.Disconnected, handleDisconnected)
+    room.on(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged)
+
+    return () => {
+      room.off(RoomEvent.Connected, handleConnected)
+      room.off(RoomEvent.Reconnecting, handleReconnecting)
+      room.off(RoomEvent.Reconnected, handleReconnected)
+      room.off(RoomEvent.Disconnected, handleDisconnected)
+      room.off(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged)
+    }
+  }, [room, onStatusChange])
+
   useEffect(() => {
     const handleDeviceChange = () => {
       const microphone = navigator.mediaDevices?.getUserMedia
@@ -913,14 +959,21 @@ function LiveClassroom({
         connect={true}
         audio={false}
         video={false}
-        onConnected={() =>
+        onConnected={() => {
           setConnected(true)
-        }
-        onDisconnected={() =>
+          onStatusChange('connected')
+        }}
+        onDisconnected={() => {
           setConnected(false)
-        }
+          onStatusChange('disconnected')
+        }}
+        onMediaDeviceFailure={(failure, kind) => {
+          onStatusChange('permission-error')
+          console.error('[Classroom] LiveKit media device failure', { failure, kind })
+        }}
         onError={(mediaError) => {
-          console.error('Erro de mídia/conexão LiveKit:', mediaError)
+          onStatusChange('room-error')
+          console.error('[Classroom] LiveKit room error:', mediaError)
           const message = String(mediaError?.message || '').toLowerCase()
           if (message.includes('permission') || message.includes('denied') || message.includes('notallowed')) {
             setMediaWarning('O navegador bloqueou câmera ou microfone. Toque no cadeado ao lado do endereço do site, permita Câmera e Microfone para abacademyidiomas.com.br e recarregue a aula. Se estiver no celular, confira também as permissões do aplicativo/navegador nas configurações do aparelho.')
