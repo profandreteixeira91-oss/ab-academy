@@ -2483,7 +2483,7 @@ export default function Matricula() {
                     )}
 
                     <small className="contract-internal-note">Assinatura interna — sem integração com GOV.BR ou provedor externo. Este é um contrato inicial de operação; a versão jurídica definitiva poderá ser revisada antes da publicação final.</small>
-                  </div>                  </div>
+                  </div>
                 </div>
               )}
 
