@@ -778,11 +778,40 @@ function TeacherLiveRoom({
   livekit: LiveKitData
   lesson: Lesson
   onLeave: () => void
+  onStatusChange: (status: ClassroomStatus) => void
 }) {
   const [connected, setConnected] =
     useState(false)
 
   const [mediaWarning, setMediaWarning] = useState('')
+
+  const room = useRoomContext()
+
+  useEffect(() => {
+    const handleReconnecting = () => {
+      setConnected(false)
+      onStatusChange('reconnecting')
+      console.warn('[Classroom] Teacher LiveKit reconnecting')
+    }
+    const handleReconnected = () => {
+      setConnected(true)
+      onStatusChange('connected')
+      console.info('[Classroom] Teacher LiveKit reconnected')
+    }
+    const handleConnectionStateChanged = (state: string) => {
+      if (state === 'reconnecting') handleReconnecting()
+    }
+
+    room.on(RoomEvent.Reconnecting, handleReconnecting)
+    room.on(RoomEvent.Reconnected, handleReconnected)
+    room.on(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged)
+
+    return () => {
+      room.off(RoomEvent.Reconnecting, handleReconnecting)
+      room.off(RoomEvent.Reconnected, handleReconnected)
+      room.off(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged)
+    }
+  }, [room, onStatusChange])
 
   useEffect(() => {
     const handleDeviceChange = () => {
@@ -810,14 +839,16 @@ function TeacherLiveRoom({
         token={livekit.token}
         serverUrl={livekit.url}
         connect={true}
-        audio={true}
-        video={true}
-        onConnected={() =>
+        audio={false}
+        video={false}
+        onConnected={() => {
           setConnected(true)
-        }
-        onDisconnected={() =>
+          onStatusChange('connected')
+        }}
+        onDisconnected={() => {
           setConnected(false)
-        }
+          onStatusChange('disconnected')
+        }}
         style={{
           width: '100%',
           height: '100%',
@@ -825,6 +856,18 @@ function TeacherLiveRoom({
       >
 
         <RoomAudioRenderer />
+
+        <TeacherMediaBootstrap
+          onMediaError={(kind, error) => {
+            onStatusChange('permission-error')
+            console.error('[Classroom] Teacher media error', { kind, error })
+            setMediaWarning(
+              kind === 'microphone'
+                ? 'A sala foi aberta, mas o microfone não pôde ser iniciado. Use o controle da sala para tentar novamente.'
+                : 'A sala foi aberta, mas a câmera não pôde ser iniciada. Use o controle da sala para tentar novamente.',
+            )
+          }}
+        />
 
         <StartAudio label="Ativar áudio da aula" />
 
