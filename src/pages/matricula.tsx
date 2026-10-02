@@ -294,7 +294,7 @@ export default function Matricula() {
   const [formationSlotId] = useState(() => new URLSearchParams(window.location.search).get('horario_id'))
   const [waitingFormation] = useState(() => new URLSearchParams(window.location.search).get('aguardando_formacao') === '1')
   const [reservaToken] = useState(() => crypto.randomUUID())
-  const [formationOrigin, setFormationOrigin] = useState<{ turmaId: string; horarioId: string; modalidade: 'dupla' | 'grupo'; aulasSemana: number; valorDesconto: number } | null>(null)
+  const [collectiveFormationDiscount, setCollectiveFormationDiscount] = useState(false)
   const selectedLanguageLabel =
     language === 'ingles'
       ? 'Inglês'
@@ -303,7 +303,7 @@ export default function Matricula() {
         : ''
 
   const isCollectivePlan = plan?.modalidade === 'dupla' || plan?.modalidade === 'grupo'
-  const isIndividualFormationFlow = formationOrigin !== null
+  const isCollectiveEnrollmentFlow = isCollectivePlan
   const proficiencyTestUrl = import.meta.env.VITE_PROFICIENCY_TEST_URL as string | undefined
   const isWaitingFormation = waitingFormation
   const effectivePlan = plan
@@ -492,20 +492,12 @@ export default function Matricula() {
 
         if (!loadedPlan) return
 
-        if (waitingFormation) {
-          await initializeIndividualFormationFromUrl(
-            loadedPlan,
-            formationSlotId,
-            requestedTurmaId,
-          )
-          return
-        }
-
         if (loadedPlan.modalidade === 'dupla' || loadedPlan.modalidade === 'grupo') {
           await initializeCollectiveScheduleFromPlanos(
             loadedPlan,
             requestedTurmaId,
             requestedHorarioIds,
+            params.get('formacao_coletiva') === '1',
           )
         }
 
@@ -575,124 +567,6 @@ export default function Matricula() {
     const selectedPlan = data as Plan
     setPlan(selectedPlan)
     return selectedPlan
-  }
-
-  const initializeIndividualFormationFromUrl = async (
-    selectedPlan: Plan,
-    requestedSlotId: string | null,
-    requestedTurmaId: string | null,
-  ) => {
-    if (!requestedSlotId || selectedPlan.modalidade !== 'individual') {
-      setError('O link de início individual não possui um horário de formação válido.')
-      return
-    }
-
-    setLoadingSchedules(true)
-    setError('')
-    setSuccess('')
-
-    try {
-      const { data: response, error: formationError } = await supabase.functions.invoke(
-        'list-formation-slots',
-        {
-          body: { horario_id: requestedSlotId },
-        },
-      )
-
-      if (formationError) {
-        console.error('Erro ao validar horário de formação:', formationError)
-        setError('Não foi possível validar o horário da dupla. Volte aos planos e tente novamente.')
-        return
-      }
-
-      const slots = (response?.data ?? []) as FormationSlot[]
-      const origin = slots.find((slot) => slot.horario_id === requestedSlotId)
-
-      if (!origin) {
-        setError('Este horário de dupla não está mais disponível para início individual.')
-        return
-      }
-
-      const selectedFrequency = selectedPlan.aulas_semana
-        ?? (selectedPlan.tipo === 'intensivo' ? 3 : selectedPlan.tipo === 'personalizado' ? 2 : 1)
-
-      if (
-        origin.idioma !== selectedPlan.idioma
-        || origin.aulas_semana !== selectedFrequency
-      ) {
-        setError('O plano e o horário de formação selecionados não correspondem. Volte a Planos e escolha novamente.')
-        return
-      }
-
-      if (requestedTurmaId && origin.turma_id !== requestedTurmaId) {
-        setError('A turma deste link mudou. Volte aos planos e escolha o horário novamente.')
-        return
-      }
-
-      const { data: discountedPrice, error: priceError } = await supabase.rpc(
-        'preco_formacao_coletiva',
-        {
-          p_idioma: origin.idioma,
-          p_modalidade: origin.tipo_horario,
-          p_aulas_semana: origin.aulas_semana,
-        },
-      )
-
-      if (priceError || Number(discountedPrice ?? 0) <= 0) {
-        console.error('Erro ao calcular condição especial de formação:', priceError)
-        setError('Não foi possível calcular a condição especial deste horário.')
-        return
-      }
-
-      const formationSchedules: SelectedSchedule[] = origin.encontros
-        .slice()
-        .sort((a, b) => a.ordem - b.ordem)
-        .map((schedule) => ({
-          id: schedule.horario_id,
-          date: origin.data_inicio,
-          weekday: schedule.dia_semana,
-          hora_inicio: schedule.hora_inicio,
-          hora_fim: schedule.hora_fim,
-          meet_url: null,
-          meet_space_name: null,
-          turma_id: origin.turma_id,
-          participante_id: null,
-          valor_mensal: Number(discountedPrice),
-          participantes: null,
-          capacidade: null,
-          status_formacao: origin.tipo_horario === 'dupla'
-            ? 'dupla_em_formacao'
-            : 'grupo_em_formacao',
-          tipo_valor: 'coletiva_em_formacao',
-          professor_id: origin.professor_id,
-          nivel_referencia: origin.nivel_referencia,
-        }))
-
-      if (formationSchedules.length !== origin.aulas_semana) {
-        setError('A turma de formação não possui todos os encontros semanais configurados.')
-        return
-      }
-
-      setContractAccepted(false)
-      setContractSignatureStatus('pending')
-      setSignatureName('')
-      setFormationOrigin({
-        turmaId: origin.turma_id,
-        horarioId: origin.horario_id,
-        modalidade: origin.tipo_horario,
-        aulasSemana: origin.aulas_semana,
-        valorDesconto: Number(discountedPrice),
-      })
-      setSelectedSchedules(formationSchedules)
-      setSelectedSchedule(formationSchedules[0] ?? null)
-      setAvailabilityReady(true)
-      setStep(1)
-      setSuccess(
-        `Você poderá iniciar individualmente com a condição especial de formação: ${formatCurrency(Number(discountedPrice))}/mês.`,
-      )
-    } finally {
-      setLoadingSchedules(false)
-    }
   }
 
   const initializeCollectiveScheduleFromTurma = async (
@@ -779,6 +653,7 @@ export default function Matricula() {
     selectedPlan: Plan,
     requestedTurmaId: string | null,
     requestedHorarioIds: string[],
+    formationDiscount = false,
   ) => {
     if (selectedPlan.modalidade !== 'dupla' && selectedPlan.modalidade !== 'grupo') {
       return
@@ -792,6 +667,7 @@ export default function Matricula() {
     setLoadingSchedules(true)
     setError('')
     setSuccess('')
+    setCollectiveFormationDiscount(formationDiscount)
 
     try {
       const aulasSemana = selectedPlan.aulas_semana ?? (selectedPlan.modalidade === 'dupla' ? 1 : 2)
@@ -853,7 +729,7 @@ export default function Matricula() {
         meet_space_name: null,
         turma_id: row.turma_id,
         participante_id: null,
-        valor_mensal: Number(selectedPlan.preco),
+        valor_mensal: formationDiscount ? Math.round(Number(selectedPlan.preco) * 0.9 * 100) / 100 : Number(selectedPlan.preco),
         participantes: row.participantes,
         capacidade: row.capacidade,
         status_formacao: row.status_formacao,
@@ -867,9 +743,9 @@ export default function Matricula() {
       setScheduleLockedFromPlanos(true)
       setAvailabilityReady(true)
       setSelectedWeekday(mappedSchedules[0]?.weekday ?? null)
-      setStep(4)
+      setStep(1)
       setSuccess(
-        `Turma confirmada a partir de Planos. O valor regular da modalidade é ${formatCurrency(Number(selectedPlan.preco))}/mês.`,
+        formationDiscount ? `Turma confirmada a partir de Planos. Condição de formação: ${formatCurrency(Math.round(Number(selectedPlan.preco) * 0.9 * 100) / 100)}/mês.` : `Turma confirmada a partir de Planos. Valor da modalidade: ${formatCurrency(Number(selectedPlan.preco))}/mês.`,
       )
     } finally {
       setLoadingSchedules(false)
@@ -1367,9 +1243,33 @@ export default function Matricula() {
     setError('')
     setSuccess('')
 
-    if (isIndividualFormationFlow) {
+    if (isCollectiveEnrollmentFlow) {
       if (step === 1) {
-        if (!plan || plan.modalidade !== 'individual' || !formationOrigin || selectedSchedules.length !== formationOrigin.aulasSemana || !selectedSchedule) {
+        if (!plan || !scheduleLockedFromPlanos || !validateSchedule()) {
+          setError('Confirme o plano e os horários selecionados em Planos antes de continuar.')
+          return
+        }
+        setStep(2)
+        return
+      }
+      if (step === 2) {
+        if (!validatePersonalData()) return
+        setStep(3)
+        return
+      }
+      if (step === 3) {
+        if (!contractAccepted || contractSignatureStatus !== 'signed') {
+          setError('Leia, aceite e assine o contrato antes de continuar.')
+          return
+        }
+        setStep(4)
+        return
+      }
+      return
+    }
+
+    if (step === 1) {
+        if (!plan || plan.modalidade !== 'individual' || !collectiveFormationDiscount || selectedSchedules.length !== collectiveFormationDiscount.aulasSemana || !selectedSchedule) {
           setError('Confirme o plano individual e os horários definidos para o início da formação.')
           return
         }
@@ -1398,15 +1298,6 @@ export default function Matricula() {
     if (step === 1) {
       if (!plan && !collectiveEnrollment) {
         setError('O plano selecionado não está disponível.')
-        return
-      }
-
-      if (isCollectivePlan) {
-        if (!scheduleLockedFromPlanos || !validateSchedule()) {
-          setError('Escolha uma turma e horário em Planos antes de continuar.')
-          return
-        }
-        setStep(4)
         return
       }
 
@@ -1480,11 +1371,6 @@ export default function Matricula() {
     setError('')
     setSuccess('')
 
-    if (scheduleLockedFromPlanos && step === 4) {
-      setStep(3)
-      return
-    }
-
     if (step > 1) {
       setStep(step - 1)
     }
@@ -1548,93 +1434,6 @@ export default function Matricula() {
     const next = [...selectedSchedules, schedule]
     setSelectedSchedules(next)
     setSelectedSchedule(next[0] ?? null)
-  }
-
-  const startIndividualFromCollective = async (campaign: CollectiveCampaign) => {
-    setLoading(true)
-    setError('')
-    setSuccess('')
-
-    try {
-      const { data: individualPlan, error: individualPlanError } = await supabase
-        .from('planos')
-        .select('id, idioma, tipo, nome, descricao, preco, parcelas, valor_parcela, ativo, created_at, updated_at, modalidade, aulas_semana, min_alunos, max_alunos')
-        .eq('idioma', campaign.idioma)
-        .eq('modalidade', 'individual')
-        .eq('ativo', true)
-        .eq('tipo', campaign.aulas_semana === 2 ? 'personalizado' : 'mensal')
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle()
-
-      if (individualPlanError || !individualPlan) {
-        setError('Não encontramos o plano individual correspondente para esta frequência.')
-        return
-      }
-
-      const { data: discountedPrice, error: priceError } = await supabase.rpc('preco_formacao_coletiva', {
-        p_idioma: campaign.idioma,
-        p_modalidade: campaign.modalidade,
-        p_aulas_semana: campaign.aulas_semana,
-      })
-
-      if (priceError || Number(discountedPrice ?? 0) <= 0) {
-        setError('Não foi possível calcular a condição especial para começar individualmente.')
-        return
-      }
-
-      const firstEncounter = campaign.horarios[0]
-      if (!firstEncounter) {
-        setError('A turma selecionada não possui um encontro válido para iniciar a formação.')
-        return
-      }
-
-      const formationSchedules: SelectedSchedule[] = campaign.horarios
-        .slice()
-        .sort((a, b) => a.ordem - b.ordem)
-        .map((schedule) => ({
-          id: schedule.horario_id,
-          date: campaign.data_inicio,
-          weekday: schedule.dia_semana,
-          hora_inicio: schedule.hora_inicio,
-          hora_fim: schedule.hora_fim,
-          meet_url: null,
-          meet_space_name: null,
-          turma_id: campaign.turma_id,
-          participante_id: null,
-          valor_mensal: Number(discountedPrice),
-          participantes: campaign.participantes,
-          capacidade: campaign.capacidade,
-          status_formacao: campaign.status_formacao,
-          tipo_valor: 'coletiva_em_formacao',
-          professor_id: campaign.professor_id,
-          nivel_referencia: campaign.nivel_referencia,
-        }))
-
-      if (formationSchedules.length !== campaign.aulas_semana) {
-        setError('A turma selecionada não possui todos os encontros semanais necessários.')
-        return
-      }
-
-      setContractAccepted(false)
-      setContractSignatureStatus('pending')
-      setSignatureName('')
-      setFormationOrigin({
-        turmaId: campaign.turma_id,
-        horarioId: firstEncounter.horario_id,
-        modalidade: campaign.modalidade,
-        aulasSemana: campaign.aulas_semana,
-        valorDesconto: Number(discountedPrice),
-      })
-      setPlan(individualPlan as Plan)
-      setSelectedSchedules(formationSchedules)
-      setSelectedSchedule(formationSchedules[0] ?? null)
-      setAvailabilityReady(true)
-      setSuccess(`Você poderá iniciar individualmente com a condição especial de formação: ${formatCurrency(Number(discountedPrice))}/mês.`)
-      setStep(1)
-    } finally {
-      setLoading(false)
-    }
   }
 
   const reserveCollectiveLead = async () => {
@@ -1808,20 +1607,16 @@ export default function Matricula() {
     try {
       let freshSchedules: SelectedSchedule[] | null
 
-      if (isIndividualFormationFlow) {
-        freshSchedules = selectedSchedules
-      } else {
-        const reserved = await reserveSelectedSchedules()
-        if (!reserved) {
-          setLoading(false)
-          return
-        }
+      const reserved = await reserveSelectedSchedules()
+      if (!reserved) {
+        setLoading(false)
+        return
+      }
 
-        freshSchedules = await verifyScheduleAgain()
-        if (!freshSchedules) {
-          setLoading(false)
-          return
-        }
+      freshSchedules = await verifyScheduleAgain()
+      if (!freshSchedules) {
+        setLoading(false)
+        return
       }
 
       const primarySchedule = freshSchedules[0]
@@ -1867,9 +1662,9 @@ export default function Matricula() {
         turma_token: collectiveEnrollment?.token ?? null,
         turma_participante_id: collectiveEnrollment?.participanteId ?? primarySchedule.participante_id ?? null,
         turma_id: collectiveEnrollment?.turmaId ?? primarySchedule.turma_id ?? null,
-        horario_formacao_id: formationOrigin?.horarioId ?? (isWaitingFormation ? (formationSlotId || primarySchedule.id) : null),
-        aguardando_formacao: Boolean(formationOrigin) || isWaitingFormation,
-        formacao_modalidade: formationOrigin?.modalidade ?? null,
+        horario_formacao_id: collectiveFormationDiscount ? primarySchedule.id : null,
+        aguardando_formacao: collectiveFormationDiscount,
+        formacao_modalidade: collectiveFormationDiscount && (effectivePlan?.modalidade === 'dupla' || effectivePlan?.modalidade === 'grupo') ? effectivePlan.modalidade : null,
 
         objetivos: null,
 
@@ -1877,7 +1672,7 @@ export default function Matricula() {
 
         valor_aula: collectiveEnrollment ? null : effectivePlan?.tipo === 'avulso' ? Number(effectivePlan.preco) : effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0) / (effectivePlan?.tipo === 'intensivo' ? 12 : effectivePlan?.tipo === 'personalizado' ? 8 : 4),
 
-        valor_mensal: collectiveEnrollment?.valorMensal ?? (formationOrigin?.valorDesconto ?? (isCollectivePlan ? primarySchedule.valor_mensal : (isWaitingFormation ? primarySchedule.valor_mensal : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0))))),
+        valor_mensal: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? primarySchedule.valor_mensal : (effectivePlan?.tipo === 'avulso' || effectivePlan?.tipo === 'anual' ? null : Number(effectivePlan?.preco ?? 0))),
 
         valor_anual: collectiveEnrollment ? null : effectivePlan?.tipo === 'anual' ? Number(effectivePlan.preco) : null,
 
@@ -1888,7 +1683,7 @@ export default function Matricula() {
         dados_aluno: dadosAluno,
         reserva_token: reservaToken,
 
-        valor: collectiveEnrollment?.valorMensal ?? (formationOrigin?.valorDesconto ?? (isCollectivePlan ? Number(primarySchedule.valor_mensal ?? 0) : authoritativeValue)),
+        valor: collectiveEnrollment?.valorMensal ?? (isCollectivePlan ? Number(primarySchedule.valor_mensal ?? 0) : authoritativeValue),
       }
 
       const {
@@ -1986,7 +1781,7 @@ export default function Matricula() {
           </div>
 
           <div className="enrollment-progress">
-            {(isIndividualFormationFlow
+            {(isCollectiveEnrollmentFlow
               ? ['Plano e horário', 'Dados pessoais', 'Contrato', 'Confirmação e pagamento']
               : ['Plano selecionado', 'Plano', 'Horários', 'Disponibilidade', 'Proficiência', 'Dados pessoais', 'Contrato']
             ).map((label, index) => {
@@ -1999,7 +1794,7 @@ export default function Matricula() {
                 >
                   <div className="enrollment-progress-number">{number}</div>
                   <span>{label}</span>
-                  {number < (isIndividualFormationFlow ? 4 : 7) && (
+                  {number < (isCollectiveEnrollmentFlow ? 4 : 7) && (
                     <div className="enrollment-progress-line" />
                   )}
                 </div>
@@ -2016,7 +1811,7 @@ export default function Matricula() {
 
                 <div>
                   <h2>
-                    {isIndividualFormationFlow
+                    {isCollectiveEnrollmentFlow
                       ? step === 1
                         ? 'Confirmação do plano e horário'
                         : step === 2
@@ -2038,7 +1833,7 @@ export default function Matricula() {
                   </h2>
 
                   <p>
-                    {isIndividualFormationFlow
+                    {isCollectiveEnrollmentFlow
                       ? step === 1
                         ? 'Confira o plano individual, a condição especial e os horários definidos pela turma de origem.'
                         : step === 2
@@ -2117,48 +1912,6 @@ export default function Matricula() {
               )}
 
     
-              {isIndividualFormationFlow && step === 1 && formationOrigin && (
-                <div className="collective-campaign-section">
-                  <div className="selection-heading">
-                    <div>
-                      <h3>Condição especial para iniciar individualmente</h3>
-                      <p>Você escolheu uma turma de {formationOrigin.modalidade === 'dupla' ? 'dupla' : 'grupo'} como referência. O início individual mantém o horário definido pela turma e aplica a condição de formação.</p>
-                    </div>
-                  </div>
-
-                  <div className="plan-card selected">
-                    <div className="plan-card-top">
-                      <div>
-                        <span className="enrollment-plan-language">{selectedLanguageLabel}</span>
-                        <h3>{plan?.nome}</h3>
-                        <p>Plano individual vinculado à formação de {formationOrigin.modalidade === 'dupla' ? 'dupla' : 'grupo'}.</p>
-                      </div>
-                      <span className="selection-radio" />
-                    </div>
-
-                    <div className="plan-price">
-                      {formatCurrency(formationOrigin.valorDesconto)}
-                      <span> / mês</span>
-                    </div>
-                    <div className="plan-installment">Condição especial de formação</div>
-                  </div>
-
-                  <div className="availability-selection-summary">
-                    <strong>Horário confirmado</strong>
-                    {selectedSchedules
-                      .slice()
-                      .sort((a, b) => a.weekday - b.weekday || a.hora_inicio.localeCompare(b.hora_inicio))
-                      .map((schedule) => (
-                        <span key={schedule.id}>
-                          {WEEKDAYS.find((day) => day.value === schedule.weekday)?.label}: {formatTime(schedule.hora_inicio)} — {formatTime(schedule.hora_fim)} · início {formatDate(schedule.date)}
-                        </span>
-                      ))}
-                    <span>Turma de referência: {formationOrigin.modalidade === 'dupla' ? 'Dupla' : 'Grupo'} · início {formatDate(selectedSchedules[0]?.date ?? '')}</span>
-                  </div>
-
-                </div>
-              )}
-
               {isCollectivePlan && (
                     <div className="collective-campaign-section">
                       <div className="selection-heading">
@@ -2198,7 +1951,7 @@ export default function Matricula() {
                                 <strong>{campaign.vagas_restantes} vaga{campaign.vagas_restantes === 1 ? '' : 's'} disponível{campaign.vagas_restantes === 1 ? '' : 'is'}</strong>
                               </div>
                               <div className="collective-campaign-actions">
-                                <button type="button" className="enrollment-secondary-button" onClick={() => void startIndividualFromCollective(campaign)} disabled={loading}>
+                                <button type="button" className="enrollment-secondary-button" onClick={() => void startCollectiveFromCampaign(campaign)} disabled={loading}>
                                   Iniciar individualmente
                                 </button>
                                 <button type="button" className="enrollment-primary-button" onClick={() => setCollectiveLeadTarget({ campaign, horario_id: campaign.horarios[0]?.horario_id })} disabled={loading}>
@@ -2244,7 +1997,7 @@ export default function Matricula() {
                   )}
 
 
-              {step === 4 && !isIndividualFormationFlow && (
+              {step === 4 && !isCollectiveEnrollmentFlow && (
                 <div className="proficiency-section">
                   <div className="selection-heading">
                     <div>
@@ -2293,7 +2046,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {step === 2 && !isIndividualFormationFlow && (
+              {step === 2 && !isCollectiveEnrollmentFlow && (
             <div className="availability-section">
               <div className="selection-heading">
                 <div>
@@ -2368,7 +2121,7 @@ export default function Matricula() {
             </div>
           )}
 
-          {step === 3 && !isIndividualFormationFlow && scheduleLockedFromPlanos && (
+          {step === 3 && !isCollectiveEnrollmentFlow && scheduleLockedFromPlanos && (
             <div className="schedule-section">
               <div className="selection-heading">
                 <div>
@@ -2392,7 +2145,7 @@ export default function Matricula() {
             </div>
           )}
 
-          {step === 3 && !isIndividualFormationFlow && !scheduleLockedFromPlanos && (
+          {step === 3 && !isCollectiveEnrollmentFlow && !scheduleLockedFromPlanos && (
             <div className="schedule-section">
               <div className="selection-heading">
                 <div>
@@ -2522,7 +2275,7 @@ export default function Matricula() {
           )}
 
 
-              {(step === 5 || (isIndividualFormationFlow && step === 2)) && (
+              {(step === 5 || (isCollectiveEnrollmentFlow && step === 2)) && (
                 <div className="enrollment-fields">
                   <div className="enrollment-field">
                     <label>Nome completo *</label>
@@ -2555,7 +2308,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {(step === 6 || (isIndividualFormationFlow && step === 3)) && (
+              {(step === 6 || (isCollectiveEnrollmentFlow && step === 3)) && (
                 <div className="contract-section">
                   <div className="selection-heading"><div><h3>Contrato virtual</h3><p>Leia as condições da matrícula antes da assinatura.</p></div></div>
                   <div className="contract-card">
@@ -2625,7 +2378,7 @@ export default function Matricula() {
                 </div>
               )}
 
-              {isIndividualFormationFlow && step === 4 && (
+              {isCollectiveEnrollmentFlow && step === 4 && (
                 <div className="contract-section">
                   <div className="selection-heading">
                     <div>
@@ -2641,7 +2394,7 @@ export default function Matricula() {
                     </div>
                     <div className="enrollment-summary-item">
                       <span>Modalidade</span>
-                      <strong>Individual · formação de {formationOrigin?.modalidade === 'dupla' ? 'dupla' : 'grupo'}</strong>
+                      <strong>Individual · formação de {collectiveFormationDiscount?.modalidade === 'dupla' ? 'dupla' : 'grupo'}</strong>
                     </div>
                     <div className="enrollment-summary-item">
                       <span>Aluno</span>
@@ -2657,7 +2410,7 @@ export default function Matricula() {
                     </div>
                     <div className="enrollment-summary-total">
                       <span>Mensalidade</span>
-                      <strong>{formationOrigin ? formatCurrency(formationOrigin.valorDesconto) + '/mês' : '—'}</strong>
+                      <strong>{collectiveFormationDiscount ? formatCurrency(collectiveFormationDiscount.valorDesconto) + '/mês' : '—'}</strong>
                     </div>
                     <div className="contract-signed-badge">
                       <ShieldCheck size={18} />
@@ -2675,7 +2428,7 @@ export default function Matricula() {
                   </button>
                 )}
                 <div />
-                {isIndividualFormationFlow ? (
+                {isCollectiveEnrollmentFlow ? (
                   step < 4 ? (
                     <button type="button" className="enrollment-submit" onClick={nextStep} disabled={loading || (step === 1 && (!plan || !selectedSchedule))}>
                       {step === 1
@@ -2772,7 +2525,7 @@ export default function Matricula() {
                       ? formatCurrency(selectedSchedule.valor_mensal) + '/mês'
                       : 'Calculado após a análise do horário')
                     : plan
-                      ? formatCurrency(formationOrigin?.valorDesconto ?? selectedSchedule?.valor_mensal ?? Number(plan.preco)) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
+                      ? formatCurrency(collectiveFormationDiscount?.valorDesconto ?? selectedSchedule?.valor_mensal ?? Number(plan.preco)) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
                       : '—'}
                 </strong>
               </div>
