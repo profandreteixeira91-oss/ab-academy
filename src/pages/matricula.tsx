@@ -2505,7 +2505,7 @@ export default function Matricula() {
                 <span>Valor:</span>
                 <strong>
                   {isCollectivePlan
-                    ? (step >= 5 && selectedSchedule?.valor_mensal != null
+                    ? (selectedSchedule?.valor_mensal != null
                       ? formatCurrency(selectedSchedule.valor_mensal) + '/mês'
                       : 'Calculado após a análise do horário')
                     : plan
