@@ -27,6 +27,7 @@ import {
 
 import {
   LocalVideoTrack,
+  RoomEvent,
   Track,
 } from 'livekit-client'
 
@@ -34,6 +35,7 @@ import { BackgroundProcessor } from '@livekit/track-processors'
 
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
+import { requestLiveKitAccess, type LiveKitAccessData } from '../lib/livekit'
 import '../styles/sala-aula.css'
 
 type Lesson = {
@@ -60,13 +62,22 @@ type LessonData = {
   scheduledEndAt: string
 }
 
-type LiveKitData = {
-  token: string
-  url: string
-  roomName: string
-  identity: string
-  name: string
-}
+type LiveKitData = LiveKitAccessData
+
+type ClassroomStatus =
+  | 'idle'
+  | 'loading'
+  | 'authenticating'
+  | 'preparing'
+  | 'connecting'
+  | 'connected'
+  | 'reconnecting'
+  | 'disconnected'
+  | 'permission-error'
+  | 'network-error'
+  | 'auth-error'
+  | 'room-error'
+  | 'fatal-error'
 
 function getLanguageName(language: string) {
   return language === 'ingles'
@@ -866,6 +877,7 @@ function LiveClassroom({
   livekit: LiveKitData
   lesson: Lesson
   onLeave: () => void
+  onStatusChange: (status: ClassroomStatus) => void
 }) {
   const [connected, setConnected] =
     useState(false)
