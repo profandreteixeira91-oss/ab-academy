@@ -1071,6 +1071,14 @@ export default function Agenda() {
    * =======================================================
    */
 
+  async function garantirTurmaFixaHorario(horarioId: string) {
+    const { error } = await supabase.rpc(
+      'garantir_turma_fixa_horario_admin',
+      { p_horario_id: horarioId },
+    )
+    if (error) throw error
+  }
+
   async function handleSave() {
     try {
       setSaving(true)
@@ -1151,8 +1159,10 @@ export default function Agenda() {
           .update(payload)
           .eq('id', editingId)
 
-        if (updateError) {
-          throw updateError
+        if (updateError) throw updateError
+
+        if (form.tipo_horario === 'dupla' || form.tipo_horario === 'grupo') {
+          await garantirTurmaFixaHorario(editingId)
         }
 
         window.alert(
@@ -1160,13 +1170,18 @@ export default function Agenda() {
         )
       } else {
         const {
+          data: insertedHorario,
           error: insertError,
         } = await supabase
           .from('horarios')
           .insert(payload)
+          .select('id')
+          .single()
 
-        if (insertError) {
-          throw insertError
+        if (insertError) throw insertError
+
+        if (insertedHorario?.id && (form.tipo_horario === 'dupla' || form.tipo_horario === 'grupo')) {
+          await garantirTurmaFixaHorario(insertedHorario.id)
         }
 
         window.alert(
@@ -1386,13 +1401,19 @@ export default function Agenda() {
       }
 
       const {
+        data: insertedHorarios,
         error: insertError,
       } = await supabase
         .from('horarios')
         .insert(newSlots)
+        .select('id')
 
-      if (insertError) {
-        throw insertError
+      if (insertError) throw insertError
+
+      if ((bulkCreateForm.tipo_horario === 'dupla' || bulkCreateForm.tipo_horario === 'grupo') && insertedHorarios) {
+        for (const horario of insertedHorarios) {
+          await garantirTurmaFixaHorario(horario.id)
+        }
       }
 
       let message =
