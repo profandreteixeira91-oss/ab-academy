@@ -37,6 +37,7 @@ import {
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/aluno.css'
+import MaterialViewer, { type MaterialRecord } from '../components/MaterialViewer'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -519,16 +520,11 @@ function Aluno() {
   const [currentTime, setCurrentTime] =
     useState(() => Date.now())
 
-  const [materials] = useState<
-    Material[]
-  >([
-    {
-      id: '1',
-      title: 'Material da aula',
-      type: 'PDF',
-      date: '18/09/2026',
-    },
-  ])
+  const [materials, setMaterials] = useState<MaterialRecord[]>([])
+  const [materialsLoading, setMaterialsLoading] = useState(false)
+  const [materialsError, setMaterialsError] = useState('')
+  const [selectedMaterial, setSelectedMaterial] = useState<MaterialRecord | null>(null)
+  const [materialImageUrls, setMaterialImageUrls] = useState<Record<string, string>>({})
 
   const [activities, setActivities] =
     useState<Activity[]>([])
@@ -1704,6 +1700,46 @@ function Aluno() {
       )
     } finally {
       setActivitiesLoading(false)
+    }
+  }
+
+  async function loadStudentMaterials(userId: string) {
+    try {
+      setMaterialsLoading(true)
+      setMaterialsError('')
+      const studentId = await getStudentId(userId)
+      const { data: recipients, error: recipientsError } = await supabase
+        .from('material_alunos').select('material_id').eq('aluno_id', studentId)
+      if (recipientsError) throw recipientsError
+      const ids = (recipients || []).map(row => row.material_id)
+      if (!ids.length) { setMaterials([]); return }
+      const { data, error } = await supabase
+        .from('materiais')
+        .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em')
+        .in('id', ids).eq('status', 'publicado').order('publicado_em', { ascending: false })
+      if (error) throw error
+      setMaterials((data || []) as MaterialRecord[])
+    } catch (error) {
+      console.error('Erro ao carregar materiais do aluno:', error)
+      setMaterialsError(error instanceof Error ? error.message : 'Não foi possível carregar seus materiais.')
+      setMaterials([])
+    } finally {
+      setMaterialsLoading(false)
+    }
+  }
+
+  async function openStudentMaterial(material: MaterialRecord) {
+    try {
+      const entries = await Promise.all((material.imagens || []).map(async path => {
+        const { data } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
+        return [path, data?.signedUrl || ''] as const
+      }))
+      setMaterialImageUrls(Object.fromEntries(entries.filter(([, url]) => Boolean(url))))
+      setSelectedMaterial(material)
+      const studentId = studentIdRef.current || await getStudentId(user.id)
+      await supabase.from('material_alunos').update({ visualizado_em: new Date().toISOString() }).eq('material_id', material.id).eq('aluno_id', studentId)
+    } catch (error) {
+      setMaterialsError(error instanceof Error ? error.message : 'Não foi possível abrir o material.')
     }
   }
 
@@ -4042,9 +4078,10 @@ function Aluno() {
           {section ===
             'materiais' && (
             <Materiais
-              materials={
-                materials
-              }
+              materials={materials}
+              loading={materialsLoading}
+              error={materialsError}
+              onOpen={openStudentMaterial}
             />
           )}
 
@@ -4137,6 +4174,12 @@ function Aluno() {
         </footer>
         </section>
       </main>
+
+      {selectedMaterial && (
+        <div className="student-material-viewer-modal">
+          <MaterialViewer material={selectedMaterial} imageUrls={materialImageUrls} onClose={() => setSelectedMaterial(null)} />
+        </div>
+      )}
 
       {selectedActivity && (
         <ActivityModal
@@ -4922,12 +4965,15 @@ function MinhasAulas({
 }
 
 type MateriaisProps = {
-  materials: Material[]
+  materials: MaterialRecord[]
+  loading: boolean
+  error: string
+  onOpen: (material: MaterialRecord) => void
 }
 
-function Materiais({
-  materials,
-}: MateriaisProps) {
+function Materiais({ materials, loading, error, onOpen }: MateriaisProps) {
+  if (loading) return <div className="student-empty-state"><Loader2 size={28} className="student-spin"/><h3>Carregando materiais...</h3><p>Aguarde enquanto buscamos seus materiais.</p></div>
+  if (error) return <div className="student-empty-state"><FileText size={28}/><h3>Não foi possível carregar os materiais</h3><p>{error}</p></div>
   return (
     <>
       <div className="student-section-title">
@@ -4954,24 +5000,15 @@ function Materiais({
               </div>
 
               <div>
-                <span>
-                  {material.type}
-                </span>
-
-                <h3>
-                  {material.title}
-                </h3>
-
-                <p>
-                  Disponibilizado
-                  em{' '}
-                  {material.date}
-                </p>
+                <span>{material.idioma === 'ingles' ? 'Inglês' : material.idioma === 'alemao' ? 'Alemão' : 'Material de apoio'}</span>
+                <h3>{material.titulo}</h3>
+                <p>Disponibilizado em {new Date(material.publicado_em || material.created_at).toLocaleDateString('pt-BR')}</p>
               </div>
 
               <button
                 type="button"
                 className="student-secondary-button"
+                onClick={() => onOpen(material)}
               >
                 Abrir
               </button>
