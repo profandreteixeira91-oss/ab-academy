@@ -31,7 +31,6 @@ import {
   Track,
 } from 'livekit-client'
 
-import { BackgroundProcessor } from '@livekit/track-processors'
 
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
@@ -624,20 +623,26 @@ function ClassroomControls({
     try {
       if (mode === 'disabled') {
         await track.stopProcessor()
-      } else if (mode === 'blur') {
-        const processor = BackgroundProcessor({
-          mode: 'background-blur',
-          blurRadius: 10,
-        })
+      } else {
+        const { BackgroundProcessor } = await import('@livekit/track-processors')
 
-        await track.setProcessor(processor, true)
-      } else if (imagePath) {
-        const processor = BackgroundProcessor({
-          mode: 'virtual-background',
-          imagePath,
-        })
+        if (mode === 'blur') {
+          const processor = BackgroundProcessor({
+            mode: 'background-blur',
+            blurRadius: 10,
+          })
 
-        await track.setProcessor(processor, true)
+          await track.setProcessor(processor, true)
+        } else if (imagePath) {
+          const processor = BackgroundProcessor({
+            mode: 'virtual-background',
+            imagePath,
+          })
+
+          await track.setProcessor(processor, true)
+        } else {
+          throw new Error('Imagem de plano de fundo não informada.')
+        }
       }
 
       setBackgroundMode(mode)
@@ -1559,19 +1564,29 @@ export default function SalaAula() {
               'Não foi possível carregar esta aula.'}
           </p>
 
-          <button
-            type="button"
-            className="virtual-classroom-back-button"
-            onClick={() =>
-              window.history.back()
-            }
-          >
-            <ArrowLeft
-              size={17}
-            />
+          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', justifyContent: 'center' }}>
+            <button
+              type="button"
+              className="virtual-classroom-enter-button"
+              onClick={() => window.location.reload()}
+            >
+              Tentar novamente
+            </button>
 
-            Voltar
-          </button>
+            <button
+              type="button"
+              className="virtual-classroom-back-button"
+              onClick={() => {
+                window.location.href = '/aluno'
+              }}
+            >
+              <ArrowLeft
+                size={17}
+              />
+
+              Voltar ao portal
+            </button>
+          </div>
         </div>
       </div>
     )
