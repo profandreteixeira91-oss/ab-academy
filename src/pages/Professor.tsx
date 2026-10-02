@@ -26,6 +26,7 @@ import '../styles/professor.css'
 import '../styles/aluno.css'
 
 import AtividadesAdmin from './admin/Atividades'
+import MateriaisProfessor from './professor/Materiais'
 
 type ProfessorData = {
   id: string
@@ -86,6 +87,7 @@ type PortalSection =
   | 'aulas'
   | 'alunos'
   | 'atividades'
+  | 'materiais'
 
 const diasSemana = [
   { value: 1, label: 'Segunda-feira', short: 'SEG' },
@@ -144,7 +146,8 @@ function Professor() {
           saved === 'agenda' ||
           saved === 'aulas' ||
           saved === 'alunos' ||
-          saved === 'atividades'
+          saved === 'atividades' ||
+          saved === 'materiais'
         ) {
           return saved
         }
@@ -2378,6 +2381,9 @@ function Professor() {
     case 'atividades':
       return <AtividadesAdmin professorMode />
 
+    case 'materiais':
+      return <MateriaisProfessor professorId={professor!.id} />
+
     default:
       return renderDashboard()
   }
@@ -2671,6 +2677,25 @@ function Professor() {
 
               <span>
                 Meus Alunos
+              </span>
+            </button>
+
+            <button
+              type="button"
+              className={
+                activeSection ===
+                'materiais'
+                  ? 'active'
+                  : ''
+              }
+              onClick={() =>
+                goTo('materiais')
+              }
+            >
+              <BookOpen size={19} />
+
+              <span>
+                Materiais
               </span>
             </button>
 
