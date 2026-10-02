@@ -1744,8 +1744,7 @@ function Aluno() {
       }))
       setMaterialImageUrls(Object.fromEntries(entries.filter(([, url]) => Boolean(url))))
       setSelectedMaterial(material)
-      const studentId = studentIdRef.current || await getStudentId(user.id)
-      await supabase.from('material_alunos').update({ visualizado_em: new Date().toISOString() }).eq('material_id', material.id).eq('aluno_id', studentId)
+      // A visualização é somente de leitura neste fluxo; não alteramos a relação do destinatário.
     } catch (error) {
       setMaterialsError(error instanceof Error ? error.message : 'Não foi possível abrir o material.')
     }
