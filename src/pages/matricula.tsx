@@ -101,24 +101,6 @@ type CollectiveLeadTarget = {
   horario_id: string
 }
 
-type FormationSlot = {
-  horario_id: string
-  idioma: Language
-  tipo_horario: 'dupla' | 'grupo'
-  turma_id: string
-  aulas_semana: number
-  data_inicio: string
-  professor_id: string | null
-  nivel_referencia: string | null
-  encontros: Array<{
-    horario_id: string
-    dia_semana: number
-    hora_inicio: string
-    hora_fim: string
-    ordem: number
-  }>
-}
-
 type CollectiveScheduleResponse = {
   turma_id: string
   horario_id: string
@@ -305,7 +287,6 @@ export default function Matricula() {
   const isCollectivePlan = plan?.modalidade === 'dupla' || plan?.modalidade === 'grupo'
   const isCollectiveEnrollmentFlow = isCollectivePlan
   const proficiencyTestUrl = import.meta.env.VITE_PROFICIENCY_TEST_URL as string | undefined
-  const isWaitingFormation = waitingFormation
   const effectivePlan = plan
 
 
