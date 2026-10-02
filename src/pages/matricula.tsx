@@ -414,7 +414,9 @@ export default function Matricula() {
       const selectedLanguage: Language =
         requestedLanguage === 'alemao' ? 'alemao' : 'ingles'
 
-      if (waitingFormation && requestedPlanId) {
+      const collectiveFormationRequested = params.get('formacao_coletiva') === '1'
+
+      if (waitingFormation && requestedPlanId && !collectiveFormationRequested) {
         const { data: waitingPlan } = await supabase
           .from('planos')
           .select('tipo')
@@ -762,12 +764,19 @@ export default function Matricula() {
   }
 
   useEffect(() => {
+    // Quando Planos já definiu a turma e os horários, a matrícula deve
+    // permanecer fiel àquela seleção e não carregar uma segunda lista de turmas.
+    if (scheduleLockedFromPlanos) {
+      setCollectiveCampaigns([])
+      return
+    }
+
     if (plan && (plan.modalidade === 'dupla' || plan.modalidade === 'grupo')) {
       void loadCollectiveCampaigns(plan)
     } else {
       setCollectiveCampaigns([])
     }
-  }, [plan?.id, plan?.modalidade, plan?.aulas_semana])
+  }, [plan?.id, plan?.modalidade, plan?.aulas_semana, scheduleLockedFromPlanos])
 
   const loadSchedules = async (
     selectedLanguage: Language,
