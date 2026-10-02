@@ -1269,33 +1269,6 @@ export default function Matricula() {
     }
 
     if (step === 1) {
-        if (!plan || plan.modalidade !== 'individual' || !collectiveFormationDiscount || selectedSchedules.length !== collectiveFormationDiscount.aulasSemana || !selectedSchedule) {
-          setError('Confirme o plano individual e os horários definidos para o início da formação.')
-          return
-        }
-        setStep(2)
-        return
-      }
-
-      if (step === 2) {
-        if (!validatePersonalData()) return
-        setStep(3)
-        return
-      }
-
-      if (step === 3) {
-        if (!contractAccepted || contractSignatureStatus !== 'signed') {
-          setError('Leia, aceite e assine o contrato antes de continuar.')
-          return
-        }
-        setStep(4)
-        return
-      }
-
-      return
-    }
-
-    if (step === 1) {
       if (!plan && !collectiveEnrollment) {
         setError('O plano selecionado não está disponível.')
         return
@@ -2537,7 +2510,7 @@ export default function Matricula() {
                       ? formatCurrency(selectedSchedule.valor_mensal) + '/mês'
                       : 'Calculado após a análise do horário')
                     : plan
-                      ? formatCurrency(collectiveFormationDiscount?.valorDesconto ?? selectedSchedule?.valor_mensal ?? Number(plan.preco)) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
+                      ? formatCurrency(selectedSchedule?.valor_mensal ?? Number(plan.preco)) + (plan.tipo === 'avulso' ? ' pagamento único' : '')
                       : '—'}
                 </strong>
               </div>
