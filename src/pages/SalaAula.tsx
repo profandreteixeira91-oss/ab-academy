@@ -1131,6 +1131,9 @@ export default function SalaAula() {
   const [connecting, setConnecting] =
     useState(false)
 
+  const [status, setStatus] =
+    useState<ClassroomStatus>('idle')
+
   const [error, setError] =
     useState<string | null>(null)
 
@@ -1165,6 +1168,8 @@ export default function SalaAula() {
     const loadSession =
       async () => {
         try {
+          setStatus('authenticating')
+
           const {
             data: sessionData,
             error: sessionError,
@@ -1227,6 +1232,7 @@ export default function SalaAula() {
       async () => {
         try {
           setLoading(true)
+          setStatus('preparing')
           setError(null)
 
           const lessonId =
@@ -1461,42 +1467,26 @@ export default function SalaAula() {
 
       try {
         setConnecting(true)
+        setStatus('connecting')
         setError(null)
 
-        const {
-          data: response,
-          error: functionError,
-        } =
-          await supabase.functions.invoke(
-            'livekit-token',
-            {
-              body: {
-                lessonId:
-                  data.lesson.id,
-              },
-            },
-          )
-
-        if (functionError) {
-          throw functionError
-        }
-
-        if (
-          !response?.token ||
-          !response?.url
-        ) {
-          throw new Error(
-            response?.error ||
-              'Não foi possível obter acesso à sala.',
-          )
-        }
+        const response = await requestLiveKitAccess(
+          data.lesson.id,
+          'student',
+        )
 
         setLivekit(response)
       } catch (err) {
-        console.error(
-          'Erro ao conectar ao LiveKit:',
-          err,
+        const message = err instanceof Error
+          ? err.message
+          : 'Não foi possível conectar à sala.'
+
+        setStatus(
+          /sessão|autenticad|permissão|acesso/i.test(message)
+            ? 'auth-error'
+            : 'room-error',
         )
+        console.error('[Classroom] LiveKit access error:', err)
 
         setError(
           err instanceof Error
@@ -1601,7 +1591,9 @@ export default function SalaAula() {
         lesson={lesson}
         onLeave={() => {
           setLivekit(null)
+          setStatus('disconnected')
         }}
+        onStatusChange={setStatus}
       />
     )
   }
