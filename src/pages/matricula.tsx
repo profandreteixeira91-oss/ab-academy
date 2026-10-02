@@ -1492,9 +1492,9 @@ export default function Matricula() {
       p_idioma: language,
       p_modalidade: modalidade,
       p_aulas_semana: aulasSemana,
-      p_nivel_conversacao: conversationLevel,
-      p_nivel_escrita: writingLevel,
-      p_nivel_compreensao: comprehensionLevel,
+      p_nivel_conversacao: conversationLevel || selectedSchedule?.nivel_referencia || '',
+      p_nivel_escrita: writingLevel || selectedSchedule?.nivel_referencia || '',
+      p_nivel_compreensao: comprehensionLevel || selectedSchedule?.nivel_referencia || '',
       p_reserva_token: reservaToken,
       p_nome: name.trim(),
       p_email: email.trim().toLowerCase(),
@@ -1884,8 +1884,10 @@ export default function Matricula() {
                         <span className="selection-radio" />
                       </div>
                       <div className="plan-price">
-                        {formatCurrency(plan.preco)}
-                        <span>{plan.tipo === 'avulso' ? ' pagamento único' : ' / mês'}</span>
+                        {isCollectiveEnrollmentFlow && collectiveFormationDiscount
+                          ? formatCurrency(Math.round(Number(plan.preco) * 0.9 * 100) / 100)
+                          : formatCurrency(plan.preco)}
+                        <span> / mês</span>
                       </div>
                       {getPlanPaymentDescription(plan) && (
                         <div className="plan-installment">{getPlanPaymentDescription(plan)}</div>
