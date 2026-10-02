@@ -316,6 +316,28 @@ export default function Matricula() {
   const proficiencyTestUrl = import.meta.env.VITE_PROFICIENCY_TEST_URL as string | undefined
   const effectivePlan = plan
 
+  const contractModalidadeLabel =
+    plan?.modalidade === 'dupla'
+      ? 'Dupla'
+      : plan?.modalidade === 'grupo'
+        ? 'Grupo'
+        : 'Individual'
+  const contractFrequency = plan?.aulas_semana
+    ? `${plan.aulas_semana} aula${plan.aulas_semana > 1 ? 's' : ''} por semana`
+    : 'Frequência conforme o plano selecionado'
+  const contractMonthlyValue = Number(selectedSchedule?.valor_mensal ?? plan?.preco ?? 0)
+  const contractScheduleText = selectedSchedules.length > 0
+    ? selectedSchedules
+        .slice()
+        .sort((a, b) => a.weekday - b.weekday || a.hora_inicio.localeCompare(b.hora_inicio))
+        .map((schedule) => {
+          const weekday = WEEKDAYS.find((day) => day.value === schedule.weekday)?.label ?? 'Dia não informado'
+          return `${weekday}, das ${formatTime(schedule.hora_inicio)} às ${formatTime(schedule.hora_fim)}`
+        })
+        .join(' • ')
+    : 'Horário ainda não informado'
+  const contractLevel = selectedSchedule?.nivel_referencia || conversationLevel || 'A definir'
+
 
   const getSchedulePeriod = (time: string) => {
     const hour = Number(time.slice(0, 2))
@@ -2339,69 +2361,129 @@ export default function Matricula() {
                 <div className="contract-section">
                   <div className="selection-heading"><div><h3>Contrato virtual</h3><p>Leia as condições da matrícula antes da assinatura.</p></div></div>
                   <div className="contract-card">
-                    <strong>Contrato AB Academy Idiomas</strong>
-                    <p>Esta etapa usa a assinatura eletrônica interna da AB Academy. O documento será vinculado à sua matrícula e ao token desta sessão, com registro de aceite, identidade do signatário e horário da assinatura.</p>
+                    <div className="contract-document">
+                      <header className="contract-document-header">
+                        <FileText size={22} />
+                        <div>
+                          <strong>CONTRATO DE PRESTAÇÃO DE SERVIÇOS EDUCACIONAIS</strong>
+                          <span>AB Academy Idiomas · Versão inicial</span>
+                        </div>
+                      </header>
+
+                      <div className="contract-document-body">
+                        <p>Pelo presente instrumento eletrônico, a <strong>AB Academy Idiomas</strong>, doravante denominada CONTRATADA, e o(a) aluno(a) identificado(a) nesta matrícula, doravante denominado(a) CONTRATANTE, estabelecem as condições abaixo para a prestação de serviços educacionais de idiomas.</p>
+
+                        <section>
+                          <h4>1. Identificação e objeto</h4>
+                          <p>A CONTRATADA prestará ao CONTRATANTE serviços de ensino de idioma, conforme o plano comercial selecionado, incluindo as aulas e os recursos educacionais disponibilizados pela AB Academy para a modalidade contratada.</p>
+                        </section>
+
+                        <section>
+                          <h4>2. Condições da matrícula</h4>
+                          <dl className="contract-document-data">
+                            <div><dt>Aluno</dt><dd>{name || 'Não informado'}</dd></div>
+                            <div><dt>CPF</dt><dd>{cpf || 'Não informado'}</dd></div>
+                            <div><dt>E-mail</dt><dd>{email || 'Não informado'}</dd></div>
+                            <div><dt>Idioma</dt><dd>{selectedLanguageLabel || 'Não informado'}</dd></div>
+                            <div><dt>Modalidade</dt><dd>{contractModalidadeLabel}</dd></div>
+                            <div><dt>Plano</dt><dd>{plan?.nome || 'Não informado'}</dd></div>
+                            <div><dt>Frequência</dt><dd>{contractFrequency}</dd></div>
+                            <div><dt>Nível de referência</dt><dd>{formatNivel(contractLevel)}</dd></div>
+                            <div><dt>Horários</dt><dd>{contractScheduleText}</dd></div>
+                          </dl>
+                        </section>
+
+                        <section>
+                          <h4>3. Valor e pagamento</h4>
+                          <p>O CONTRATANTE pagará o valor informado no resumo desta matrícula, correspondente a <strong>{formatCurrency(contractMonthlyValue)}/mês</strong>{plan?.tipo === 'anual' && plan.parcelas && plan.valor_parcela ? ` ou ${plan.parcelas} parcelas de ${formatCurrency(plan.valor_parcela)}, conforme o plano.` : '.'} O pagamento e a ativação da matrícula observarão as condições apresentadas na etapa de revisão e no meio de pagamento disponibilizado pela AB Academy.</p>
+                          {isCollectivePlan && <p>Para modalidade coletiva, o valor desta matrícula considera a condição comercial vigente para a turma selecionada. Quando aplicável, a condição de formação corresponde ao desconto informado previamente na página de Planos e no resumo desta matrícula.</p>}
+                        </section>
+
+                        <section>
+                          <h4>4. Aulas, horários e frequência</h4>
+                          <p>As aulas ocorrerão nos dias e horários selecionados nesta matrícula. O CONTRATANTE compromete-se a observar pontualidade e frequência. Em modalidades coletivas, os horários integram a turma e são compartilhados com os demais participantes, não sendo tratados como horários individuais.</p>
+                        </section>
+
+                        <section>
+                          <h4>5. Modalidades coletivas</h4>
+                          <p>Nas modalidades de dupla e grupo, a prestação do serviço está vinculada à turma e à composição indicada no momento da contratação. A condição comercial de formação, quando existente, corresponde especificamente à condição apresentada para esta matrícula e não transforma a contratação coletiva em uma contratação individual.</p>
+                        </section>
+
+                        <section>
+                          <h4>6. Obrigações da CONTRATADA</h4>
+                          <ul>
+                            <li>Disponibilizar as aulas e recursos previstos no plano contratado.</li>
+                            <li>Manter os registros necessários à gestão da matrícula e do atendimento educacional.</li>
+                            <li>Comunicar alterações relevantes relacionadas à prestação do serviço pelos canais oficiais da AB Academy.</li>
+                          </ul>
+                        </section>
+
+                        <section>
+                          <h4>7. Obrigações do CONTRATANTE</h4>
+                          <ul>
+                            <li>Fornecer dados cadastrais verdadeiros e mantê-los atualizados.</li>
+                            <li>Efetuar os pagamentos devidos nas condições contratadas.</li>
+                            <li>Respeitar professores, alunos e demais participantes, observando as regras de convivência da plataforma.</li>
+                            <li>Não compartilhar credenciais de acesso nem reproduzir ou distribuir materiais educacionais sem autorização.</li>
+                          </ul>
+                        </section>
+
+                        <section>
+                          <h4>8. Cancelamento e encerramento</h4>
+                          <p>O cancelamento ou encerramento da matrícula deverá ser solicitado pelos canais oficiais da AB Academy. Eventuais valores, períodos já iniciados, restituições ou obrigações remanescentes serão tratados de acordo com a contratação, a legislação aplicável e as condições comerciais vigentes.</p>
+                        </section>
+
+                        <section>
+                          <h4>9. Dados pessoais e privacidade</h4>
+                          <p>Os dados fornecidos nesta matrícula poderão ser tratados para execução do contrato, prestação dos serviços educacionais, processamento de pagamentos, comunicação, segurança, manutenção de registros e cumprimento de obrigações legais, observada a legislação aplicável de proteção de dados, inclusive a LGPD.</p>
+                        </section>
+
+                        <section>
+                          <h4>10. Propriedade intelectual</h4>
+                          <p>Materiais, conteúdos, atividades, marcas, textos, vídeos e demais recursos disponibilizados pela AB Academy permanecem protegidos pela legislação aplicável. O acesso concedido ao aluno é destinado ao uso educacional pessoal, vedada a reprodução ou distribuição não autorizada.</p>
+                        </section>
+
+                        <section>
+                          <h4>11. Aceite e assinatura eletrônica</h4>
+                          <p>O aceite por meio do checkbox desta etapa e a assinatura eletrônica mediante digitação do nome completo representam a manifestação de concordância com este documento. A AB Academy registrará o nome do signatário, dados da matrícula e data/hora do aceite para fins de comprovação do procedimento.</p>
+                        </section>
+
+                        <section>
+                          <h4>12. Disposições gerais</h4>
+                          <p>Este documento representa a versão inicial do contrato utilizado no fluxo de matrícula. Questões não previstas serão interpretadas de acordo com a legislação brasileira aplicável e com os direitos assegurados ao consumidor. A versão jurídica definitiva poderá complementar esta estrutura sem alterar indevidamente as condições comerciais expressamente apresentadas nesta matrícula.</p>
+                        </section>
+                      </div>
+                    </div>
 
                     <div className="contract-status">
                       <ShieldCheck size={18} />
-                      <span>
-                        {contractSignatureStatus === 'signed'
-                          ? 'Assinatura registrada nesta matrícula.'
-                          : 'Aguardando sua assinatura.'}
-                      </span>
+                      <span>{contractSignatureStatus === 'signed' ? 'Assinatura registrada nesta matrícula.' : 'Aguardando sua assinatura.'}</span>
                     </div>
 
                     <label className="contract-checkbox">
-                      <input
-                        type="checkbox"
-                        checked={contractAccepted}
-                        onChange={(event) => {
-                          setContractAccepted(event.target.checked)
-                          if (!event.target.checked) {
-                            setContractSignatureStatus('pending')
-                          }
-                        }}
-                        disabled={contractSignatureStatus === 'signed'}
-                      />
+                      <input type="checkbox" checked={contractAccepted} onChange={(event) => { setContractAccepted(event.target.checked); if (!event.target.checked) setContractSignatureStatus('pending') }} disabled={contractSignatureStatus === 'signed'} />
                       <span>Li e concordo com o conteúdo do contrato.</span>
                     </label>
 
                     {contractAccepted && contractSignatureStatus !== 'signed' && (
                       <div className="contract-signature-field">
                         <label htmlFor="contract-signature-name">Assinatura eletrônica</label>
-                        <input
-                          id="contract-signature-name"
-                          type="text"
-                          value={signatureName}
-                          onChange={(event) => setSignatureName(event.target.value)}
-                          placeholder="Digite seu nome completo"
-                          autoComplete="name"
-                        />
+                        <input id="contract-signature-name" type="text" value={signatureName} onChange={(event) => setSignatureName(event.target.value)} placeholder="Digite seu nome completo" autoComplete="name" />
                         <small>Digite exatamente o mesmo nome informado no cadastro. A assinatura é registrada internamente pela AB Academy.</small>
                       </div>
                     )}
 
                     {contractSignatureStatus !== 'signed' ? (
-                      <button
-                        type="button"
-                        className="enrollment-primary-button"
-                        disabled={!contractAccepted || !signatureName.trim() || signingContract}
-                        onClick={signContractInternally}
-                      >
+                      <button type="button" className="enrollment-primary-button" disabled={!contractAccepted || !signatureName.trim() || signingContract} onClick={signContractInternally}>
                         {signingContract ? 'Registrando assinatura...' : 'Assinar contrato'}
                         {!signingContract && <ArrowRight size={18} />}
                       </button>
                     ) : (
-                      <div className="contract-signed-badge">
-                        <ShieldCheck size={18} />
-                        Assinado por {name}
-                      </div>
+                      <div className="contract-signed-badge"><ShieldCheck size={18} /> Assinado por {name}</div>
                     )}
 
-                    <small className="contract-internal-note">
-                      Assinatura interna — sem integração com GOV.BR ou provedor externo. O conteúdo jurídico definitivo do contrato será conectado a esta estrutura antes da publicação da versão final.
-                    </small>
-                  </div>
+                    <small className="contract-internal-note">Assinatura interna — sem integração com GOV.BR ou provedor externo. Este é um contrato inicial de operação; a versão jurídica definitiva poderá ser revisada antes da publicação final.</small>
+                  </div>                  </div>
                 </div>
               )}
 
