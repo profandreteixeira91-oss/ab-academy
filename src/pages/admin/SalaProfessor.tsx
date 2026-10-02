@@ -470,6 +470,11 @@ function ClassroomControls({
   const [backgroundImage, setBackgroundImage] = useState<string | null>(null)
   const [backgroundError, setBackgroundError] = useState<string | null>(null)
 
+  useEffect(() => {
+    if (!backgroundImage) return
+    return () => URL.revokeObjectURL(backgroundImage)
+  }, [backgroundImage])
+
   async function toggleMicrophone() {
     try {
       await localParticipant.setMicrophoneEnabled(
