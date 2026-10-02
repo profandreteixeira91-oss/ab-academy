@@ -126,8 +126,6 @@ function ModalidadeCard({
   const horariosDisponiveis = filtrados.filter((horario) => horario.disponivel && horario.turma_id)
   const horariosIndisponiveis = filtrados.filter((horario) => !horario.disponivel || !horario.turma_id)
   const [expandedScheduleKey, setExpandedScheduleKey] = useState<string | null>(null)
-  const [formationPrices, setFormationPrices] = useState<Record<string, number>>({})
-  const [formationPriceLoading, setFormationPriceLoading] = useState<string | null>(null)
   const [reserveTarget, setReserveTarget] = useState<{ key: string; plano: Plano; horarios: HorarioColetivo[] } | null>(null)
   const [reserveName, setReserveName] = useState('')
   const [reserveEmail, setReserveEmail] = useState('')
@@ -143,33 +141,10 @@ function ModalidadeCard({
     return digits.replace(/^(\d{2})(\d)/, '($1) $2').replace(/(\d{5})(\d)/, '$1-$2')
   }
 
-  const handleChooseSchedule = async (key: string, plano: Plano, horariosDaOpcao: HorarioColetivo[]) => {
+  const handleChooseSchedule = (key: string) => {
     setReserveMessage('')
     setReserveTarget(null)
-    if (expandedScheduleKey === key) {
-      setExpandedScheduleKey(null)
-      return
-    }
-    setExpandedScheduleKey(key)
-
-    if (horariosDaOpcao.some((horario) => horario.participantes > 0) || formationPrices[key] !== undefined) return
-
-    setFormationPriceLoading(key)
-    const { data: formationPrice, error: formationPriceError } = await supabase.rpc('preco_formacao_coletiva', {
-      p_idioma: plano.idioma,
-      p_modalidade: modalidade,
-      p_aulas_semana: plano.aulas_semana ?? 1,
-    })
-
-    if (formationPriceError || formationPrice == null || Number(formationPrice) <= 0) {
-      console.error('Erro ao calcular preço de formação:', formationPriceError)
-      setFormationPriceLoading(null)
-      setReserveMessage('Não foi possível calcular a condição especial deste horário.')
-      return
-    }
-
-    setFormationPrices((current) => ({ ...current, [key]: Number(formationPrice) }))
-    setFormationPriceLoading(null)
+    setExpandedScheduleKey((current) => current === key ? null : key)
   }
 
   const submitReserve = async () => {
@@ -245,7 +220,7 @@ function ModalidadeCard({
             // A formação coletiva possui uma condição comercial própria.
             // Ela não depende de plano individual: o primeiro aluno paga 90%
             // do valor da própria modalidade/frequência coletiva.
-            const formationPrice = Number(plano.preco) * 0.9
+            const formationPrice = Math.round(Number(plano.preco) * 0.9 * 100) / 100
             const vagasRestantes = Math.min(...horariosDaOpcao.map((horario) => horario.vagas_restantes))
             return (
               <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')}>
