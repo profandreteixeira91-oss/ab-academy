@@ -1436,6 +1436,21 @@ export default function Matricula() {
     setSelectedSchedule(next[0] ?? null)
   }
 
+
+  const startCollectiveFromCampaign = (campaign: CollectiveCampaign) => {
+    const mapped = campaign.horarios.slice().sort((a, b) => a.ordem - b.ordem).map((item) => ({
+      id: item.horario_id, date: campaign.data_inicio, weekday: item.dia_semana, hora_inicio: item.hora_inicio, hora_fim: item.hora_fim,
+      meet_url: null, meet_space_name: null, turma_id: campaign.turma_id, participante_id: null,
+      valor_mensal: campaign.participantes === 0 ? Math.round(Number(plan?.preco ?? 0) * 0.9 * 100) / 100 : Number(plan?.preco ?? 0),
+      participantes: campaign.participantes, capacidade: campaign.capacidade, status_formacao: campaign.status_formacao,
+      tipo_valor: campaign.participantes === 0 ? 'coletiva_em_formacao' : 'coletiva_formada', professor_id: campaign.professor_id, nivel_referencia: campaign.nivel_referencia,
+    }))
+    if (mapped.length !== campaign.aulas_semana) { setError('A turma selecionada não possui todos os encontros semanais configurados.'); return }
+    setCollectiveFormationDiscount(campaign.participantes === 0)
+    setSelectedSchedules(mapped); setSelectedSchedule(mapped[0] ?? null); setScheduleLockedFromPlanos(true); setSelectedWeekday(mapped[0]?.weekday ?? null); setStep(1)
+    setError(''); setSuccess('Turma selecionada. Confira o plano, os horários e o valor antes de continuar.')
+  }
+
   const reserveCollectiveLead = async () => {
     if (!collectiveLeadTarget || !language) return
     if (!name.trim() || !email.trim() || cleanDigits(phone).length < 10) {
@@ -1835,7 +1850,7 @@ export default function Matricula() {
                   <p>
                     {isCollectiveEnrollmentFlow
                       ? step === 1
-                        ? 'Confira o plano individual, a condição especial e os horários definidos pela turma de origem.'
+                        ? 'Confira a modalidade coletiva, o horário fixo escolhido em Planos e a condição comercial aplicada.'
                         : step === 2
                           ? 'Informe os dados necessários para sua matrícula.'
                           : step === 3
@@ -1912,7 +1927,26 @@ export default function Matricula() {
               )}
 
     
-              {isCollectivePlan && (
+
+              {isCollectiveEnrollmentFlow && scheduleLockedFromPlanos && step === 1 && (
+                <div className="collective-campaign-section">
+                  <div className="selection-heading"><div><h3>Plano e horário confirmados</h3><p>Estas informações foram trazidas diretamente da seleção realizada na página Planos.</p></div></div>
+                  <div className="availability-selection-summary">
+                    <strong>{plan?.modalidade === 'dupla' ? 'Dupla' : 'Grupo'} · {selectedLanguageLabel}</strong>
+                    {selectedSchedules.slice().sort((a, b) => a.weekday - b.weekday || a.hora_inicio.localeCompare(b.hora_inicio)).map((schedule) => (
+                      <span key={schedule.id}>{WEEKDAYS.find((day) => day.value === schedule.weekday)?.label}: {formatTime(schedule.hora_inicio)} — {formatTime(schedule.hora_fim)}</span>
+                    ))}
+                    <span>Plano: {plan?.nome ?? '—'}</span>
+                    <span>Frequência: {requiredWeeklyLessons} aula{requiredWeeklyLessons === 1 ? '' : 's'} por semana</span>
+                    <span>Nível da turma: {formatNivel(selectedSchedules[0]?.nivel_referencia)}</span>
+                    <span>{collectiveFormationDiscount ? 'Condição de formação: 10% de desconto sobre o valor do próprio plano coletivo.' : 'Condição comercial: valor normal do plano coletivo.'}</span>
+                    <strong>Mensalidade: {formatCurrency(Number(selectedSchedule?.valor_mensal ?? plan?.preco ?? 0))}/mês</strong>
+                  </div>
+                  <div className="availability-actions"><a href="/planos" className="availability-edit-button">Alterar plano ou horário</a></div>
+                </div>
+              )}
+
+              {isCollectivePlan && !scheduleLockedFromPlanos && (
                     <div className="collective-campaign-section">
                       <div className="selection-heading">
                         <div>
@@ -1952,7 +1986,7 @@ export default function Matricula() {
                               </div>
                               <div className="collective-campaign-actions">
                                 <button type="button" className="enrollment-secondary-button" onClick={() => void startCollectiveFromCampaign(campaign)} disabled={loading}>
-                                  Iniciar individualmente
+                                  Iniciar matrícula
                                 </button>
                                 <button type="button" className="enrollment-primary-button" onClick={() => setCollectiveLeadTarget({ campaign, horario_id: campaign.horarios[0]?.horario_id })} disabled={loading}>
                                   Reservar vaga
@@ -2378,44 +2412,22 @@ export default function Matricula() {
                 </div>
               )}
 
+
               {isCollectiveEnrollmentFlow && step === 4 && (
                 <div className="contract-section">
-                  <div className="selection-heading">
-                    <div>
-                      <h3>Revise sua matrícula</h3>
-                      <p>Confira plano, horários, dados e valor antes de criar a matrícula e seguir para o pagamento.</p>
-                    </div>
-                  </div>
-
+                  <div className="selection-heading"><div><h3>Revisão da matrícula</h3><p>Confira todos os dados, horários, contrato e valor antes de criar a matrícula e seguir para o pagamento.</p></div></div>
                   <div className="contract-card">
-                    <div className="enrollment-summary-item">
-                      <span>Plano</span>
-                      <strong>{plan?.nome ?? '—'}</strong>
-                    </div>
-                    <div className="enrollment-summary-item">
-                      <span>Modalidade</span>
-                      <strong>Individual · formação de {collectiveFormationDiscount?.modalidade === 'dupla' ? 'dupla' : 'grupo'}</strong>
-                    </div>
-                    <div className="enrollment-summary-item">
-                      <span>Aluno</span>
-                      <strong>{name || '—'}</strong>
-                    </div>
-                    <div className="enrollment-summary-item">
-                      <span>Horários</span>
-                      <strong>
-                        {selectedSchedules.map((schedule) =>
-                          `${WEEKDAYS.find((day) => day.value === schedule.weekday)?.short ?? ''} ${formatTime(schedule.hora_inicio)}–${formatTime(schedule.hora_fim)}`
-                        ).join(' · ')}
-                      </strong>
-                    </div>
-                    <div className="enrollment-summary-total">
-                      <span>Mensalidade</span>
-                      <strong>{collectiveFormationDiscount ? formatCurrency(collectiveFormationDiscount.valorDesconto) + '/mês' : '—'}</strong>
-                    </div>
-                    <div className="contract-signed-badge">
-                      <ShieldCheck size={18} />
-                      Contrato assinado por {name}
-                    </div>
+                    <div className="enrollment-summary-item"><span>Idioma</span><strong>{selectedLanguageLabel}</strong></div>
+                    <div className="enrollment-summary-item"><span>Modalidade</span><strong>{plan?.modalidade === 'dupla' ? 'Dupla' : 'Grupo'}</strong></div>
+                    <div className="enrollment-summary-item"><span>Plano</span><strong>{plan?.nome ?? '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>Aluno</span><strong>{name || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>CPF</span><strong>{cpf || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>E-mail</span><strong>{email || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>WhatsApp</span><strong>{phone || '—'}</strong></div>
+                    <div className="enrollment-summary-item"><span>Horários</span><strong>{selectedSchedules.map((schedule) => WEEKDAYS.find((day) => day.value === schedule.weekday)?.short + ' ' + formatTime(schedule.hora_inicio) + '–' + formatTime(schedule.hora_fim)).join(' · ')}</strong></div>
+                    <div className="enrollment-summary-item"><span>Condição</span><strong>{collectiveFormationDiscount ? 'Primeiro aluno da formação · 10% de desconto' : 'Valor normal do plano coletivo'}</strong></div>
+                    <div className="enrollment-summary-total"><span>Mensalidade</span><strong>{formatCurrency(Number(selectedSchedule?.valor_mensal ?? plan?.preco ?? 0))}/mês</strong></div>
+                    <div className="contract-signed-badge"><ShieldCheck size={18} /> Contrato assinado por {name}</div>
                   </div>
                 </div>
               )}
