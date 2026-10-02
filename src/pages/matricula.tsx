@@ -1170,11 +1170,6 @@ export default function Matricula() {
     return true
   }
 
-  const processProficiencyDocument = async () => {
-      setProficiencyProcessing(false)
-    }
-  }
-
   const signContractInternally = async () => {
     setError('')
     setSuccess('')
