@@ -988,6 +988,9 @@ export default function SalaProfessor() {
   const [connecting, setConnecting] =
     useState(false)
 
+  const [status, setStatus] =
+    useState<ClassroomStatus>('idle')
+
   const [error, setError] =
     useState<string | null>(null)
 
@@ -1004,6 +1007,7 @@ export default function SalaProfessor() {
   async function loadLesson() {
     try {
       setLoading(true)
+      setStatus('authenticating')
       setError(null)
 
       const lessonId =
@@ -1048,6 +1052,7 @@ export default function SalaProfessor() {
       setLesson(
         lessonData as Lesson,
       )
+      setStatus('preparing')
     } catch (err) {
       console.error(
         'Erro ao carregar aula:',
@@ -1071,182 +1076,27 @@ export default function SalaProfessor() {
    */
 
  async function connectToLiveKit() {
-  if (!lesson) {
-    return
-  }
+  if (!lesson) return
 
   try {
     setConnecting(true)
+    setStatus('connecting')
     setError(null)
 
-    // Verifica os dispositivos antes de solicitar o token.
-    if (!navigator.mediaDevices?.getUserMedia) {
-      throw new Error('Este navegador não oferece suporte ao acesso ao microfone.')
-    }
-
-    let microphoneStream: MediaStream | null = null
-    try {
-      microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    } catch (mediaError) {
-      console.error('Permissão do microfone recusada:', mediaError)
-      throw new Error(
-        'Não foi possível acessar o microfone. Permita o uso do microfone no navegador e tente novamente.',
-      )
-    } finally {
-      microphoneStream?.getTracks().forEach((track) => track.stop())
-    }
-
-    let cameraStream: MediaStream | null = null
-    try {
-      cameraStream = await navigator.mediaDevices.getUserMedia({ video: true })
-    } catch (cameraError) {
-      console.warn('Câmera não disponível ou sem permissão:', cameraError)
-    } finally {
-      cameraStream?.getTracks().forEach((track) => track.stop())
-    }
-
-    console.log('=== LIVEKIT PROFESSOR ===')
-    console.log('lesson.id:', lesson.id)
-
-    const {
-      data: response,
-      error: functionError,
-    } = await supabase.functions.invoke(
-      'livekit-token',
-      {
-        body: {
-          lessonId: lesson.id,
-        },
-      },
-    )
-
-    console.log('LiveKit response:', response)
-    console.log('LiveKit functionError:', functionError)
-
-    if (functionError) {
-      let detailedError =
-        functionError.message ||
-        'Erro ao chamar a Edge Function.'
-
-      // Testa o microfone antes de solicitar o token LiveKit.
-      // O áudio é obrigatório para a aula; a câmera é opcional.
-      if (!navigator.mediaDevices?.getUserMedia) {
-        throw new Error('Este navegador não oferece suporte ao acesso ao microfone.')
-      }
-
-      let microphoneStream: MediaStream | null = null
-      try {
-        microphoneStream = await navigator.mediaDevices.getUserMedia({ audio: true })
-      } catch (mediaError) {
-        console.error('Permissão do microfone recusada:', mediaError)
-        throw new Error('Não foi possível acessar o microfone. Permita o uso do microfone no navegador e tente novamente.')
-      } finally {
-        microphoneStream?.getTracks().forEach((track) => track.stop())
-      }
-
-      // Solicita a câmera separadamente. Se ela for bloqueada,
-      // a aula continua funcionando normalmente com áudio.
-      let cameraStream: MediaStream | null = null
-      try {
-        cameraStream = await navigator.mediaDevices.getUserMedia({ video: true })
-      } catch (cameraError) {
-        console.warn('Câmera não disponível ou sem permissão:', cameraError)
-      } finally {
-        cameraStream?.getTracks().forEach((track) => track.stop())
-      }
-
-      try {
-        const context =
-          (
-            functionError as {
-              context?: Response
-            }
-          ).context
-
-        if (context) {
-          const responseText =
-            await context.text()
-
-          console.error(
-            'LiveKit HTTP status:',
-            context.status,
-          )
-
-          console.error(
-            'LiveKit response body:',
-            responseText,
-          )
-
-          try {
-            const parsed =
-              JSON.parse(responseText)
-
-            if (parsed?.error) {
-              detailedError =
-                parsed.error
-            }
-          } catch {
-            if (responseText) {
-              detailedError =
-                responseText
-            }
-          }
-        }
-      } catch (debugError) {
-        console.error(
-          'Erro ao obter detalhes da Edge Function:',
-          debugError,
-        )
-      }
-
-      throw new Error(
-        detailedError,
-      )
-    }
-
-    if (
-      !response?.token ||
-      !response?.url
-    ) {
-      throw new Error(
-        response?.error ||
-          'A Edge Function não retornou um token válido.',
-      )
-    }
-
-    if (
-      response.role &&
-      response.role !== 'teacher'
-    ) {
-      throw new Error(
-        `Acesso recusado. Role recebido: ${response.role}`,
-      )
-    }
-
-    console.log(
-      'LiveKit conectado com sucesso:',
-      {
-        roomName:
-          response.roomName,
-        identity:
-          response.identity,
-        role:
-          response.role,
-      },
-    )
-
+    const response = await requestLiveKitAccess(lesson.id, 'teacher')
     setLivekit(response)
   } catch (err) {
-    console.error(
-      'ERRO FINAL LIVEKIT PROFESSOR:',
-      err,
-    )
+    const message = err instanceof Error
+      ? err.message
+      : 'Não foi possível conectar à sala.'
 
-    setError(
-      err instanceof Error
-        ? err.message
-        : 'Não foi possível conectar à sala.',
+    setStatus(
+      /sessão|autenticad|permissão|acesso/i.test(message)
+        ? 'auth-error'
+        : 'room-error',
     )
+    console.error('[Classroom] Teacher LiveKit access error:', err)
+    setError(message)
   } finally {
     setConnecting(false)
   }
@@ -1260,6 +1110,7 @@ export default function SalaProfessor() {
 
   function leaveRoom() {
     setLivekit(null)
+    setStatus('disconnected')
   }
 
   /*
@@ -1342,6 +1193,7 @@ export default function SalaProfessor() {
         livekit={livekit}
         lesson={lesson}
         onLeave={leaveRoom}
+        onStatusChange={setStatus}
       />
     )
   }
@@ -1353,7 +1205,7 @@ export default function SalaProfessor() {
    */
 
   return (
-    <div className="virtual-classroom-page">
+    <div className="virtual-classroom-page" data-classroom-status={status}>
 
       <header className="virtual-classroom-header">
 
