@@ -626,7 +626,7 @@ export default function Matricula() {
             participantes: null,
             capacidade: null,
             status_formacao: selectedPlan.modalidade === 'dupla' ? 'dupla_formada' : 'grupo_formado',
-            tipo_valor: 'coletiva_formada',
+            tipo_valor: formationDiscount ? 'coletiva_em_formacao' : 'coletiva_formada',
             professor_id: horario.professor_id,
             nivel_referencia: horario.nivel_referencia,
           }
@@ -1650,9 +1650,6 @@ export default function Matricula() {
         turma_token: collectiveEnrollment?.token ?? null,
         turma_participante_id: collectiveEnrollment?.participanteId ?? primarySchedule.participante_id ?? null,
         turma_id: collectiveEnrollment?.turmaId ?? primarySchedule.turma_id ?? null,
-        horario_formacao_id: collectiveFormationDiscount ? primarySchedule.id : null,
-        aguardando_formacao: collectiveFormationDiscount,
-        formacao_modalidade: collectiveFormationDiscount && (effectivePlan?.modalidade === 'dupla' || effectivePlan?.modalidade === 'grupo') ? effectivePlan.modalidade : null,
 
         objetivos: null,
 
