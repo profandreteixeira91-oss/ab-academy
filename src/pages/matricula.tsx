@@ -1936,7 +1936,7 @@ export default function Matricula() {
                       ) : collectiveCampaigns.length === 0 ? (
                         <div className="enrollment-empty">
                           <strong>Nenhuma turma disponível no momento.</strong>
-                          <p>Você pode iniciar individualmente ou deixar seus dados para a equipe organizar uma nova turma.</p>
+                          <p>Você pode iniciar uma nova formação coletiva ou deixar seus dados para a equipe organizar uma nova turma.</p>
                         </div>
                       ) : (
                         <div className="collective-campaign-grid">
