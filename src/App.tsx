@@ -414,14 +414,14 @@ function App() {
    */
 
   if (path.startsWith('/professor/aula/')) {
-  return (
-    <ProfessorAccess>
+    return (
       <ClassroomErrorBoundary portalPath="/professor">
-        <SalaProfessor />
+        <ProfessorAccess>
+          <SalaProfessor />
+        </ProfessorAccess>
       </ClassroomErrorBoundary>
-    </ProfessorAccess>
-  )
-}
+    )
+  }
 
   /*
    * =========================================================
