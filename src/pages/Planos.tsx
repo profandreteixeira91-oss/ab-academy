@@ -242,20 +242,10 @@ function ModalidadeCard({
         <div className="planos-frequency-list">
           {opcoes.map(({ plano, horariosDaOpcao }) => {
             const frequencia = plano.aulas_semana ?? 1
-            const individualPlanType: Plano['tipo'] =
-              frequencia === 1
-                ? 'mensal'
-                : frequencia === 2
-                  ? 'personalizado'
-                  : 'intensivo'
-
-            const individualPlan = planos.find((item) =>
-              item.idioma === idioma
-              && item.modalidade === 'individual'
-              && item.ativo
-              && item.tipo === individualPlanType
-              && item.aulas_semana === frequencia
-            )
+            // A formação coletiva possui uma condição comercial própria.
+            // Ela não depende de plano individual: o primeiro aluno paga 90%
+            // do valor da própria modalidade/frequência coletiva.
+            const formationPrice = Number(plano.preco) * 0.9
             const vagasRestantes = Math.min(...horariosDaOpcao.map((horario) => horario.vagas_restantes))
             return (
               <div className="planos-frequency-card planos-frequency-card--regular" key={plano.id + ':' + horariosDaOpcao.map((item) => item.id).join('-')}>
@@ -353,10 +343,35 @@ function ModalidadeCard({
                           </a>
                           ) : (
                             <div className="planos-schedule-choice-copy">
-                              <strong>Plano individual correspondente indisponível.</strong>
-                              <span>A condição de início individual não pode ser criada para esta frequência no momento.</span>
-                            </div>
-                          )}
+                          <strong>Esta turma ainda está em formação.</strong>
+                          <span>Como ainda não há outro aluno nesta turma, você pode iniciar pela própria modalidade coletiva com a condição especial de formação.</span>
+                        </div>
+                        <div className="planos-schedule-choice-actions">
+                          <a
+                            href={(() => {
+                              const firstSchedule = horariosDaOpcao[0]
+                              const params = new URLSearchParams({
+                                modalidade,
+                                idioma,
+                                plano: plano.id,
+                                horario_id: firstSchedule.id,
+                                horario_ids: horariosDaOpcao.map((item) => item.id).join(','),
+                                turma_id: firstSchedule.turma_id ?? '',
+                                aguardando_formacao: '1',
+                                formacao_coletiva: '1',
+                                nivel: firstSchedule.nivel_referencia ?? nivel,
+                              })
+                              return '/matricula?' + params.toString()
+                            })()}
+                            className="planos-schedule-choice-button planos-schedule-choice-button--individual"
+                          >
+                            <span>Iniciar esta dupla/grupo</span>
+                            <strong>
+                              {formatCurrency(formationPrice)}
+                              <small>/mês</small>
+                            </strong>
+                            <em>Condição especial de formação: 10% de desconto sobre o valor da própria modalidade. Não é plano individual.</em>
+                          </a>
                           <button
                             type="button"
                             className="planos-schedule-choice-button planos-schedule-choice-button--reserve"
