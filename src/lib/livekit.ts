@@ -104,6 +104,29 @@ function assertValidServerUrl(url: string) {
   }
 }
 
+export async function withClassroomTimeout<T>(
+  operation: Promise<T>,
+  timeoutMs: number,
+  message: string,
+): Promise<T> {
+  let timeoutId: number | undefined
+
+  try {
+    return await Promise.race([
+      operation,
+      new Promise<T>((_, reject) => {
+        timeoutId = window.setTimeout(() => {
+          reject(new Error(message))
+        }, timeoutMs)
+      }),
+    ])
+  } finally {
+    if (timeoutId !== undefined) {
+      window.clearTimeout(timeoutId)
+    }
+  }
+}
+
 export async function requestLiveKitAccess(
   lessonId: string,
   expectedRole: 'student' | 'teacher',
@@ -119,22 +142,15 @@ export async function requestLiveKitAccess(
     expectedRole,
   })
 
-  const result = await Promise.race([
+  const result = await withClassroomTimeout(
     supabase.functions.invoke('livekit-token', {
       body: {
         lessonId: normalizedLessonId,
       },
     }),
-    new Promise<never>((_, reject) => {
-      window.setTimeout(() => {
-        reject(
-          new Error(
-            'A preparação da sala demorou mais que o esperado. Verifique sua conexão e tente novamente.',
-          ),
-        )
-      }, 20_000)
-    }),
-  ])
+    20_000,
+    'A preparação da sala demorou mais que o esperado. Verifique sua conexão e tente novamente.',
+  )
 
   if (result.error) {
     const message = await readFunctionError(result.error)
