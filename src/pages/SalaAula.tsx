@@ -34,7 +34,7 @@ import {
 
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
-import { requestLiveKitAccess, type LiveKitAccessData } from '../lib/livekit'
+import { requestLiveKitAccess, withClassroomTimeout, type LiveKitAccessData } from '../lib/livekit'
 import '../styles/sala-aula.css'
 
 type Lesson = {
@@ -1205,8 +1205,11 @@ export default function SalaAula() {
           const {
             data: sessionData,
             error: sessionError,
-          } =
-            await supabase.auth.getSession()
+          } = await withClassroomTimeout(
+            supabase.auth.getSession(),
+            15_000,
+            'A verificação da sessão demorou mais que o esperado. Tente novamente.',
+          )
 
           if (sessionError) {
             throw sessionError
