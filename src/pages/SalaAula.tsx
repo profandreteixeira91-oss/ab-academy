@@ -850,22 +850,33 @@ function MediaBootstrap({
   useEffect(() => {
     if (initialized || room.state !== 'connected') return
     setInitialized(true)
+    let cancelled = false
 
     // Captura cada dispositivo em separado: falha de câmera não
     // deve impedir o áudio, e falha de microfone não deve impedir vídeo.
     void (async () => {
       try {
-        await localParticipant.setMicrophoneEnabled(true)
+        if (!localParticipant.isMicrophoneEnabled) {
+          await localParticipant.setMicrophoneEnabled(true)
+        }
       } catch (error) {
-        onMediaError('microphone', error)
+        if (!cancelled) onMediaError('microphone', error)
       }
 
+      if (cancelled) return
+
       try {
-        await localParticipant.setCameraEnabled(true)
+        if (!localParticipant.isCameraEnabled) {
+          await localParticipant.setCameraEnabled(true)
+        }
       } catch (error) {
-        onMediaError('camera', error)
+        if (!cancelled) onMediaError('camera', error)
       }
     })()
+
+    return () => {
+      cancelled = true
+    }
   }, [initialized, room.state, localParticipant, onMediaError])
 
   return null
