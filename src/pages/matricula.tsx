@@ -3,7 +3,6 @@ import {
   ArrowRight,
   ChevronLeft,
   ShieldCheck,
-  ExternalLink,
   FileText,
 } from 'lucide-react'
 
