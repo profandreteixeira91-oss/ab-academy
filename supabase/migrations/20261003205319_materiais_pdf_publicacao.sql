@@ -1,2 +1,5 @@
--- A publicação em PDF usa a coluna pdf_publicado_path criada na migration anterior.
--- Mantida para alinhar a árvore de migrations ao histórico remoto.
+alter table public.materiais
+  add column if not exists pdf_publicado_em timestamptz;
+
+comment on column public.materiais.pdf_publicado_em is
+  'Data/hora da geração do PDF que representa a publicação entregue ao aluno.';
