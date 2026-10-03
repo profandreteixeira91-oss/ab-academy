@@ -400,6 +400,10 @@ export default function Materiais({ professorId }: Props) {
         conteudo_html: html,
         imagens: imagePaths,
         videos: editor.videos,
+        conteudo_modelo: model,
+        operacoes_editor: operationsRef.current,
+        cursor_estado: selection,
+        versao_editor: editorVersionRef.current,
         updated_at: new Date().toISOString(),
       }
 
