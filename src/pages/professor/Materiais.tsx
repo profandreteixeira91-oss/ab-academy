@@ -483,10 +483,29 @@ export default function Materiais({ professorId }: Props) {
     )
     const urls = Object.fromEntries(entries.filter(([, url]) => url))
     let html = material.conteudo_html || empty.conteudo_html
+
     Object.entries(urls).forEach(([path, url]) => {
       html = html.split(`{{MATERIAL_IMAGE:${path}}}`).join(url)
       html = html.split(`src="${path}"`).join(`src="${url}"`)
     })
+
+    // Recupera imagens que já foram persistidas em "imagens" mas, por causa de
+    // versões anteriores do editor, ficaram fora do HTML salvo. Isso evita que
+    // uma imagem enviada anteriormente desapareça ao reabrir o rascunho.
+    const missingImages = Object.entries(urls).filter(([path]) => {
+      return !html.includes(`data-material-image="${path}"`) &&
+        !html.includes(`{{MATERIAL_IMAGE:${path}}}`) &&
+        !html.includes(`src="${path}"`)
+    })
+
+    if (missingImages.length) {
+      const recoveredImages = missingImages
+        .map(([path, url]) =>
+          `<p><img src="${escapeHtml(url)}" alt="Imagem do material" data-material-image="${escapeHtml(path)}" style="max-width:100%" /></p>`,
+        )
+        .join('')
+      html = `${html}${recoveredImages}`
+    }
 
     setSelected((data || []).map((row) => row.aluno_id))
     setEditor({
