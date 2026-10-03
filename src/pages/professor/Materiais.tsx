@@ -413,11 +413,7 @@ export default function Materiais({ professorId }: Props) {
     let html = material.conteudo_html || empty.conteudo_html
     Object.entries(urls).forEach(([path, url]) => {
       html = html.split(`{{MATERIAL_IMAGE:${path}}}`).join(url)
-      const escapedPath = path.replace(/[.*+?^${}()|[\\]\\]/g, '\\    Object.entries(urls).forEach(([path, url]) => {
-      html = html.split(`{{MATERIAL_IMAGE:${path}}}`).join(url)
-      html = html.replaceAll(`data-material-image="${path}"`, `data-material-image="${path}"`)
-      html = html.split(path).join(url)
-    })')
+      const escapedPath = path.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')
       html = html.replace(new RegExp(`src="${escapedPath}"`, 'g'), `src="${url}"`)
     })
 
