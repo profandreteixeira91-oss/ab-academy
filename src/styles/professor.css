@@ -1786,3 +1786,141 @@ button.professor-stat-card:hover {
 @media(max-width:900px){.professor-material-grid{grid-template-columns:1fr}.professor-material-editor-grid{grid-template-columns:1fr}.professor-material-side-card{position:static}.professor-material-editor-meta{grid-template-columns:1fr}.professor-material-card{grid-template-columns:auto 1fr}.professor-material-card-actions{grid-column:1/-1;justify-content:flex-end}.material-document{margin:12px;padding:28px 24px}.material-document-header strong{font-size:20px}}
 @media(max-width:640px){.professor-materials-page .professor-page-header,.professor-material-editor-header{flex-direction:column}.professor-material-editor-main,.professor-material-side-card{padding:14px}.professor-material-rich-editor{min-height:380px;padding:14px}.material-document{padding:22px 18px}.material-document-header img{width:54px;height:54px}.material-document-header strong{font-size:18px}}
 @media print{body *{visibility:hidden!important}.material-viewer,.material-viewer *{visibility:visible!important}.material-viewer{position:absolute!important;inset:0!important;max-height:none!important;overflow:visible!important;background:#fff!important}.no-print{display:none!important}.material-document{box-shadow:none!important;margin:0!important;max-width:none!important;min-height:auto!important;padding:24mm 18mm!important}.material-document-header{break-after:avoid}.material-document-body{font-size:12pt}.material-document-footer{margin-top:25mm}}
+
+
+/* =========================================================
+   MATERIAIS — EDITOR RICO / UX
+   ========================================================= */
+.professor-material-toolbar {
+  align-items: center;
+  gap: 6px;
+}
+.professor-material-toolbar button {
+  min-width: 36px;
+  min-height: 36px;
+  position: relative;
+}
+.professor-material-toolbar button:active,
+.professor-material-toolbar button:focus-visible {
+  border-color: #93c5fd;
+  background: #eff6ff;
+  color: #1d4ed8;
+  outline: none;
+}
+.professor-material-toolbar-divider {
+  width: 1px;
+  height: 24px;
+  margin: 0 3px;
+  background: #dbe3ec;
+}
+.professor-material-toolbar .toolbar-label {
+  font-size: 10px;
+  font-weight: 700;
+  margin-left: 2px;
+}
+.professor-material-rich-editor {
+  overflow-x: auto;
+}
+.professor-material-rich-editor table {
+  min-width: 420px;
+  table-layout: fixed;
+  background: #fff;
+}
+.professor-material-rich-editor th {
+  background: #f1f5f9;
+  color: #0f172a;
+  font-weight: 700;
+}
+.professor-material-rich-editor td,
+.professor-material-rich-editor th {
+  min-width: 90px;
+  height: 38px;
+  vertical-align: top;
+}
+.professor-material-rich-editor td:focus,
+.professor-material-rich-editor th:focus {
+  outline: 2px solid #93c5fd;
+  outline-offset: -2px;
+}
+.professor-material-draft-status {
+  margin-right: auto;
+  color: #64748b;
+  font-size: 12px;
+}
+.professor-material-editor-alert {
+  margin-top: 14px;
+}
+.professor-material-recipient-summary {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  margin-top: 12px;
+  color: #64748b;
+  font-size: 12px;
+}
+.professor-material-recipient-summary strong {
+  color: #2563eb;
+  font-size: 20px;
+}
+.professor-material-recipient-actions {
+  display: flex;
+  gap: 7px;
+  margin: 0 0 9px;
+}
+.professor-material-recipient-actions button {
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #475569;
+  border-radius: 8px;
+  padding: 7px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.professor-material-recipient-actions button:hover:not(:disabled) {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+.professor-material-recipient-actions button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+.professor-material-student-option {
+  border: 1px solid transparent;
+}
+.professor-material-student-option.selected {
+  border-color: #bfdbfe;
+  background: #eff6ff;
+}
+.professor-material-student-option span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.professor-material-students-empty {
+  padding: 20px 10px;
+  text-align: center;
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+@media (max-width: 640px) {
+  .professor-material-editor-footer {
+    flex-wrap: wrap;
+  }
+  .professor-material-draft-status {
+    width: 100%;
+    margin-bottom: 3px;
+  }
+  .professor-material-toolbar .toolbar-label {
+    display: none;
+  }
+  .professor-material-toolbar-divider {
+    margin: 0 1px;
+  }
+}
