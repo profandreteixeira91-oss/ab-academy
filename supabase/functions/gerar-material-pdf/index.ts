@@ -84,7 +84,7 @@ Deno.serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) return json({ error: 'Não autenticado.' }, 401)
-    const browserlessToken = Deno.env.get('BROWSERLESS_API_TOKEN')
+    const browserlessToken = Deno.env.get('BROWSERLESS_API_KEY') || Deno.env.get('BROWSERLESS_API_TOKEN')
     if (!browserlessToken) return json({ error:'Renderizador PDF não configurado.', code:'PDF_RENDERER_NOT_CONFIGURED' }, 503)
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
     const token = authHeader.replace(/^Bearer\s+/i, '')
