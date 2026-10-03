@@ -164,13 +164,13 @@ const PAGE_CONTENT_WIDTH_PX = 698
 
 // Navegadores limitam o tamanho de um canvas (altura ~16-32 mil px, área ~16 milhões de px
 // no Safari/iOS). Acima disso o canvas sai em branco. A escala é reduzida para documentos longos.
-const MAX_CANVAS_PIXELS = 16_000_000
-const MAX_CANVAS_SIDE = 16_000
+const MAX_CANVAS_PIXELS = 4_000_000
+const MAX_CANVAS_SIDE = 4_096
 
 function pickScale(contentHeightPx: number) {
   const byArea = Math.sqrt(MAX_CANVAS_PIXELS / (PAGE_CONTENT_WIDTH_PX * Math.max(contentHeightPx, 1)))
   const bySide = MAX_CANVAS_SIDE / Math.max(contentHeightPx, 1)
-  return Math.max(1, Math.min(2, byArea, bySide))
+  return Math.max(0.25, Math.min(2, byArea, bySide))
 }
 
 /**
@@ -253,6 +253,8 @@ export async function generateMaterialPdf(
         enableLinks: true,
         html2canvas: {
           scale: pickScale(contentHeight),
+          width: PAGE_CONTENT_WIDTH_PX,
+          height: contentHeight,
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,
