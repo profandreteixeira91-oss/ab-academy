@@ -38,7 +38,6 @@ import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/aluno.css'
 import MaterialViewer, { type MaterialRecord } from '../components/MaterialViewer'
-import { resolveMaterialImage } from '../lib/materialImageCache'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -525,7 +524,7 @@ function Aluno() {
   const [materialsLoading, setMaterialsLoading] = useState(false)
   const [materialsError, setMaterialsError] = useState('')
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialRecord | null>(null)
-  const [materialImageUrls, setMaterialImageUrls] = useState<Record<string, string>>({})
+  const [materialPdfUrls, setMaterialPdfUrls] = useState<Record<string, string>>({})
   const [selectedMaterialPdfUrl, setSelectedMaterialPdfUrl] = useState('')
 
   const [activities, setActivities] =
@@ -1747,34 +1746,19 @@ function Aluno() {
 
   async function openStudentMaterial(material: MaterialRecord) {
     try {
-      setMaterialsError('')
-      setSelectedMaterialPdfUrl('')
-
-      if (material.pdf_publicado_path) {
-        const { data, error } = await supabase.storage
-          .from('materiais')
-          .createSignedUrl(material.pdf_publicado_path, 3600)
-
-        if (error || !data?.signedUrl) {
-          throw error || new Error('O PDF publicado não está disponível.')
-        }
-
-        setSelectedMaterial(material)
-        setSelectedMaterialPdfUrl(data.signedUrl)
-        await supabase.rpc('registrar_material_visualizacao', { p_material_id: material.id })
-        return
+      if (!material.pdf_publicado_path) {
+        throw new Error('Este material ainda não possui uma publicação em PDF.')
       }
 
-      // Compatibilidade temporária para publicações antigas que ainda não
-      // possuem o snapshot PDF. Novas publicações nunca entram neste fluxo.
-      const entries = await Promise.all((material.imagens || []).map(async path => {
-        const url = await resolveMaterialImage(path, async () => {
-          const { data } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
-          return data?.signedUrl || null
-        })
-        return [path, url || ''] as const
-      }))
-      setMaterialImageUrls(Object.fromEntries(entries.filter(([, url]) => Boolean(url))))
+      const { data, error } = await supabase.storage
+        .from('materiais')
+        .createSignedUrl(material.pdf_publicado_path, 3600)
+
+      if (error || !data?.signedUrl) {
+        throw error || new Error('Não foi possível gerar o acesso temporário ao PDF.')
+      }
+
+      setMaterialPdfUrls((current) => ({ ...current, [material.id]: data.signedUrl }))
       setSelectedMaterial(material)
       await supabase.rpc('registrar_material_visualizacao', { p_material_id: material.id })
     } catch (error) {
