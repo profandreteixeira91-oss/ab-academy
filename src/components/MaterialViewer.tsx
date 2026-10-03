@@ -166,13 +166,33 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
 
         <div className="material-viewer-actions">
           {pdfUrl && (
-            <a
+            <button
+              type="button"
               className="material-viewer-download"
-              href={pdfUrl}
-              download
+              disabled={downloading}
+              onClick={async () => {
+                setDownloading(true)
+                setContentError('')
+
+                try {
+                  await downloadPdfDirect(
+                    pdfUrl,
+                    material.pdf_publicado_path,
+                    material.titulo,
+                  )
+                } catch (error) {
+                  setContentError(
+                    error instanceof Error
+                      ? error.message
+                      : 'Não foi possível baixar o PDF.',
+                  )
+                } finally {
+                  setDownloading(false)
+                }
+              }}
             >
-              <Download size={17} /> Baixar PDF
-            </a>
+              <Download size={17} /> {downloading ? 'Baixando...' : 'Baixar PDF'}
+            </button>
           )}
 
           {onClose && (
@@ -185,10 +205,13 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
 
       <article className="material-document material-html-document">
         <header className="student-material-pdf-toolbar material-document-header">
-          <div>
-            <span>AB ACADEMY IDIOMAS</span>
-            <strong>{material.titulo}</strong>
-            <small>{language}</small>
+          <div className="material-document-brand">
+            <img src={logo} alt="AB Academy Idiomas" />
+            <div>
+              <span>AB ACADEMY IDIOMAS</span>
+              <strong>{material.titulo}</strong>
+              <small>{language}</small>
+            </div>
           </div>
         </header>
 
