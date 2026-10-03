@@ -251,12 +251,27 @@ export default function Materiais({ professorId }: Props) {
 
   function serializeEditorHtml() {
     if (!editorRef.current) return editor.conteudo_html
+
     const clone = editorRef.current.cloneNode(true) as HTMLDivElement
-    clone.querySelectorAll('img[data-material-image]').forEach((image) => {
-      const path = image.getAttribute('data-material-image')
-      if (path) image.setAttribute('src', `{{MATERIAL_IMAGE:${path}}}`)
+    clone.querySelectorAll('img').forEach((image) => {
+      const path = image.getAttribute('data-material-image')?.trim()
+      if (path) {
+        image.setAttribute('src', `{{MATERIAL_IMAGE:${path}}}`)
+      }
     })
     return clone.innerHTML
+  }
+
+  function getEditorImagePaths() {
+    if (!editorRef.current) return editor.imagens
+
+    const paths = Array.from(
+      editorRef.current.querySelectorAll('img[data-material-image]'),
+    )
+      .map((image) => image.getAttribute('data-material-image')?.trim())
+      .filter((path): path is string => Boolean(path))
+
+    return Array.from(new Set(paths))
   }
 
   async function save(status: 'rascunho' | 'publicado', silent = false): Promise<string | false> {
@@ -280,7 +295,7 @@ export default function Materiais({ professorId }: Props) {
         titulo: editor.titulo.trim(),
         idioma: editor.idioma || null,
         conteudo_html: html,
-        imagens: editor.imagens,
+        imagens: getEditorImagePaths(),
         videos: editor.videos,
         status,
         publicado_em: status === 'publicado' ? new Date().toISOString() : null,
@@ -397,22 +412,24 @@ export default function Materiais({ professorId }: Props) {
       id: materialId,
       imagens: Array.from(new Set([...value.imagens, path])),
     }))
-    setDirty(true)
 
-    window.setTimeout(() => {
-      if (!editorRef.current) return
-      editorRef.current.focus()
-      restoreSelection()
-      const image = document.createElement('img')
-      image.src = signedUrl
-      image.alt = file.name
-      image.setAttribute('data-material-image', path)
-      image.style.maxWidth = '100%'
-      const paragraph = document.createElement('p')
-      paragraph.appendChild(image)
-      document.execCommand('insertHTML', false, paragraph.outerHTML)
-      sync()
-    }, 0)
+    // A imagem precisa entrar no DOM antes de qualquer salvamento. Assim,
+    // tanto o salvamento manual quanto o autosave sempre serializam a referência
+    // persistente {{MATERIAL_IMAGE:path}}, mesmo que o estado React ainda esteja
+    // sendo atualizado.
+    if (!editorRef.current) return
+
+    editorRef.current.focus()
+    restoreSelection()
+    const image = document.createElement('img')
+    image.src = signedUrl
+    image.alt = file.name
+    image.setAttribute('data-material-image', path)
+    image.style.maxWidth = '100%'
+    const paragraph = document.createElement('p')
+    paragraph.appendChild(image)
+    document.execCommand('insertHTML', false, paragraph.outerHTML)
+    sync()
   }
 
   function video() {
