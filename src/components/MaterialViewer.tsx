@@ -238,6 +238,49 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
     }
   }, [material.id, material.conteudo_html, material.imagens])
 
+  useEffect(() => {
+    if (loading || !contentRef.current) return
+
+    let cancelled = false
+    const objectUrls: string[] = []
+
+    async function hydrateVisibleImages() {
+      const images = Array.from(contentRef.current?.querySelectorAll('img[data-material-image]') || [])
+
+      await Promise.all(
+        images.map(async (image) => {
+          const path = image.getAttribute('data-material-image')?.trim()
+          if (!path) return
+
+          if (image.complete && image.naturalWidth > 0) return
+
+          try {
+            const { data, error } = await supabase.storage
+              .from('materiais')
+              .download(path)
+
+            if (cancelled || error || !data) return
+
+            const objectUrl = URL.createObjectURL(data)
+            objectUrls.push(objectUrl)
+            image.src = objectUrl
+            image.style.maxWidth = '100%'
+            image.style.height = 'auto'
+          } catch {
+            // A imagem permanece sem alteração caso o Storage não esteja acessível.
+          }
+        }),
+      )
+    }
+
+    void hydrateVisibleImages()
+
+    return () => {
+      cancelled = true
+      objectUrls.forEach((url) => URL.revokeObjectURL(url))
+    }
+  }, [loading, contentHtml])
+
   async function handleDownload() {
     const element = contentRef.current
     if (!element) {
