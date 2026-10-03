@@ -1,0 +1,2 @@
+-- A publicação em PDF usa a coluna pdf_publicado_path criada na migration anterior.
+-- Mantida para alinhar a árvore de migrations ao histórico remoto.
