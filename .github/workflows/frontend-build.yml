@@ -21,7 +21,10 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: Install dependencies
+      - name: Validate npm install
+        run: npm install
+
+      - name: Install dependencies with clean install
         run: npm ci
 
       - name: Build
