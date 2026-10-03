@@ -97,17 +97,46 @@ async function waitForImages(root: HTMLElement) {
   const images = Array.from(root.querySelectorAll('img'))
 
   await Promise.all(
-    images.map((image) => {
-      if (image.complete) return Promise.resolve()
+    images.map(async (image) => {
+      if (image.complete && image.naturalWidth > 0) return
 
-      return new Promise<void>((resolve) => {
+      const path = image.getAttribute('data-material-image')?.trim()
+      if (path) {
+        try {
+          const { data, error } = await supabase.storage.from('materiais').download(path)
+          if (!error && data) {
+            const objectUrl = URL.createObjectURL(data)
+            image.src = objectUrl
+            await new Promise<void>((resolve) => {
+              if (image.complete && image.naturalWidth > 0) {
+                resolve()
+                return
+              }
+              const done = () => {
+                image.removeEventListener('load', done)
+                image.removeEventListener('error', done)
+                resolve()
+              }
+              image.addEventListener('load', done)
+              image.addEventListener('error', done)
+            })
+            return
+          }
+        } catch {
+          // A validação final abaixo mantém a proteção contra PDFs divergentes.
+        }
+      }
+
+      await new Promise<void>((resolve) => {
         const timer = window.setTimeout(resolve, 15000)
         const done = () => {
           window.clearTimeout(timer)
+          image.removeEventListener('load', done)
+          image.removeEventListener('error', done)
           resolve()
         }
-        image.addEventListener('load', done, { once: true })
-        image.addEventListener('error', done, { once: true })
+        image.addEventListener('load', done)
+        image.addEventListener('error', done)
       })
     }),
   )
