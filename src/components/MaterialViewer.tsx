@@ -4,7 +4,7 @@ import logo from '../assets/logo_abacademy.png'
 
 export type MaterialRecord = {
   id:string; titulo:string; idioma:'ingles'|'alemao'|null; conteudo_html:string; imagens:string[]; videos:string[]
-  status:'rascunho'|'publicado'; created_at:string; updated_at:string; publicado_em:string|null
+  status:'rascunho'|'publicado'; created_at:string; updated_at:string; publicado_em:string|null; pdf_publicado_path?:string|null
 }
 type Props={material:MaterialRecord; imageUrls?:Record<string,string>; onClose?:()=>void}
 function sanitizeHtml(value:string){
