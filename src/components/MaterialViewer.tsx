@@ -1,35 +1,108 @@
-import { useMemo } from 'react'
-import { ArrowLeft, Download, X } from 'lucide-react'
-import logo from '../assets/logo_abacademy.png'
+import { useEffect, useState } from 'react'
+import { ArrowLeft, Download, ExternalLink, Loader2, X } from 'lucide-react'
 
 export type MaterialRecord = {
-  id:string; titulo:string; idioma:'ingles'|'alemao'|null; conteudo_html:string; imagens:string[]; videos:string[]
-  status:'rascunho'|'publicado'; created_at:string; updated_at:string; publicado_em:string|null; pdf_publicado_path?:string|null
+  id: string
+  titulo: string
+  idioma: 'ingles' | 'alemao' | null
+  conteudo_html: string
+  imagens: string[]
+  videos: string[]
+  status: 'rascunho' | 'publicado'
+  created_at: string
+  updated_at: string
+  publicado_em: string | null
+  pdf_publicado_path?: string | null
+  pdf_publicado_em?: string | null
 }
-type Props={material:MaterialRecord; imageUrls?:Record<string,string>; onClose?:()=>void}
-function sanitizeHtml(value:string){
-  if(typeof window==='undefined') return value
-  const doc=new DOMParser().parseFromString(value,'text/html')
-  doc.querySelectorAll('script,style,object,embed,iframe,form').forEach(n=>n.remove())
-  doc.querySelectorAll('*').forEach(n=>Array.from(n.attributes).forEach(a=>{
-    const name=a.name.toLowerCase(), val=a.value.trim().toLowerCase()
-    if(name.startsWith('on')) n.removeAttribute(a.name)
-    if((name==='href'||name==='src')&&(val.startsWith('javascript:')||val.startsWith('data:text/html'))) n.removeAttribute(a.name)
-  }))
-  return doc.body.innerHTML
+
+type Props = {
+  material: MaterialRecord
+  pdfUrl?: string
+  onClose?: () => void
 }
-export default function MaterialViewer({material,imageUrls={},onClose}:Props){
-  const content=useMemo(()=>{let html=sanitizeHtml(material.conteudo_html||'<p>Este material ainda não possui conteúdo.</p>');Object.entries(imageUrls).forEach(([p,u])=>{html=html.split(p).join(u)});return html},[material.conteudo_html,imageUrls])
-  const language=material.idioma==='ingles'?'Inglês':material.idioma==='alemao'?'Alemão':'Material de apoio'
-  return <div className="material-viewer">
-    <div className="material-viewer-toolbar no-print">
-      {onClose&&<button type="button" className="material-viewer-back" onClick={onClose}><ArrowLeft size={18}/> Voltar</button>}
-      <div className="material-viewer-actions"><button type="button" className="material-viewer-download" onClick={()=>window.print()}><Download size={17}/> Baixar PDF</button>{onClose&&<button type="button" className="material-viewer-close" onClick={onClose}><X size={18}/></button>}</div>
+
+export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
+  const [loading, setLoading] = useState(Boolean(pdfUrl))
+  const language = material.idioma === 'ingles'
+    ? 'Inglês'
+    : material.idioma === 'alemao'
+      ? 'Alemão'
+      : 'Material de apoio'
+
+  useEffect(() => {
+    if (pdfUrl) setLoading(false)
+  }, [pdfUrl])
+
+  return (
+    <div className="material-viewer">
+      <div className="material-viewer-toolbar no-print">
+        {onClose && (
+          <button type="button" className="material-viewer-back" onClick={onClose}>
+            <ArrowLeft size={18} /> Voltar
+          </button>
+        )}
+        <div className="material-viewer-actions">
+          {pdfUrl && (
+            <>
+              <a
+                className="material-viewer-download"
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                download
+              >
+                <Download size={17} /> Baixar PDF
+              </a>
+              <a
+                className="material-viewer-close"
+                href={pdfUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Abrir PDF em nova aba"
+                title="Abrir PDF em nova aba"
+              >
+                <ExternalLink size={17} />
+              </a>
+            </>
+          )}
+          {onClose && (
+            <button type="button" className="material-viewer-close" onClick={onClose} aria-label="Fechar">
+              <X size={18} />
+            </button>
+          )}
+        </div>
+      </div>
+
+      <article className="material-document material-pdf-document">
+        <header className="material-document-header">
+          <div>
+            <span>AB ACADEMY IDIOMAS</span>
+            <strong>{material.titulo}</strong>
+            <small>{language}</small>
+          </div>
+        </header>
+
+        {loading && (
+          <div className="material-pdf-loading">
+            <Loader2 size={24} className="student-spin" />
+            <span>Carregando material...</span>
+          </div>
+        )}
+
+        {!loading && pdfUrl ? (
+          <iframe
+            className="material-pdf-frame"
+            src={pdfUrl}
+            title={material.titulo}
+          />
+        ) : !loading ? (
+          <div className="material-pdf-empty">
+            <strong>PDF indisponível</strong>
+            <span>Este material ainda não possui uma publicação em PDF.</span>
+          </div>
+        ) : null}
+      </article>
     </div>
-    <article className="material-document">
-      <header className="material-document-header"><img src={logo} alt="AB Academy Idiomas"/><div><span>AB ACADEMY IDIOMAS</span><strong>{material.titulo}</strong><small>{language}</small></div></header>
-      <div className="material-document-body" dangerouslySetInnerHTML={{__html:content}}/>
-      <footer className="material-document-footer">AB Academy Idiomas® 2026 · Material educacional de uso exclusivo do aluno</footer>
-    </article>
-  </div>
+  )
 }
