@@ -106,7 +106,9 @@ export async function generateMaterialPdf(
   page.style.position = 'fixed'
   page.style.left = '0'
   page.style.top = '0'
-  page.style.zIndex = '-1'
+  // O html2canvas precisa enxergar o elemento na árvore visual. z-index negativo
+  // pode fazer o conteúdo desaparecer do snapshot/canvas mesmo estando na viewport.
+  page.style.zIndex = '2147483647'
   page.style.pointerEvents = 'none'
   document.body.appendChild(page)
 
@@ -125,6 +127,10 @@ export async function generateMaterialPdf(
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,
+          width: 794,
+          windowWidth: 794,
+          scrollX: 0,
+          scrollY: 0,
         },
         jsPDF: {
           unit: 'pt',
