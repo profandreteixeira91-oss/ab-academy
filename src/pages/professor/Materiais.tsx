@@ -252,16 +252,32 @@ export default function Materiais({ professorId }: Props) {
   }
 
   function serializeEditorHtml() {
-    if (!editorRef.current) return editor.conteudo_html
+    const source = editorRef.current?.innerHTML ?? editor.conteudo_html
+    const wrapper = document.createElement('div')
+    wrapper.innerHTML = source
 
-    const clone = editorRef.current.cloneNode(true) as HTMLDivElement
-    clone.querySelectorAll('img').forEach((image) => {
+    wrapper.querySelectorAll('img').forEach((image) => {
       const path = image.getAttribute('data-material-image')?.trim()
       if (path) {
         image.setAttribute('src', `{{MATERIAL_IMAGE:${path}}}`)
       }
     })
-    return clone.innerHTML
+
+    return wrapper.innerHTML
+  }
+
+  function getEditorSnapshot() {
+    const html = serializeEditorHtml()
+    const imagePaths = getEditorImagePaths()
+    return {
+      html,
+      imagePaths,
+      // O snapshot é obtido diretamente do editor visível, nunca de um
+      // estado React potencialmente defasado.
+      isEmpty: !html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim() &&
+        !/<img\b/i.test(html) &&
+        !/<table\b/i.test(html),
+    }
   }
 
   function getEditorImagePaths() {
@@ -291,13 +307,23 @@ export default function Materiais({ professorId }: Props) {
     setError('')
 
     try {
-      const html = serializeEditorHtml()
+      const snapshot = getEditorSnapshot()
+      const html = snapshot.html
+      const imagePaths = snapshot.imagePaths
+
+      // Um editor vazio é válido (por exemplo, um rascunho recém-criado),
+      // mas nunca substituímos um documento existente por um snapshot vazio
+      // causado por uma referência de DOM indisponível durante um re-render.
+      if (editor.id && snapshot.isEmpty && editor.conteudo_html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) {
+        throw new Error('O conteúdo do editor não pôde ser capturado com segurança. O documento não foi alterado.')
+      }
+
       const payload = {
         professor_id: professorId,
         titulo: editor.titulo.trim(),
         idioma: editor.idioma || null,
         conteudo_html: html,
-        imagens: getEditorImagePaths(),
+        imagens: imagePaths,
         videos: editor.videos,
         status,
         publicado_em: status === 'publicado' ? new Date().toISOString() : null,
@@ -340,9 +366,15 @@ export default function Materiais({ professorId }: Props) {
         }
       }
 
-      setEditor((value) => ({ ...value, id, status, conteudo_html: html }))
-      // Mantém o DOM do contentEditable intacto após o salvamento para que
-      // o conteúdo persistido continue imediatamente visível no editor.
+      setEditor((value) => ({
+        ...value,
+        id,
+        status,
+        conteudo_html: html,
+        imagens: imagePaths,
+      }))
+      // O documento aberto continua sendo a fonte visual após o save.
+      // A lista é atualizada sem desmontar o editor.
       setDirty(false)
       await load(false)
 
