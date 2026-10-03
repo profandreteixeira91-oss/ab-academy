@@ -5042,3 +5042,139 @@ body {
     height: 2px;
   }
 }
+
+
+/* =========================================================
+   MATERIAL — CONTEÚDO EDITORIAL PREMIUM
+   Deve permanecer alinhado ao CSS do editor do professor.
+   ========================================================= */
+
+.material-html-document .material-viewer-content,
+.material-html-document .professor-material-rich-editor {
+  width: min(100%, 820px);
+  margin: 0 auto;
+  padding: 54px 64px 72px;
+  box-sizing: border-box;
+  background: #ffffff;
+  color: #172033;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.78;
+}
+
+.material-html-document .material-viewer-content > *:first-child,
+.material-html-document .professor-material-rich-editor > *:first-child { margin-top: 0; }
+.material-html-document .material-viewer-content > *:last-child,
+.material-html-document .professor-material-rich-editor > *:last-child { margin-bottom: 0; }
+
+.material-html-document .material-viewer-content h1,
+.material-html-document .material-viewer-content h2,
+.material-html-document .material-viewer-content h3,
+.material-html-document .material-viewer-content h4,
+.material-html-document .material-viewer-content h5,
+.material-html-document .material-viewer-content h6 {
+  color: #10264d;
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -.025em;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.material-html-document .material-viewer-content h1 { margin: 0 0 22px; font-size: 30px; }
+.material-html-document .material-viewer-content h2 { margin: 34px 0 14px; padding-bottom: 8px; border-bottom: 1px solid #dce7f3; font-size: 23px; }
+.material-html-document .material-viewer-content h3 { margin: 26px 0 10px; font-size: 18px; }
+.material-html-document .material-viewer-content h4,
+.material-html-document .material-viewer-content h5,
+.material-html-document .material-viewer-content h6 { margin: 20px 0 8px; font-size: 15px; }
+.material-html-document .material-viewer-content p { margin: 0 0 14px; }
+
+.material-html-document .material-viewer-content ul,
+.material-html-document .material-viewer-content ol {
+  margin: 10px 0 18px;
+  padding-left: 28px;
+}
+
+.material-html-document .material-viewer-content li { margin: 5px 0; padding-left: 3px; }
+
+.material-html-document .material-viewer-content blockquote {
+  margin: 24px 0;
+  padding: 14px 20px;
+  border-left: 4px solid #2563eb;
+  border-radius: 0 10px 10px 0;
+  background: #f3f7fd;
+  color: #42536b;
+  font-style: italic;
+}
+
+.material-html-document .material-viewer-content hr {
+  margin: 30px 0;
+  border: 0;
+  border-top: 1px solid #dbe5f0;
+}
+
+.material-html-document .material-viewer-content a {
+  color: #1559b7;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.material-html-document .material-viewer-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 22px auto;
+  border: 1px solid #e1e8f1;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.material-html-document .material-viewer-content table {
+  width: 100%;
+  margin: 24px 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid #d8e2ee;
+  border-radius: 10px;
+  break-inside: auto;
+}
+
+.material-html-document .material-viewer-content thead { background: #eff5fc; }
+.material-html-document .material-viewer-content th,
+.material-html-document .material-viewer-content td {
+  padding: 11px 13px;
+  border-right: 1px solid #d8e2ee;
+  border-bottom: 1px solid #d8e2ee;
+  text-align: left;
+  vertical-align: top;
+}
+.material-html-document .material-viewer-content th { color: #17345f; font-size: 12px; font-weight: 750; }
+.material-html-document .material-viewer-content td { color: #34445a; }
+.material-html-document .material-viewer-content tr > :last-child { border-right: 0; }
+.material-html-document .material-viewer-content tbody tr:last-child > * { border-bottom: 0; }
+
+@media (max-width: 680px) {
+  .material-html-document .material-viewer-content,
+  .material-html-document .professor-material-rich-editor {
+    width: 100%;
+    padding: 34px 22px 46px;
+    font-size: 14px;
+  }
+  .material-html-document .material-viewer-content h1 { font-size: 25px; }
+  .material-html-document .material-viewer-content h2 { font-size: 20px; }
+  .material-html-document .material-viewer-content h3 { font-size: 17px; }
+}
+
+@media print {
+  .material-html-document .material-viewer-content,
+  .material-html-document .professor-material-rich-editor {
+    width: 100%;
+    padding: 0;
+    font-size: 11pt;
+    line-height: 1.65;
+    box-shadow: none;
+  }
+}
