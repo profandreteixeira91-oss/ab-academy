@@ -74,7 +74,7 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
         </div>
       </div>
 
-      <article className="student-material-pdf-viewer material-document">
+      <article className="material-document material-pdf-document">
         <header className="student-material-pdf-toolbar material-document-header">
           <div>
             <span>AB ACADEMY IDIOMAS</span>
