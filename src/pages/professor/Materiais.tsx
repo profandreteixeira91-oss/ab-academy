@@ -120,12 +120,12 @@ export default function Materiais({ professorId }: Props) {
   }, [professorId])
 
   useEffect(() => {
-    if (!open || !editor.id || !dirty) return
+    if (!open || !editor.id || !dirty || editor.status !== 'rascunho') return
     const timer = window.setInterval(() => {
       void save('rascunho', true)
     }, 30000)
     return () => window.clearInterval(timer)
-  }, [open, editor.id, dirty])
+  }, [open, editor.id, editor.status, dirty])
 
   function saveSelection() {
     const selection = window.getSelection()
@@ -318,7 +318,7 @@ export default function Materiais({ professorId }: Props) {
         throw new Error('O conteúdo do editor não pôde ser capturado com segurança. O documento não foi alterado.')
       }
 
-      const payload = {
+      const payload: Record<string, unknown> = {
         professor_id: professorId,
         titulo: editor.titulo.trim(),
         idioma: editor.idioma || null,
@@ -326,8 +326,18 @@ export default function Materiais({ professorId }: Props) {
         imagens: imagePaths,
         videos: editor.videos,
         status,
-        publicado_em: status === 'publicado' ? new Date().toISOString() : null,
         updated_at: new Date().toISOString(),
+      }
+
+      // A publicação cria um snapshot imutável para o leitor.
+      // Salvar rascunho nunca altera o último documento publicado.
+      if (status === 'publicado' && !silent) {
+        payload.conteudo_publicado_html = html
+        payload.imagens_publicadas = imagePaths
+        payload.videos_publicados = editor.videos
+        payload.titulo_publicado = editor.titulo.trim()
+        payload.idioma_publicado = editor.idioma || null
+        payload.publicado_em = new Date().toISOString()
       }
 
       let id = editor.id
