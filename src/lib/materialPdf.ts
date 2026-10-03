@@ -148,10 +148,12 @@ export async function generateMaterialPdf(
   footer.style.color = '#64748b'
   page.appendChild(footer)
 
-  page.style.position = 'fixed'
-  page.style.left = '-100000px'
-  page.style.top = '0'
-  page.style.zIndex = '-1'
+  // O elemento precisa permanecer renderizável para o html2canvas. Ele fica
+  // abaixo da viewport, em vez de display:none ou fora do documento.
+  page.style.position = 'absolute'
+  page.style.left = '0'
+  page.style.top = `${window.scrollY + window.innerHeight}px`
+  page.style.pointerEvents = 'none'
   document.body.appendChild(page)
 
   try {
