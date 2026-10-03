@@ -3583,3 +3583,427 @@ button.professor-stat-card:hover {
 
 
 .material-pdf-document{display:flex;flex-direction:column;min-height:min(82vh,900px);box-sizing:border-box}.material-pdf-document .material-document-header{flex:0 0 auto}.material-pdf-frame{width:100%;flex:1;min-height:620px;border:0;background:#f1f5f9;border-radius:8px}.material-pdf-loading,.material-pdf-empty{min-height:360px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#64748b}.material-pdf-loading svg{color:#2563eb}
+
+
+/* =========================================================
+   MATERIAIS — DISTRIBUIÇÃO E HIERARQUIA VISUAL
+   Somente CSS: preserva toda a estrutura e o fluxo existente.
+   ========================================================= */
+
+.professor-materials-page {
+  max-width: 1480px;
+}
+
+.professor-materials-page > .professor-page-header {
+  align-items: center;
+  margin-bottom: 22px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--prof-border);
+}
+
+.professor-materials-page > .professor-page-header > div {
+  min-width: 0;
+}
+
+.professor-materials-page > .professor-page-header h1 {
+  margin-top: 4px;
+  letter-spacing: -0.03em;
+}
+
+.professor-materials-page > .professor-page-header p {
+  max-width: 720px;
+  color: var(--prof-text-secondary);
+}
+
+.professor-materials-page > .professor-page-header .professor-primary-button {
+  flex-shrink: 0;
+  min-height: 42px;
+  padding-inline: 16px;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.14);
+}
+
+.professor-material-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.professor-material-card {
+  min-width: 0;
+  min-height: 168px;
+  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-rows: auto auto;
+  align-items: start;
+  gap: 14px;
+  padding: 18px;
+  border-color: var(--prof-border);
+  border-radius: var(--prof-radius-lg);
+  box-shadow: var(--prof-shadow-sm);
+  transition:
+    transform var(--prof-transition),
+    border-color var(--prof-transition),
+    box-shadow var(--prof-transition);
+}
+
+.professor-material-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--prof-primary-soft-strong);
+  box-shadow: var(--prof-shadow-md);
+}
+
+.professor-material-card-icon {
+  width: 44px;
+  height: 44px;
+  border: 1px solid var(--prof-primary-soft-strong);
+  border-radius: 12px;
+  background: var(--prof-primary-soft);
+  color: var(--prof-primary);
+}
+
+.professor-material-card-body {
+  min-width: 0;
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.professor-material-card-body span {
+  overflow: hidden;
+  color: var(--prof-primary-dark);
+  font-size: 9.5px;
+  letter-spacing: 0.07em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.professor-material-card-body h3 {
+  overflow: hidden;
+  margin: 5px 0 5px;
+  color: var(--prof-text);
+  font-size: 15px;
+  line-height: 1.35;
+  letter-spacing: -0.015em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.professor-material-card-body p {
+  margin: auto 0 0;
+  color: var(--prof-text-muted);
+  font-size: 11px;
+}
+
+.professor-material-card-actions {
+  grid-column: 1 / -1;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  gap: 7px;
+  align-self: end;
+}
+
+.professor-material-card-actions .professor-secondary-button {
+  width: 100%;
+  min-height: 36px;
+  padding-inline: 10px;
+  font-size: 11px;
+}
+
+.professor-material-card-actions .professor-icon-danger {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  transition:
+    background var(--prof-transition),
+    border-color var(--prof-transition);
+}
+
+.professor-material-card-actions .professor-icon-danger:hover {
+  border-color: #fda4af;
+  background: #ffe4e6;
+}
+
+.professor-material-editor-page {
+  max-width: 1500px;
+}
+
+.professor-material-editor-header {
+  align-items: center;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--prof-border);
+}
+
+.professor-material-editor-header > div {
+  min-width: 0;
+}
+
+.professor-material-editor-header h1 {
+  margin-top: 4px;
+  letter-spacing: -0.03em;
+}
+
+.professor-material-editor-header p {
+  max-width: 720px;
+  color: var(--prof-text-secondary);
+}
+
+.professor-material-editor-header > .professor-secondary-button {
+  flex-shrink: 0;
+}
+
+.professor-material-editor-grid {
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+  align-items: start;
+}
+
+.professor-material-editor-main {
+  min-width: 0;
+}
+
+.professor-material-editor-meta {
+  grid-template-columns: minmax(0, 1fr) 180px;
+  align-items: center;
+  gap: 10px;
+}
+
+.professor-material-toolbar {
+  gap: 4px;
+  align-items: center;
+  flex-wrap: wrap;
+  overflow-x: visible;
+}
+
+.professor-material-toolbar-group {
+  align-items: center;
+}
+
+.professor-material-toolbar-divider {
+  flex: 0 0 1px;
+}
+
+.professor-material-rich-editor {
+  width: min(820px, calc(100% - 40px));
+  min-height: 1123px;
+  margin-top: 24px;
+  padding: 64px 68px;
+}
+
+.professor-material-editor-footer {
+  width: min(820px, calc(100% - 40px));
+  align-items: center;
+  gap: 8px;
+  margin-top: 0;
+  padding: 12px 0 2px;
+}
+
+.professor-material-draft-status {
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.professor-material-editor-footer .professor-secondary-button,
+.professor-material-editor-footer .professor-primary-button {
+  flex-shrink: 0;
+  min-height: 38px;
+}
+
+.professor-material-side-card {
+  top: 94px;
+  overflow: hidden;
+  padding: 0;
+  border-radius: var(--prof-radius-lg);
+  border-color: var(--prof-border);
+  box-shadow: var(--prof-shadow-sm);
+}
+
+.professor-material-side-card .professor-panel-header {
+  min-height: 64px;
+  padding: 13px 16px;
+  background: var(--prof-surface);
+}
+
+.professor-material-recipient-summary,
+.professor-material-search,
+.professor-material-recipient-actions,
+.professor-material-student-list,
+.professor-material-side-card > small {
+  margin-left: 16px;
+  margin-right: 16px;
+}
+
+.professor-material-recipient-summary {
+  margin-top: 14px;
+}
+
+.professor-material-search {
+  width: calc(100% - 32px);
+  margin-top: 12px;
+  margin-bottom: 10px;
+}
+
+.professor-material-recipient-actions {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 7px;
+}
+
+.professor-material-recipient-actions button {
+  justify-content: center;
+  min-height: 34px;
+}
+
+.professor-material-student-list {
+  max-height: min(430px, 48vh);
+  margin-top: 4px;
+  padding-bottom: 2px;
+}
+
+.professor-material-student-option {
+  min-height: 40px;
+  padding: 8px 10px;
+}
+
+.professor-material-side-card > small {
+  margin-top: 12px;
+  margin-bottom: 16px;
+  line-height: 1.5;
+}
+
+@media (max-width: 1180px) {
+  .professor-material-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .professor-material-editor-grid {
+    grid-template-columns: minmax(0, 1fr) 310px;
+  }
+
+  .professor-material-rich-editor,
+  .professor-material-editor-footer {
+    width: min(794px, calc(100% - 32px));
+  }
+
+  .professor-material-rich-editor {
+    padding-inline: 56px;
+  }
+}
+
+@media (max-width: 900px) {
+  .professor-materials-page > .professor-page-header,
+  .professor-material-editor-header {
+    align-items: flex-start;
+  }
+
+  .professor-material-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .professor-material-editor-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .professor-material-side-card {
+    position: static;
+  }
+
+  .professor-material-rich-editor {
+    width: calc(100% - 28px);
+    padding: 48px 42px;
+  }
+
+  .professor-material-editor-footer {
+    width: calc(100% - 28px);
+  }
+}
+
+@media (max-width: 680px) {
+  .professor-materials-page > .professor-page-header,
+  .professor-material-editor-header {
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .professor-materials-page > .professor-page-header .professor-primary-button,
+  .professor-material-editor-header > .professor-secondary-button {
+    width: 100%;
+  }
+
+  .professor-material-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .professor-material-card {
+    min-height: 0;
+    padding: 15px;
+  }
+
+  .professor-material-card-actions {
+    grid-template-columns: 1fr 1fr 36px;
+  }
+
+  .professor-material-editor-meta {
+    grid-template-columns: 1fr;
+  }
+
+  .professor-material-toolbar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    padding-inline: 8px;
+  }
+
+  .professor-material-toolbar-divider {
+    flex: 0 0 1px;
+  }
+
+  .professor-material-rich-editor {
+    width: calc(100% - 20px);
+    min-height: 700px;
+    margin-top: 18px;
+    padding: 34px 24px;
+  }
+
+  .professor-material-editor-footer {
+    width: calc(100% - 20px);
+    flex-wrap: wrap;
+  }
+
+  .professor-material-draft-status {
+    width: 100%;
+    margin-right: 0;
+  }
+
+  .professor-material-editor-footer .professor-secondary-button,
+  .professor-material-editor-footer .professor-primary-button {
+    flex: 1 1 0;
+  }
+
+  .professor-material-side-card {
+    border-radius: 14px;
+  }
+
+  .professor-material-side-card .professor-panel-header {
+    padding-inline: 14px;
+  }
+
+  .professor-material-recipient-summary,
+  .professor-material-search,
+  .professor-material-recipient-actions,
+  .professor-material-student-list,
+  .professor-material-side-card > small {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .professor-material-search {
+    width: calc(100% - 28px);
+  }
+}
