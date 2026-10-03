@@ -12,12 +12,12 @@ function json(body: unknown, status = 200) {
 
 function sanitizeHtml(source: string) {
   let html = String(source || '')
-  html = html.replace(/<\\/(script|style|iframe|object|embed|form|textarea|select|button)[^>]*>/gi, '')
+  html = html.replace(/<[/](script|style|iframe|object|embed|form|textarea|select|button)[^>]*>/gi, '')
   html = html.replace(/<(script|style|iframe|object|embed|form|textarea|select|button|input|link|meta)[^>]*>/gi, '')
-  html = html.replace(/\\s+on[a-z-]+\\s*=\\s*(['"])[\\s\\S]*?\\1/gi, '')
-  html = html.replace(/\\s+on[a-z-]+\\s*=\\s*[^\\s>]+/gi, '')
-  html = html.replace(/(href|src)\\s*=\\s*(['"])\\s*(javascript:|vbscript:|data:text/html)[\\s\\S]*?\\2/gi, '$1=$2#$2')
-  html = html.replace(/url\\(\\s*(['"]?)\\s*(javascript:|vbscript:|data:text/html)[^)]*\\1\\s*\\)/gi, 'none')
+  html = html.replace(/[ \t\r\n]+on[a-z-]+[ \t\r\n]*=[ \t\r\n]*"[^"]*"/gi, '')
+  html = html.replace(/[ \t\r\n]+on[a-z-]+[ \t\r\n]*=[ \t\r\n]*'[^']*'/gi, '')
+  html = html.replace(/(href|src)[ \t\r\n]*=[ \t\r\n]*"[^"]*(javascript:|vbscript:|data:text\\/html)[^"]*"/gi, '$1="#"')
+  html = html.replace(/(href|src)[ \t\r\n]*=[ \t\r\n]*'[^']*(javascript:|vbscript:|data:text\\/html)[^']*'/gi, '$1="#"')
   return html
 }
 function escapeHtml(value: string) {
