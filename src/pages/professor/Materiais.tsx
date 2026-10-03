@@ -30,6 +30,7 @@ import {
 } from 'lucide-react'
 import { supabase } from '../../lib/supabase'
 import MaterialViewer, { type MaterialRecord } from '../../components/MaterialViewer'
+import { cacheMaterialImage, resolveMaterialImage } from '../../lib/materialImageCache'
 
 type Props = { professorId: string }
 type Student = { id: string; nome_completo: string }
@@ -373,7 +374,14 @@ export default function Materiais({ professorId }: Props) {
       return
     }
 
-    const signedUrl = signed.signedUrl
+    try {
+      await cacheMaterialImage(path, file)
+    } catch {
+      // O armazenamento persistente no Supabase continua sendo a fonte oficial.
+      // O cache local é uma otimização e não deve impedir o salvamento do material.
+    }
+
+    const signedUrl = await resolveMaterialImage(path, async () => signed.signedUrl) || signed.signedUrl
 
     setEditor((value) => ({
       ...value,
@@ -440,8 +448,11 @@ export default function Materiais({ professorId }: Props) {
 
     const entries = await Promise.all(
       (material.imagens || []).map(async (path) => {
-        const { data: signed } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
-        return [path, signed?.signedUrl || ''] as const
+        const url = await resolveMaterialImage(path, async () => {
+          const { data: signed } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
+          return signed?.signedUrl || null
+        })
+        return [path, url || ''] as const
       }),
     )
     const urls = Object.fromEntries(entries.filter(([, url]) => url))
@@ -487,8 +498,11 @@ export default function Materiais({ professorId }: Props) {
   async function view(material: MaterialRecord) {
     const entries = await Promise.all(
       (material.imagens || []).map(async (path) => {
-        const { data } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
-        return [path, data?.signedUrl || ''] as const
+        const url = await resolveMaterialImage(path, async () => {
+          const { data } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
+          return data?.signedUrl || null
+        })
+        return [path, url || ''] as const
       }),
     )
     setImageUrls(Object.fromEntries(entries.filter(([, url]) => url)))
