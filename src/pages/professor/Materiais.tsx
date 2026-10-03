@@ -75,7 +75,7 @@ export default function Materiais({ professorId }: Props) {
   const [message, setMessage] = useState('')
   const [search, setSearch] = useState('')
   const [viewer, setViewer] = useState<MaterialRecord | null>(null)
-  const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
+  const [viewerPdfUrl, setViewerPdfUrl] = useState('')
   const [exitDialog, setExitDialog] = useState(false)
   const [actionDialog, setActionDialog] = useState<'rascunho' | 'publicado' | 'excluir' | null>(null)
   const [pendingMaterial, setPendingMaterial] = useState<MaterialRecord | null>(null)
@@ -732,8 +732,26 @@ export default function Materiais({ professorId }: Props) {
   }
 
   async function view(material: MaterialRecord) {
-    setImageUrls({})
-    setViewer(material)
+    try {
+      if (!material.pdf_publicado_path) {
+        setViewerPdfUrl('')
+        setViewer(material)
+        return
+      }
+
+      const { data, error: pdfError } = await supabase.storage
+        .from('materiais')
+        .createSignedUrl(material.pdf_publicado_path, 3600)
+
+      if (pdfError || !data?.signedUrl) {
+        throw pdfError || new Error('Não foi possível gerar o acesso temporário ao PDF publicado.')
+      }
+
+      setViewerPdfUrl(data.signedUrl)
+      setViewer(material)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'Não foi possível abrir o PDF publicado.')
+    }
   }
 
   function remove(material: MaterialRecord) {
@@ -1020,7 +1038,7 @@ export default function Materiais({ professorId }: Props) {
 
       {viewer && (
         <div className="professor-material-viewer-modal">
-          <MaterialViewer material={viewer} imageUrls={imageUrls} onClose={() => setViewer(null)} />
+          <MaterialViewer material={viewer} pdfUrl={viewerPdfUrl} onClose={() => { setViewer(null); setViewerPdfUrl('') }} />
         </div>
       )}
     </div>
