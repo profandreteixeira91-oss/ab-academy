@@ -4959,3 +4959,43 @@ body {
     width: calc(100% - 20px);
   }
 }
+
+
+
+.material-document-brand {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.material-document-brand img {
+  display: block;
+  width: 126px;
+  max-width: 126px;
+  height: auto;
+  max-height: 42px;
+  object-fit: contain;
+}
+
+.material-document-brand > div {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.material-viewer-download:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+@media (max-width: 680px) {
+  .material-document-brand {
+    gap: 10px;
+  }
+
+  .material-document-brand img {
+    width: 96px;
+    max-width: 96px;
+    max-height: 34px;
+  }
+}
