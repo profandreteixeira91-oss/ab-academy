@@ -250,10 +250,10 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
 
       <article className="material-document material-html-document">
         <header ref={headerRef} className="student-material-pdf-toolbar material-document-header">
-          <img className="material-document-logo" src={logo} alt="AB Academy Idiomas" />
-          <div className="material-document-title">
-            <strong>AB ACADEMY IDIOMAS - {language.toUpperCase()}</strong>
+          <div className="material-document-brand" aria-label="AB Academy Idiomas">
+            <img className="material-document-logo" src={logo} alt="AB Academy Idiomas" />
           </div>
+          <div className="material-document-accent" aria-hidden="true" />
         </header>
 
         {loading ? (
