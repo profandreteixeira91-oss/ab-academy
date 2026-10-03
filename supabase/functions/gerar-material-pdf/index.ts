@@ -20,6 +20,7 @@ function sanitizeHtml(source: string) {
   html = html.replace(/(href|src)[ \t\r\n]*=[ \t\r\n]*'[^']*(javascript:|vbscript:|data:text)[^']*'/gi, '$1="#"')
   return html
 }
+
 function escapeHtml(value: string) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
 }
@@ -71,15 +72,14 @@ function buildStyles() {
     html, body { margin: 0; padding: 0; background: #fff; }
     body { color:#172033; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:11.5pt; line-height:1.72; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
     .material-document { width:100%; margin:0; background:#fff; }
-    .material-document-header { position:relative; display:flex; align-items:center; min-height:190px; padding:20px 42px 20px 28px; margin:0 0 22px; background:radial-gradient(circle at 92% 18%,rgba(255,255,255,.22) 0 2px,transparent 3px),linear-gradient(135deg,#0f3f8f 0%,#1649a0 52%,#2464c4 100%); overflow:hidden; color:#fff; }
-    .material-document-header:before { content:""; position:absolute; width:180px; height:180px; right:-55px; top:-75px; border:1px solid rgba(255,255,255,.24); transform:rotate(28deg); }
-    .material-document-header:after { content:""; position:absolute; width:230px; height:230px; right:-90px; bottom:-150px; border:1px solid rgba(255,255,255,.15); border-radius:50%; }
-    .material-document-brand { position:relative; z-index:1; display:flex; align-items:center; justify-content:center; width:150px; height:150px; flex:0 0 150px; border-radius:28px; background:rgba(255,255,255,.96); box-shadow:0 18px 42px rgba(5,28,71,.25); }
-    .material-document-logo { width:132px; height:132px; object-fit:contain; }
-    .material-document-cover { position:relative; z-index:1; display:flex; flex-direction:column; gap:4px; margin-left:28px; padding-left:24px; border-left:1px solid rgba(255,255,255,.28); }
-    .material-document-cover span { font-size:9pt; font-weight:700; letter-spacing:.18em; opacity:.82; }
-    .material-document-cover strong { font-size:25pt; line-height:1.05; letter-spacing:-.02em; }
-    .material-document-cover small { margin-top:5px; font-size:10pt; opacity:.78; }
+    .material-document-header { position:relative; display:flex; align-items:center; justify-content:flex-start; min-height:104px; height:104px; padding:10px 28px; margin:0 0 12px; border:0; border-bottom:1px solid #dce5f0; background:#fff; overflow:hidden; color:#172033; }
+    .material-document-header:before { content:""; position:absolute; left:0; top:0; width:4px; height:100%; background:#1649a0; }
+    .material-document-header:after { content:""; position:absolute; right:24px; bottom:-38px; width:150px; height:76px; border-radius:50%; background:rgba(22,73,160,.035); }
+    .material-document-brand { position:relative; z-index:1; display:flex; align-items:center; justify-content:flex-start; width:92px; height:92px; flex:0 0 92px; }
+    .material-document-logo { width:92px; height:92px; object-fit:contain; }
+    .material-document-cover { position:relative; z-index:1; display:flex; flex-direction:column; justify-content:center; gap:3px; min-width:0; margin-left:24px; padding-left:20px; border-left:1px solid #dce5f0; }
+    .material-document-cover span { color:#64748b; font-size:8pt; line-height:1.2; font-weight:800; letter-spacing:.16em; }
+    .material-document-cover strong { color:#1649a0; font-size:17pt; line-height:1.1; font-weight:800; letter-spacing:.02em; }
     .material-viewer-content,.professor-material-rich-editor { width:100%; margin:0 auto; color:#172033; font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size:11.5pt; line-height:1.72; }
     .material-viewer-content h1,.professor-material-rich-editor h1 { margin:0 0 18px; font-size:24pt; line-height:1.16; color:#0f2f67; break-after:avoid; }
     .material-viewer-content h2,.professor-material-rich-editor h2 { margin:28px 0 12px; padding-bottom:7px; border-bottom:1px solid #dbe5f3; font-size:18pt; line-height:1.25; color:#164a9f; break-after:avoid; }
@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
     const contentHtml = await resolveMaterialImages(rawHtml, imagePaths, admin)
     const language = material.idioma === 'ingles' ? 'Inglês' : material.idioma === 'alemao' ? 'Alemão' : 'Material de apoio'
     const title = String(material.titulo || 'Material de apoio')
-    const documentHtml = '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + escapeHtml(title) + '</title><style>' + buildStyles() + '</style></head><body><article class="material-document"><header class="material-document-header"><div class="material-document-brand"><img class="material-document-logo" src="https://abacademyidiomas.com.br/assets/logo_abacademy.png" alt="AB Academy Idiomas"></div><div class="material-document-cover"><span>AB ACADEMY IDIOMAS</span><strong>' + escapeHtml(language.toUpperCase()) + '</strong><small>Material de apoio</small></div></header><main class="material-viewer-content professor-material-rich-editor">' + contentHtml + '</main></article></body></html>'
+    const documentHtml = '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + escapeHtml(title) + '</title><style>' + buildStyles() + '</style></head><body><article class="material-document"><header class="material-document-header"><div class="material-document-brand"><img class="material-document-logo" src="https://abacademyidiomas.com.br/favicon.png" alt="AB Academy Idiomas"></div><div class="material-document-cover"><span>AB ACADEMY IDIOMAS</span><strong>' + escapeHtml(language.toUpperCase()) + '</strong></div></header><main class="material-viewer-content professor-material-rich-editor">' + contentHtml + '</main></article></body></html>'
     const endpoint = 'https://production-sfo.browserless.io/pdf?token=' + encodeURIComponent(browserlessToken)
     const rendererResponse = await fetch(endpoint, { method:'POST', headers:{'Cache-Control':'no-cache','Content-Type':'application/json','Accept':'application/pdf'}, body:JSON.stringify({ html:documentHtml, options:{format:'A4',printBackground:true,displayHeaderFooter:false,preferCSSPageSize:true,tagged:true,margin:{top:'0mm',right:'0mm',bottom:'0mm',left:'0mm'},waitForFonts:true} }) })
     if (!rendererResponse.ok) return json({ error:'O renderizador PDF recusou a geração.', code:'PDF_RENDERER_ERROR', status:rendererResponse.status, details:(await rendererResponse.text()).slice(0,2000) }, 502)
