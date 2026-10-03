@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Download, Loader2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
+import logo from '../assets/logo_abacademy.png'
 import { resolveMaterialImage } from '../lib/materialImageCache'
 
 export type MaterialRecord = {
@@ -84,10 +85,27 @@ async function hydrateMaterialHtml(html: string, fallbackPaths: string[]) {
   return wrapper.innerHTML
 }
 
+async function downloadPdfDirect(url: string, title: string) {
+  const response = await fetch(url)
+  if (!response.ok) throw new Error('Não foi possível baixar o PDF.')
+
+  const blob = await response.blob()
+  const objectUrl = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = objectUrl
+  link.download = `${title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'material'}.pdf`
+  link.style.display = 'none'
+  document.body.appendChild(link)
+  link.click()
+  link.remove()
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+}
+
 export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
   const [loading, setLoading] = useState(true)
   const [contentHtml, setContentHtml] = useState('')
   const [contentError, setContentError] = useState('')
+  const [downloading, setDownloading] = useState(false)
 
   const language = material.idioma === 'ingles'
     ? 'Inglês'
