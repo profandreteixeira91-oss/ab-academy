@@ -24,19 +24,43 @@ function escapeHtml(value: string) {
   return value.replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#39;')
 }
 
+function toBase64(bytes: Uint8Array) {
+  let binary = ''
+  const chunkSize = 0x8000
+  for (let offset = 0; offset < bytes.length; offset += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + chunkSize, bytes.length)))
+  }
+  return btoa(binary)
+}
+
 async function resolveMaterialImages(html: string, fallbackPaths: string[], admin: ReturnType<typeof createClient>) {
   const paths = new Set<string>(fallbackPaths.filter(Boolean))
   for (const match of html.matchAll(/{{MATERIAL_IMAGE:([^}]+)}}/g)) {
     const path = match[1]?.trim()
     if (path) paths.add(path)
   }
-  const urls = new Map<string, string>()
+
+  const dataUrls = new Map<string, string>()
   for (const path of paths) {
-    const { data, error } = await admin.storage.from('materiais').createSignedUrl(path, 600)
-    if (error || !data?.signedUrl) throw new Error('Não foi possível resolver a imagem do material: ' + path)
-    urls.set(path, data.signedUrl)
+    const { data, error } = await admin.storage.from('materiais').download(path)
+    if (error || !data) {
+      throw new Error('Não foi possível carregar a imagem do material: ' + path)
+    }
+
+    const bytes = new Uint8Array(await data.arrayBuffer())
+    const contentType = data.type || 'application/octet-stream'
+    dataUrls.set(path, 'data:' + contentType + ';base64,' + toBase64(bytes))
   }
-  let result = html.replace(/{{MATERIAL_IMAGE:([^}]+)}}/g, (_, rawPath) => urls.get(String(rawPath).trim()) || '')
+
+  let result = html.replace(/{{MATERIAL_IMAGE:([^}]+)}}/g, (_, rawPath) => dataUrls.get(String(rawPath).trim()) || '')
+
+  result = result.replace(/<img\\b([^>]*?)\\bsrc=(["'])((?:https?:\\/\\/|data:)[^"']*)\\2([^>]*)>/gi, (full, before, quote, src, after) => {
+    const pathMatch = full.match(/\\bdata-material-image=(["'])([^"']+)\\1/i)
+    const path = pathMatch?.[2]?.trim()
+    if (!path || !dataUrls.has(path)) return full
+    return '<img' + before + 'src=' + quote + dataUrls.get(path) + quote + after + '>'
+  })
+
   return result
 }
 
