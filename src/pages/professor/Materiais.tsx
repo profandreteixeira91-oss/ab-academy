@@ -76,6 +76,8 @@ export default function Materiais({ professorId }: Props) {
   const [viewer, setViewer] = useState<MaterialRecord | null>(null)
   const [imageUrls, setImageUrls] = useState<Record<string, string>>({})
   const [exitDialog, setExitDialog] = useState(false)
+  const [actionDialog, setActionDialog] = useState<'rascunho' | 'publicado' | 'excluir' | null>(null)
+  const [pendingMaterial, setPendingMaterial] = useState<MaterialRecord | null>(null)
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null)
 
   const filtered = useMemo(
@@ -338,7 +340,9 @@ export default function Materiais({ professorId }: Props) {
         }
       }
 
-      setEditor((value) => ({ ...value, id, status }))
+      setEditor((value) => ({ ...value, id, status, conteudo_html: html }))
+      // Mantém o DOM do contentEditable intacto após o salvamento para que
+      // o conteúdo persistido continue imediatamente visível no editor.
       setDirty(false)
       await load()
 
@@ -533,6 +537,41 @@ export default function Materiais({ professorId }: Props) {
     setOpen(false)
   }
 
+  function requestSave(status: 'rascunho' | 'publicado') {
+    if (saving) return
+    setActionDialog(status)
+  }
+
+  async function confirmAction() {
+    if (!actionDialog) return
+
+    if (actionDialog === 'excluir') {
+      const material = pendingMaterial
+      setActionDialog(null)
+      setPendingMaterial(null)
+      if (!material) return
+
+      const { error: deleteError } = await supabase.from('materiais').delete().eq('id', material.id)
+      if (deleteError) {
+        setError(deleteError.message)
+        return
+      }
+
+      const { data: objects } = await supabase.storage.from('materiais').list(`${professorId}/${material.id}`, { limit: 1000 })
+      if (objects?.length) {
+        await supabase.storage.from('materiais').remove(objects.map((object) => `${professorId}/${material.id}/${object.name}`))
+      }
+
+      await load()
+      setMessage('Material excluído com sucesso.')
+      return
+    }
+
+    const status = actionDialog
+    setActionDialog(null)
+    await save(status)
+  }
+
   async function exit(saveDraft: boolean) {
     if (saveDraft && !(await save('rascunho'))) return
     setExitDialog(false)
@@ -554,21 +593,9 @@ export default function Materiais({ professorId }: Props) {
     setViewer(material)
   }
 
-  async function remove(material: MaterialRecord) {
-    if (!window.confirm(`Excluir "${material.titulo}"? As imagens anexadas também serão removidas.`)) return
-
-    const { error: deleteError } = await supabase.from('materiais').delete().eq('id', material.id)
-    if (deleteError) {
-      setError(deleteError.message)
-      return
-    }
-
-    const { data: objects } = await supabase.storage.from('materiais').list(`${professorId}/${material.id}`, { limit: 1000 })
-    if (objects?.length) {
-      await supabase.storage.from('materiais').remove(objects.map((object) => `${professorId}/${material.id}/${object.name}`))
-    }
-
-    await load()
+  function remove(material: MaterialRecord) {
+    setPendingMaterial(material)
+    setActionDialog('excluir')
   }
 
   function toggleAllVisible() {
@@ -689,10 +716,10 @@ export default function Materiais({ professorId }: Props) {
               <span className="professor-material-draft-status">
                 {dirty ? 'Alterações não salvas' : 'Todas as alterações estão salvas'}
               </span>
-              <button type="button" className="professor-secondary-button" disabled={saving} onClick={() => void save('rascunho')}>
+              <button type="button" className="professor-secondary-button" disabled={saving} onClick={() => requestSave('rascunho')}>
                 <Save size={17} /> {saving ? 'Salvando...' : 'Salvar rascunho'}
               </button>
-              <button type="button" className="professor-primary-button" disabled={saving} onClick={() => void save('publicado')}>
+              <button type="button" className="professor-primary-button" disabled={saving} onClick={() => requestSave('publicado')}>
                 <Send size={17} /> Publicar material
               </button>
             </div>
@@ -759,6 +786,36 @@ export default function Materiais({ professorId }: Props) {
 
         {error && <div className="professor-material-error professor-material-editor-alert">{error}</div>}
 
+        {actionDialog && (
+          <div className="professor-material-dialog-backdrop">
+            <div className="professor-material-dialog" role="dialog" aria-modal="true" aria-labelledby="material-action-dialog-title">
+              {actionDialog === 'excluir' ? <Trash2 size={28} /> : actionDialog === 'publicado' ? <Send size={28} /> : <Save size={28} />}
+              <h3 id="material-action-dialog-title">
+                {actionDialog === 'excluir'
+                  ? 'Excluir material?'
+                  : actionDialog === 'publicado'
+                    ? 'Publicar material?'
+                    : 'Salvar rascunho?'}
+              </h3>
+              <p>
+                {actionDialog === 'excluir'
+                  ? 'O material "' + (pendingMaterial?.titulo || '') + '" será excluído e suas imagens armazenadas serão removidas.'
+                  : actionDialog === 'publicado'
+                    ? 'O conteúdo atual será salvo e publicado para os alunos selecionados.'
+                    : 'Todo o conteúdo digitado, incluindo alterações de texto, tabelas, imagens e destinatários, será salvo como rascunho para continuar depois.'}
+              </p>
+              <div>
+                <button type="button" className="professor-secondary-button" onClick={() => { setActionDialog(null); setPendingMaterial(null) }} disabled={saving}>
+                  Cancelar
+                </button>
+                <button type="button" className={actionDialog === 'excluir' ? 'professor-secondary-button professor-absence-button' : 'professor-primary-button'} onClick={() => void confirmAction()} disabled={saving}>
+                  {actionDialog === 'excluir' ? 'Excluir material' : actionDialog === 'publicado' ? 'Publicar' : 'Salvar rascunho'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {exitDialog && (
           <div className="professor-material-dialog-backdrop">
             <div className="professor-material-dialog">
@@ -811,7 +868,7 @@ export default function Materiais({ professorId }: Props) {
               <div className="professor-material-card-actions">
                 <button type="button" className="professor-secondary-button" onClick={() => void edit(material)}>Editar</button>
                 <button type="button" className="professor-secondary-button" onClick={() => void view(material)}>Visualizar</button>
-                <button type="button" className="professor-icon-danger" onClick={() => void remove(material)} title="Excluir material"><Trash2 size={17} /></button>
+                <button type="button" className="professor-icon-danger" onClick={() => remove(material)} title="Excluir material"><Trash2 size={17} /></button>
               </div>
             </article>
           ))}
