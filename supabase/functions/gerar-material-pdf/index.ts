@@ -37,10 +37,6 @@ async function resolveMaterialImages(html: string, fallbackPaths: string[], admi
     urls.set(path, data.signedUrl)
   }
   let result = html.replace(/{{MATERIAL_IMAGE:([^}]+)}}/g, (_, rawPath) => urls.get(String(rawPath).trim()) || '')
-  for (const [path, url] of urls) {
-    const escapedPath = path.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')
-    result = result.replace(new RegExp('data-material-image=(["\\\'])' + escapedPath + '\\\1', 'gi'), 'src="' + url + '" data-material-image="' + path + '"')
-  }
   return result
 }
 
