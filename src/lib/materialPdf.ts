@@ -101,11 +101,12 @@ export async function generateMaterialPdf(
 
   page.appendChild(body)
 
-  // O elemento precisa permanecer renderizável para o html2canvas. Ele fica
-  // abaixo da viewport, em vez de display:none ou fora do documento.
-  page.style.position = 'absolute'
+  // O elemento precisa permanecer dentro da viewport para o html2canvas.
+  // Não usamos display:none nem uma posição fora da área renderizada.
+  page.style.position = 'fixed'
   page.style.left = '0'
-  page.style.top = `${window.scrollY + window.innerHeight}px`
+  page.style.top = '0'
+  page.style.zIndex = '-1'
   page.style.pointerEvents = 'none'
   document.body.appendChild(page)
 
@@ -136,6 +137,8 @@ export async function generateMaterialPdf(
         },
       })
       .from(page)
+      .toContainer()
+      .toCanvas()
       .toPdf()
 
     const blob = await worker.outputPdf('blob')
