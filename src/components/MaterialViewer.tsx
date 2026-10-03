@@ -201,6 +201,9 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
       <article className="material-document material-html-document">
         <header className="student-material-pdf-toolbar material-document-header">
           <img className="material-document-logo" src={logo} alt="AB Academy Idiomas" />
+          <div className="material-document-title">
+            <strong>AB ACADEMY IDIOMAS - {language.toUpperCase()}</strong>
+          </div>
         </header>
 
         {loading ? (
