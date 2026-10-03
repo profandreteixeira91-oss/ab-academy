@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import {
   Bold,
   Italic,
@@ -69,6 +69,9 @@ const empty: EditorState = {
 const escapeHtml = (value: string) =>
   value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 
+const hasMeaningfulContent = (html: string) =>
+  Boolean(html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) || /<(img|table)\b/i.test(html)
+
 export default function Materiais({ professorId }: Props) {
   const editorRef = useRef<HTMLDivElement>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -106,6 +109,8 @@ export default function Materiais({ professorId }: Props) {
   const recipientsDirtyRef = useRef(false)
   const materialIdRef = useRef<string | null>(null)
   const saveRef = useRef<typeof save | null>(null)
+  // Conteúdo que deve ser injetado no editor assim que ele for montado no DOM.
+  const pendingContentRef = useRef<{ html: string; selection: EditorSelectionState | null } | null>(null)
 
   const filtered = useMemo(
     () => students.filter((student) =>
@@ -162,14 +167,13 @@ export default function Materiais({ professorId }: Props) {
           status: 'rascunho',
         })
         setSelected([])
+        pendingContentRef.current = {
+          html: recoveredHtml || empty.conteudo_html,
+          selection: orphanDraft.selection,
+        }
         setOpen(true)
         dirtyRef.current = true
         setDirty(true)
-        window.setTimeout(() => {
-          if (!editorRef.current) return
-          editorRef.current.innerHTML = recoveredHtml || empty.conteudo_html
-          restoreEditorSelection(editorRef.current, orphanDraft.selection)
-        }, 0)
         setMessage('Rascunho local recuperado automaticamente após a última sessão.')
       }
     } catch (cause) {
@@ -226,6 +230,20 @@ export default function Materiais({ professorId }: Props) {
     }
   }, [open])
 
+  // Injeta o conteúdo salvo no editor assim que ele é montado. Substitui os antigos
+  // setTimeout(0), que podiam disparar antes do React montar o editor e deixar a página vazia.
+  useLayoutEffect(() => {
+    if (!open || loading || !editorRef.current || !pendingContentRef.current) return
+    const { html, selection } = pendingContentRef.current
+    pendingContentRef.current = null
+    editorRef.current.innerHTML = html
+    try {
+      restoreEditorSelection(editorRef.current, selection)
+    } catch (cause) {
+      console.warn('Não foi possível restaurar o cursor:', cause)
+    }
+  }, [open, loading])
+
   function markChanged() {
     editorVersionRef.current += 1
     dirtyRef.current = true
@@ -249,7 +267,7 @@ export default function Materiais({ professorId }: Props) {
   }
 
   async function saveLocalEditorState() {
-    if (!editorRef.current) return
+    if (!editorRef.current || !dirtyRef.current) return
 
     const model = domToEditorModel(editorRef.current)
     const selection = captureEditorSelection(editorRef.current)
@@ -562,12 +580,16 @@ export default function Materiais({ professorId }: Props) {
       if (id) {
         // Não altera o status: material publicado continua publicado
         // (com alterações pendentes) até o professor publicar novamente.
-        const { error: updateError } = await supabase
+        const { data: updatedRows, error: updateError } = await supabase
           .from('materiais')
           .update(basePayload)
           .eq('id', id)
+          .select('id')
 
         if (updateError) throw updateError
+        if (!updatedRows?.length) {
+          throw new Error('O banco não atualizou o material (nenhuma linha alterada). Verifique as políticas de acesso (RLS) da tabela materiais.')
+        }
       } else {
         const { data, error: insertError } = await supabase
           .from('materiais')
@@ -618,7 +640,7 @@ export default function Materiais({ professorId }: Props) {
         }
 
         const publishedAt = new Date().toISOString()
-        const { error: publishError } = await supabase
+        const { data: publishedRows, error: publishError } = await supabase
           .from('materiais')
           .update({
             ...basePayload,
@@ -635,10 +657,11 @@ export default function Materiais({ professorId }: Props) {
             updated_at: publishedAt,
           })
           .eq('id', currentId)
+          .select('id')
 
-        if (publishError) {
+        if (publishError || !publishedRows?.length) {
           await supabase.storage.from('materiais').remove([pdfPath])
-          throw publishError
+          throw publishError || new Error('O banco não registrou a publicação (nenhuma linha alterada). Verifique as políticas de acesso (RLS).')
         }
       }
 
@@ -831,10 +854,8 @@ export default function Materiais({ professorId }: Props) {
     setError('')
     setMessage('')
     setActiveTable(null)
+    pendingContentRef.current = { html: empty.conteudo_html, selection: null }
     setOpen(true)
-    window.setTimeout(() => {
-      if (editorRef.current) editorRef.current.innerHTML = empty.conteudo_html
-    }, 0)
   }
 
   async function edit(material: MaterialRecord) {
@@ -873,11 +894,28 @@ export default function Materiais({ professorId }: Props) {
     const localDraft = await loadLocalMaterialDraft(currentMaterial.id)
     const remoteUpdatedAt = new Date(currentMaterial.updated_at || 0).getTime()
     const localUpdatedAt = new Date(localDraft?.savedAt || 0).getTime()
-    const hasNewerLocalDraft = Boolean(localDraft && localUpdatedAt > remoteUpdatedAt)
+    // O rascunho local só vence o remoto se for mais novo, tiver versão maior (alterações
+    // que nunca chegaram ao banco) e tiver conteúdo real. Caso contrário é lixo de sessões
+    // anteriores e é descartado, para nunca sobrepor o documento salvo com uma página vazia.
+    const hasNewerLocalDraft = Boolean(
+      localDraft &&
+      localUpdatedAt > remoteUpdatedAt &&
+      Number(localDraft.version || 0) > Number(currentMaterial.versao_editor || 0),
+    )
 
+    let restoredLocalHtml = ''
     if (hasNewerLocalDraft && localDraft?.model) {
       const localHtml = editorModelToHtml(localDraft.model)
-      const restoredLocalHtml = await rehydrateEditorImages(localHtml, currentMaterial.imagens || [])
+      restoredLocalHtml = await rehydrateEditorImages(localHtml, currentMaterial.imagens || [])
+    }
+
+    const useLocalDraft = Boolean(localDraft && hasNewerLocalDraft && hasMeaningfulContent(restoredLocalHtml))
+
+    if (localDraft && !useLocalDraft) {
+      await removeLocalMaterialDraft(currentMaterial.id)
+    }
+
+    if (useLocalDraft && localDraft) {
       setSelected((recipients || []).map((row) => row.aluno_id))
       setEditor({
         id: currentMaterial.id,
@@ -890,15 +928,14 @@ export default function Materiais({ professorId }: Props) {
       })
       editorVersionRef.current = localDraft.version
       operationsRef.current = localDraft.operations || []
+      pendingContentRef.current = {
+        html: restoredLocalHtml || empty.conteudo_html,
+        selection: localDraft.selection,
+      }
       setOpen(true)
       dirtyRef.current = true
       setDirty(true)
       setActiveTable(null)
-      window.setTimeout(() => {
-        if (!editorRef.current) return
-        editorRef.current.innerHTML = restoredLocalHtml || empty.conteudo_html
-        restoreEditorSelection(editorRef.current, localDraft.selection)
-      }, 0)
       setMessage('Rascunho local mais recente recuperado automaticamente.')
       return
     }
@@ -984,15 +1021,14 @@ export default function Materiais({ professorId }: Props) {
       videos: currentMaterial.videos || [],
       status: currentMaterial.status,
     })
+    pendingContentRef.current = {
+      html,
+      selection: currentMaterial.cursor_estado as EditorSelectionState | null,
+    }
     setOpen(true)
     dirtyRef.current = false
     setDirty(false)
     setActiveTable(null)
-    window.setTimeout(() => {
-      if (!editorRef.current) return
-      editorRef.current.innerHTML = html
-      restoreEditorSelection(editorRef.current, currentMaterial.cursor_estado as EditorSelectionState | null)
-    }, 0)
   }
 
   // Estilo Google Docs: ao sair, salva automaticamente. O diálogo só aparece se o salvamento falhar.
