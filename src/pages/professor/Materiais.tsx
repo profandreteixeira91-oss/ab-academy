@@ -32,6 +32,17 @@ import { supabase } from '../../lib/supabase'
 import MaterialViewer, { type MaterialRecord } from '../../components/MaterialViewer'
 import { cacheMaterialImage, resolveMaterialImage } from '../../lib/materialImageCache'
 import { generateMaterialPdf } from '../../lib/materialPdf'
+import {
+  captureEditorSelection,
+  createEditorOperation,
+  domToEditorModel,
+  editorModelToHtml,
+  restoreEditorSelection,
+  type EditorModelNode,
+  type EditorOperation,
+  type EditorSelectionState,
+} from '../../lib/materialEditorModel'
+import { loadLocalMaterialDraft, removeLocalMaterialDraft, saveLocalMaterialDraft } from '../../lib/materialEditorDraftStore'
 
 type Props = { professorId: string }
 type Student = { id: string; nome_completo: string }
@@ -80,6 +91,10 @@ export default function Materiais({ professorId }: Props) {
   const [actionDialog, setActionDialog] = useState<'rascunho' | 'publicado' | 'excluir' | null>(null)
   const [pendingMaterial, setPendingMaterial] = useState<MaterialRecord | null>(null)
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null)
+  const editorVersionRef = useRef(0)
+  const operationsRef = useRef<EditorOperation[]>([])
+  const localDraftKeyRef = useRef<string>('')
+  const localAutosaveTimerRef = useRef<number | null>(null)
 
   const filtered = useMemo(
     () => students.filter((student) =>
@@ -121,10 +136,29 @@ export default function Materiais({ professorId }: Props) {
   }, [professorId])
 
   useEffect(() => {
+    if (!open || !dirty) return
+
+    if (localAutosaveTimerRef.current) {
+      window.clearTimeout(localAutosaveTimerRef.current)
+    }
+
+    localAutosaveTimerRef.current = window.setTimeout(() => {
+      void saveLocalEditorState()
+    }, 700)
+
+    return () => {
+      if (localAutosaveTimerRef.current) {
+        window.clearTimeout(localAutosaveTimerRef.current)
+        localAutosaveTimerRef.current = null
+      }
+    }
+  }, [open, dirty, editor.titulo, editor.id])
+
+  useEffect(() => {
     if (!open || !editor.id || !dirty || editor.status !== 'rascunho') return
     const timer = window.setInterval(() => {
       void save('rascunho', true)
-    }, 30000)
+    }, 5000)
     return () => window.clearInterval(timer)
   }, [open, editor.id, editor.status, dirty])
 
@@ -144,8 +178,52 @@ export default function Materiais({ professorId }: Props) {
     selection.addRange(savedRangeRef.current)
   }
 
-  function sync() {
+  async function saveLocalEditorState() {
+    if (!editorRef.current) return
+
+    const model = domToEditorModel(editorRef.current)
+    const selection = captureEditorSelection(editorRef.current)
+    const version = ++editorVersionRef.current
+    const operation = createEditorOperation('document_changed', version)
+    operationsRef.current = [...operationsRef.current, operation].slice(-200)
+
+    try {
+      await saveLocalMaterialDraft({
+        materialId: localDraftKeyRef.current || editor.id || 'new',
+        titulo: editor.titulo,
+        idioma: editor.idioma,
+        model,
+        selection,
+        operations: operationsRef.current,
+        version,
+        savedAt: new Date().toISOString(),
+      })
+    } catch (cause) {
+      console.error('Falha no autosave local do material:', cause)
+    }
+  }
+
+  function sync(operationType = 'document_changed') {
     const html = editorRef.current?.innerHTML || editor.conteudo_html
+    if (editorRef.current) {
+      const model = domToEditorModel(editorRef.current)
+      const selection = captureEditorSelection(editorRef.current)
+      const version = ++editorVersionRef.current
+      operationsRef.current = [
+        ...operationsRef.current,
+        createEditorOperation(operationType, version),
+      ].slice(-200)
+      void saveLocalMaterialDraft({
+        materialId: localDraftKeyRef.current || editor.id || 'new',
+        titulo: editor.titulo,
+        idioma: editor.idioma,
+        model,
+        selection,
+        operations: operationsRef.current,
+        version,
+        savedAt: new Date().toISOString(),
+      }).catch((cause) => console.error('Falha no autosave local do material:', cause))
+    }
     setEditor((value) => ({ ...value, conteudo_html: html }))
     setDirty(true)
     saveSelection()
@@ -155,7 +233,7 @@ export default function Materiais({ professorId }: Props) {
     editorRef.current?.focus()
     restoreSelection()
     document.execCommand(command, false, value)
-    sync()
+    sync(`command:${command}`)
   }
 
   function insertLink() {
@@ -539,7 +617,7 @@ export default function Materiais({ professorId }: Props) {
     const paragraph = document.createElement('p')
     paragraph.appendChild(image)
     document.execCommand('insertHTML', false, paragraph.outerHTML)
-    sync()
+    sync('insert_image')
   }
 
   function video() {
