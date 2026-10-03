@@ -32,7 +32,6 @@ import { supabase } from '../../lib/supabase'
 import MaterialViewer, { type MaterialRecord } from '../../components/MaterialViewer'
 import { cacheMaterialImage, resolveMaterialImage } from '../../lib/materialImageCache'
 import { generateMaterialPdf } from '../../lib/materialPdf'
-import { generateMaterialPdf } from '../../lib/materialPdf'
 
 type Props = { professorId: string }
 type Student = { id: string; nome_completo: string }
@@ -406,6 +405,7 @@ export default function Materiais({ professorId }: Props) {
             idioma_publicado: editor.idioma || null,
             publicado_em: publishedAt,
             pdf_publicado_path: pdfPath,
+            pdf_publicado_em: publishedAt,
           })
           .eq('id', id)
 
