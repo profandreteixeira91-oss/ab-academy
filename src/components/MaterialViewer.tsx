@@ -290,7 +290,7 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
           <div className="material-document-brand" aria-label="AB Academy Idiomas">
             <img
               className="material-document-logo"
-              src="/favicon.png"
+              src="/favicon.svg"
               alt="AB Academy Idiomas"
             />
           </div>
