@@ -1395,7 +1395,8 @@ export default function Matricula() {
       tipo_valor: campaign.participantes === 0 ? 'coletiva_em_formacao' : 'coletiva_formada', professor_id: campaign.professor_id, nivel_referencia: campaign.nivel_referencia,
     }))
     if (mapped.length !== campaign.aulas_semana) { setError('A turma selecionada não possui todos os encontros semanais configurados.'); return }
-    setCollectiveFormationDiscount(campaign.participantes === 0)    setSelectedSchedules(mapped); setSelectedSchedule(mapped[0] ?? null); setScheduleLockedFromPlanos(true); setSelectedWeekday(mapped[0]?.weekday ?? null); setStep(1)
+    setCollectiveFormationDiscount(campaign.participantes === 0)
+    setSelectedSchedules(mapped); setSelectedSchedule(mapped[0] ?? null); setScheduleLockedFromPlanos(true); setSelectedWeekday(mapped[0]?.weekday ?? null); setStep(1)
     setError(''); setSuccess('Turma selecionada. Confira o plano, os horários e o valor antes de continuar.')
   }
 
