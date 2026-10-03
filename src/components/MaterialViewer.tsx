@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Download, Loader2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import logo from '../assets/logo_abacademy.png'
@@ -22,7 +22,10 @@ export type MaterialRecord = {
 
 type Props = {
   material: MaterialRecord
+  /** Mantido apenas por compatibilidade. O download não depende mais dele. */
   pdfUrl?: string
+  /** Exibe o botão "Baixar PDF". Por padrão, sempre que o material estiver carregado. */
+  allowDownload?: boolean
   onClose?: () => void
 }
 
@@ -86,11 +89,49 @@ async function hydrateMaterialHtml(html: string, fallbackPaths: string[]) {
   return wrapper.innerHTML
 }
 
-async function downloadPdfDirect(sourceHtml: string, title: string) {
-  const source = document.createElement('div')
-  source.innerHTML = sourceHtml
+// Garante que todas as imagens do conteúdo visível terminaram de carregar antes de gerar o PDF.
+// Se alguma falhar, o download é interrompido com erro claro, em vez de gerar um PDF
+// diferente do que aparece na tela.
+async function waitForImages(root: HTMLElement) {
+  const images = Array.from(root.querySelectorAll('img'))
 
-  const pdfBlob = await generateMaterialPdf(title, '', source)
+  await Promise.all(
+    images.map((image) => {
+      if (image.complete) return Promise.resolve()
+
+      return new Promise<void>((resolve) => {
+        const timer = window.setTimeout(resolve, 15000)
+        const done = () => {
+          window.clearTimeout(timer)
+          resolve()
+        }
+        image.addEventListener('load', done, { once: true })
+        image.addEventListener('error', done, { once: true })
+      })
+    }),
+  )
+
+  const failed = images.filter((image) => !image.complete || image.naturalWidth === 0)
+  if (failed.length) {
+    throw new Error(
+      `${failed.length} imagem(ns) do material não carregaram. O PDF não foi gerado para não ficar diferente do que aparece na tela. Tente novamente.`,
+    )
+  }
+}
+
+// Gera o PDF a partir do MESMO elemento que está sendo exibido no visualizador
+// (mesmo HTML, mesmas classes de estilo, mesmo idioma no cabeçalho) e dispara o download.
+async function downloadVisibleAsPdf(
+  element: HTMLElement,
+  header: HTMLElement | null,
+  title: string,
+  language: string,
+) {
+  if (document.fonts?.ready) await document.fonts.ready
+  if (header) await waitForImages(header)
+  await waitForImages(element)
+
+  const pdfBlob = await generateMaterialPdf(title, language, element, header)
   if (pdfBlob.size < 1024) {
     throw new Error('O PDF gerado está vazio ou inválido.')
   }
@@ -106,8 +147,9 @@ async function downloadPdfDirect(sourceHtml: string, title: string) {
   setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
 }
 
-
-export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
+export default function MaterialViewer({ material, allowDownload = true, onClose }: Props) {
+  const contentRef = useRef<HTMLDivElement>(null)
+  const headerRef = useRef<HTMLElement>(null)
   const [loading, setLoading] = useState(true)
   const [contentHtml, setContentHtml] = useState('')
   const [contentError, setContentError] = useState('')
@@ -154,6 +196,29 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
     }
   }, [material.id, material.conteudo_html, material.imagens])
 
+  async function handleDownload() {
+    const element = contentRef.current
+    if (!element) {
+      setContentError('O conteúdo ainda não está pronto para download.')
+      return
+    }
+
+    setDownloading(true)
+    setContentError('')
+
+    try {
+      await downloadVisibleAsPdf(element, headerRef.current, material.titulo, language)
+    } catch (error) {
+      setContentError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível baixar o PDF.',
+      )
+    } finally {
+      setDownloading(false)
+    }
+  }
+
   return (
     <div className="material-viewer">
       <div className="material-viewer-toolbar no-print">
@@ -164,27 +229,12 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
         )}
 
         <div className="material-viewer-actions">
-          {pdfUrl && (
+          {allowDownload && !loading && (
             <button
               type="button"
               className="material-viewer-download"
               disabled={downloading}
-              onClick={async () => {
-                setDownloading(true)
-                setContentError('')
-
-                try {
-                  await downloadPdfDirect(contentHtml, material.titulo)
-                } catch (error) {
-                  setContentError(
-                    error instanceof Error
-                      ? error.message
-                      : 'Não foi possível baixar o PDF.',
-                  )
-                } finally {
-                  setDownloading(false)
-                }
-              }}
+              onClick={() => void handleDownload()}
             >
               <Download size={17} /> {downloading ? 'Baixando...' : 'Baixar PDF'}
             </button>
@@ -199,8 +249,11 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
       </div>
 
       <article className="material-document material-html-document">
-        <header className="student-material-pdf-toolbar material-document-header">
+        <header ref={headerRef} className="student-material-pdf-toolbar material-document-header">
           <img className="material-document-logo" src={logo} alt="AB Academy Idiomas" />
+          <div className="material-document-title">
+            <strong>AB ACADEMY IDIOMAS - {language.toUpperCase()}</strong>
+          </div>
         </header>
 
         {loading ? (
@@ -217,6 +270,7 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
             )}
 
             <div
+              ref={contentRef}
               className="material-viewer-content professor-material-rich-editor"
               dangerouslySetInnerHTML={{ __html: contentHtml }}
             />
