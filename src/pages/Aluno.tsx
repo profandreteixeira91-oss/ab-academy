@@ -2004,6 +2004,7 @@ function Aluno() {
           await Promise.all([
             loadStudentLessons(authenticatedUser.id),
             loadStudentActivities(authenticatedUser.id),
+            loadStudentMaterials(authenticatedUser.id),
             loadStudentFinance(authenticatedUser.id, true),
           ])
 
