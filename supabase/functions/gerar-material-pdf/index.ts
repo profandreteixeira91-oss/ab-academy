@@ -16,8 +16,8 @@ function sanitizeHtml(source: string) {
   html = html.replace(/<(script|style|iframe|object|embed|form|textarea|select|button|input|link|meta)[^>]*>/gi, '')
   html = html.replace(/[ \t\r\n]+on[a-z-]+[ \t\r\n]*=[ \t\r\n]*"[^"]*"/gi, '')
   html = html.replace(/[ \t\r\n]+on[a-z-]+[ \t\r\n]*=[ \t\r\n]*'[^']*'/gi, '')
-  html = html.replace(/(href|src)[ \t\r\n]*=[ \t\r\n]*"[^"]*(javascript:|vbscript:|data:text\\/html)[^"]*"/gi, '$1="#"')
-  html = html.replace(/(href|src)[ \t\r\n]*=[ \t\r\n]*'[^']*(javascript:|vbscript:|data:text\\/html)[^']*'/gi, '$1="#"')
+  html = html.replace(/(href|src)[ \t\r\n]*=[ \t\r\n]*"[^"]*(javascript:|vbscript:|data:text)[^"]*"/gi, '$1="#"')
+  html = html.replace(/(href|src)[ \t\r\n]*=[ \t\r\n]*'[^']*(javascript:|vbscript:|data:text)[^']*'/gi, '$1="#"')
   return html
 }
 function escapeHtml(value: string) {
