@@ -58,6 +58,7 @@ function isSafeUrl(value: string, kind: 'href' | 'src') {
   }
 
   if (/^(https?:|mailto:|tel:)/i.test(normalized)) return true;
+  if (kind === 'src' && /^blob:/i.test(normalized)) return true;
   return false;
 }
 
