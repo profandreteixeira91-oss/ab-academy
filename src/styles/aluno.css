@@ -4967,7 +4967,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  min-height: 150px;
+  min-height: 190px;
   padding: 20px 28px;
   border-bottom: 1px solid #e7edf5;
   background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
@@ -5004,7 +5004,7 @@ body {
   align-items: center;
   justify-content: flex-start;
   width: 150px;
-  height: 110px;
+  height: 150px;
 }
 
 .material-document-logo {
@@ -5019,8 +5019,8 @@ body {
 
 .material-document-accent {
   position: absolute;
-  left: 196px;
-  bottom: 18px;
+  left: 204px;
+  bottom: 22px;
   width: 46px;
   height: 3px;
   border-radius: 999px;
