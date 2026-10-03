@@ -1,6 +1,4 @@
 import html2pdf from 'html2pdf.js'
-import logo from '../assets/logo_abacademy.png'
-
 function waitForImages(container: HTMLElement) {
   const images = Array.from(container.querySelectorAll('img'))
   return Promise.all(
@@ -68,42 +66,6 @@ export async function generateMaterialPdf(
   page.style.fontSize = '14px'
   page.style.lineHeight = '1.55'
 
-  const header = document.createElement('header')
-  header.style.display = 'flex'
-  header.style.alignItems = 'center'
-  header.style.gap = '16px'
-  header.style.paddingBottom = '24px'
-  header.style.marginBottom = '28px'
-  header.style.borderBottom = '1px solid #e2e8f0'
-
-  const brand = document.createElement('img')
-  brand.src = logo
-  brand.alt = 'AB Academy Idiomas'
-  brand.style.width = '76px'
-  brand.style.height = 'auto'
-  brand.style.objectFit = 'contain'
-
-  const heading = document.createElement('div')
-  const eyebrow = document.createElement('div')
-  eyebrow.textContent = language || 'Material de apoio'
-  eyebrow.style.fontSize = '11px'
-  eyebrow.style.fontWeight = '700'
-  eyebrow.style.letterSpacing = '0.08em'
-  eyebrow.style.textTransform = 'uppercase'
-  eyebrow.style.color = '#2563eb'
-  eyebrow.style.marginBottom = '4px'
-
-  const titleElement = document.createElement('h1')
-  titleElement.textContent = title
-  titleElement.style.margin = '0'
-  titleElement.style.fontSize = '25px'
-  titleElement.style.lineHeight = '1.2'
-  titleElement.style.color = '#172033'
-
-  heading.append(eyebrow, titleElement)
-  header.append(brand, heading)
-  page.appendChild(header)
-
   const body = source.cloneNode(true) as HTMLElement
   body.removeAttribute('contenteditable')
   body.querySelectorAll('[contenteditable]').forEach((element) => {
@@ -139,15 +101,6 @@ export async function generateMaterialPdf(
 
   page.appendChild(body)
 
-  const footer = document.createElement('footer')
-  footer.textContent = 'AB Academy Idiomas® 2026 · Material educacional de uso exclusivo do aluno'
-  footer.style.marginTop = '32px'
-  footer.style.paddingTop = '16px'
-  footer.style.borderTop = '1px solid #e2e8f0'
-  footer.style.fontSize = '10px'
-  footer.style.color = '#64748b'
-  page.appendChild(footer)
-
   // O elemento precisa permanecer renderizável para o html2canvas. Ele fica
   // abaixo da viewport, em vez de display:none ou fora do documento.
   page.style.position = 'absolute'
@@ -162,7 +115,7 @@ export async function generateMaterialPdf(
 
     const worker = html2pdf()
       .set({
-        margin: [24, 24, 28, 24],
+        margin: 0,
         filename: title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() + '.pdf',
         image: { type: 'jpeg', quality: 0.96 },
         enableLinks: true,
@@ -178,7 +131,7 @@ export async function generateMaterialPdf(
           orientation: 'portrait',
         },
         pagebreak: {
-          mode: ['css', 'legacy'],
+          mode: ['css'],
           avoid: ['img', 'table', 'tr'],
         },
       })
