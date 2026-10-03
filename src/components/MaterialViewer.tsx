@@ -74,8 +74,8 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
         </div>
       </div>
 
-      <article className="material-document material-pdf-document">
-        <header className="material-document-header">
+      <article className="student-material-pdf-viewer material-document">
+        <header className="student-material-pdf-toolbar material-document-header">
           <div>
             <span>AB ACADEMY IDIOMAS</span>
             <strong>{material.titulo}</strong>
@@ -84,7 +84,7 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
         </header>
 
         {loading && (
-          <div className="material-pdf-loading">
+          <div className="material-pdf-loading student-empty-state">
             <Loader2 size={24} className="student-spin" />
             <span>Carregando material...</span>
           </div>
@@ -92,12 +92,12 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
 
         {!loading && pdfUrl ? (
           <iframe
-            className="material-pdf-frame"
+            className="student-material-pdf-frame material-pdf-frame"
             src={pdfUrl}
             title={material.titulo}
           />
         ) : !loading ? (
-          <div className="material-pdf-empty">
+          <div className="material-pdf-empty student-empty-state">
             <strong>PDF indisponível</strong>
             <span>Este material ainda não possui uma publicação em PDF.</span>
           </div>
