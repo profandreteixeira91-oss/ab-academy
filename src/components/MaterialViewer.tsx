@@ -54,14 +54,25 @@ async function hydrateMaterialHtml(html: string, fallbackPaths: string[]) {
 
   const entries = await Promise.all(
     paths.map(async (path) => {
-      const url = await resolveMaterialImage(path, async () => {
-        const { data, error } = await supabase.storage
-          .from('materiais')
-          .createSignedUrl(path, 3600)
+      const url = await resolveMaterialImage(
+        path,
+        async () => {
+          const { data, error } = await supabase.storage
+            .from('materiais')
+            .createSignedUrl(path, 3600)
 
-        if (error) throw error
-        return data?.signedUrl || null
-      })
+          if (error) throw error
+          return data?.signedUrl || null
+        },
+        async () => {
+          const { data, error } = await supabase.storage
+            .from('materiais')
+            .download(path)
+
+          if (error) throw error
+          return data || null
+        },
+      )
 
       return [path, url || ''] as const
     }),
