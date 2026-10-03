@@ -521,8 +521,11 @@ export default function Materiais({ professorId }: Props) {
     let html = material.conteudo_html || empty.conteudo_html
 
     Object.entries(urls).forEach(([path, url]) => {
-      html = html.split(`{{MATERIAL_IMAGE:${path}}}`).join(url)
-      html = html.split(`src="${path}"`).join(`src="${url}"`)
+      const safePath = escapeHtml(path)
+      const safeUrl = escapeHtml(url)
+      const imageAttributes = `src="${safeUrl}" data-material-image="${safePath}"`
+      html = html.split(`{{MATERIAL_IMAGE:${path}}}`).join(imageAttributes)
+      html = html.split(`src="${path}"`).join(imageAttributes)
     })
 
     // Recupera imagens que já foram persistidas em "imagens" mas, por causa de
