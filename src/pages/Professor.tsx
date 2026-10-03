@@ -2112,7 +2112,7 @@ function Professor() {
 
   function renderAlunos() {
     return (
-      <div className="professor-content">
+      <div className="professor-content professor-students-page">
         <div className="professor-page-header">
           <div>
             <span className="professor-eyebrow">
