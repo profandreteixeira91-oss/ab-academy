@@ -1724,10 +1724,17 @@ function Aluno() {
       if (!ids.length) { setMaterials([]); return }
       const { data, error } = await supabase
         .from('materiais')
-        .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em')
+        .select('id,titulo_publicado,idioma_publicado,conteudo_publicado_html,imagens_publicadas,videos_publicados,status,created_at,updated_at,publicado_em')
         .in('id', ids).eq('status', 'publicado').order('publicado_em', { ascending: false })
       if (error) throw error
-      setMaterials((data || []) as MaterialRecord[])
+      setMaterials((data || []).map((material) => ({
+        ...material,
+        titulo: material.titulo_publicado || '',
+        idioma: material.idioma_publicado || null,
+        conteudo_html: material.conteudo_publicado_html || '',
+        imagens: material.imagens_publicadas || [],
+        videos: material.videos_publicados || [],
+      })) as MaterialRecord[])
     } catch (error) {
       console.error('Erro ao carregar materiais do aluno:', error)
       setMaterialsError(error instanceof Error ? error.message : 'Não foi possível carregar seus materiais.')
