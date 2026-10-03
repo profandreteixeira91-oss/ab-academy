@@ -3035,3 +3035,299 @@ button.professor-stat-card:hover {
     justify-content: center;
   }
 }
+
+
+/* =========================================================
+   AULAS — PREMIUM REFINEMENT
+   ========================================================= */
+
+.professor-classes-page > .professor-page-header {
+  margin-bottom: 22px;
+}
+
+.professor-classes-page > .professor-page-header h1 {
+  letter-spacing: -0.03em;
+}
+
+.professor-classes-page > .professor-page-header p {
+  max-width: 640px;
+  color: var(--prof-text-secondary);
+}
+
+.professor-classes-page > .professor-panel {
+  overflow: hidden;
+  border: 1px solid var(--prof-border);
+  border-radius: var(--prof-radius-lg);
+  background: var(--prof-surface);
+  box-shadow: var(--prof-shadow-sm);
+}
+
+.professor-classes-page > .professor-panel > .professor-panel-header {
+  min-height: 68px;
+  padding: 14px 20px;
+  border-bottom: 1px solid var(--prof-border);
+  background: var(--prof-surface);
+}
+
+.professor-classes-page .professor-panel-header h2 {
+  margin-top: 3px;
+  color: var(--prof-text);
+  font-size: 16px;
+  letter-spacing: -0.015em;
+}
+
+.professor-classes-page .professor-panel-header > svg {
+  color: var(--prof-text-muted);
+}
+
+.professor-classes-page .professor-class-list {
+  gap: 10px;
+  padding: 10px;
+  background: var(--prof-surface-muted);
+}
+
+.professor-classes-page .professor-class-card {
+  position: relative;
+  grid-template-columns: 46px minmax(0, 1fr) minmax(250px, auto);
+  gap: 18px;
+  min-height: 94px;
+  padding: 15px 16px;
+  border: 1px solid var(--prof-border);
+  border-radius: var(--prof-radius-md);
+  background: var(--prof-surface);
+  box-shadow: var(--prof-shadow-sm);
+  transition:
+    transform var(--prof-transition),
+    border-color var(--prof-transition),
+    box-shadow var(--prof-transition);
+}
+
+.professor-classes-page .professor-class-card:last-child {
+  border-bottom: 1px solid var(--prof-border);
+}
+
+.professor-classes-page .professor-class-card:hover {
+  transform: translateY(-1px);
+  border-color: var(--prof-primary-soft-strong);
+  box-shadow: var(--prof-shadow-md);
+}
+
+.professor-classes-page .professor-class-card:first-child {
+  border-color: #bfdbfe;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+}
+
+.professor-classes-page .professor-class-card:first-child::before {
+  content: "Próxima aula";
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  padding: 4px 8px;
+  border: 1px solid var(--prof-primary-soft-strong);
+  border-radius: 999px;
+  background: var(--prof-primary-soft);
+  color: var(--prof-primary-dark);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.professor-classes-page .professor-class-icon {
+  width: 46px;
+  height: 46px;
+  border: 1px solid var(--prof-primary-soft-strong);
+  border-radius: 12px;
+  background: var(--prof-primary-soft);
+  color: var(--prof-primary);
+}
+
+.professor-classes-page .professor-class-info {
+  gap: 5px;
+  padding-right: 90px;
+}
+
+.professor-classes-page .professor-class-info strong {
+  color: var(--prof-text);
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
+.professor-classes-page .professor-class-info > span {
+  color: var(--prof-text-secondary);
+  font-size: 11.5px;
+}
+
+.professor-classes-page .professor-class-info > span:nth-of-type(2) {
+  color: var(--prof-text);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.professor-classes-page .professor-class-info small {
+  margin-top: 2px;
+  color: var(--prof-text-muted);
+  font-size: 10.5px;
+}
+
+.professor-classes-page .professor-class-actions {
+  min-width: 250px;
+  gap: 8px;
+}
+
+.professor-classes-page .professor-class-actions .professor-primary-button,
+.professor-classes-page .professor-class-actions .professor-secondary-button {
+  min-width: 118px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: var(--prof-radius-sm);
+  font-size: 11px;
+}
+
+.professor-classes-page .professor-class-actions .professor-primary-button:disabled {
+  box-shadow: none;
+  opacity: 0.55;
+}
+
+.professor-classes-page .professor-absence-button {
+  color: #b91c1c;
+  border-color: #fecaca;
+  background: #fff;
+}
+
+.professor-classes-page .professor-absence-button:hover:not(:disabled) {
+  border-color: #fca5a5;
+  background: #fef2f2;
+  color: #991b1b;
+}
+
+.professor-classes-page .professor-empty-state {
+  min-height: 300px;
+  padding: 40px 24px;
+  border: 0;
+  background: var(--prof-surface);
+}
+
+.professor-classes-page .professor-empty-state svg {
+  color: #cbd5e1;
+}
+
+@media (max-width: 1180px) {
+  .professor-classes-page .professor-class-card {
+    grid-template-columns: 46px minmax(0, 1fr) minmax(220px, 0.75fr);
+    gap: 14px;
+  }
+
+  .professor-classes-page .professor-class-actions {
+    min-width: 220px;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .professor-classes-page .professor-class-actions .professor-primary-button,
+  .professor-classes-page .professor-class-actions .professor-secondary-button {
+    width: 100%;
+  }
+}
+
+@media (max-width: 820px) {
+  .professor-classes-page > .professor-panel > .professor-panel-header {
+    padding: 13px 16px;
+  }
+
+  .professor-classes-page .professor-class-list {
+    padding: 8px;
+  }
+
+  .professor-classes-page .professor-class-card {
+    grid-template-columns: 46px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    min-height: 0;
+    padding: 14px;
+  }
+
+  .professor-classes-page .professor-class-info {
+    padding-right: 0;
+  }
+
+  .professor-classes-page .professor-class-card:first-child::before {
+    top: 12px;
+    right: 12px;
+  }
+
+  .professor-classes-page .professor-class-actions {
+    grid-column: 1 / -1;
+    min-width: 0;
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .professor-classes-page .professor-class-actions .professor-primary-button,
+  .professor-classes-page .professor-class-actions .professor-secondary-button {
+    flex: 1 1 0;
+  }
+}
+
+@media (max-width: 560px) {
+  .professor-classes-page > .professor-page-header {
+    margin-bottom: 18px;
+  }
+
+  .professor-classes-page > .professor-panel > .professor-panel-header {
+    min-height: 62px;
+    padding: 12px 14px;
+  }
+
+  .professor-classes-page .professor-class-list {
+    padding: 7px;
+  }
+
+  .professor-classes-page .professor-class-card {
+    grid-template-columns: 40px minmax(0, 1fr);
+    gap: 10px;
+    padding: 13px;
+  }
+
+  .professor-classes-page .professor-class-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+  }
+
+  .professor-classes-page .professor-class-info strong {
+    font-size: 13px;
+  }
+
+  .professor-classes-page .professor-class-info > span {
+    font-size: 11px;
+  }
+
+  .professor-classes-page .professor-class-info small {
+    font-size: 10px;
+  }
+
+  .professor-classes-page .professor-class-card:first-child::before {
+    position: static;
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-bottom: 1px;
+    order: -1;
+  }
+
+  .professor-classes-page .professor-class-actions {
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .professor-classes-page .professor-class-actions .professor-primary-button,
+  .professor-classes-page .professor-class-actions .professor-secondary-button {
+    width: 100%;
+    min-height: 40px;
+  }
+
+  .professor-classes-page .professor-empty-state {
+    min-height: 240px;
+    padding: 32px 20px;
+  }
+}
