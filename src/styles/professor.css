@@ -3580,3 +3580,6 @@ button.professor-stat-card:hover {
     padding: 32px 20px;
   }
 }
+
+
+.material-pdf-document{display:flex;flex-direction:column;min-height:min(82vh,900px);box-sizing:border-box}.material-pdf-document .material-document-header{flex:0 0 auto}.material-pdf-frame{width:100%;flex:1;min-height:620px;border:0;background:#f1f5f9;border-radius:8px}.material-pdf-loading,.material-pdf-empty{min-height:360px;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:10px;color:#64748b}.material-pdf-loading svg{color:#2563eb}
