@@ -1745,20 +1745,60 @@ function Aluno() {
 
   async function openStudentMaterial(material: MaterialRecord) {
     try {
-      if (!material.pdf_publicado_path) {
-        throw new Error('Este material ainda não possui uma publicação em PDF.')
-      }
+      setMaterialsError('')
 
-      const { data, error } = await supabase.storage
+      // Reconsulta a publicação antes de abrir para garantir que o aluno receba
+      // exatamente a mesma versão que o professor visualiza. Isso evita abrir
+      // um PDF antigo quando o material foi editado depois da última publicação.
+      const { data: current, error: materialError } = await supabase
         .from('materiais')
-        .createSignedUrl(material.pdf_publicado_path, 3600)
+        .select(
+          'id,titulo_publicado,idioma_publicado,conteudo_publicado_html,imagens_publicadas,videos_publicados,status,created_at,updated_at,publicado_em,pdf_publicado_path,pdf_publicado_em',
+        )
+        .eq('id', material.id)
+        .eq('status', 'publicado')
+        .single()
 
-      if (error || !data?.signedUrl) {
-        throw error || new Error('Não foi possível gerar o acesso temporário ao PDF.')
+      if (materialError) throw materialError
+      if (!current) {
+        throw new Error('Este material não está mais disponível.')
       }
 
-      setSelectedMaterialPdfUrl(data.signedUrl)
-      setSelectedMaterial(material)
+      // O professor considera o PDF válido somente enquanto ele representa
+      // a última versão salva/publicada. O portal do aluno aplica a mesma regra.
+      const pdfIsCurrent =
+        Boolean(current.pdf_publicado_path && current.pdf_publicado_em) &&
+        new Date(current.updated_at).getTime() <= new Date(current.pdf_publicado_em).getTime()
+
+      if (!pdfIsCurrent || !current.pdf_publicado_path) {
+        throw new Error('Este material possui alterações pendentes de publicação.')
+      }
+
+      const { data: pdf, error: pdfError } = await supabase.storage
+        .from('materiais')
+        .createSignedUrl(current.pdf_publicado_path, 3600)
+
+      if (pdfError || !pdf?.signedUrl) {
+        throw pdfError || new Error('Não foi possível gerar o acesso temporário ao PDF.')
+      }
+
+      const currentMaterial: MaterialRecord = {
+        id: current.id,
+        titulo: current.titulo_publicado || '',
+        idioma: current.idioma_publicado || null,
+        conteudo_html: current.conteudo_publicado_html || '',
+        imagens: current.imagens_publicadas || [],
+        videos: current.videos_publicados || [],
+        status: current.status,
+        created_at: current.created_at,
+        updated_at: current.updated_at,
+        publicado_em: current.publicado_em,
+        pdf_publicado_path: current.pdf_publicado_path,
+        pdf_publicado_em: current.pdf_publicado_em,
+      }
+
+      setSelectedMaterialPdfUrl(pdf.signedUrl)
+      setSelectedMaterial(currentMaterial)
       await supabase.rpc('registrar_material_visualizacao', { p_material_id: material.id })
     } catch (error) {
       setMaterialsError(error instanceof Error ? error.message : 'Não foi possível abrir o material.')
