@@ -156,11 +156,10 @@ async function inlineImages(container: HTMLElement) {
   )
 }
 
-// A4 = 595.28 x 841.89 pt. Margens em pt: [topo, esquerda, base, direita].
-// Largura útil = 595.28 - 36 - 36 = 523.28 pt ≈ 698 px (1 pt = 4/3 px), então a
-// página é montada com 698 px de largura e o PDF sai em escala 1:1.
+// A4 = 595.28 x 841.89 pt. A largura útil é calculada a partir das margens do PDF,
+// mantendo a proporção CSS de 96 DPI usada pelo html2canvas.
 const PAGE_MARGIN_PT: [number, number, number, number] = [40, 36, 40, 36]
-const PAGE_CONTENT_WIDTH_PX = 698
+const PAGE_CONTENT_WIDTH_PX = Math.round((595.28 - PAGE_MARGIN_PT[1] - PAGE_MARGIN_PT[3]) * (96 / 72))
 
 // Navegadores limitam o tamanho de um canvas (altura ~16-32 mil px, área ~16 milhões de px
 // no Safari/iOS). Acima disso o canvas sai em branco. A escala é reduzida para documentos longos.
@@ -255,6 +254,7 @@ export async function generateMaterialPdf(
           scale: pickScale(contentHeight),
           width: PAGE_CONTENT_WIDTH_PX,
           height: contentHeight,
+          windowWidth: PAGE_CONTENT_WIDTH_PX,
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,
