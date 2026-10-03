@@ -342,6 +342,42 @@ export default function Materiais({ professorId }: Props) {
     return wrapper.innerHTML
   }
 
+  async function rehydrateEditorImages(sourceHtml: string, fallbackPaths: string[] = []) {
+    const wrapper = document.createElement('div')
+    wrapper.innerHTML = sourceHtml
+
+    const paths = Array.from(new Set([
+      ...fallbackPaths,
+      ...Array.from(wrapper.querySelectorAll('img'), (image) =>
+        image.getAttribute('data-material-image')?.trim() ||
+        image.getAttribute('src')?.match(/^{{MATERIAL_IMAGE:(.+)}}$/)?.[1]?.trim() ||
+        '',
+      ),
+    ].filter(Boolean)))
+
+    const entries = await Promise.all(paths.map(async (path) => {
+      const url = await resolveMaterialImage(path, async () => {
+        const { data: signed } = await supabase.storage
+          .from('materiais')
+          .createSignedUrl(path, 3600)
+        return signed?.signedUrl || null
+      })
+      return [path, url || ''] as const
+    }))
+
+    const urls = Object.fromEntries(entries.filter(([, url]) => url))
+
+    wrapper.querySelectorAll('img').forEach((image) => {
+      const path = image.getAttribute('data-material-image')?.trim() ||
+        image.getAttribute('src')?.match(/^{{MATERIAL_IMAGE:(.+)}}$/)?.[1]?.trim()
+      if (!path || !urls[path]) return
+      image.setAttribute('src', urls[path])
+      image.setAttribute('data-material-image', path)
+    })
+
+    return wrapper.innerHTML
+  }
+
   function getEditorSnapshot() {
     const html = serializeEditorHtml()
     const imagePaths = getEditorImagePaths()
@@ -693,12 +729,13 @@ export default function Materiais({ professorId }: Props) {
 
     if (hasNewerLocalDraft && localDraft?.model) {
       const localHtml = editorModelToHtml(localDraft.model)
+      const restoredLocalHtml = await rehydrateEditorImages(localHtml, currentMaterial.imagens || [])
       setSelected((recipients || []).map((row) => row.aluno_id))
       setEditor({
         id: currentMaterial.id,
         titulo: localDraft.titulo || currentMaterial.titulo,
         idioma: localDraft.idioma || currentMaterial.idioma || '',
-        conteudo_html: localHtml || empty.conteudo_html,
+        conteudo_html: restoredLocalHtml || empty.conteudo_html,
         imagens: currentMaterial.imagens || [],
         videos: currentMaterial.videos || [],
         status: 'rascunho',
@@ -710,7 +747,7 @@ export default function Materiais({ professorId }: Props) {
       setActiveTable(null)
       window.setTimeout(() => {
         if (!editorRef.current) return
-        editorRef.current.innerHTML = localHtml || empty.conteudo_html
+        editorRef.current.innerHTML = restoredLocalHtml || empty.conteudo_html
         restoreEditorSelection(editorRef.current, localDraft.selection)
       }, 0)
       setMessage('Rascunho local mais recente recuperado automaticamente.')
