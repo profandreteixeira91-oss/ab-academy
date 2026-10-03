@@ -32,6 +32,7 @@ import { supabase } from '../../lib/supabase'
 import MaterialViewer, { type MaterialRecord } from '../../components/MaterialViewer'
 import { cacheMaterialImage, resolveMaterialImage } from '../../lib/materialImageCache'
 import { generateMaterialPdf } from '../../lib/materialPdf'
+import { generateMaterialPdf } from '../../lib/materialPdf'
 
 type Props = { professorId: string }
 type Student = { id: string; nome_completo: string }
@@ -298,98 +299,169 @@ export default function Materiais({ professorId }: Props) {
       if (!silent) setError('Informe um título para o material.')
       return false
     }
+
     if (status === 'publicado' && !selected.length) {
       setError('Selecione pelo menos um aluno para publicar.')
       return false
     }
+
     setSaving(true)
     setError('')
+
     try {
       const snapshot = getEditorSnapshot()
       const html = snapshot.html
       const imagePaths = snapshot.imagePaths
+
       if (editor.id && snapshot.isEmpty && editor.conteudo_html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) {
         throw new Error('O conteúdo do editor não pôde ser capturado com segurança. O documento não foi alterado.')
       }
-      let id = editor.id
-      if (status === 'publicado' && !silent && !id) {
-        const { data, error: insertError } = await supabase.from('materiais').insert({
-          professor_id: professorId,
-          titulo: editor.titulo.trim(),
-          idioma: editor.idioma || null,
-          conteudo_html: html,
-          imagens: imagePaths,
-          videos: editor.videos,
-          status: 'rascunho',
-          updated_at: new Date().toISOString(),
-        }).select('id').single()
-        if (insertError) throw insertError
-        id = data.id
-      }
-      let pdfPath: string | null = null
-      let publishedAt: string | null = null
-      if (status === 'publicado' && !silent) {
-        if (!id) throw new Error('Não foi possível identificar o material para gerar a publicação.')
-        const pdfBlob = await generateMaterialPdf({
-          editor: editorRef.current,
-          title: editor.titulo.trim(),
-          language: editor.idioma || null,
-          imagePaths,
-        })
-        publishedAt = new Date().toISOString()
-        pdfPath = `${professorId}/${id}/publicado-${Date.now()}.pdf`
-        const { error: pdfUploadError } = await supabase.storage.from('materiais').upload(pdfPath, pdfBlob, {
-          contentType: 'application/pdf',
-          cacheControl: '31536000',
-          upsert: false,
-        })
-        if (pdfUploadError) throw new Error(`O PDF não pôde ser armazenado: ${pdfUploadError.message}`)
-      }
-      const payload: Record<string, unknown> = {
+
+      const basePayload: Record<string, unknown> = {
         professor_id: professorId,
         titulo: editor.titulo.trim(),
         idioma: editor.idioma || null,
         conteudo_html: html,
         imagens: imagePaths,
         videos: editor.videos,
-        status,
         updated_at: new Date().toISOString(),
       }
-      if (status === 'publicado' && !silent) {
-        payload.conteudo_publicado_html = html
-        payload.imagens_publicadas = imagePaths
-        payload.videos_publicados = editor.videos
-        payload.titulo_publicado = editor.titulo.trim()
-        payload.idioma_publicado = editor.idioma || null
-        payload.publicado_em = publishedAt
-        payload.pdf_publicado_path = pdfPath
-        payload.pdf_publicado_em = publishedAt
-      }
+
+      let id = editor.id
+
       if (id) {
-        const { error: updateError } = await supabase.from('materiais').update(payload).eq('id', id)
+        const updatePayload = status === 'rascunho'
+          ? { ...basePayload, status: 'rascunho' }
+          : basePayload
+
+        const { error: updateError } = await supabase
+          .from('materiais')
+          .update(updatePayload)
+          .eq('id', id)
+
         if (updateError) throw updateError
       } else {
-        const { data, error: insertError } = await supabase.from('materiais').insert(payload).select('id').single()
+        const { data, error: insertError } = await supabase
+          .from('materiais')
+          .insert({ ...basePayload, status: 'rascunho' })
+          .select('id')
+          .single()
+
         if (insertError) throw insertError
         id = data.id
       }
-      const { error: recipientsDeleteError } = await supabase.from('material_alunos').delete().eq('material_id', id)
+
+      let pdfPath: string | null = null
+
+      if (status === 'publicado' && !silent) {
+        if (!editorRef.current) {
+          throw new Error('O editor não está disponível para gerar o PDF da publicação.')
+        }
+
+        setMessage('Gerando o PDF final da publicação...')
+
+        const language = editor.idioma === 'ingles'
+          ? 'Inglês'
+          : editor.idioma === 'alemao'
+            ? 'Alemão'
+            : 'Material de apoio'
+
+        const pdfBlob = await generateMaterialPdf(
+          editor.titulo.trim(),
+          language,
+          editorRef.current,
+        )
+
+        pdfPath = `${professorId}/${id}/publicado-${Date.now()}.pdf`
+
+        const { error: pdfUploadError } = await supabase.storage
+          .from('materiais')
+          .upload(pdfPath, pdfBlob, {
+            contentType: 'application/pdf',
+            cacheControl: '31536000',
+            upsert: false,
+          })
+
+        if (pdfUploadError) throw new Error(`Não foi possível armazenar o PDF publicado: ${pdfUploadError.message}`)
+
+        const { data: pdfCheck, error: pdfCheckError } = await supabase.storage
+          .from('materiais')
+          .createSignedUrl(pdfPath, 60)
+
+        if (pdfCheckError || !pdfCheck?.signedUrl) {
+          await supabase.storage.from('materiais').remove([pdfPath])
+          throw new Error(`O PDF foi enviado, mas não pôde ser verificado no Storage: ${pdfCheckError?.message || 'arquivo indisponível'}`)
+        }
+
+        const publishedAt = new Date().toISOString()
+        const { error: publishError } = await supabase
+          .from('materiais')
+          .update({
+            ...basePayload,
+            status: 'publicado',
+            conteudo_publicado_html: html,
+            imagens_publicadas: imagePaths,
+            videos_publicados: editor.videos,
+            titulo_publicado: editor.titulo.trim(),
+            idioma_publicado: editor.idioma || null,
+            publicado_em: publishedAt,
+            pdf_publicado_path: pdfPath,
+          })
+          .eq('id', id)
+
+        if (publishError) {
+          await supabase.storage.from('materiais').remove([pdfPath])
+          throw publishError
+        }
+      }
+
+      const { error: recipientsDeleteError } = await supabase
+        .from('material_alunos')
+        .delete()
+        .eq('material_id', id)
+
       if (recipientsDeleteError) throw recipientsDeleteError
+
       if (selected.length) {
         const recipientRows = selected.map((aluno_id) => ({ material_id: id, aluno_id }))
-        const { data: insertedRecipients, error: recipientsInsertError } = await supabase.from('material_alunos').insert(recipientRows).select('aluno_id')
+        const { data: insertedRecipients, error: recipientsInsertError } = await supabase
+          .from('material_alunos')
+          .insert(recipientRows)
+          .select('aluno_id')
+
         if (recipientsInsertError) throw recipientsInsertError
+
         const insertedIds = new Set((insertedRecipients || []).map((row) => row.aluno_id))
         const missingRecipients = selected.filter((aluno_id) => !insertedIds.has(aluno_id))
-        if (missingRecipients.length) throw new Error('Nem todos os alunos selecionados foram vinculados ao material.')
+
+        if (missingRecipients.length) {
+          throw new Error('Nem todos os alunos selecionados foram vinculados ao material.')
+        }
       }
-      setEditor((value) => ({ ...value, id, status, conteudo_html: html, imagens: imagePaths }))
+
+      setEditor((value) => ({
+        ...value,
+        id,
+        status,
+        conteudo_html: html,
+        imagens: imagePaths,
+      }))
       setDirty(false)
       await load(false)
-      if (!silent) setMessage(status === 'publicado' ? 'Material publicado em PDF para os alunos selecionados.' : 'Rascunho salvo com sucesso.')
+
+      if (!silent) {
+        setMessage(
+          status === 'publicado'
+            ? 'Material publicado em PDF para os alunos selecionados.'
+            : 'Rascunho salvo com sucesso.',
+        )
+      }
+
       return id
     } catch (cause) {
-      const details = cause && typeof cause === 'object' ? cause as { message?: string; code?: string; details?: string; hint?: string } : null
+      const details = cause && typeof cause === 'object'
+        ? cause as { message?: string; code?: string; details?: string; hint?: string }
+        : null
       const reason = details?.message || (cause instanceof Error ? cause.message : '')
       const extra = [details?.code, details?.details, details?.hint].filter(Boolean).join(' · ')
       setError(reason ? `Não foi possível salvar o material: ${reason}${extra ? ` — ${extra}` : ''}` : 'Não foi possível salvar o material.')
@@ -398,7 +470,6 @@ export default function Materiais({ professorId }: Props) {
       setSaving(false)
     }
   }
-
   async function ensureDraft(): Promise<string | false> {
     if (editor.id) return editor.id
     return save('rascunho', true)
@@ -507,7 +578,7 @@ export default function Materiais({ professorId }: Props) {
     const [{ data: currentMaterial, error: materialError }, { data: recipients, error: recipientsError }] = await Promise.all([
       supabase
         .from('materiais')
-        .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em')
+        .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em,pdf_publicado_path')
         .eq('id', material.id)
         .eq('professor_id', professorId)
         .single(),
