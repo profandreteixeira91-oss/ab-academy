@@ -157,7 +157,7 @@ export default function Materiais({ professorId }: Props) {
   function insertLink() {
     const url = window.prompt('Cole o endereço do link:')
     if (!url) return
-    const normalized = /^https?:\\/\\//i.test(url) ? url : 'https://' + url
+    const normalized = /^https?:\/\//i.test(url) ? url : 'https://' + url
     exec('createLink', normalized)
   }
 
