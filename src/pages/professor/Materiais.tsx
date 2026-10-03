@@ -228,6 +228,16 @@ export default function Materiais({ professorId }: Props) {
     setActiveTable(table)
   }
 
+  function serializeEditorHtml() {
+    if (!editorRef.current) return editor.conteudo_html
+    const clone = editorRef.current.cloneNode(true) as HTMLDivElement
+    clone.querySelectorAll('img[data-material-image]').forEach((image) => {
+      const path = image.getAttribute('data-material-image')
+      if (path) image.setAttribute('src', `{{MATERIAL_IMAGE:${path}}}`)
+    })
+    return clone.innerHTML
+  }
+
   async function save(status: 'rascunho' | 'publicado', silent = false): Promise<string | false> {
     if (!editor.titulo.trim()) {
       if (!silent) setError('Informe um título para o material.')
@@ -243,7 +253,7 @@ export default function Materiais({ professorId }: Props) {
     setError('')
 
     try {
-      const html = editorRef.current?.innerHTML || editor.conteudo_html
+      const html = serializeEditorHtml()
       const payload = {
         professor_id: professorId,
         titulo: editor.titulo.trim(),
@@ -403,8 +413,12 @@ export default function Materiais({ professorId }: Props) {
     let html = material.conteudo_html || empty.conteudo_html
     Object.entries(urls).forEach(([path, url]) => {
       html = html.split(`{{MATERIAL_IMAGE:${path}}}`).join(url)
+      const escapedPath = path.replace(/[.*+?^${}()|[\\]\\]/g, '\\    Object.entries(urls).forEach(([path, url]) => {
+      html = html.split(`{{MATERIAL_IMAGE:${path}}}`).join(url)
       html = html.replaceAll(`data-material-image="${path}"`, `data-material-image="${path}"`)
       html = html.split(path).join(url)
+    })')
+      html = html.replace(new RegExp(`src="${escapedPath}"`, 'g'), `src="${url}"`)
     })
 
     setSelected((data || []).map((row) => row.aluno_id))
