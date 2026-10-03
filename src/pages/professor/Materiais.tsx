@@ -611,24 +611,40 @@ export default function Materiais({ professorId }: Props) {
 
         setMessage('Gerando o PDF final da publicação...')
 
-        const language = editor.idioma === 'ingles'
-          ? 'Inglês'
-          : editor.idioma === 'alemao'
-            ? 'Alemão'
-            : 'Material de apoio'
+        let pdfPath = ''
+        const { data: serverPdf, error: serverPdfError } = await supabase.functions.invoke('gerar-material-pdf', {
+          body: { material_id: currentId },
+        })
 
-        const pdfBlob = await generateMaterialPdf(titulo, language, editorRef.current)
-        const pdfPath = `${professorId}/${currentId}/publicado-${Date.now()}.pdf`
+        if (!serverPdfError && typeof serverPdf?.pdf_path === 'string' && serverPdf.pdf_path) {
+          pdfPath = serverPdf.pdf_path
+        } else {
+          // O renderizador Chromium é a pipeline oficial. Enquanto a infraestrutura
+          // externa não estiver configurada, preservamos o fluxo de publicação com
+          // o gerador local já validado, sem bloquear o professor.
+          if (serverPdfError) {
+            console.warn('Renderizador server-side indisponível; usando fallback local:', serverPdfError)
+          }
 
-        const { error: pdfUploadError } = await supabase.storage
-          .from('materiais')
-          .upload(pdfPath, pdfBlob, {
-            contentType: 'application/pdf',
-            cacheControl: '31536000',
-            upsert: false,
-          })
+          const language = editor.idioma === 'ingles'
+            ? 'Inglês'
+            : editor.idioma === 'alemao'
+              ? 'Alemão'
+              : 'Material de apoio'
 
-        if (pdfUploadError) throw new Error(`Não foi possível armazenar o PDF publicado: ${pdfUploadError.message}`)
+          const pdfBlob = await generateMaterialPdf(titulo, language, editorRef.current)
+          pdfPath = `${professorId}/${currentId}/publicado-${Date.now()}.pdf`
+
+          const { error: pdfUploadError } = await supabase.storage
+            .from('materiais')
+            .upload(pdfPath, pdfBlob, {
+              contentType: 'application/pdf',
+              cacheControl: '31536000',
+              upsert: false,
+            })
+
+          if (pdfUploadError) throw new Error(`Não foi possível armazenar o PDF publicado: ${pdfUploadError.message}`)
+        }
 
         const { data: pdfCheck, error: pdfCheckError } = await supabase.storage
           .from('materiais')
@@ -653,7 +669,6 @@ export default function Materiais({ professorId }: Props) {
             publicado_em: publishedAt,
             pdf_publicado_path: pdfPath,
             pdf_publicado_em: publishedAt,
-            // Igual ao pdf_publicado_em: o PDF é considerado "atual" até a próxima edição.
             updated_at: publishedAt,
           })
           .eq('id', currentId)
