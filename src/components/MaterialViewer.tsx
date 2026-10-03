@@ -253,7 +253,11 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
           <div className="material-document-brand" aria-label="AB Academy Idiomas">
             <img className="material-document-logo" src={logo} alt="AB Academy Idiomas" />
           </div>
-          <div className="material-document-accent" aria-hidden="true" />
+          <div className="material-document-cover">
+            <span>AB ACADEMY IDIOMAS</span>
+            <strong>{language.toUpperCase()}</strong>
+            <small>Material de apoio</small>
+          </div>
         </header>
 
         {loading ? (
