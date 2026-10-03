@@ -556,20 +556,31 @@ export default function Materiais({ professorId }: Props) {
     const urls = Object.fromEntries(entries.filter(([, url]) => url))
     let html = currentMaterial.conteudo_html || empty.conteudo_html
 
-    Object.entries(urls).forEach(([path, url]) => {
-      const safePath = escapeHtml(path)
-      const safeUrl = escapeHtml(url)
-      const imageAttributes = `src="${safeUrl}" data-material-image="${safePath}"`
-      html = html.split(`{{MATERIAL_IMAGE:${path}}}`).join(imageAttributes)
-      html = html.split(`src="${path}"`).join(imageAttributes)
+    // Reidratação feita pelo DOM, não por substituição textual.
+    // O placeholder normalmente aparece como src="{{MATERIAL_IMAGE:path}}".
+    // Substituir o placeholder por uma string que também contém "src=" cria
+    // HTML inválido (src="src=..."), fazendo a imagem desaparecer ao reabrir.
+    const wrapper = document.createElement('div')
+    wrapper.innerHTML = html
+    wrapper.querySelectorAll('img').forEach((image) => {
+      const rawSource = image.getAttribute('src')?.trim() || ''
+      const path = image.getAttribute('data-material-image')?.trim() ||
+        rawSource.match(/^{{MATERIAL_IMAGE:(.+)}}$/)?.[1]?.trim()
+
+      if (!path) return
+      const url = urls[path]
+      if (!url) return
+
+      image.setAttribute('src', url)
+      image.setAttribute('data-material-image', path)
     })
+    html = wrapper.innerHTML
 
     // Se uma imagem foi persistida, mas uma versão antiga do HTML a perdeu,
     // recuperamos a imagem ao final do documento em vez de descartá-la.
     const missingImages = Object.entries(urls).filter(([path]) => {
-      return !html.includes(`data-material-image="${path}"`) &&
-        !html.includes(`{{MATERIAL_IMAGE:${path}}}`) &&
-        !html.includes(`src="${path}"`)
+      return !html.includes(`data-material-image="${escapeHtml(path)}"`) &&
+        !html.includes(`data-material-image='${escapeHtml(path)}'`)
     })
 
     if (missingImages.length) {
