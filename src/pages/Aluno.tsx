@@ -5074,7 +5074,7 @@ function Materiais({ materials, loading, error, onOpen }: MateriaisProps) {
                 className="student-secondary-button"
                 onClick={() => onOpen(material)}
               >
-                Abrir
+                Abrir PDF
               </button>
             </div>
           ),
