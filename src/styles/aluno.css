@@ -4963,34 +4963,69 @@ body {
 
 
 .material-document-header {
+  position: relative;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 24px;
+  justify-content: flex-start;
+  min-height: 150px;
+  padding: 20px 28px;
+  border-bottom: 1px solid #e7edf5;
+  background: linear-gradient(180deg, #ffffff 0%, #fbfdff 100%);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.material-document-header::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 4px;
+  height: 100%;
+  background: linear-gradient(180deg, #1649a0 0%, #2563eb 55%, #8db5f5 100%);
+}
+
+.material-document-header::after {
+  content: '';
+  position: absolute;
+  right: 28px;
+  bottom: -34px;
+  width: 120px;
+  height: 70px;
+  border-radius: 50%;
+  background: rgba(22, 73, 160, 0.045);
+  transform: rotate(-8deg);
+}
+
+.material-document-brand {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  width: 150px;
+  height: 110px;
 }
 
 .material-document-logo {
   display: block;
-  width: 126px;
-  max-width: 126px;
-  height: auto;
-  max-height: 42px;
+  width: 150px;
+  max-width: 150px;
+  height: 150px;
+  max-height: 150px;
   object-fit: contain;
+  object-position: left center;
 }
 
-.material-document-title {
-  min-width: 0;
-  margin-left: auto;
-  text-align: right;
-}
-
-.material-document-title strong {
-  display: block;
-  color: #172033;
-  font-size: 15px;
-  line-height: 1.25;
-  letter-spacing: .02em;
-  white-space: nowrap;
+.material-document-accent {
+  position: absolute;
+  left: 196px;
+  bottom: 18px;
+  width: 46px;
+  height: 3px;
+  border-radius: 999px;
+  background: #1649a0;
+  opacity: .9;
 }
 
 .material-viewer-download:disabled {
@@ -5000,17 +5035,26 @@ body {
 
 @media (max-width: 680px) {
   .material-document-header {
-    gap: 12px;
+    min-height: 120px;
+    padding: 14px 18px;
+  }
+
+  .material-document-brand {
+    width: 120px;
+    height: 92px;
   }
 
   .material-document-logo {
-    width: 96px;
-    max-width: 96px;
-    max-height: 34px;
+    width: 120px;
+    max-width: 120px;
+    height: 120px;
+    max-height: 120px;
   }
 
-  .material-document-title strong {
-    font-size: 12px;
-    white-space: normal;
+  .material-document-accent {
+    left: 158px;
+    bottom: 14px;
+    width: 34px;
+    height: 2px;
   }
 }
