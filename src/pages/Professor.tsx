@@ -1334,7 +1334,7 @@ function Professor() {
 
   function renderDashboard() {
     return (
-      <div className="professor-content">
+      <div className="professor-content professor-dashboard-page">
         <div className="professor-page-header">
           <div>
             <span className="professor-eyebrow">
