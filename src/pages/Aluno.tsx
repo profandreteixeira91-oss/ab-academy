@@ -526,6 +526,7 @@ function Aluno() {
   const [materialsError, setMaterialsError] = useState('')
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialRecord | null>(null)
   const [materialImageUrls, setMaterialImageUrls] = useState<Record<string, string>>({})
+  const [selectedMaterialPdfUrl, setSelectedMaterialPdfUrl] = useState('')
 
   const [activities, setActivities] =
     useState<Activity[]>([])
@@ -1724,7 +1725,7 @@ function Aluno() {
       if (!ids.length) { setMaterials([]); return }
       const { data, error } = await supabase
         .from('materiais')
-        .select('id,titulo_publicado,idioma_publicado,conteudo_publicado_html,imagens_publicadas,videos_publicados,status,created_at,updated_at,publicado_em')
+        .select('id,titulo_publicado,idioma_publicado,conteudo_publicado_html,imagens_publicadas,videos_publicados,status,created_at,updated_at,publicado_em,pdf_publicado_path')
         .in('id', ids).eq('status', 'publicado').order('publicado_em', { ascending: false })
       if (error) throw error
       setMaterials((data || []).map((material) => ({
@@ -1746,6 +1747,26 @@ function Aluno() {
 
   async function openStudentMaterial(material: MaterialRecord) {
     try {
+      setMaterialsError('')
+      setSelectedMaterialPdfUrl('')
+
+      if (material.pdf_publicado_path) {
+        const { data, error } = await supabase.storage
+          .from('materiais')
+          .createSignedUrl(material.pdf_publicado_path, 3600)
+
+        if (error || !data?.signedUrl) {
+          throw error || new Error('O PDF publicado não está disponível.')
+        }
+
+        setSelectedMaterial(material)
+        setSelectedMaterialPdfUrl(data.signedUrl)
+        await supabase.rpc('registrar_material_visualizacao', { p_material_id: material.id })
+        return
+      }
+
+      // Compatibilidade temporária para publicações antigas que ainda não
+      // possuem o snapshot PDF. Novas publicações nunca entram neste fluxo.
       const entries = await Promise.all((material.imagens || []).map(async path => {
         const url = await resolveMaterialImage(path, async () => {
           const { data } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
@@ -4196,7 +4217,48 @@ function Aluno() {
 
       {selectedMaterial && (
         <div className="student-material-viewer-modal">
-          <MaterialViewer material={selectedMaterial} imageUrls={materialImageUrls} onClose={() => setSelectedMaterial(null)} />
+          {selectedMaterialPdfUrl ? (
+            <div className="student-material-pdf-viewer">
+              <div className="student-material-pdf-toolbar">
+                <div>
+                  <strong>{selectedMaterial.titulo}</strong>
+                  <span>PDF publicado pelo professor</span>
+                </div>
+                <div>
+                  <a
+                    className="student-secondary-button"
+                    href={selectedMaterialPdfUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Download size={17} /> Abrir em nova aba
+                  </a>
+                  <button
+                    type="button"
+                    className="student-modal-close"
+                    onClick={() => {
+                      setSelectedMaterial(null)
+                      setSelectedMaterialPdfUrl('')
+                    }}
+                    aria-label="Fechar PDF"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+              <iframe
+                src={selectedMaterialPdfUrl}
+                title={selectedMaterial.titulo}
+                className="student-material-pdf-frame"
+              />
+            </div>
+          ) : (
+            <MaterialViewer
+              material={selectedMaterial}
+              imageUrls={materialImageUrls}
+              onClose={() => setSelectedMaterial(null)}
+            />
+          )}
         </div>
       )}
 
