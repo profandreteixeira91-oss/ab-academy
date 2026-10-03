@@ -85,11 +85,18 @@ async function hydrateMaterialHtml(html: string, fallbackPaths: string[]) {
   return wrapper.innerHTML
 }
 
-async function downloadPdfDirect(url: string, title: string) {
-  const response = await fetch(url)
-  if (!response.ok) throw new Error('Não foi possível baixar o PDF.')
+async function downloadPdfDirect(url: string, path: string | null | undefined, title: string) {
+  let blob: Blob
 
-  const blob = await response.blob()
+  if (path) {
+    const { data, error } = await supabase.storage.from('materiais').download(path)
+    if (error || !data) throw error || new Error('Não foi possível baixar o PDF.')
+    blob = data
+  } else {
+    const response = await fetch(url)
+    if (!response.ok) throw new Error('Não foi possível baixar o PDF.')
+    blob = await response.blob()
+  }
   const objectUrl = URL.createObjectURL(blob)
   const link = document.createElement('a')
   link.href = objectUrl
