@@ -4007,3 +4007,290 @@ button.professor-stat-card:hover {
     width: calc(100% - 28px);
   }
 }
+
+
+/* =========================================================
+   AB ACADEMY — MATERIAL PREMIUM / DOCUMENTO A4
+   Fonte visual única para edição, visualização e futura
+   renderização server-side do PDF.
+   ========================================================= */
+
+.professor-material-editor-main {
+  background: linear-gradient(180deg, #f8fbff 0%, #ffffff 100%);
+}
+
+.professor-material-editor-meta {
+  align-items: stretch;
+}
+
+.professor-material-title-input {
+  min-height: 52px;
+  border-color: #d7e2f0;
+  border-radius: 12px;
+  background: #ffffff;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, .03);
+  transition: border-color .18s ease, box-shadow .18s ease;
+}
+
+.professor-material-title-input:focus,
+.professor-material-editor-meta select:focus {
+  border-color: #6ea8f5;
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, .08);
+}
+
+.professor-material-toolbar {
+  gap: 6px;
+  padding: 10px;
+  border-color: #dbe5f0;
+  background: #f7faff;
+}
+
+.professor-material-toolbar-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-right: 6px;
+  margin-right: 1px;
+  border-right: 1px solid #dbe5f0;
+}
+
+.professor-material-toolbar-group:last-child {
+  border-right: 0;
+}
+
+.professor-material-toolbar button {
+  min-width: 34px;
+  min-height: 34px;
+  border-color: #d8e2ee;
+  border-radius: 8px;
+  background: #ffffff;
+  transition: background .16s ease, border-color .16s ease, color .16s ease, transform .16s ease;
+}
+
+.professor-material-toolbar button:hover {
+  border-color: #9fc0ee;
+  background: #edf5ff;
+  color: #1649a0;
+  transform: translateY(-1px);
+}
+
+.professor-material-rich-editor {
+  min-height: 760px;
+  padding: 58px 64px 72px;
+  border-color: #dbe5f0;
+  border-radius: 0 0 12px 12px;
+  background: #ffffff;
+  color: #172033;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.78;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.7);
+  caret-color: #1649a0;
+}
+
+.professor-material-rich-editor:focus {
+  border-color: #9fc0ee;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, .07);
+}
+
+.professor-material-rich-editor > *:first-child {
+  margin-top: 0;
+}
+
+.professor-material-rich-editor > *:last-child {
+  margin-bottom: 0;
+}
+
+.professor-material-rich-editor h1,
+.professor-material-rich-editor h2,
+.professor-material-rich-editor h3,
+.professor-material-rich-editor h4,
+.professor-material-rich-editor h5,
+.professor-material-rich-editor h6 {
+  color: #10264d;
+  line-height: 1.2;
+  font-weight: 750;
+  letter-spacing: -.025em;
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.professor-material-rich-editor h1 {
+  margin: 0 0 22px;
+  font-size: 30px;
+}
+
+.professor-material-rich-editor h2 {
+  margin: 34px 0 14px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #dce7f3;
+  font-size: 23px;
+}
+
+.professor-material-rich-editor h3 {
+  margin: 26px 0 10px;
+  font-size: 18px;
+}
+
+.professor-material-rich-editor h4,
+.professor-material-rich-editor h5,
+.professor-material-rich-editor h6 {
+  margin: 20px 0 8px;
+  font-size: 15px;
+}
+
+.professor-material-rich-editor p {
+  margin: 0 0 14px;
+}
+
+.professor-material-rich-editor ul,
+.professor-material-rich-editor ol {
+  margin: 10px 0 18px;
+  padding-left: 28px;
+}
+
+.professor-material-rich-editor li {
+  margin: 5px 0;
+  padding-left: 3px;
+}
+
+.professor-material-rich-editor blockquote {
+  margin: 24px 0;
+  padding: 14px 20px;
+  border-left: 4px solid #2563eb;
+  border-radius: 0 10px 10px 0;
+  background: #f3f7fd;
+  color: #42536b;
+  font-style: italic;
+}
+
+.professor-material-rich-editor hr {
+  margin: 30px 0;
+  border: 0;
+  border-top: 1px solid #dbe5f0;
+}
+
+.professor-material-rich-editor pre,
+.professor-material-rich-editor code {
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+}
+
+.professor-material-rich-editor pre {
+  margin: 20px 0;
+  padding: 16px 18px;
+  overflow-x: auto;
+  border: 1px solid #dbe5f0;
+  border-radius: 10px;
+  background: #f7f9fc;
+  color: #24344d;
+}
+
+.professor-material-rich-editor code {
+  padding: 2px 5px;
+  border-radius: 5px;
+  background: #eef3f9;
+  color: #173c70;
+  font-size: .92em;
+}
+
+.professor-material-rich-editor a {
+  color: #1559b7;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
+.professor-material-rich-editor img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 22px auto;
+  border: 1px solid #e1e8f1;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, .08);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.professor-material-rich-editor table {
+  width: 100%;
+  margin: 24px 0;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+  border: 1px solid #d8e2ee;
+  border-radius: 10px;
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+.professor-material-rich-editor thead {
+  background: #eff5fc;
+}
+
+.professor-material-rich-editor th,
+.professor-material-rich-editor td {
+  padding: 11px 13px;
+  border-right: 1px solid #d8e2ee;
+  border-bottom: 1px solid #d8e2ee;
+  text-align: left;
+  vertical-align: top;
+}
+
+.professor-material-rich-editor th {
+  color: #17345f;
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: .02em;
+}
+
+.professor-material-rich-editor td {
+  color: #34445a;
+}
+
+.professor-material-rich-editor tr > :last-child {
+  border-right: 0;
+}
+
+.professor-material-rich-editor tbody tr:last-child > *,
+.professor-material-rich-editor tfoot tr:last-child > * {
+  border-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .professor-material-rich-editor {
+    padding: 44px 38px 58px;
+  }
+}
+
+@media (max-width: 640px) {
+  .professor-material-rich-editor {
+    min-height: 560px;
+    padding: 30px 22px 42px;
+    font-size: 14px;
+  }
+
+  .professor-material-rich-editor h1 { font-size: 25px; }
+  .professor-material-rich-editor h2 { font-size: 20px; }
+  .professor-material-rich-editor h3 { font-size: 17px; }
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 18mm 17mm 20mm;
+  }
+
+  .professor-material-rich-editor {
+    min-height: auto;
+    padding: 0;
+    border: 0;
+    box-shadow: none;
+    font-size: 11pt;
+    line-height: 1.65;
+  }
+
+  .professor-material-rich-editor h1 { font-size: 22pt; }
+  .professor-material-rich-editor h2 { font-size: 16pt; }
+  .professor-material-rich-editor h3 { font-size: 13pt; }
+}
