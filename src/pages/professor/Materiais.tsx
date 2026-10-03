@@ -87,8 +87,8 @@ export default function Materiais({ professorId }: Props) {
     [students, search],
   )
 
-  async function load() {
-    setLoading(true)
+  async function load(showLoading = true) {
+    if (showLoading) setLoading(true)
     try {
       const [materialsResult, studentsResult] = await Promise.all([
         supabase
@@ -111,7 +111,7 @@ export default function Materiais({ professorId }: Props) {
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível carregar os materiais.')
     } finally {
-      setLoading(false)
+      if (showLoading) setLoading(false)
     }
   }
 
@@ -344,7 +344,7 @@ export default function Materiais({ professorId }: Props) {
       // Mantém o DOM do contentEditable intacto após o salvamento para que
       // o conteúdo persistido continue imediatamente visível no editor.
       setDirty(false)
-      await load()
+      await load(false)
 
       if (!silent) {
         setMessage(status === 'publicado' ? 'Material publicado para os alunos selecionados.' : 'Rascunho salvo com sucesso.')
