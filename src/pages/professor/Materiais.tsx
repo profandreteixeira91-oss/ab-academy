@@ -508,27 +508,54 @@ export default function Materiais({ professorId }: Props) {
   }
 
   async function edit(material: MaterialRecord) {
-    const { data, error: recipientsError } = await supabase
-      .from('material_alunos')
-      .select('aluno_id')
-      .eq('material_id', material.id)
+    // A lista de materiais é apenas uma visão resumida e pode estar defasada
+    // quando o professor salva e reabre rapidamente. Sempre buscamos o
+    // documento atual antes de montar novamente o editor.
+    const [{ data: currentMaterial, error: materialError }, { data: recipients, error: recipientsError }] = await Promise.all([
+      supabase
+        .from('materiais')
+        .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em')
+        .eq('id', material.id)
+        .eq('professor_id', professorId)
+        .single(),
+      supabase
+        .from('material_alunos')
+        .select('aluno_id')
+        .eq('material_id', material.id),
+    ])
+
+    if (materialError) {
+      setError(materialError.message)
+      return
+    }
 
     if (recipientsError) {
       setError(recipientsError.message)
       return
     }
 
+    // O HTML é a fonte primária do documento. O manifesto "imagens" é usado
+    // como redundância para documentos criados por versões anteriores do editor.
+    const persistedImagePaths = Array.from(new Set([
+      ...(currentMaterial.imagens || []),
+      ...Array.from(currentMaterial.conteudo_html?.matchAll(/{{MATERIAL_IMAGE:([^}]+)}}/g) || [], (match) => match[1]),
+      ...Array.from(currentMaterial.conteudo_html?.matchAll(/data-material-image=[\"']([^\"']+)[\"']/g) || [], (match) => match[1]),
+    ].filter((path): path is string => Boolean(path?.trim()))))
+
     const entries = await Promise.all(
-      (material.imagens || []).map(async (path) => {
+      persistedImagePaths.map(async (path) => {
         const url = await resolveMaterialImage(path, async () => {
-          const { data: signed } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
+          const { data: signed, error: signedError } = await supabase.storage
+            .from('materiais')
+            .createSignedUrl(path, 3600)
+          if (signedError) throw signedError
           return signed?.signedUrl || null
         })
         return [path, url || ''] as const
       }),
     )
     const urls = Object.fromEntries(entries.filter(([, url]) => url))
-    let html = material.conteudo_html || empty.conteudo_html
+    let html = currentMaterial.conteudo_html || empty.conteudo_html
 
     Object.entries(urls).forEach(([path, url]) => {
       const safePath = escapeHtml(path)
@@ -538,9 +565,8 @@ export default function Materiais({ professorId }: Props) {
       html = html.split(`src="${path}"`).join(imageAttributes)
     })
 
-    // Recupera imagens que já foram persistidas em "imagens" mas, por causa de
-    // versões anteriores do editor, ficaram fora do HTML salvo. Isso evita que
-    // uma imagem enviada anteriormente desapareça ao reabrir o rascunho.
+    // Se uma imagem foi persistida, mas uma versão antiga do HTML a perdeu,
+    // recuperamos a imagem ao final do documento em vez de descartá-la.
     const missingImages = Object.entries(urls).filter(([path]) => {
       return !html.includes(`data-material-image="${path}"`) &&
         !html.includes(`{{MATERIAL_IMAGE:${path}}}`) &&
@@ -556,15 +582,22 @@ export default function Materiais({ professorId }: Props) {
       html = `${html}${recoveredImages}`
     }
 
-    setSelected((data || []).map((row) => row.aluno_id))
+    if (persistedImagePaths.length && Object.keys(urls).length !== persistedImagePaths.length) {
+      const missingPaths = persistedImagePaths.filter((path) => !urls[path])
+      setError(`Não foi possível carregar ${missingPaths.length} imagem(ns) persistida(s). O documento foi mantido intacto; verifique o acesso ao armazenamento.`)
+    } else {
+      setError('')
+    }
+
+    setSelected((recipients || []).map((row) => row.aluno_id))
     setEditor({
-      id: material.id,
-      titulo: material.titulo,
-      idioma: material.idioma || '',
+      id: currentMaterial.id,
+      titulo: currentMaterial.titulo,
+      idioma: currentMaterial.idioma || '',
       conteudo_html: html,
-      imagens: material.imagens || [],
-      videos: material.videos || [],
-      status: material.status,
+      imagens: persistedImagePaths,
+      videos: currentMaterial.videos || [],
+      status: currentMaterial.status,
     })
     setOpen(true)
     setDirty(false)
