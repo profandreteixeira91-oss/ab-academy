@@ -4806,6 +4806,200 @@ body {
 }
 
 .material-html-document .material-document-header {
+  flex: 0 0 auto;
+}
+
+.material-viewer-content {
+  width: min(820px, calc(100% - 40px));
+  min-height: 1123px;
+  box-sizing: border-box;
+  margin: 24px auto 32px;
+  padding: 64px 68px;
+  border: 1px solid #e5eaf1;
+  border-radius: 2px;
+  background: #ffffff;
+  color: #172033;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 14px;
+  line-height: 1.55;
+  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
+  overflow-wrap: anywhere;
+}
+
+.material-viewer-content > :first-child {
+  margin-top: 0;
+}
+
+.material-viewer-content > :last-child {
+  margin-bottom: 0;
+}
+
+.material-viewer-content h1,
+.material-viewer-content h2,
+.material-viewer-content h3,
+.material-viewer-content p,
+.material-viewer-content blockquote,
+.material-viewer-content ul,
+.material-viewer-content ol,
+.material-viewer-content table,
+.material-viewer-content hr {
+  max-width: 100%;
+}
+
+.material-viewer-content h1 {
+  margin: 0.67em 0;
+  font-size: 2em;
+  line-height: 1.15;
+}
+
+.material-viewer-content h2 {
+  margin: 0.83em 0;
+  font-size: 1.5em;
+  line-height: 1.2;
+}
+
+.material-viewer-content h3 {
+  margin: 1em 0;
+  font-size: 1.17em;
+  line-height: 1.25;
+}
+
+.material-viewer-content p {
+  margin: 1em 0;
+}
+
+.material-viewer-content blockquote {
+  margin: 1em 0;
+  padding: 8px 16px;
+  border-left: 4px solid #cbd5e1;
+  color: #475569;
+}
+
+.material-viewer-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 8px 0;
+  object-fit: contain;
+}
+
+.material-viewer-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  table-layout: auto;
+}
+
+.material-viewer-content th,
+.material-viewer-content td {
+  padding: 8px;
+  border: 1px solid #cbd5e1;
+  vertical-align: top;
+}
+
+.material-viewer-content th {
+  font-weight: 700;
+  background: #f8fafc;
+}
+
+.material-viewer-content a {
+  color: #1649a0;
+  text-decoration: underline;
+}
+
+.material-viewer-content hr {
+  margin: 20px 0;
+  border: 0;
+  border-top: 1px solid #cbd5e1;
+}
+
+.material-viewer-content ul,
+.material-viewer-content ol {
+  padding-left: 28px;
+}
+
+.material-viewer-content-error {
+  width: min(820px, calc(100% - 40px));
+  box-sizing: border-box;
+  margin: 16px auto 0;
+  padding: 10px 12px;
+  border: 1px solid #fecaca;
+  border-radius: 10px;
+  background: #fef2f2;
+  color: #991b1b;
+  font-size: 12px;
+}
+
+@media (max-width: 900px) {
+  .material-viewer-content {
+    width: calc(100% - 28px);
+    min-height: 900px;
+    padding: 48px 42px;
+  }
+
+  .material-viewer-content-error {
+    width: calc(100% - 28px);
+  }
+}
+
+@media (max-width: 680px) {
+  .material-html-document {
+    min-height: 0;
+  }
+
+  .material-viewer-content {
+    width: calc(100% - 20px);
+    min-height: 700px;
+    margin-top: 18px;
+    padding: 34px 24px;
+    font-size: 13px;
+  }
+
+  .material-viewer-content-error {
+    width: calc(100% - 20px);
+  }
+}
+
+
+
+.material-document-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+}
+
+.material-document-logo {
+  display: block;
+  width: 126px;
+  max-width: 126px;
+  height: auto;
+  max-height: 42px;
+  object-fit: contain;
+}
+
+.material-document-title {
+  min-width: 0;
+  margin-left: auto;
+  text-align: right;
+}
+
+.material-document-title strong {
+  display: block;
+  color: #172033;
+  font-size: 15px;
+  line-height: 1.25;
+  letter-spacing: .02em;
+  white-space: nowrap;
+}
+
+.material-viewer-download:disabled {
+  opacity: .65;
+  cursor: wait;
+}
+
+@media (max-width: 680px) {
+  .material-document-header {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -4825,21 +5019,4 @@ body {
 .material-viewer-download:disabled {
   opacity: .65;
   cursor: wait;
-}
-
-@media (max-width: 680px) {
-  .material-document-header {
-    gap: 12px;
-  }
-
-  .material-document-logo {
-    width: 96px;
-    max-width: 96px;
-    max-height: 34px;
-  }
-
-  .material-document-title strong {
-    font-size: 12px;
-    white-space: normal;
-  }
 }
