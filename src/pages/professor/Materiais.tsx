@@ -91,6 +91,7 @@ export default function Materiais({ professorId }: Props) {
   const [actionDialog, setActionDialog] = useState<'rascunho' | 'publicado' | 'excluir' | null>(null)
   const [pendingMaterial, setPendingMaterial] = useState<MaterialRecord | null>(null)
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null)
+  const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const editorVersionRef = useRef(0)
   const operationsRef = useRef<EditorOperation[]>([])
   const localDraftKeyRef = useRef<string>('')
@@ -183,6 +184,7 @@ export default function Materiais({ professorId }: Props) {
 
     const model = domToEditorModel(editorRef.current)
     const selection = captureEditorSelection(editorRef.current)
+    setAutosaveStatus('saving')
 
     try {
       await saveLocalMaterialDraft({
@@ -195,7 +197,9 @@ export default function Materiais({ professorId }: Props) {
         version: editorVersionRef.current,
         savedAt: new Date().toISOString(),
       })
+      setAutosaveStatus('saved')
     } catch (cause) {
+      setAutosaveStatus('error')
       console.error('Falha no autosave local do material:', cause)
     }
   }
@@ -1038,7 +1042,13 @@ export default function Materiais({ professorId }: Props) {
 
             <div className="professor-material-editor-footer">
               <span className="professor-material-draft-status">
-                {dirty ? 'Alterações não salvas' : 'Todas as alterações estão salvas'}
+                {autosaveStatus === 'saving'
+                  ? 'Salvando localmente...'
+                  : autosaveStatus === 'error'
+                    ? 'Autosave local indisponível'
+                    : dirty
+                      ? 'Salvo localmente · sincronizando...'
+                      : 'Todas as alterações estão salvas'}
               </span>
               <button type="button" className="professor-secondary-button" disabled={saving} onClick={() => requestSave('rascunho')}>
                 <Save size={17} /> {saving ? 'Salvando...' : 'Salvar rascunho'}
