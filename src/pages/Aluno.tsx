@@ -38,6 +38,7 @@ import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/aluno.css'
 import MaterialViewer, { type MaterialRecord } from '../components/MaterialViewer'
+import { resolveMaterialImage } from '../lib/materialImageCache'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -1739,8 +1740,11 @@ function Aluno() {
   async function openStudentMaterial(material: MaterialRecord) {
     try {
       const entries = await Promise.all((material.imagens || []).map(async path => {
-        const { data } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
-        return [path, data?.signedUrl || ''] as const
+        const url = await resolveMaterialImage(path, async () => {
+          const { data } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
+          return data?.signedUrl || null
+        })
+        return [path, url || ''] as const
       }))
       setMaterialImageUrls(Object.fromEntries(entries.filter(([, url]) => Boolean(url))))
       setSelectedMaterial(material)
