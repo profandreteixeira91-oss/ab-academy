@@ -459,8 +459,27 @@ export default function Materiais({ professorId }: Props) {
       const snapshot = getEditorSnapshot()
       const html = snapshot.html
       const imagePaths = snapshot.imagePaths
-      const model: EditorModelNode | null = editorRef.current ? domToEditorModel(editorRef.current) : null
-      const selection: EditorSelectionState | null = editorRef.current ? captureEditorSelection(editorRef.current) : null
+      // Cria o modelo a partir de um DOM destacado do React. O editor visível
+      // pertence à árvore React e nunca deve atravessar a fronteira de
+      // serialização do Supabase: nós DOM carregam referências internas
+      // (__reactFiber/parentNode) que podem formar ciclos.
+      let model: EditorModelNode | null = null
+      if (editorRef.current) {
+        const detachedEditor = document.createElement('div')
+        detachedEditor.innerHTML = editorRef.current.innerHTML
+        model = domToEditorModel(detachedEditor)
+      }
+      const selection: EditorSelectionState | null = editorRef.current
+        ? captureEditorSelection(editorRef.current)
+        : null
+      const safeOperations: EditorOperation[] = operationsRef.current.map((operation) => ({
+        id: String(operation.id),
+        type: String(operation.type),
+        at: String(operation.at),
+        version: Number(operation.version),
+      }))
+      const safeImagePaths = imagePaths.map((path) => String(path))
+      const safeVideos = editor.videos.map((url) => String(url))
 
       if (editor.id && snapshot.isEmpty && editor.conteudo_html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) {
         throw new Error('O conteúdo do editor não pôde ser capturado com segurança. O documento não foi alterado.')
@@ -471,10 +490,10 @@ export default function Materiais({ professorId }: Props) {
         titulo: editor.titulo.trim(),
         idioma: editor.idioma || null,
         conteudo_html: html,
-        imagens: imagePaths,
-        videos: editor.videos,
+        imagens: safeImagePaths,
+        videos: safeVideos,
         conteudo_modelo: model,
-        operacoes_editor: operationsRef.current,
+        operacoes_editor: safeOperations,
         cursor_estado: selection,
         versao_editor: editorVersionRef.current,
         updated_at: new Date().toISOString(),
@@ -553,8 +572,8 @@ export default function Materiais({ professorId }: Props) {
             ...basePayload,
             status: 'publicado',
             conteudo_publicado_html: html,
-            imagens_publicadas: imagePaths,
-            videos_publicados: editor.videos,
+            imagens_publicadas: safeImagePaths,
+            videos_publicados: safeVideos,
             titulo_publicado: editor.titulo.trim(),
             idioma_publicado: editor.idioma || null,
             publicado_em: publishedAt,
