@@ -525,6 +525,7 @@ export default function Materiais({ professorId }: Props) {
       }))
       setDirty(false)
       if (id) await removeLocalMaterialDraft(id)
+      if (localDraftKeyRef.current && localDraftKeyRef.current !== id) await removeLocalMaterialDraft(localDraftKeyRef.current)
       await load(false)
 
       if (!silent) {
@@ -636,6 +637,9 @@ export default function Materiais({ professorId }: Props) {
   }
 
   function newMaterial() {
+    localDraftKeyRef.current = `new-${crypto.randomUUID()}`
+    editorVersionRef.current = 0
+    operationsRef.current = []
     setEditor({ ...empty })
     setSelected([])
     setSearch('')
@@ -656,7 +660,7 @@ export default function Materiais({ professorId }: Props) {
     const [{ data: currentMaterial, error: materialError }, { data: recipients, error: recipientsError }] = await Promise.all([
       supabase
         .from('materiais')
-        .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em,pdf_publicado_path')
+        .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em,pdf_publicado_path,conteudo_modelo,operacoes_editor,cursor_estado,versao_editor')
         .eq('id', material.id)
         .eq('professor_id', professorId)
         .single(),
@@ -675,6 +679,44 @@ export default function Materiais({ professorId }: Props) {
       setError(recipientsError.message)
       return
     }
+
+    localDraftKeyRef.current = currentMaterial.id
+
+    const localDraft = await loadLocalMaterialDraft(currentMaterial.id)
+    const remoteUpdatedAt = new Date(currentMaterial.updated_at || 0).getTime()
+    const localUpdatedAt = new Date(localDraft?.savedAt || 0).getTime()
+    const hasNewerLocalDraft = Boolean(localDraft && localUpdatedAt > remoteUpdatedAt)
+
+    if (hasNewerLocalDraft && localDraft?.model) {
+      const localHtml = editorModelToHtml(localDraft.model)
+      setSelected((recipients || []).map((row) => row.aluno_id))
+      setEditor({
+        id: currentMaterial.id,
+        titulo: localDraft.titulo || currentMaterial.titulo,
+        idioma: localDraft.idioma || currentMaterial.idioma || '',
+        conteudo_html: localHtml || empty.conteudo_html,
+        imagens: currentMaterial.imagens || [],
+        videos: currentMaterial.videos || [],
+        status: 'rascunho',
+      })
+      editorVersionRef.current = localDraft.version
+      operationsRef.current = localDraft.operations || []
+      setOpen(true)
+      setDirty(true)
+      setActiveTable(null)
+      window.setTimeout(() => {
+        if (!editorRef.current) return
+        editorRef.current.innerHTML = localHtml || empty.conteudo_html
+        restoreEditorSelection(editorRef.current, localDraft.selection)
+      }, 0)
+      setMessage('Rascunho local mais recente recuperado automaticamente.')
+      return
+    }
+
+    const remoteModel = currentMaterial.conteudo_modelo as EditorModelNode | null
+    const remoteHtml = remoteModel ? editorModelToHtml(remoteModel) : (currentMaterial.conteudo_html || empty.conteudo_html)
+    editorVersionRef.current = Number(currentMaterial.versao_editor || 0)
+    operationsRef.current = (currentMaterial.operacoes_editor || []) as EditorOperation[]
 
     // O HTML é a fonte primária do documento. O manifesto "imagens" é usado
     // como redundância para documentos criados por versões anteriores do editor.
@@ -696,7 +738,7 @@ export default function Materiais({ professorId }: Props) {
       }),
     )
     const urls = Object.fromEntries(entries.filter(([, url]) => url))
-    let html = currentMaterial.conteudo_html || empty.conteudo_html
+    let html = remoteHtml
 
     // Reidratação feita pelo DOM, não por substituição textual.
     // O placeholder normalmente aparece como src="{{MATERIAL_IMAGE:path}}".
@@ -755,7 +797,9 @@ export default function Materiais({ professorId }: Props) {
     setDirty(false)
     setActiveTable(null)
     window.setTimeout(() => {
-      if (editorRef.current) editorRef.current.innerHTML = html
+      if (!editorRef.current) return
+      editorRef.current.innerHTML = html
+      restoreEditorSelection(editorRef.current, currentMaterial.cursor_estado as EditorSelectionState | null)
     }, 0)
   }
 
