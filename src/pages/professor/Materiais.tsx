@@ -31,6 +31,7 @@ import {
 import { supabase } from '../../lib/supabase'
 import MaterialViewer, { type MaterialRecord } from '../../components/MaterialViewer'
 import { cacheMaterialImage, resolveMaterialImage } from '../../lib/materialImageCache'
+import { generateMaterialPdf } from '../../lib/materialPdf'
 
 type Props = { professorId: string }
 type Student = { id: string; nome_completo: string }
@@ -93,7 +94,7 @@ export default function Materiais({ professorId }: Props) {
       const [materialsResult, studentsResult] = await Promise.all([
         supabase
           .from('materiais')
-          .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em')
+          .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em,pdf_publicado_path,pdf_publicado_em')
           .eq('professor_id', professorId)
           .order('updated_at', { ascending: false }),
         supabase
@@ -297,27 +298,53 @@ export default function Materiais({ professorId }: Props) {
       if (!silent) setError('Informe um título para o material.')
       return false
     }
-
     if (status === 'publicado' && !selected.length) {
       setError('Selecione pelo menos um aluno para publicar.')
       return false
     }
-
     setSaving(true)
     setError('')
-
     try {
       const snapshot = getEditorSnapshot()
       const html = snapshot.html
       const imagePaths = snapshot.imagePaths
-
-      // Um editor vazio é válido (por exemplo, um rascunho recém-criado),
-      // mas nunca substituímos um documento existente por um snapshot vazio
-      // causado por uma referência de DOM indisponível durante um re-render.
       if (editor.id && snapshot.isEmpty && editor.conteudo_html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) {
         throw new Error('O conteúdo do editor não pôde ser capturado com segurança. O documento não foi alterado.')
       }
-
+      let id = editor.id
+      if (status === 'publicado' && !silent && !id) {
+        const { data, error: insertError } = await supabase.from('materiais').insert({
+          professor_id: professorId,
+          titulo: editor.titulo.trim(),
+          idioma: editor.idioma || null,
+          conteudo_html: html,
+          imagens: imagePaths,
+          videos: editor.videos,
+          status: 'rascunho',
+          updated_at: new Date().toISOString(),
+        }).select('id').single()
+        if (insertError) throw insertError
+        id = data.id
+      }
+      let pdfPath: string | null = null
+      let publishedAt: string | null = null
+      if (status === 'publicado' && !silent) {
+        if (!id) throw new Error('Não foi possível identificar o material para gerar a publicação.')
+        const pdfBlob = await generateMaterialPdf({
+          editor: editorRef.current,
+          title: editor.titulo.trim(),
+          language: editor.idioma || null,
+          imagePaths,
+        })
+        publishedAt = new Date().toISOString()
+        pdfPath = `${professorId}/${id}/publicado-${Date.now()}.pdf`
+        const { error: pdfUploadError } = await supabase.storage.from('materiais').upload(pdfPath, pdfBlob, {
+          contentType: 'application/pdf',
+          cacheControl: '31536000',
+          upsert: false,
+        })
+        if (pdfUploadError) throw new Error(`O PDF não pôde ser armazenado: ${pdfUploadError.message}`)
+      }
       const payload: Record<string, unknown> = {
         professor_id: professorId,
         titulo: editor.titulo.trim(),
@@ -328,75 +355,41 @@ export default function Materiais({ professorId }: Props) {
         status,
         updated_at: new Date().toISOString(),
       }
-
-      // A publicação cria um snapshot imutável para o leitor.
-      // Salvar rascunho nunca altera o último documento publicado.
       if (status === 'publicado' && !silent) {
         payload.conteudo_publicado_html = html
         payload.imagens_publicadas = imagePaths
         payload.videos_publicados = editor.videos
         payload.titulo_publicado = editor.titulo.trim()
         payload.idioma_publicado = editor.idioma || null
-        payload.publicado_em = new Date().toISOString()
+        payload.publicado_em = publishedAt
+        payload.pdf_publicado_path = pdfPath
+        payload.pdf_publicado_em = publishedAt
       }
-
-      let id = editor.id
       if (id) {
         const { error: updateError } = await supabase.from('materiais').update(payload).eq('id', id)
         if (updateError) throw updateError
       } else {
-        const { data, error: insertError } = await supabase
-          .from('materiais')
-          .insert(payload)
-          .select('id')
-          .single()
+        const { data, error: insertError } = await supabase.from('materiais').insert(payload).select('id').single()
         if (insertError) throw insertError
         id = data.id
       }
-
-      const { error: recipientsDeleteError } = await supabase
-        .from('material_alunos')
-        .delete()
-        .eq('material_id', id)
+      const { error: recipientsDeleteError } = await supabase.from('material_alunos').delete().eq('material_id', id)
       if (recipientsDeleteError) throw recipientsDeleteError
-
       if (selected.length) {
         const recipientRows = selected.map((aluno_id) => ({ material_id: id, aluno_id }))
-        const { data: insertedRecipients, error: recipientsInsertError } = await supabase
-          .from('material_alunos')
-          .insert(recipientRows)
-          .select('aluno_id')
-
+        const { data: insertedRecipients, error: recipientsInsertError } = await supabase.from('material_alunos').insert(recipientRows).select('aluno_id')
         if (recipientsInsertError) throw recipientsInsertError
-
         const insertedIds = new Set((insertedRecipients || []).map((row) => row.aluno_id))
         const missingRecipients = selected.filter((aluno_id) => !insertedIds.has(aluno_id))
-        if (missingRecipients.length) {
-          throw new Error('Nem todos os alunos selecionados foram vinculados ao material.')
-        }
+        if (missingRecipients.length) throw new Error('Nem todos os alunos selecionados foram vinculados ao material.')
       }
-
-      setEditor((value) => ({
-        ...value,
-        id,
-        status,
-        conteudo_html: html,
-        imagens: imagePaths,
-      }))
-      // O documento aberto continua sendo a fonte visual após o save.
-      // A lista é atualizada sem desmontar o editor.
+      setEditor((value) => ({ ...value, id, status, conteudo_html: html, imagens: imagePaths }))
       setDirty(false)
       await load(false)
-
-      if (!silent) {
-        setMessage(status === 'publicado' ? 'Material publicado para os alunos selecionados.' : 'Rascunho salvo com sucesso.')
-      }
-
+      if (!silent) setMessage(status === 'publicado' ? 'Material publicado em PDF para os alunos selecionados.' : 'Rascunho salvo com sucesso.')
       return id
     } catch (cause) {
-      const details = cause && typeof cause === 'object'
-        ? cause as { message?: string; code?: string; details?: string; hint?: string }
-        : null
+      const details = cause && typeof cause === 'object' ? cause as { message?: string; code?: string; details?: string; hint?: string } : null
       const reason = details?.message || (cause instanceof Error ? cause.message : '')
       const extra = [details?.code, details?.details, details?.hint].filter(Boolean).join(' · ')
       setError(reason ? `Não foi possível salvar o material: ${reason}${extra ? ` — ${extra}` : ''}` : 'Não foi possível salvar o material.')
@@ -668,16 +661,7 @@ export default function Materiais({ professorId }: Props) {
   }
 
   async function view(material: MaterialRecord) {
-    const entries = await Promise.all(
-      (material.imagens || []).map(async (path) => {
-        const url = await resolveMaterialImage(path, async () => {
-          const { data } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
-          return data?.signedUrl || null
-        })
-        return [path, url || ''] as const
-      }),
-    )
-    setImageUrls(Object.fromEntries(entries.filter(([, url]) => url)))
+    setImageUrls({})
     setViewer(material)
   }
 
