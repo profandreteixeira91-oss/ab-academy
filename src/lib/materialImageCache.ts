@@ -70,6 +70,7 @@ export async function getCachedMaterialImage(path: string): Promise<string | nul
 export async function resolveMaterialImage(
   path: string,
   createSignedUrl: () => Promise<string | null>,
+  downloadImage?: () => Promise<Blob | null>,
 ): Promise<string | null> {
   let cachedUrl: string | null = null
   try {
@@ -79,7 +80,29 @@ export async function resolveMaterialImage(
   }
   if (cachedUrl) return cachedUrl
 
-  const signedUrl = await createSignedUrl()
+  let signedUrl: string | null = null
+  try {
+    signedUrl = await createSignedUrl()
+  } catch {
+    signedUrl = null
+  }
+
+  if (!signedUrl && downloadImage) {
+    try {
+      const blob = await downloadImage()
+      if (blob) {
+        await cacheMaterialImage(path, blob)
+        const cachedObjectUrl = objectUrls.get(path)
+        if (cachedObjectUrl) return cachedObjectUrl
+        const objectUrl = URL.createObjectURL(blob)
+        objectUrls.set(path, objectUrl)
+        return objectUrl
+      }
+    } catch {
+      // Continua para o erro final sem derrubar o restante do material.
+    }
+  }
+
   if (!signedUrl) return null
 
   try {
