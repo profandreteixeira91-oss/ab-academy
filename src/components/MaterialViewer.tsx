@@ -126,6 +126,7 @@ async function downloadVisibleAsPdf(
   header: HTMLElement | null,
   title: string,
   language: string,
+  visualDocument: HTMLElement | null,
 ) {
   if (document.fonts?.ready) await document.fonts.ready
   if (header) await waitForImages(header)
@@ -148,6 +149,7 @@ async function downloadVisibleAsPdf(
 }
 
 export default function MaterialViewer({ material, allowDownload = true, onClose }: Props) {
+  const documentRef = useRef<HTMLElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
   const [loading, setLoading] = useState(true)
@@ -207,7 +209,13 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
     setContentError('')
 
     try {
-      await downloadVisibleAsPdf(element, headerRef.current, material.titulo, language)
+      await downloadVisibleAsPdf(
+        element,
+        headerRef.current,
+        material.titulo,
+        language,
+        documentRef.current,
+      )
     } catch (error) {
       setContentError(
         error instanceof Error
@@ -248,7 +256,7 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
         </div>
       </div>
 
-      <article className="material-document material-html-document">
+      <article ref={documentRef} className="material-document material-html-document">
         <header ref={headerRef} className="student-material-pdf-toolbar material-document-header">
           <div className="material-document-brand" aria-label="AB Academy Idiomas">
             <img className="material-document-logo" src={logo} alt="AB Academy Idiomas" />
