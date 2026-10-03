@@ -1744,7 +1744,7 @@ function Aluno() {
       }))
       setMaterialImageUrls(Object.fromEntries(entries.filter(([, url]) => Boolean(url))))
       setSelectedMaterial(material)
-      // A visualização é somente de leitura neste fluxo; não alteramos a relação do destinatário.
+      await supabase.rpc('registrar_material_visualizacao', { p_material_id: material.id })
     } catch (error) {
       setMaterialsError(error instanceof Error ? error.message : 'Não foi possível abrir o material.')
     }
