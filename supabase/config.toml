@@ -29,3 +29,8 @@ entrypoint = "./functions/gerar-central-atividades/index.ts"
 
 [functions.create-enrollment]
 verify_jwt = false
+
+[functions.gerar-material-pdf]
+enabled = true
+verify_jwt = true
+entrypoint = "./functions/gerar-material-pdf/index.ts"
