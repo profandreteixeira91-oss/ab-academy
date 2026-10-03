@@ -3305,7 +3305,7 @@ export default function Atividades({
   }
 
   return (
-    <div className="atividades-page">
+    <div className={`atividades-page ${professorMode ? 'atividades-professor-mode' : ''}`}>
       <header className="atividades-header">
         <div>
           <div className="atividades-title-row">
