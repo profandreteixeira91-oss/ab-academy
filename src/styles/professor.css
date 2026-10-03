@@ -1924,3 +1924,239 @@ button.professor-stat-card:hover {
     margin: 0 1px;
   }
 }
+
+
+/* =========================================================
+   MATERIAIS — DOCUMENT EDITOR / GOOGLE DOCS INSPIRED
+   ========================================================= */
+.professor-material-editor-page {
+  max-width: 1500px;
+}
+.professor-material-editor-main {
+  background: #f1f3f4;
+  border-color: #dadce0;
+  box-shadow: none;
+  padding: 0 0 18px;
+}
+.professor-material-editor-main .professor-material-editor-meta {
+  padding: 18px 20px 12px;
+  background: #fff;
+  border-bottom: 1px solid #dadce0;
+}
+.professor-material-title-input {
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 4px;
+  font-size: 22px;
+  font-weight: 500;
+  padding: 8px 10px;
+}
+.professor-material-title-input:hover {
+  border-color: #dadce0;
+}
+.professor-material-title-input:focus {
+  border-color: #1a73e8;
+  outline: none;
+}
+.professor-material-editor-meta select {
+  border-color: #dadce0;
+  border-radius: 4px;
+}
+.professor-material-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: thin;
+  padding: 7px 10px;
+  border: 0;
+  border-top: 1px solid #dadce0;
+  border-bottom: 1px solid #dadce0;
+  border-radius: 0;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 1px 2px rgba(60,64,67,.12);
+}
+.professor-material-toolbar-group {
+  display: flex;
+  gap: 2px;
+  flex: 0 0 auto;
+}
+.professor-material-toolbar button,
+.professor-material-format-select,
+.professor-material-font-select {
+  flex: 0 0 auto;
+}
+.professor-material-toolbar button {
+  min-width: 34px;
+  min-height: 34px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+}
+.professor-material-toolbar button:hover {
+  background: #f1f3f4;
+  color: #202124;
+}
+.professor-material-toolbar button:focus-visible {
+  border: 1px solid #1a73e8;
+  box-shadow: none;
+}
+.professor-material-format-select,
+.professor-material-font-select {
+  height: 34px;
+  border: 0;
+  border-radius: 5px;
+  background: transparent;
+  color: #3c4043;
+  font: inherit;
+  font-size: 13px;
+  padding: 0 8px;
+}
+.professor-material-format-select {
+  width: 132px;
+}
+.professor-material-font-select {
+  width: 58px;
+}
+.professor-material-format-select:hover,
+.professor-material-font-select:hover {
+  background: #f1f3f4;
+}
+.toolbar-text-button {
+  font-size: 15px;
+  font-weight: 800;
+  text-decoration: underline;
+}
+.toolbar-text-button.strike {
+  text-decoration: line-through;
+}
+.professor-material-rich-editor {
+  width: min(794px, calc(100% - 48px));
+  min-height: 1123px;
+  margin: 28px auto 12px;
+  padding: 72px 76px;
+  overflow: visible;
+  box-sizing: border-box;
+  border: 1px solid #dadce0;
+  border-radius: 0;
+  outline: none;
+  background: #fff;
+  color: #202124;
+  font-family: Arial, sans-serif;
+  font-size: 12pt;
+  line-height: 1.6;
+  box-shadow: 0 1px 3px rgba(60,64,67,.15);
+}
+.professor-material-rich-editor:focus {
+  border-color: #dadce0;
+  box-shadow: 0 1px 3px rgba(60,64,67,.18);
+}
+.professor-material-rich-editor > :first-child {
+  margin-top: 0;
+}
+.professor-material-rich-editor h1 {
+  font-size: 24pt;
+  line-height: 1.2;
+  margin: 18px 0 10px;
+}
+.professor-material-rich-editor h2 {
+  font-size: 18pt;
+  line-height: 1.25;
+  margin: 16px 0 8px;
+}
+.professor-material-rich-editor h3 {
+  font-size: 14pt;
+  line-height: 1.3;
+  margin: 14px 0 7px;
+}
+.professor-material-rich-editor p {
+  margin: 0 0 10px;
+}
+.professor-material-rich-editor blockquote {
+  margin: 14px 0;
+  padding: 10px 18px;
+  border-left: 4px solid #1a73e8;
+  background: #f8f9fa;
+  color: #5f6368;
+}
+.professor-material-rich-editor ul,
+.professor-material-rich-editor ol {
+  padding-left: 30px;
+}
+.professor-material-rich-editor a {
+  color: #1967d2;
+  text-decoration: underline;
+}
+.professor-material-rich-editor hr {
+  border: 0;
+  border-top: 1px solid #dadce0;
+  margin: 24px 0;
+}
+.professor-material-rich-editor img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 12px auto;
+}
+.professor-material-rich-editor table {
+  width: 100%;
+  min-width: 0;
+  table-layout: fixed;
+  margin: 18px 0;
+  border-collapse: collapse;
+}
+.professor-material-rich-editor th,
+.professor-material-rich-editor td {
+  border: 1px solid #dadce0;
+  padding: 8px 10px;
+  min-width: 50px;
+  height: 34px;
+  vertical-align: top;
+}
+.professor-material-rich-editor th {
+  background: #f8f9fa;
+  font-weight: 600;
+}
+.professor-material-editor-footer {
+  width: min(794px, calc(100% - 48px));
+  margin: 0 auto;
+  padding: 8px 0 0;
+}
+.professor-material-editor-side {
+  min-width: 0;
+}
+.professor-material-side-card {
+  border-color: #dadce0;
+  box-shadow: 0 1px 3px rgba(60,64,67,.12);
+}
+@media (max-width: 900px) {
+  .professor-material-rich-editor {
+    width: calc(100% - 28px);
+    min-height: 900px;
+    padding: 48px 42px;
+  }
+  .professor-material-editor-footer {
+    width: calc(100% - 28px);
+  }
+}
+@media (max-width: 640px) {
+  .professor-material-editor-main {
+    border-radius: 12px;
+  }
+  .professor-material-editor-meta {
+    padding: 12px;
+  }
+  .professor-material-title-input {
+    font-size: 19px;
+  }
+  .professor-material-rich-editor {
+    width: calc(100% - 20px);
+    min-height: 700px;
+    margin-top: 18px;
+    padding: 34px 24px;
+  }
+  .professor-material-editor-footer {
+    width: calc(100% - 20px);
+  }
+}
