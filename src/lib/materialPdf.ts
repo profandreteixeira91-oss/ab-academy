@@ -47,7 +47,7 @@ async function inlineImages(container: HTMLElement) {
 
         image.setAttribute('src', dataUrl)
       } catch {
-        // O html2canvas ainda tentará carregar a URL original com useCORS.
+        throw new Error(`Não foi possível incorporar a imagem "${image.alt || 'anexada'}" ao PDF.`)
       }
     }),
   )
