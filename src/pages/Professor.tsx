@@ -1921,7 +1921,7 @@ function Professor() {
 
   function renderAulas() {
     return (
-      <div className="professor-content">
+      <div className="professor-content professor-classes-page">
         <div className="professor-page-header">
           <div>
             <span className="professor-eyebrow">
