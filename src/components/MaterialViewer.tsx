@@ -3,6 +3,7 @@ import { ArrowLeft, Download, Loader2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import logo from '../assets/logo_abacademy.png'
 import { resolveMaterialImage } from '../lib/materialImageCache'
+import { generateMaterialPdf } from '../lib/materialPdf'
 
 export type MaterialRecord = {
   id: string
@@ -85,19 +86,16 @@ async function hydrateMaterialHtml(html: string, fallbackPaths: string[]) {
   return wrapper.innerHTML
 }
 
-async function downloadPdfDirect(url: string, path: string | null | undefined, title: string) {
-  let blob: Blob
+async function downloadPdfDirect(sourceHtml: string, title: string) {
+  const source = document.createElement('div')
+  source.innerHTML = sourceHtml
 
-  if (path) {
-    const { data, error } = await supabase.storage.from('materiais').download(path)
-    if (error || !data) throw error || new Error('Não foi possível baixar o PDF.')
-    blob = data
-  } else {
-    const response = await fetch(url)
-    if (!response.ok) throw new Error('Não foi possível baixar o PDF.')
-    blob = await response.blob()
+  const pdfBlob = await generateMaterialPdf(title, '', source)
+  if (pdfBlob.size < 1024) {
+    throw new Error('O PDF gerado está vazio ou inválido.')
   }
-  const objectUrl = URL.createObjectURL(blob)
+
+  const objectUrl = URL.createObjectURL(pdfBlob)
   const link = document.createElement('a')
   link.href = objectUrl
   link.download = `${title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'material'}.pdf`
@@ -107,6 +105,7 @@ async function downloadPdfDirect(url: string, path: string | null | undefined, t
   link.remove()
   setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
 }
+
 
 export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
   const [loading, setLoading] = useState(true)
@@ -175,11 +174,7 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
                 setContentError('')
 
                 try {
-                  await downloadPdfDirect(
-                    pdfUrl,
-                    material.pdf_publicado_path,
-                    material.titulo,
-                  )
+                  await downloadPdfDirect(contentHtml, material.titulo)
                 } catch (error) {
                   setContentError(
                     error instanceof Error
@@ -205,13 +200,9 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
 
       <article className="material-document material-html-document">
         <header className="student-material-pdf-toolbar material-document-header">
-          <div className="material-document-brand">
-            <img src={logo} alt="AB Academy Idiomas" />
-            <div>
-              <span>AB ACADEMY IDIOMAS</span>
-              <strong>{material.titulo}</strong>
-              <small>{language}</small>
-            </div>
+          <img className="material-document-logo" src={logo} alt="AB Academy Idiomas" />
+          <div className="material-document-title">
+            <strong>AB ACADEMY IDIOMAS - {language.toUpperCase()}</strong>
           </div>
         </header>
 
