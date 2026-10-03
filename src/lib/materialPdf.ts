@@ -1,5 +1,6 @@
 import html2pdf from 'html2pdf.js'
 import logo from '../assets/logo_abacademy.png'
+import { supabase } from './supabase'
 
 // Propriedades que dependem do tamanho do contêiner de origem e que NÃO devem ser
 // congeladas ao copiar os estilos computados (a largura do PDF é diferente da tela).
@@ -172,10 +173,19 @@ async function inlineImages(container: HTMLElement) {
       if (!source || source.startsWith('data:')) return
 
       try {
-        const response = await fetch(source)
-        if (!response.ok) throw new Error('Imagem indisponível')
+        const materialPath = image.getAttribute('data-material-image')?.trim()
+        let blob: Blob
 
-        const blob = await response.blob()
+        if (materialPath) {
+          const { data, error } = await supabase.storage.from('materiais').download(materialPath)
+          if (error || !data) throw error || new Error('Imagem indisponível')
+          blob = data
+        } else {
+          const response = await fetch(source)
+          if (!response.ok) throw new Error('Imagem indisponível')
+          blob = await response.blob()
+        }
+
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
           reader.onload = () => resolve(String(reader.result))
@@ -187,6 +197,7 @@ async function inlineImages(container: HTMLElement) {
       } catch {
         throw new Error(`Não foi possível incorporar a imagem "${image.alt || 'anexada'}" ao PDF.`)
       }
+
     }),
   )
 }
