@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Download, Loader2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
-import logo from '../assets/logo_abacademy.png'
 import { resolveMaterialImage } from '../lib/materialImageCache'
 import { generateMaterialPdf } from '../lib/materialPdf'
 import { sanitizeMaterialHtml } from '../lib/sanitizeMaterialHtml'
+import '../styles/material-pdf-minimal.css'
 
 export type MaterialRecord = {
   id: string
@@ -22,7 +22,6 @@ export type MaterialRecord = {
 }
 
 type Props = {
-  material: MaterialRecord
   /** Mantido apenas por compatibilidade. O download não depende mais dele. */
   pdfUrl?: string
   /** Exibe o botão "Baixar PDF". Por padrão, sempre que o material estiver carregado. */
@@ -289,12 +288,15 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
       <article ref={documentRef} className="material-document material-html-document">
         <header ref={headerRef} className="student-material-pdf-toolbar material-document-header">
           <div className="material-document-brand" aria-label="AB Academy Idiomas">
-            <img className="material-document-logo" src={logo} alt="AB Academy Idiomas" />
+            <img
+              className="material-document-logo"
+              src="/favicon.png"
+              alt="AB Academy Idiomas"
+            />
           </div>
           <div className="material-document-cover">
             <span>AB ACADEMY IDIOMAS</span>
             <strong>{language.toUpperCase()}</strong>
-            <small>Material de apoio</small>
           </div>
         </header>
 
