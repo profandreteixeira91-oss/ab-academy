@@ -545,10 +545,9 @@ export default function Materiais({ professorId }: Props) {
     const entries = await Promise.all(
       persistedImagePaths.map(async (path) => {
         const url = await resolveMaterialImage(path, async () => {
-          const { data: signed, error: signedError } = await supabase.storage
+          const { data: signed } = await supabase.storage
             .from('materiais')
             .createSignedUrl(path, 3600)
-          if (signedError) throw signedError
           return signed?.signedUrl || null
         })
         return [path, url || ''] as const
