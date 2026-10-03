@@ -65,3 +65,16 @@ export async function removeLocalMaterialDraft(materialId: string) {
   })
   db.close()
 }
+
+export async function listLocalMaterialDrafts() {
+  if (typeof indexedDB === 'undefined') return []
+  const db = await openDb()
+  const drafts = await new Promise<LocalMaterialDraft[]>((resolve, reject) => {
+    const tx = db.transaction(STORE_NAME, 'readonly')
+    const request = tx.objectStore(STORE_NAME).getAll()
+    request.onsuccess = () => resolve((request.result as LocalMaterialDraft[]) || [])
+    request.onerror = () => reject(request.error || new Error('Falha ao listar rascunhos locais.'))
+  })
+  db.close()
+  return drafts.sort((a, b) => new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime())
+}
