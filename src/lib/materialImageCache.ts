@@ -71,7 +71,12 @@ export async function resolveMaterialImage(
   path: string,
   createSignedUrl: () => Promise<string | null>,
 ): Promise<string | null> {
-  const cachedUrl = await getCachedMaterialImage(path)
+  let cachedUrl: string | null = null
+  try {
+    cachedUrl = await getCachedMaterialImage(path)
+  } catch {
+    // Se o cache local estiver indisponível, continua usando o armazenamento remoto.
+  }
   if (cachedUrl) return cachedUrl
 
   const signedUrl = await createSignedUrl()
