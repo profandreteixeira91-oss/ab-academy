@@ -4200,48 +4200,14 @@ function Aluno() {
 
       {selectedMaterial && (
         <div className="student-material-viewer-modal">
-          {selectedMaterialPdfUrl ? (
-            <div className="student-material-pdf-viewer">
-              <div className="student-material-pdf-toolbar">
-                <div>
-                  <strong>{selectedMaterial.titulo}</strong>
-                  <span>PDF publicado pelo professor</span>
-                </div>
-                <div>
-                  <a
-                    className="student-secondary-button"
-                    href={selectedMaterialPdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    <Download size={17} /> Abrir em nova aba
-                  </a>
-                  <button
-                    type="button"
-                    className="student-modal-close"
-                    onClick={() => {
-                      setSelectedMaterial(null)
-                      setSelectedMaterialPdfUrl('')
-                    }}
-                    aria-label="Fechar PDF"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
-              <iframe
-                src={selectedMaterialPdfUrl}
-                title={selectedMaterial.titulo}
-                className="student-material-pdf-frame"
-              />
-            </div>
-          ) : (
-            <MaterialViewer
-              material={selectedMaterial}
-              imageUrls={materialImageUrls}
-              onClose={() => setSelectedMaterial(null)}
-            />
-          )}
+          <MaterialViewer
+            material={selectedMaterial}
+            pdfUrl={selectedMaterialPdfUrl}
+            onClose={() => {
+              setSelectedMaterial(null)
+              setSelectedMaterialPdfUrl('')
+            }}
+          />
         </div>
       )}
 
