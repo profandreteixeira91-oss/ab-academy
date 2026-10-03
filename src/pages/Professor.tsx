@@ -1714,7 +1714,7 @@ function Professor() {
 
   function renderAgenda() {
     return (
-      <div className="professor-content">
+      <div className="professor-content professor-agenda-page">
         <div className="professor-page-header">
           <div>
             <span className="professor-eyebrow">
