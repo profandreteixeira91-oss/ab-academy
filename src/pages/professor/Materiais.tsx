@@ -323,7 +323,12 @@ export default function Materiais({ professorId }: Props) {
 
       return id
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Não foi possível salvar o material.')
+      const details = cause && typeof cause === 'object'
+        ? cause as { message?: string; code?: string; details?: string; hint?: string }
+        : null
+      const reason = details?.message || (cause instanceof Error ? cause.message : '')
+      const extra = [details?.code, details?.details, details?.hint].filter(Boolean).join(' · ')
+      setError(reason ? `Não foi possível salvar o material: ${reason}${extra ? ` — ${extra}` : ''}` : 'Não foi possível salvar o material.')
       return false
     } finally {
       setSaving(false)
@@ -354,25 +359,35 @@ export default function Materiais({ professorId }: Props) {
     })
 
     if (uploadError) {
-      setError(uploadError.message)
+      setError(`Não foi possível enviar a imagem: ${uploadError.message}`)
       return
     }
 
-    const { data: signed } = await supabase.storage.from('materiais').createSignedUrl(path, 3600)
-    const signedUrl = signed?.signedUrl
+    const { data: signed, error: signedError } = await supabase.storage
+      .from('materiais')
+      .createSignedUrl(path, 3600)
+
+    if (signedError || !signed?.signedUrl) {
+      await supabase.storage.from('materiais').remove([path])
+      setError(`A imagem foi enviada, mas não foi possível gerar o acesso temporário: ${signedError?.message || 'URL assinada indisponível.'}`)
+      return
+    }
+
+    const signedUrl = signed.signedUrl
 
     setEditor((value) => ({
       ...value,
       id: materialId,
-      imagens: [...value.imagens, path],
+      imagens: Array.from(new Set([...value.imagens, path])),
     }))
+    setDirty(true)
 
     window.setTimeout(() => {
       if (!editorRef.current) return
       editorRef.current.focus()
       restoreSelection()
       const image = document.createElement('img')
-      image.src = signedUrl || path
+      image.src = signedUrl
       image.alt = file.name
       image.setAttribute('data-material-image', path)
       image.style.maxWidth = '100%'
