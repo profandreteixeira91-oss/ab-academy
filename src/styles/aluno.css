@@ -5000,23 +5000,17 @@ body {
 
 @media (max-width: 680px) {
   .material-document-header {
-  display: flex;
-  align-items: center;
-  justify-content: flex-start;
-  min-height: 150px;
-  padding: 0;
-}
+    gap: 12px;
+  }
 
-.material-document-logo {
-  display: block;
-  width: 150px;
-  height: 150px;
-  max-width: 150px;
-  max-height: 150px;
-  object-fit: contain;
-}
+  .material-document-logo {
+    width: 96px;
+    max-width: 96px;
+    max-height: 34px;
+  }
 
-.material-viewer-download:disabled {
-  opacity: .65;
-  cursor: wait;
+  .material-document-title strong {
+    font-size: 12px;
+    white-space: normal;
+  }
 }
