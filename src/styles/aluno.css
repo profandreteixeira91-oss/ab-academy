@@ -4962,13 +4962,14 @@ body {
 
 
 
-.material-document-brand {
+.material-document-header {
   display: flex;
   align-items: center;
-  gap: 14px;
+  justify-content: space-between;
+  gap: 24px;
 }
 
-.material-document-brand img {
+.material-document-logo {
   display: block;
   width: 126px;
   max-width: 126px;
@@ -4977,10 +4978,19 @@ body {
   object-fit: contain;
 }
 
-.material-document-brand > div {
-  display: flex;
-  flex-direction: column;
+.material-document-title {
   min-width: 0;
+  margin-left: auto;
+  text-align: right;
+}
+
+.material-document-title strong {
+  display: block;
+  color: #172033;
+  font-size: 15px;
+  line-height: 1.25;
+  letter-spacing: .02em;
+  white-space: nowrap;
 }
 
 .material-viewer-download:disabled {
@@ -4989,13 +4999,18 @@ body {
 }
 
 @media (max-width: 680px) {
-  .material-document-brand {
-    gap: 10px;
+  .material-document-header {
+    gap: 12px;
   }
 
-  .material-document-brand img {
+  .material-document-logo {
     width: 96px;
     max-width: 96px;
     max-height: 34px;
+  }
+
+  .material-document-title strong {
+    font-size: 12px;
+    white-space: normal;
   }
 }
