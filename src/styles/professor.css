@@ -2212,6 +2212,63 @@ button.professor-stat-card:hover {
 }
 
 /* =========================================================
+   MATERIAIS — CONFIRMATION DIALOGS
+   ========================================================= */
+.professor-material-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(15, 23, 42, 0.42);
+  backdrop-filter: blur(4px);
+}
+.professor-material-dialog {
+  width: min(440px, 100%);
+  padding: 26px;
+  border: 1px solid var(--prof-border);
+  border-radius: var(--prof-radius-lg);
+  background: var(--prof-surface);
+  box-shadow: var(--prof-shadow-lg);
+  color: var(--prof-text);
+}
+.professor-material-dialog > svg {
+  width: 34px;
+  height: 34px;
+  margin-bottom: 12px;
+  padding: 8px;
+  border-radius: 10px;
+  background: var(--prof-primary-soft);
+  color: var(--prof-primary);
+}
+.professor-material-dialog h3 {
+  margin: 0;
+  font-size: 18px;
+  letter-spacing: -0.015em;
+}
+.professor-material-dialog p {
+  margin: 8px 0 20px;
+  color: var(--prof-text-secondary);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.professor-material-dialog > div:last-child {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+.professor-material-dialog .professor-absence-button {
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+.professor-material-dialog .professor-absence-button:hover:not(:disabled) {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #991b1b;
+}
+
+/* =========================================================
    PREMIUM FOUNDATION OVERRIDES
    ========================================================= */
 
