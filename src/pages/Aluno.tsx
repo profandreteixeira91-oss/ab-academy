@@ -524,7 +524,6 @@ function Aluno() {
   const [materialsLoading, setMaterialsLoading] = useState(false)
   const [materialsError, setMaterialsError] = useState('')
   const [selectedMaterial, setSelectedMaterial] = useState<MaterialRecord | null>(null)
-  const [materialPdfUrls, setMaterialPdfUrls] = useState<Record<string, string>>({})
   const [selectedMaterialPdfUrl, setSelectedMaterialPdfUrl] = useState('')
 
   const [activities, setActivities] =
@@ -1758,7 +1757,7 @@ function Aluno() {
         throw error || new Error('Não foi possível gerar o acesso temporário ao PDF.')
       }
 
-      setMaterialPdfUrls((current) => ({ ...current, [material.id]: data.signedUrl }))
+      setSelectedMaterialPdfUrl(data.signedUrl)
       setSelectedMaterial(material)
       await supabase.rpc('registrar_material_visualizacao', { p_material_id: material.id })
     } catch (error) {
