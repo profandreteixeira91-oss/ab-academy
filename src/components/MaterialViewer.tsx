@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase'
 import logo from '../assets/logo_abacademy.png'
 import { resolveMaterialImage } from '../lib/materialImageCache'
 import { generateMaterialPdf } from '../lib/materialPdf'
+import { sanitizeMaterialHtml } from '../lib/sanitizeMaterialHtml'
 
 export type MaterialRecord = {
   id: string
@@ -177,7 +178,7 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
         )
 
         if (!mounted) return
-        setContentHtml(html)
+        setContentHtml(sanitizeMaterialHtml(html))
       } catch (error) {
         if (!mounted) return
         setContentError(
@@ -185,7 +186,7 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
             ? error.message
             : 'Não foi possível carregar as imagens do material.',
         )
-        setContentHtml(material.conteudo_html || '<p></p>')
+        setContentHtml(sanitizeMaterialHtml(material.conteudo_html || '<p></p>'))
       } finally {
         if (mounted) setLoading(false)
       }
