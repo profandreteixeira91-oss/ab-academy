@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { ArrowLeft, Download, Loader2, X } from 'lucide-react'
+import { supabase } from '../lib/supabase'
+import { resolveMaterialImage } from '../lib/materialImageCache'
 
 export type MaterialRecord = {
   id: string
@@ -22,8 +24,71 @@ type Props = {
   onClose?: () => void
 }
 
+function extractMaterialImagePaths(html: string, fallbackPaths: string[]) {
+  const wrapper = document.createElement('div')
+  wrapper.innerHTML = html
+
+  return Array.from(
+    new Set([
+      ...fallbackPaths,
+      ...Array.from(wrapper.querySelectorAll('img'), (image) =>
+        image.getAttribute('data-material-image')?.trim() ||
+        image.getAttribute('src')?.match(/^{{MATERIAL_IMAGE:(.+)}}$/)?.[1]?.trim() ||
+        '',
+      ),
+    ].filter(Boolean)),
+  )
+}
+
+async function hydrateMaterialHtml(html: string, fallbackPaths: string[]) {
+  const wrapper = document.createElement('div')
+  wrapper.innerHTML = html
+
+  const paths = extractMaterialImagePaths(html, fallbackPaths)
+  if (!paths.length) return wrapper.innerHTML
+
+  const entries = await Promise.all(
+    paths.map(async (path) => {
+      const url = await resolveMaterialImage(path, async () => {
+        const { data, error } = await supabase.storage
+          .from('materiais')
+          .createSignedUrl(path, 3600)
+
+        if (error) throw error
+        return data?.signedUrl || null
+      })
+
+      return [path, url || ''] as const
+    }),
+  )
+
+  const urls = Object.fromEntries(entries)
+
+  wrapper.querySelectorAll('img').forEach((image) => {
+    const rawSource = image.getAttribute('src')?.trim() || ''
+    const path =
+      image.getAttribute('data-material-image')?.trim() ||
+      rawSource.match(/^{{MATERIAL_IMAGE:(.+)}}$/)?.[1]?.trim()
+
+    if (!path) return
+
+    const url = urls[path]
+    if (!url) return
+
+    image.setAttribute('src', url)
+    image.setAttribute('data-material-image', path)
+    image.style.maxWidth = '100%'
+    image.style.height = 'auto'
+  })
+
+  return wrapper.innerHTML
+}
+
 export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
-  const [loading, setLoading] = useState(Boolean(pdfUrl))
+  const [loading, setLoading] = useState(true)
+  const [contentHtml, setContentHtml] = useState('')
+  const [contentError, setContentError] = useState('')
+
   const language = material.idioma === 'ingles'
     ? 'Inglês'
     : material.idioma === 'alemao'
@@ -31,8 +96,39 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
       : 'Material de apoio'
 
   useEffect(() => {
-    if (pdfUrl) setLoading(false)
-  }, [pdfUrl])
+    let mounted = true
+
+    async function loadContent() {
+      setLoading(true)
+      setContentError('')
+
+      try {
+        const html = await hydrateMaterialHtml(
+          material.conteudo_html || '<p></p>',
+          material.imagens || [],
+        )
+
+        if (!mounted) return
+        setContentHtml(html)
+      } catch (error) {
+        if (!mounted) return
+        setContentError(
+          error instanceof Error
+            ? error.message
+            : 'Não foi possível carregar as imagens do material.',
+        )
+        setContentHtml(material.conteudo_html || '<p></p>')
+      } finally {
+        if (mounted) setLoading(false)
+      }
+    }
+
+    void loadContent()
+
+    return () => {
+      mounted = false
+    }
+  }, [material.id, material.conteudo_html, material.imagens])
 
   return (
     <div className="material-viewer">
@@ -62,7 +158,7 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
         </div>
       </div>
 
-      <article className="material-document material-pdf-document">
+      <article className="material-document material-html-document">
         <header className="student-material-pdf-toolbar material-document-header">
           <div>
             <span>AB ACADEMY IDIOMAS</span>
@@ -71,25 +167,25 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
           </div>
         </header>
 
-        {loading && (
+        {loading ? (
           <div className="material-pdf-loading student-empty-state">
             <Loader2 size={24} className="student-spin" />
             <span>Carregando material...</span>
           </div>
-        )}
+        ) : (
+          <>
+            {contentError && (
+              <div className="material-viewer-content-error" role="status">
+                {contentError}
+              </div>
+            )}
 
-        {!loading && pdfUrl ? (
-          <iframe
-            className="student-material-pdf-frame material-pdf-frame"
-            src={pdfUrl}
-            title={material.titulo}
-          />
-        ) : !loading ? (
-          <div className="material-pdf-empty student-empty-state">
-            <strong>PDF indisponível</strong>
-            <span>Este material ainda não possui uma publicação em PDF.</span>
-          </div>
-        ) : null}
+            <div
+              className="material-viewer-content professor-material-rich-editor"
+              dangerouslySetInnerHTML={{ __html: contentHtml }}
+            />
+          </>
+        )}
       </article>
     </div>
   )
