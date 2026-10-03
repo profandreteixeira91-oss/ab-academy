@@ -308,10 +308,19 @@ export default function Materiais({ professorId }: Props) {
       if (recipientsDeleteError) throw recipientsDeleteError
 
       if (selected.length) {
-        const { error: recipientsInsertError } = await supabase
+        const recipientRows = selected.map((aluno_id) => ({ material_id: id, aluno_id }))
+        const { data: insertedRecipients, error: recipientsInsertError } = await supabase
           .from('material_alunos')
-          .insert(selected.map((aluno_id) => ({ material_id: id, aluno_id })))
+          .insert(recipientRows)
+          .select('aluno_id')
+
         if (recipientsInsertError) throw recipientsInsertError
+
+        const insertedIds = new Set((insertedRecipients || []).map((row) => row.aluno_id))
+        const missingRecipients = selected.filter((aluno_id) => !insertedIds.has(aluno_id))
+        if (missingRecipients.length) {
+          throw new Error('Nem todos os alunos selecionados foram vinculados ao material.')
+        }
       }
 
       setEditor((value) => ({ ...value, id, status }))
