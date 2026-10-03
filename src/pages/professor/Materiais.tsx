@@ -135,7 +135,7 @@ export default function Materiais({ professorId }: Props) {
         !loadedMaterials.some((material) => material.id === draft.materialId),
       )
       if (orphanDraft?.model) {
-        const recoveredHtml = editorModelToHtml(orphanDraft.model)
+        const recoveredHtml = await rehydrateEditorImages(editorModelToHtml(orphanDraft.model))
         localDraftKeyRef.current = orphanDraft.materialId
         editorVersionRef.current = orphanDraft.version
         operationsRef.current = orphanDraft.operations || []
