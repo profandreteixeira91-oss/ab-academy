@@ -92,10 +92,20 @@ export default function Materiais({ professorId }: Props) {
   const [pendingMaterial, setPendingMaterial] = useState<MaterialRecord | null>(null)
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null)
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [remoteStatus, setRemoteStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
+  const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
+
   const editorVersionRef = useRef(0)
   const operationsRef = useRef<EditorOperation[]>([])
   const localDraftKeyRef = useRef<string>('')
   const localAutosaveTimerRef = useRef<number | null>(null)
+
+  // Refs que sempre refletem o estado mais recente (evitam closures velhas no autosave).
+  const dirtyRef = useRef(false)
+  const savingRef = useRef(false)
+  const recipientsDirtyRef = useRef(false)
+  const materialIdRef = useRef<string | null>(null)
+  const saveRef = useRef<typeof save | null>(null)
 
   const filtered = useMemo(
     () => students.filter((student) =>
@@ -104,7 +114,7 @@ export default function Materiais({ professorId }: Props) {
     [students, search],
   )
 
-  async function load(showLoading = true) {
+  async function load(showLoading = true, recoverDraft = false) {
     if (showLoading) setLoading(true)
     try {
       const [materialsResult, studentsResult] = await Promise.all([
@@ -128,8 +138,9 @@ export default function Materiais({ professorId }: Props) {
       setStudents(studentsResult.data || [])
 
       // Se o navegador caiu antes do primeiro salvamento remoto, recuperamos
-      // automaticamente o rascunho local mais recente criado nesta sessão.
-      const localDrafts = await listLocalMaterialDrafts()
+      // automaticamente o rascunho local mais recente criado na sessão anterior.
+      // Só ocorre na abertura da tela, nunca durante a edição.
+      const localDrafts = recoverDraft ? await listLocalMaterialDrafts() : []
       const orphanDraft = localDrafts.find((draft) =>
         draft.materialId.startsWith('new-') &&
         !loadedMaterials.some((material) => material.id === draft.materialId),
@@ -137,6 +148,8 @@ export default function Materiais({ professorId }: Props) {
       if (orphanDraft?.model) {
         const recoveredHtml = await rehydrateEditorImages(editorModelToHtml(orphanDraft.model))
         localDraftKeyRef.current = orphanDraft.materialId
+        materialIdRef.current = null
+        recipientsDirtyRef.current = false
         editorVersionRef.current = orphanDraft.version
         operationsRef.current = orphanDraft.operations || []
         setEditor({
@@ -150,6 +163,7 @@ export default function Materiais({ professorId }: Props) {
         })
         setSelected([])
         setOpen(true)
+        dirtyRef.current = true
         setDirty(true)
         window.setTimeout(() => {
           if (!editorRef.current) return
@@ -166,9 +180,10 @@ export default function Materiais({ professorId }: Props) {
   }
 
   useEffect(() => {
-    void load()
+    void load(true, true)
   }, [professorId])
 
+  // Autosave local (IndexedDB) a cada alteração, com debounce curto.
   useEffect(() => {
     if (!open || !dirty) return
 
@@ -188,13 +203,34 @@ export default function Materiais({ professorId }: Props) {
     }
   }, [open, dirty, editor.titulo, editor.id])
 
+  // Autosave remoto (Supabase) estilo Google Docs: funciona para materiais novos,
+  // rascunhos e publicados, e usa refs para nunca trabalhar com estado defasado.
   useEffect(() => {
-    if (!open || !editor.id || !dirty || editor.status !== 'rascunho') return
+    if (!open) return
+
     const timer = window.setInterval(() => {
-      void save('rascunho', true)
-    }, 5000)
-    return () => window.clearInterval(timer)
-  }, [open, editor.id, editor.status, dirty])
+      if (!dirtyRef.current || savingRef.current) return
+      void saveRef.current?.('rascunho', true)
+    }, 3000)
+
+    const flush = () => {
+      if (document.visibilityState === 'hidden' && dirtyRef.current && !savingRef.current) {
+        void saveRef.current?.('rascunho', true)
+      }
+    }
+    document.addEventListener('visibilitychange', flush)
+
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', flush)
+    }
+  }, [open])
+
+  function markChanged() {
+    editorVersionRef.current += 1
+    dirtyRef.current = true
+    setDirty(true)
+  }
 
   function saveSelection() {
     const selection = window.getSelection()
@@ -259,6 +295,7 @@ export default function Materiais({ professorId }: Props) {
       }).catch((cause) => console.error('Falha no autosave local do material:', cause))
     }
     setEditor((value) => ({ ...value, conteudo_html: html }))
+    dirtyRef.current = true
     setDirty(true)
     saveSelection()
   }
@@ -441,9 +478,26 @@ export default function Materiais({ professorId }: Props) {
     return Array.from(new Set(paths))
   }
 
-  async function save(status: 'rascunho' | 'publicado', silent = false): Promise<string | false> {
-    if (!editor.titulo.trim()) {
-      if (!silent) setError('Informe um título para o material.')
+  async function save(
+    status: 'rascunho' | 'publicado',
+    silent = false,
+    forceCreate = false,
+  ): Promise<string | false> {
+    // Nunca dois salvamentos ao mesmo tempo (evita duplicar materiais novos).
+    while (savingRef.current) {
+      await new Promise((resolve) => window.setTimeout(resolve, 100))
+    }
+
+    const snapshot = getEditorSnapshot()
+    const titulo = editor.titulo.trim() || (silent ? 'Material sem título' : '')
+
+    if (!titulo) {
+      setError('Informe um título para o material.')
+      return false
+    }
+
+    // Autosave não cria material novo totalmente vazio.
+    if (silent && !forceCreate && !materialIdRef.current && !editor.titulo.trim() && snapshot.isEmpty) {
       return false
     }
 
@@ -452,21 +506,26 @@ export default function Materiais({ professorId }: Props) {
       return false
     }
 
-    setSaving(true)
-    setError('')
+    savingRef.current = true
+    if (silent) {
+      setRemoteStatus('saving')
+    } else {
+      setSaving(true)
+      setError('')
+    }
+    const versionAtStart = editorVersionRef.current
 
     try {
-      const snapshot = getEditorSnapshot()
       const html = snapshot.html
       const imagePaths = snapshot.imagePaths
-      // Cria o modelo a partir de um DOM destacado do React. O editor visível
-      // pertence à árvore React e nunca deve atravessar a fronteira de
-      // serialização do Supabase: nós DOM carregam referências internas
-      // (__reactFiber/parentNode) que podem formar ciclos.
+
+      // Modelo gerado de um DOM destacado do React, a partir do HTML já serializado
+      // (com placeholders, sem URLs assinadas que expiram). Nós DOM do editor visível
+      // carregam referências internas do React e nunca devem ir para o Supabase.
       let model: EditorModelNode | null = null
       if (editorRef.current) {
         const detachedEditor = document.createElement('div')
-        detachedEditor.innerHTML = editorRef.current.innerHTML
+        detachedEditor.innerHTML = html
         model = domToEditorModel(detachedEditor)
       }
       const selection: EditorSelectionState | null = editorRef.current
@@ -478,19 +537,18 @@ export default function Materiais({ professorId }: Props) {
         at: String(operation.at),
         version: Number(operation.version),
       }))
-      const safeImagePaths = imagePaths.map((path) => String(path))
       const safeVideos = editor.videos.map((url) => String(url))
 
-      if (editor.id && snapshot.isEmpty && editor.conteudo_html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) {
+      if (materialIdRef.current && snapshot.isEmpty && editor.conteudo_html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) {
         throw new Error('O conteúdo do editor não pôde ser capturado com segurança. O documento não foi alterado.')
       }
 
       const basePayload: Record<string, unknown> = {
         professor_id: professorId,
-        titulo: editor.titulo.trim(),
+        titulo,
         idioma: editor.idioma || null,
         conteudo_html: html,
-        imagens: safeImagePaths,
+        imagens: imagePaths,
         videos: safeVideos,
         conteudo_modelo: model,
         operacoes_editor: safeOperations,
@@ -499,16 +557,14 @@ export default function Materiais({ professorId }: Props) {
         updated_at: new Date().toISOString(),
       }
 
-      let id = editor.id
+      let id = materialIdRef.current
 
       if (id) {
-        const updatePayload = status === 'rascunho'
-          ? { ...basePayload, status: 'rascunho' }
-          : basePayload
-
+        // Não altera o status: material publicado continua publicado
+        // (com alterações pendentes) até o professor publicar novamente.
         const { error: updateError } = await supabase
           .from('materiais')
-          .update(updatePayload)
+          .update(basePayload)
           .eq('id', id)
 
         if (updateError) throw updateError
@@ -520,10 +576,11 @@ export default function Materiais({ professorId }: Props) {
           .single()
 
         if (insertError) throw insertError
-        id = data.id
+        id = data.id as string
+        materialIdRef.current = id
       }
 
-      let pdfPath: string | null = null
+      const currentId: string = id
 
       if (status === 'publicado' && !silent) {
         if (!editorRef.current) {
@@ -538,13 +595,8 @@ export default function Materiais({ professorId }: Props) {
             ? 'Alemão'
             : 'Material de apoio'
 
-        const pdfBlob = await generateMaterialPdf(
-          editor.titulo.trim(),
-          language,
-          editorRef.current,
-        )
-
-        pdfPath = `${professorId}/${id}/publicado-${Date.now()}.pdf`
+        const pdfBlob = await generateMaterialPdf(titulo, language, editorRef.current)
+        const pdfPath = `${professorId}/${currentId}/publicado-${Date.now()}.pdf`
 
         const { error: pdfUploadError } = await supabase.storage
           .from('materiais')
@@ -572,15 +624,17 @@ export default function Materiais({ professorId }: Props) {
             ...basePayload,
             status: 'publicado',
             conteudo_publicado_html: html,
-            imagens_publicadas: safeImagePaths,
+            imagens_publicadas: imagePaths,
             videos_publicados: safeVideos,
-            titulo_publicado: editor.titulo.trim(),
+            titulo_publicado: titulo,
             idioma_publicado: editor.idioma || null,
             publicado_em: publishedAt,
             pdf_publicado_path: pdfPath,
             pdf_publicado_em: publishedAt,
+            // Igual ao pdf_publicado_em: o PDF é considerado "atual" até a próxima edição.
+            updated_at: publishedAt,
           })
-          .eq('id', id)
+          .eq('id', currentId)
 
         if (publishError) {
           await supabase.storage.from('materiais').remove([pdfPath])
@@ -588,43 +642,62 @@ export default function Materiais({ professorId }: Props) {
         }
       }
 
-      const { error: recipientsDeleteError } = await supabase
-        .from('material_alunos')
-        .delete()
-        .eq('material_id', id)
-
-      if (recipientsDeleteError) throw recipientsDeleteError
-
-      if (selected.length) {
-        const recipientRows = selected.map((aluno_id) => ({ material_id: id, aluno_id }))
-        const { data: insertedRecipients, error: recipientsInsertError } = await supabase
+      // Destinatários: no autosave só são regravados quando mudaram,
+      // evitando apagar e reinserir a cada ciclo.
+      if (status === 'publicado' || !silent || recipientsDirtyRef.current) {
+        const { error: recipientsDeleteError } = await supabase
           .from('material_alunos')
-          .insert(recipientRows)
-          .select('aluno_id')
+          .delete()
+          .eq('material_id', currentId)
 
-        if (recipientsInsertError) throw recipientsInsertError
+        if (recipientsDeleteError) throw recipientsDeleteError
 
-        const insertedIds = new Set((insertedRecipients || []).map((row) => row.aluno_id))
-        const missingRecipients = selected.filter((aluno_id) => !insertedIds.has(aluno_id))
+        if (selected.length) {
+          const recipientRows = selected.map((aluno_id) => ({ material_id: currentId, aluno_id }))
+          const { data: insertedRecipients, error: recipientsInsertError } = await supabase
+            .from('material_alunos')
+            .insert(recipientRows)
+            .select('aluno_id')
 
-        if (missingRecipients.length) {
-          throw new Error('Nem todos os alunos selecionados foram vinculados ao material.')
+          if (recipientsInsertError) throw recipientsInsertError
+
+          const insertedIds = new Set((insertedRecipients || []).map((row) => row.aluno_id))
+          const missingRecipients = selected.filter((aluno_id) => !insertedIds.has(aluno_id))
+
+          if (missingRecipients.length) {
+            throw new Error('Nem todos os alunos selecionados foram vinculados ao material.')
+          }
         }
+        recipientsDirtyRef.current = false
       }
 
       setEditor((value) => ({
         ...value,
-        id,
-        status,
-        conteudo_html: html,
+        id: currentId,
+        status: status === 'publicado' ? 'publicado' : value.status,
         imagens: imagePaths,
       }))
-      setDirty(false)
-      if (id) await removeLocalMaterialDraft(id)
-      if (localDraftKeyRef.current && localDraftKeyRef.current !== id) await removeLocalMaterialDraft(localDraftKeyRef.current)
-      await load(false)
+
+      // Só marca como salvo se nada foi digitado enquanto o salvamento rodava.
+      const unchanged = editorVersionRef.current === versionAtStart
+      const oldKey = localDraftKeyRef.current
+      localDraftKeyRef.current = currentId
+
+      if (unchanged) {
+        dirtyRef.current = false
+        setDirty(false)
+        await removeLocalMaterialDraft(currentId)
+      } else {
+        // Guarda localmente o que foi digitado durante o salvamento.
+        await saveLocalEditorState()
+      }
+      if (oldKey && oldKey !== currentId) await removeLocalMaterialDraft(oldKey)
+
+      setRemoteStatus('saved')
+      setLastSavedAt(new Date())
 
       if (!silent) {
+        await load(false)
         setMessage(
           status === 'publicado'
             ? 'Material publicado em PDF para os alunos selecionados.'
@@ -632,22 +705,32 @@ export default function Materiais({ professorId }: Props) {
         )
       }
 
-      return id
+      return currentId
     } catch (cause) {
-      const details = cause && typeof cause === 'object'
-        ? cause as { message?: string; code?: string; details?: string; hint?: string }
-        : null
-      const reason = details?.message || (cause instanceof Error ? cause.message : '')
-      const extra = [details?.code, details?.details, details?.hint].filter(Boolean).join(' · ')
-      setError(reason ? `Não foi possível salvar o material: ${reason}${extra ? ` — ${extra}` : ''}` : 'Não foi possível salvar o material.')
+      setRemoteStatus('error')
+      console.error('Falha ao salvar material:', cause)
+
+      if (!silent) {
+        const details = cause && typeof cause === 'object'
+          ? cause as { message?: string; code?: string; details?: string; hint?: string }
+          : null
+        const reason = details?.message || (cause instanceof Error ? cause.message : '')
+        const extra = [details?.code, details?.details, details?.hint].filter(Boolean).join(' · ')
+        setError(reason ? `Não foi possível salvar o material: ${reason}${extra ? ` — ${extra}` : ''}` : 'Não foi possível salvar o material.')
+      }
       return false
     } finally {
+      savingRef.current = false
       setSaving(false)
     }
   }
+
+  // Mantém sempre a versão mais recente da função disponível para o autosave.
+  saveRef.current = save
+
   async function ensureDraft(): Promise<string | false> {
-    if (editor.id) return editor.id
-    return save('rascunho', true)
+    if (materialIdRef.current) return materialIdRef.current
+    return save('rascunho', true, true)
   }
 
   async function upload(file: File) {
@@ -734,8 +817,13 @@ export default function Materiais({ professorId }: Props) {
 
   function newMaterial() {
     localDraftKeyRef.current = `new-${crypto.randomUUID()}`
+    materialIdRef.current = null
+    recipientsDirtyRef.current = false
+    dirtyRef.current = false
     editorVersionRef.current = 0
     operationsRef.current = []
+    setRemoteStatus('idle')
+    setLastSavedAt(null)
     setEditor({ ...empty })
     setSelected([])
     setSearch('')
@@ -777,6 +865,10 @@ export default function Materiais({ professorId }: Props) {
     }
 
     localDraftKeyRef.current = currentMaterial.id
+    materialIdRef.current = currentMaterial.id
+    recipientsDirtyRef.current = false
+    setRemoteStatus('idle')
+    setLastSavedAt(null)
 
     const localDraft = await loadLocalMaterialDraft(currentMaterial.id)
     const remoteUpdatedAt = new Date(currentMaterial.updated_at || 0).getTime()
@@ -794,11 +886,12 @@ export default function Materiais({ professorId }: Props) {
         conteudo_html: restoredLocalHtml || empty.conteudo_html,
         imagens: currentMaterial.imagens || [],
         videos: currentMaterial.videos || [],
-        status: 'rascunho',
+        status: currentMaterial.status,
       })
       editorVersionRef.current = localDraft.version
       operationsRef.current = localDraft.operations || []
       setOpen(true)
+      dirtyRef.current = true
       setDirty(true)
       setActiveTable(null)
       window.setTimeout(() => {
@@ -810,8 +903,9 @@ export default function Materiais({ professorId }: Props) {
       return
     }
 
-    const remoteModel = currentMaterial.conteudo_modelo as EditorModelNode | null
-    const remoteHtml = remoteModel ? editorModelToHtml(remoteModel) : (currentMaterial.conteudo_html || empty.conteudo_html)
+    // O HTML salvo é a fonte da verdade do documento (o mesmo usado pelo
+    // botão Visualizar), garantindo que editor e visualização sejam idênticos.
+    const remoteHtml = currentMaterial.conteudo_html || empty.conteudo_html
     editorVersionRef.current = Number(currentMaterial.versao_editor || 0)
     operationsRef.current = (currentMaterial.operacoes_editor || []) as EditorOperation[]
 
@@ -891,6 +985,7 @@ export default function Materiais({ professorId }: Props) {
       status: currentMaterial.status,
     })
     setOpen(true)
+    dirtyRef.current = false
     setDirty(false)
     setActiveTable(null)
     window.setTimeout(() => {
@@ -900,12 +995,26 @@ export default function Materiais({ professorId }: Props) {
     }, 0)
   }
 
-  function close() {
-    if (dirty) {
-      setExitDialog(true)
-      return
+  // Estilo Google Docs: ao sair, salva automaticamente. O diálogo só aparece se o salvamento falhar.
+  async function close() {
+    if (dirtyRef.current) {
+      const nothingToKeep = !materialIdRef.current && !editor.titulo.trim() && getEditorSnapshot().isEmpty
+
+      if (nothingToKeep) {
+        if (localDraftKeyRef.current) await removeLocalMaterialDraft(localDraftKeyRef.current)
+      } else {
+        const id = await save('rascunho', true)
+        if (!id) {
+          setExitDialog(true)
+          return
+        }
+      }
     }
+
+    dirtyRef.current = false
+    setDirty(false)
     setOpen(false)
+    await load(false)
   }
 
   function requestSave(status: 'rascunho' | 'publicado') {
@@ -933,6 +1042,7 @@ export default function Materiais({ professorId }: Props) {
         await supabase.storage.from('materiais').remove(objects.map((object) => `${professorId}/${material.id}/${object.name}`))
       }
 
+      await removeLocalMaterialDraft(material.id)
       await load()
       setMessage('Material excluído com sucesso.')
       return
@@ -945,31 +1055,50 @@ export default function Materiais({ professorId }: Props) {
 
   async function exit(saveDraft: boolean) {
     if (saveDraft && !(await save('rascunho'))) return
+    if (!saveDraft && localDraftKeyRef.current) {
+      await removeLocalMaterialDraft(localDraftKeyRef.current)
+    }
     setExitDialog(false)
-    setOpen(false)
+    dirtyRef.current = false
     setDirty(false)
+    setOpen(false)
+    await load(false)
   }
 
+  // Visualizar sempre mostra exatamente o último conteúdo salvo (rascunho ou publicado).
   async function view(material: MaterialRecord) {
     try {
-      if (!material.pdf_publicado_path) {
-        setViewerPdfUrl('')
-        setViewer(material)
-        return
-      }
-
-      const { data, error: pdfError } = await supabase.storage
+      const { data: current, error: currentError } = await supabase
         .from('materiais')
-        .createSignedUrl(material.pdf_publicado_path, 3600)
+        .select('id,titulo,idioma,conteudo_html,imagens,videos,status,created_at,updated_at,publicado_em,pdf_publicado_path,pdf_publicado_em')
+        .eq('id', material.id)
+        .eq('professor_id', professorId)
+        .single()
 
-      if (pdfError || !data?.signedUrl) {
-        throw pdfError || new Error('Não foi possível gerar o acesso temporário ao PDF publicado.')
+      if (currentError) throw currentError
+
+      const hydratedHtml = await rehydrateEditorImages(current.conteudo_html || '', current.imagens || [])
+
+      // O PDF publicado só é exibido se nenhuma edição foi salva depois da publicação.
+      const pdfIsCurrent = Boolean(current.pdf_publicado_path && current.pdf_publicado_em) &&
+        new Date(current.updated_at).getTime() <= new Date(current.pdf_publicado_em).getTime()
+
+      let pdfUrl = ''
+      if (pdfIsCurrent) {
+        const { data, error: pdfError } = await supabase.storage
+          .from('materiais')
+          .createSignedUrl(current.pdf_publicado_path, 3600)
+
+        if (pdfError || !data?.signedUrl) {
+          throw pdfError || new Error('Não foi possível gerar o acesso temporário ao PDF publicado.')
+        }
+        pdfUrl = data.signedUrl
       }
 
-      setViewerPdfUrl(data.signedUrl)
-      setViewer(material)
+      setViewerPdfUrl(pdfUrl)
+      setViewer({ ...(current as MaterialRecord), conteudo_html: hydratedHtml })
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Não foi possível abrir o PDF publicado.')
+      setError(cause instanceof Error ? cause.message : 'Não foi possível abrir o material.')
     }
   }
 
@@ -986,7 +1115,8 @@ export default function Materiais({ professorId }: Props) {
         ? current.filter((id) => !visibleIds.includes(id))
         : Array.from(new Set([...current, ...visibleIds])),
     )
-    setDirty(true)
+    recipientsDirtyRef.current = true
+    markChanged()
   }
 
   if (loading) return <div className="professor-materials-empty">Carregando materiais...</div>
@@ -1000,7 +1130,7 @@ export default function Materiais({ professorId }: Props) {
             <h1>{editor.id ? 'Editar material' : 'Novo material'}</h1>
             <p>Crie materiais ricos, organize tabelas e direcione o conteúdo para seus alunos.</p>
           </div>
-          <button type="button" className="professor-secondary-button" onClick={close}>
+          <button type="button" className="professor-secondary-button" onClick={() => void close()}>
             <X size={17} /> Sair
           </button>
         </div>
@@ -1013,7 +1143,7 @@ export default function Materiais({ professorId }: Props) {
                 value={editor.titulo}
                 onChange={(event) => {
                   setEditor((value) => ({ ...value, titulo: event.target.value }))
-                  setDirty(true)
+                  markChanged()
                 }}
                 placeholder="Título do material"
               />
@@ -1021,7 +1151,7 @@ export default function Materiais({ professorId }: Props) {
                 value={editor.idioma}
                 onChange={(event) => {
                   setEditor((value) => ({ ...value, idioma: event.target.value as EditorState['idioma'] }))
-                  setDirty(true)
+                  markChanged()
                 }}
               >
                 <option value="">Idioma do material</option>
@@ -1080,7 +1210,7 @@ export default function Materiais({ professorId }: Props) {
               className="professor-material-rich-editor"
               contentEditable
               suppressContentEditableWarning
-              onInput={sync}
+              onInput={() => sync('input')}
               onKeyUp={() => {
                 saveSelection()
                 updateActiveTable()
@@ -1094,13 +1224,17 @@ export default function Materiais({ professorId }: Props) {
 
             <div className="professor-material-editor-footer">
               <span className="professor-material-draft-status">
-                {autosaveStatus === 'saving'
-                  ? 'Salvando localmente...'
-                  : autosaveStatus === 'error'
-                    ? 'Autosave local indisponível'
-                    : dirty
-                      ? 'Salvo localmente · sincronizando...'
-                      : 'Todas as alterações estão salvas'}
+                {remoteStatus === 'saving'
+                  ? 'Salvando...'
+                  : remoteStatus === 'error'
+                    ? 'Não foi possível salvar na nuvem · alterações guardadas neste navegador'
+                    : autosaveStatus === 'error'
+                      ? 'Autosave local indisponível'
+                      : dirty
+                        ? 'Alterações pendentes...'
+                        : lastSavedAt
+                          ? `Todas as alterações salvas às ${lastSavedAt.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}`
+                          : 'Todas as alterações estão salvas'}
               </span>
               <button type="button" className="professor-secondary-button" disabled={saving} onClick={() => requestSave('rascunho')}>
                 <Save size={17} /> {saving ? 'Salvando...' : 'Salvar rascunho'}
@@ -1137,7 +1271,15 @@ export default function Materiais({ professorId }: Props) {
                 <button type="button" onClick={toggleAllVisible} disabled={!filtered.length}>
                   <CheckSquare size={15} /> Selecionar visíveis
                 </button>
-                <button type="button" onClick={() => { setSelected([]); setDirty(true) }} disabled={!selected.length}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelected([])
+                    recipientsDirtyRef.current = true
+                    markChanged()
+                  }}
+                  disabled={!selected.length}
+                >
                   <Square size={15} /> Limpar
                 </button>
               </div>
@@ -1154,7 +1296,8 @@ export default function Materiais({ professorId }: Props) {
                           setSelected((value) => event.target.checked
                             ? Array.from(new Set([...value, student.id]))
                             : value.filter((id) => id !== student.id))
-                          setDirty(true)
+                          recipientsDirtyRef.current = true
+                          markChanged()
                         }}
                       />
                       <span>{student.nome_completo}</span>
@@ -1206,8 +1349,8 @@ export default function Materiais({ professorId }: Props) {
           <div className="professor-material-dialog-backdrop">
             <div className="professor-material-dialog">
               <Save size={28} />
-              <h3>Salvar rascunho antes de sair?</h3>
-              <p>Suas alterações ainda não foram salvas.</p>
+              <h3>Não foi possível salvar automaticamente</h3>
+              <p>Suas alterações ainda não foram enviadas. Deseja tentar salvar o rascunho antes de sair?</p>
               <div>
                 <button type="button" className="professor-secondary-button" onClick={() => void exit(false)}>Sair sem salvar</button>
                 <button type="button" className="professor-primary-button" onClick={() => void exit(true)}>Salvar rascunho e sair</button>
@@ -1247,7 +1390,14 @@ export default function Materiais({ professorId }: Props) {
             <article key={material.id} className="professor-material-card">
               <div className="professor-material-card-icon"><FileText size={22} /></div>
               <div className="professor-material-card-body">
-                <span>{material.status === 'publicado' ? 'Publicado' : 'Rascunho'}{material.idioma ? ` · ${material.idioma === 'ingles' ? 'Inglês' : 'Alemão'}` : ''}</span>
+                <span>
+                  {material.status === 'publicado'
+                    ? (material.publicado_em && new Date(material.updated_at) > new Date(material.publicado_em)
+                      ? 'Publicado · alterações não publicadas'
+                      : 'Publicado')
+                    : 'Rascunho'}
+                  {material.idioma ? ` · ${material.idioma === 'ingles' ? 'Inglês' : 'Alemão'}` : ''}
+                </span>
                 <h3>{material.titulo}</h3>
                 <p>Atualizado em {new Date(material.updated_at).toLocaleDateString('pt-BR')}</p>
               </div>
