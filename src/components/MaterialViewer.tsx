@@ -132,7 +132,7 @@ async function downloadVisibleAsPdf(
   if (header) await waitForImages(header)
   await waitForImages(element)
 
-  const pdfBlob = await generateMaterialPdf(title, language, element, header)
+  const pdfBlob = await generateMaterialPdf(title, language, element, header, visualDocument)
   if (pdfBlob.size < 1024) {
     throw new Error('O PDF gerado está vazio ou inválido.')
   }
