@@ -12,12 +12,12 @@ function json(body: unknown, status = 200) {
 
 function sanitizeHtml(source: string) {
   let html = String(source || '')
-  html = html.replace(/<\\/(script|style|iframe|object|embed|form|textarea|select|button)[^>]*>/gi, '')
+  html = html.replace(/|style|iframe|object|embed|form|textarea|select|button)[^>]*>/gi, '')
   html = html.replace(/<(script|style|iframe|object|embed|form|textarea|select|button|input|link|meta)[^>]*>/gi, '')
-  html = html.replace(/\\s+on[a-z-]+\\s*=\\s*(['"])[\\s\\S]*?\\1/gi, '')
-  html = html.replace(/\\s+on[a-z-]+\\s*=\\s*[^\\s>]+/gi, '')
-  html = html.replace(/(href|src)\\s*=\\s*(['"])\\s*(javascript:|vbscript:|data:text/html)[\\s\\S]*?\\2/gi, '$1=$2#$2')
-  html = html.replace(/url\\(\\s*(['"]?)\\s*(javascript:|vbscript:|data:text/html)[^)]*\\1\\s*\\)/gi, 'none')
+  html = html.replace(/\s+on[a-z-]+\\s*=\\s*(['"])[\\s\\S]*?\1/gi, '')
+  html = html.replace(/\s+on[a-z-]+\\s*=\\s*[^\\s>]+/gi, '')
+  html = html.replace(/(href|src)\\s*=\\s*(['"])\\s*(javascript:|vbscript:|data:text/html)[\\s\\S]*?\2/gi, '$1=$2#$2')
+  html = html.replace(/url\(\\s*(['"]?)\\s*(javascript:|vbscript:|data:text/html)[^)]*\1\\s*\)/gi, 'none')
   return html
 }
 
@@ -40,7 +40,7 @@ async function resolveMaterialImages(html: string, fallbackPaths: string[], admi
   let result = html.replace(/{{MATERIAL_IMAGE:([^}]+)}}/g, (_, rawPath) => urls.get(String(rawPath).trim()) || '')
   for (const [path, url] of urls) {
     const escapedPath = path.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\$&')
-    result = result.replace(new RegExp('data-material-image=(["\\\'])' + escapedPath + '\\\\1', 'gi'), 'src="' + url + '" data-material-image="' + path + '"')
+    result = result.replace(new RegExp('data-material-image=(["\\\'])' + escapedPath + '\\\1', 'gi'), 'src="' + url + '" data-material-image="' + path + '"')
   }
   return result
 }
@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
     const browserlessToken = Deno.env.get('BROWSERLESS_API_TOKEN')
     if (!browserlessToken) return json({ error:'Renderizador PDF não configurado.', code:'PDF_RENDERER_NOT_CONFIGURED' }, 503)
     const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!)
-    const token = authHeader.replace(/^Bearer\\s+/i, '')
+    const token = authHeader.replace(/^Bearer\s+/i, '')
     const { data: { user }, error: userError } = await admin.auth.getUser(token)
     if (userError || !user) return json({ error:'Sessão inválida.' }, 401)
     const body = await req.json()
