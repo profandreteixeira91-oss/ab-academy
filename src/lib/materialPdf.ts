@@ -24,7 +24,15 @@ const SKIPPED_PROPERTIES = new Set([
 ])
 
 function shouldSkipProperty(property: string) {
-  return SKIPPED_PROPERTIES.has(property) || property.startsWith('min-') || property.startsWith('max-')
+  return (
+    SKIPPED_PROPERTIES.has(property) ||
+    property.startsWith('min-') ||
+    property.startsWith('max-') ||
+    // Animações e transições reiniciariam no clone (ex.: fade-in começando em opacity 0),
+    // fazendo o conteúdo ser capturado invisível.
+    property.startsWith('animation') ||
+    property.startsWith('transition')
+  )
 }
 
 /**
@@ -49,6 +57,9 @@ function cloneWithComputedStyles(source: HTMLElement): HTMLElement {
       target.style.setProperty(property, computed.getPropertyValue(property), computed.getPropertyPriority(property))
     }
 
+    target.style.animation = 'none'
+    target.style.transition = 'none'
+
     if (sourceNode instanceof HTMLImageElement && target instanceof HTMLImageElement) {
       const renderedWidth = sourceNode.getBoundingClientRect().width
       if (renderedWidth > 0) target.style.width = `${renderedWidth}px`
@@ -58,6 +69,19 @@ function cloneWithComputedStyles(source: HTMLElement): HTMLElement {
   })
 
   return clone
+}
+
+// Garante que a raiz do clone fique no fluxo normal da página e visível.
+// Um clone com position:fixed/sticky (comum em cabeçalhos e barras) sai do fluxo e
+// faz o contêiner do html2pdf ficar com altura zero, gerando PDF em branco.
+function normalizeRoot(element: HTMLElement) {
+  element.style.position = 'static'
+  element.style.transform = 'none'
+  element.style.opacity = '1'
+  element.style.visibility = 'visible'
+  element.style.display = element.style.display === 'none' ? 'block' : element.style.display
+  element.style.boxShadow = 'none'
+  element.style.outline = 'none'
 }
 
 // Cabeçalho padrão (logo + título), usado quando nenhum cabeçalho é informado,
@@ -138,6 +162,17 @@ async function inlineImages(container: HTMLElement) {
 const PAGE_MARGIN_PT: [number, number, number, number] = [40, 36, 40, 36]
 const PAGE_CONTENT_WIDTH_PX = 698
 
+// Navegadores limitam o tamanho de um canvas (altura ~16-32 mil px, área ~16 milhões de px
+// no Safari/iOS). Acima disso o canvas sai em branco. A escala é reduzida para documentos longos.
+const MAX_CANVAS_PIXELS = 16_000_000
+const MAX_CANVAS_SIDE = 16_000
+
+function pickScale(contentHeightPx: number) {
+  const byArea = Math.sqrt(MAX_CANVAS_PIXELS / (PAGE_CONTENT_WIDTH_PX * Math.max(contentHeightPx, 1)))
+  const bySide = MAX_CANVAS_SIDE / Math.max(contentHeightPx, 1)
+  return Math.max(1, Math.min(2, byArea, bySide))
+}
+
 /**
  * Gera o PDF de um material.
  * @param source  elemento com o conteúdo (visualizador ou editor)
@@ -150,6 +185,13 @@ export async function generateMaterialPdf(
   source: HTMLElement,
   header?: HTMLElement | null,
 ): Promise<Blob> {
+  // A página fica em fluxo normal (sem position:fixed), porque o html2pdf clona este
+  // elemento para dentro do próprio contêiner. Para ela existir no layout (largura e
+  // altura medidas) sem aparecer na tela, é colocada dentro de um palco invisível.
+  const stage = document.createElement('div')
+  stage.setAttribute('aria-hidden', 'true')
+  stage.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none;'
+
   const page = document.createElement('article')
   page.style.width = `${PAGE_CONTENT_WIDTH_PX}px`
   page.style.boxSizing = 'border-box'
@@ -158,8 +200,13 @@ export async function generateMaterialPdf(
   page.style.background = '#ffffff'
 
   const headerClone = header ? cloneWithComputedStyles(header) : createDefaultHeader(language)
-  headerClone.style.margin = headerClone.style.margin || '0 0 24px'
-  headerClone.style.boxShadow = 'none'
+  normalizeRoot(headerClone)
+  headerClone.style.width = '100%'
+  headerClone.style.boxSizing = 'border-box'
+  headerClone.style.marginTop = '0'
+  headerClone.style.marginLeft = '0'
+  headerClone.style.marginRight = '0'
+  headerClone.style.marginBottom = headerClone.style.marginBottom || '24px'
   page.appendChild(headerClone)
 
   const body = cloneWithComputedStyles(source)
@@ -167,15 +214,16 @@ export async function generateMaterialPdf(
   body.querySelectorAll('[contenteditable]').forEach((element) => {
     element.removeAttribute('contenteditable')
   })
+  normalizeRoot(body)
 
   // O espaçamento externo vem das margens da página do PDF.
   body.style.width = '100%'
+  body.style.boxSizing = 'border-box'
   body.style.margin = '0'
   body.style.padding = '0'
   body.style.border = '0'
-  body.style.outline = 'none'
-  body.style.boxShadow = 'none'
   body.style.background = 'transparent'
+  body.style.overflow = 'visible'
 
   // Evita cortar imagens e linhas de tabela no meio entre duas páginas.
   // Tabelas longas continuam podendo quebrar entre linhas.
@@ -185,19 +233,17 @@ export async function generateMaterialPdf(
   })
 
   page.appendChild(body)
-
-  // O elemento precisa permanecer dentro da viewport para o html2canvas.
-  // Não usamos display:none nem uma posição fora da área renderizada.
-  page.style.position = 'fixed'
-  page.style.left = '0'
-  page.style.top = '0'
-  page.style.zIndex = '-1'
-  page.style.pointerEvents = 'none'
-  document.body.appendChild(page)
+  stage.appendChild(page)
+  document.body.appendChild(stage)
 
   try {
     await inlineImages(page)
     await waitForImages(page)
+
+    const contentHeight = page.scrollHeight
+    if (contentHeight < 10) {
+      throw new Error('Não foi possível medir o conteúdo do material para gerar o PDF.')
+    }
 
     const worker = html2pdf()
       .set({
@@ -206,10 +252,13 @@ export async function generateMaterialPdf(
         image: { type: 'jpeg', quality: 0.96 },
         enableLinks: true,
         html2canvas: {
-          scale: 2,
+          scale: pickScale(contentHeight),
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,
+          // Evita captura deslocada (PDF em branco) quando a página ou o modal está rolado.
+          scrollX: 0,
+          scrollY: 0,
         },
         jsPDF: {
           unit: 'pt',
@@ -218,8 +267,7 @@ export async function generateMaterialPdf(
         },
         pagebreak: {
           mode: ['css'],
-          // Parágrafos, títulos, itens de lista e citações não são cortados no meio de uma linha.
-          avoid: ['img', 'tr', 'h1', 'h2', 'h3', 'p', 'li', 'blockquote'],
+          avoid: ['img', 'tr'],
         },
       })
       .from(page)
@@ -234,6 +282,6 @@ export async function generateMaterialPdf(
 
     return blob
   } finally {
-    page.remove()
+    stage.remove()
   }
 }
