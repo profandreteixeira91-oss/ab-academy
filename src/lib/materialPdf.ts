@@ -41,6 +41,36 @@ function shouldSkipProperty(property: string) {
  * original mesmo estando fora da árvore onde as regras de CSS foram definidas
  * (seletores como ".material-viewer .professor-material-rich-editor table").
  */
+function clonePseudoElement(source: HTMLElement, pseudo: '::before' | '::after') {
+  const computed = window.getComputedStyle(source, pseudo)
+  const content = computed.getPropertyValue('content')
+  if (!content || content === 'none' || content === 'normal') return null
+
+  const pseudoElement = document.createElement('span')
+  pseudoElement.setAttribute('aria-hidden', 'true')
+
+  for (let i = 0; i < computed.length; i += 1) {
+    const property = computed[i]
+    if (property.startsWith('animation') || property.startsWith('transition')) continue
+    pseudoElement.style.setProperty(
+      property,
+      computed.getPropertyValue(property),
+      computed.getPropertyPriority(property),
+    )
+  }
+
+  pseudoElement.style.width = computed.getPropertyValue('width')
+  pseudoElement.style.height = computed.getPropertyValue('height')
+  pseudoElement.style.maxWidth = 'none'
+  pseudoElement.style.maxHeight = 'none'
+  pseudoElement.style.minWidth = '0'
+  pseudoElement.style.minHeight = '0'
+  pseudoElement.style.animation = 'none'
+  pseudoElement.style.transition = 'none'
+
+  return pseudoElement
+}
+
 function cloneWithComputedStyles(source: HTMLElement): HTMLElement {
   const clone = source.cloneNode(true) as HTMLElement
   const sourceNodes = [source, ...Array.from(source.querySelectorAll<HTMLElement>('*'))]
@@ -59,6 +89,11 @@ function cloneWithComputedStyles(source: HTMLElement): HTMLElement {
 
     target.style.animation = 'none'
     target.style.transition = 'none'
+
+    const before = clonePseudoElement(sourceNode, '::before')
+    const after = clonePseudoElement(sourceNode, '::after')
+    if (before) target.prepend(before)
+    if (after) target.appendChild(after)
 
     if (sourceNode instanceof HTMLImageElement && target instanceof HTMLImageElement) {
       const renderedWidth = sourceNode.getBoundingClientRect().width
@@ -183,6 +218,7 @@ export async function generateMaterialPdf(
   language: string,
   source: HTMLElement,
   header?: HTMLElement | null,
+  visualDocument?: HTMLElement | null,
 ): Promise<Blob> {
   // A página fica em fluxo normal (sem position:fixed), porque o html2pdf clona este
   // elemento para dentro do próprio contêiner. Para ela existir no layout (largura e
@@ -198,40 +234,62 @@ export async function generateMaterialPdf(
   page.style.margin = '0'
   page.style.background = '#ffffff'
 
-  const headerClone = header ? cloneWithComputedStyles(header) : createDefaultHeader(language)
-  normalizeRoot(headerClone)
-  headerClone.style.width = '100%'
-  headerClone.style.boxSizing = 'border-box'
-  headerClone.style.marginTop = '0'
-  headerClone.style.marginLeft = '0'
-  headerClone.style.marginRight = '0'
-  headerClone.style.marginBottom = headerClone.style.marginBottom || '24px'
-  page.appendChild(headerClone)
+  if (visualDocument) {
+    const documentClone = cloneWithComputedStyles(visualDocument)
+    normalizeRoot(documentClone)
+    documentClone.removeAttribute('contenteditable')
+    documentClone.querySelectorAll('[contenteditable]').forEach((element) => {
+      element.removeAttribute('contenteditable')
+    })
 
-  const body = cloneWithComputedStyles(source)
-  body.removeAttribute('contenteditable')
-  body.querySelectorAll('[contenteditable]').forEach((element) => {
-    element.removeAttribute('contenteditable')
-  })
-  normalizeRoot(body)
+    // O PDF nasce do mesmo <article> exibido no visualizador, preservando
+    // a hierarquia, o cabeçalho, as imagens, as classes e os estilos computados.
+    documentClone.style.width = '100%'
+    documentClone.style.boxSizing = 'border-box'
+    documentClone.style.margin = '0'
+    documentClone.style.maxWidth = 'none'
+    documentClone.style.overflow = 'visible'
 
-  // O espaçamento externo vem das margens da página do PDF.
-  body.style.width = '100%'
-  body.style.boxSizing = 'border-box'
-  body.style.margin = '0'
-  body.style.padding = '0'
-  body.style.border = '0'
-  body.style.background = 'transparent'
-  body.style.overflow = 'visible'
+    documentClone.querySelectorAll<HTMLElement>('img, tr').forEach((element) => {
+      element.style.breakInside = 'avoid'
+      element.style.pageBreakInside = 'avoid'
+    })
 
-  // Evita cortar imagens e linhas de tabela no meio entre duas páginas.
-  // Tabelas longas continuam podendo quebrar entre linhas.
-  body.querySelectorAll<HTMLElement>('img, tr').forEach((element) => {
-    element.style.breakInside = 'avoid'
-    element.style.pageBreakInside = 'avoid'
-  })
+    page.appendChild(documentClone)
+  } else {
+    const headerClone = header ? cloneWithComputedStyles(header) : createDefaultHeader(language)
+    normalizeRoot(headerClone)
+    headerClone.style.width = '100%'
+    headerClone.style.boxSizing = 'border-box'
+    headerClone.style.marginTop = '0'
+    headerClone.style.marginLeft = '0'
+    headerClone.style.marginRight = '0'
+    headerClone.style.marginBottom = headerClone.style.marginBottom || '24px'
+    page.appendChild(headerClone)
 
-  page.appendChild(body)
+    const body = cloneWithComputedStyles(source)
+    body.removeAttribute('contenteditable')
+    body.querySelectorAll('[contenteditable]').forEach((element) => {
+      element.removeAttribute('contenteditable')
+    })
+    normalizeRoot(body)
+
+    // O espaçamento externo vem das margens da página do PDF.
+    body.style.width = '100%'
+    body.style.boxSizing = 'border-box'
+    body.style.margin = '0'
+    body.style.padding = '0'
+    body.style.border = '0'
+    body.style.background = 'transparent'
+    body.style.overflow = 'visible'
+
+    body.querySelectorAll<HTMLElement>('img, tr').forEach((element) => {
+      element.style.breakInside = 'avoid'
+      element.style.pageBreakInside = 'avoid'
+    })
+
+    page.appendChild(body)
+  }
   stage.appendChild(page)
   document.body.appendChild(stage)
 
