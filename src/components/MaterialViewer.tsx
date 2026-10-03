@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ArrowLeft, Download, ExternalLink, Loader2, X } from 'lucide-react'
+import { ArrowLeft, Download, Loader2, X } from 'lucide-react'
 
 export type MaterialRecord = {
   id: string
@@ -42,30 +42,18 @@ export default function MaterialViewer({ material, pdfUrl, onClose }: Props) {
             <ArrowLeft size={18} /> Voltar
           </button>
         )}
+
         <div className="material-viewer-actions">
           {pdfUrl && (
-            <>
-              <a
-                className="material-viewer-download"
-                href={pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                download
-              >
-                <Download size={17} /> Baixar PDF
-              </a>
-              <a
-                className="material-viewer-close"
-                href={pdfUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Abrir PDF em nova aba"
-                title="Abrir PDF em nova aba"
-              >
-                <ExternalLink size={17} />
-              </a>
-            </>
+            <a
+              className="material-viewer-download"
+              href={pdfUrl}
+              download
+            >
+              <Download size={17} /> Baixar PDF
+            </a>
           )}
+
           {onClose && (
             <button type="button" className="material-viewer-close" onClick={onClose} aria-label="Fechar">
               <X size={18} />
