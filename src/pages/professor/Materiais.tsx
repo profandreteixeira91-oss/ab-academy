@@ -4,6 +4,15 @@ import {
   Italic,
   List,
   ListOrdered,
+  Undo2,
+  Redo2,
+  AlignLeft,
+  AlignCenter,
+  AlignRight,
+  AlignJustify,
+  Link2,
+  Quote,
+  Highlighter,
   Image as ImageIcon,
   Plus,
   Save,
@@ -143,6 +152,17 @@ export default function Materiais({ professorId }: Props) {
     restoreSelection()
     document.execCommand(command, false, value)
     sync()
+  }
+
+  function insertLink() {
+    const url = window.prompt('Cole o endereço do link:')
+    if (!url) return
+    const normalized = /^https?:\\/\\//i.test(url) ? url : 'https://' + url
+    exec('createLink', normalized)
+  }
+
+  function insertHorizontalRule() {
+    exec('insertHorizontalRule')
   }
 
   function findTableFromSelection() {
@@ -530,12 +550,35 @@ export default function Materiais({ professorId }: Props) {
             </div>
 
             <div className="professor-material-toolbar" onMouseDown={(event) => event.preventDefault()}>
+              <div className="professor-material-toolbar-group">
+                <button type="button" onClick={() => exec('undo')} title="Desfazer"><Undo2 size={17} /></button>
+                <button type="button" onClick={() => exec('redo')} title="Refazer"><Redo2 size={17} /></button>
+              </div>
+              <span className="professor-material-toolbar-divider" />
+              <select className="professor-material-format-select" defaultValue="p" onChange={(event) => exec('formatBlock', event.target.value)} title="Estilo do texto">
+                <option value="p">Texto normal</option><option value="h1">Título 1</option><option value="h2">Título 2</option><option value="h3">Título 3</option><option value="blockquote">Citação</option>
+              </select>
+              <select className="professor-material-font-select" defaultValue="3" onChange={(event) => exec('fontSize', event.target.value)} title="Tamanho da fonte">
+                <option value="2">10</option><option value="3">12</option><option value="4">14</option><option value="5">18</option><option value="6">24</option><option value="7">32</option>
+              </select>
+              <span className="professor-material-toolbar-divider" />
               <button type="button" onClick={() => exec('bold')} title="Negrito"><Bold size={17} /></button>
               <button type="button" onClick={() => exec('italic')} title="Itálico"><Italic size={17} /></button>
+              <button type="button" onClick={() => exec('underline')} title="Sublinhado"><span className="toolbar-text-button">U</span></button>
+              <button type="button" onClick={() => exec('strikeThrough')} title="Tachado"><span className="toolbar-text-button strike">S</span></button>
+              <button type="button" onClick={() => exec('hiliteColor', '#fff2cc')} title="Destacar texto"><Highlighter size={17} /></button>
+              <span className="professor-material-toolbar-divider" />
+              <button type="button" onClick={() => exec('justifyLeft')} title="Alinhar à esquerda"><AlignLeft size={17} /></button>
+              <button type="button" onClick={() => exec('justifyCenter')} title="Centralizar"><AlignCenter size={17} /></button>
+              <button type="button" onClick={() => exec('justifyRight')} title="Alinhar à direita"><AlignRight size={17} /></button>
+              <button type="button" onClick={() => exec('justifyFull')} title="Justificar"><AlignJustify size={17} /></button>
               <span className="professor-material-toolbar-divider" />
               <button type="button" onClick={() => exec('insertUnorderedList')} title="Lista"><List size={17} /></button>
               <button type="button" onClick={() => exec('insertOrderedList')} title="Lista numerada"><ListOrdered size={17} /></button>
+              <button type="button" onClick={() => exec('formatBlock', 'blockquote')} title="Citação"><Quote size={17} /></button>
               <span className="professor-material-toolbar-divider" />
+              <button type="button" onClick={insertLink} title="Inserir link"><Link2 size={17} /></button>
+              <button type="button" onClick={insertHorizontalRule} title="Linha horizontal"><Minus size={17} /></button>
               <button type="button" onClick={insertTable} title="Inserir tabela"><Table2 size={17} /></button>
               {activeTable && (
                 <>
@@ -547,17 +590,7 @@ export default function Materiais({ professorId }: Props) {
               )}
               <span className="professor-material-toolbar-divider" />
               <button type="button" onClick={() => fileRef.current?.click()} title="Inserir imagem"><ImageIcon size={17} /></button>
-              <input
-                ref={fileRef}
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={(event) => {
-                  const file = event.target.files?.[0]
-                  if (file) void upload(file)
-                  event.target.value = ''
-                }}
-              />
+              <input ref={fileRef} type="file" accept="image/*" hidden onChange={(event) => { const file = event.target.files?.[0]; if (file) void upload(file); event.target.value = '' }} />
               <button type="button" onClick={video} title="Inserir vídeo"><Video size={17} /></button>
             </div>
 
