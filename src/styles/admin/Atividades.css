@@ -3546,3 +3546,295 @@
     align-items: flex-start;
   }
 }
+
+
+/* =========================================================
+   PROFESSOR — ATIVIDADES PREMIUM
+   Escopo exclusivo do modo professor.
+   ========================================================= */
+
+.atividades-professor-mode {
+  min-height: 100%;
+  padding: 0;
+  background: transparent;
+  color: var(--prof-text, #172033);
+}
+
+.atividades-professor-mode .atividades-header {
+  margin-bottom: 22px;
+  gap: 18px;
+}
+
+.atividades-professor-mode .atividades-title-row {
+  gap: 12px;
+}
+
+.atividades-professor-mode .atividades-title-icon {
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--prof-primary-soft-strong, #dbeafe);
+  border-radius: 11px;
+  background: var(--prof-primary-soft, #eff6ff);
+  color: var(--prof-primary, #2563eb);
+}
+
+.atividades-professor-mode .atividades-header h1 {
+  color: var(--prof-text, #172033);
+  font-size: 24px;
+  letter-spacing: -0.03em;
+}
+
+.atividades-professor-mode .atividades-header p {
+  color: var(--prof-text-secondary, #475569);
+}
+
+.atividades-professor-mode .atividades-primary-button,
+.atividades-professor-mode .atividades-secondary-button {
+  min-height: 40px;
+  border-radius: var(--prof-radius-sm, 8px);
+  font-size: 12px;
+}
+
+.atividades-professor-mode .atividades-primary-button {
+  background: var(--prof-primary, #2563eb);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.16);
+}
+
+.atividades-professor-mode .atividades-primary-button:hover:not(:disabled) {
+  background: var(--prof-primary-dark, #1d4ed8);
+  transform: translateY(-1px);
+  box-shadow: 0 7px 16px rgba(37, 99, 235, 0.2);
+}
+
+.atividades-professor-mode .atividades-secondary-button {
+  border: 1px solid var(--prof-border, #e2e8f0);
+  background: var(--prof-surface, #fff);
+  color: var(--prof-text-secondary, #475569);
+}
+
+.atividades-professor-mode .atividades-secondary-button:hover:not(:disabled) {
+  border-color: var(--prof-primary-soft-strong, #dbeafe);
+  background: var(--prof-primary-soft, #eff6ff);
+  color: var(--prof-primary-dark, #1d4ed8);
+}
+
+.atividades-professor-mode .atividades-alert {
+  border-radius: var(--prof-radius-md, 12px);
+}
+
+.atividades-professor-mode .atividades-stats {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.atividades-professor-mode .atividades-stat-card {
+  min-height: 74px;
+  padding: 13px 15px;
+  border: 1px solid var(--prof-border, #e2e8f0);
+  border-radius: var(--prof-radius-md, 12px);
+  background: var(--prof-surface, #fff);
+  box-shadow: var(--prof-shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.atividades-professor-mode .atividades-stat-icon {
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--prof-primary-soft-strong, #dbeafe);
+  border-radius: 10px;
+  background: var(--prof-primary-soft, #eff6ff);
+  color: var(--prof-primary, #2563eb);
+}
+
+.atividades-professor-mode .atividades-stat-card span {
+  color: var(--prof-text-muted, #94a3b8);
+  font-size: 10px;
+}
+
+.atividades-professor-mode .atividades-stat-card strong {
+  margin-top: 2px;
+  color: var(--prof-text, #172033);
+  font-size: 20px;
+}
+
+.atividades-professor-mode .atividades-toolbar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 190px;
+  gap: 10px;
+  margin-bottom: 12px;
+  padding: 0;
+  background: transparent;
+}
+
+.atividades-professor-mode .atividades-search,
+.atividades-professor-mode .atividades-filter {
+  min-height: 42px;
+  border: 1px solid var(--prof-border, #e2e8f0);
+  border-radius: var(--prof-radius-sm, 8px);
+  background: var(--prof-surface, #fff);
+  box-shadow: none;
+}
+
+.atividades-professor-mode .atividades-search:focus-within {
+  border-color: var(--prof-primary, #2563eb);
+  box-shadow: 0 0 0 3px var(--prof-primary-soft, #eff6ff);
+}
+
+.atividades-professor-mode .atividades-search svg {
+  color: var(--prof-text-muted, #94a3b8);
+}
+
+.atividades-professor-mode .atividades-search input,
+.atividades-professor-mode .atividades-filter {
+  color: var(--prof-text, #172033);
+  font-size: 12px;
+}
+
+.atividades-professor-mode .atividades-content {
+  overflow: hidden;
+  border: 1px solid var(--prof-border, #e2e8f0);
+  border-radius: var(--prof-radius-lg, 16px);
+  background: var(--prof-surface, #fff);
+  box-shadow: var(--prof-shadow-sm, 0 1px 2px rgba(15, 23, 42, 0.04));
+}
+
+.atividades-professor-mode .atividades-table-wrapper {
+  overflow-x: auto;
+}
+
+.atividades-professor-mode .atividades-table {
+  min-width: 860px;
+}
+
+.atividades-professor-mode .atividades-table th {
+  height: 46px;
+  padding: 0 14px;
+  border-bottom-color: var(--prof-border, #e2e8f0);
+  background: var(--prof-surface-muted, #f8fafc);
+  color: var(--prof-text-muted, #94a3b8);
+  font-size: 9.5px;
+}
+
+.atividades-professor-mode .atividades-table td {
+  padding: 13px 14px;
+  border-bottom-color: var(--prof-border, #e2e8f0);
+  color: var(--prof-text-secondary, #475569);
+  font-size: 11.5px;
+}
+
+.atividades-professor-mode .atividades-table tbody tr {
+  transition: background var(--prof-transition, 160ms ease);
+}
+
+.atividades-professor-mode .atividades-table tbody tr:hover {
+  background: var(--prof-primary-soft, #eff6ff);
+}
+
+.atividades-professor-mode .atividades-name strong {
+  color: var(--prof-text, #172033);
+  font-size: 12.5px;
+}
+
+.atividades-professor-mode .atividades-name span {
+  color: var(--prof-text-muted, #94a3b8);
+  font-size: 10px;
+}
+
+.atividades-professor-mode .atividades-student {
+  min-width: 145px;
+  gap: 8px;
+}
+
+.atividades-professor-mode .atividades-student-avatar {
+  width: 28px;
+  height: 28px;
+  flex-basis: 28px;
+  border: 1px solid var(--prof-primary-soft-strong, #dbeafe);
+  background: var(--prof-primary-soft, #eff6ff);
+  color: var(--prof-primary, #2563eb);
+}
+
+.atividades-professor-mode .atividades-category-badge,
+.atividades-professor-mode .atividades-language {
+  color: var(--prof-text-secondary, #475569);
+}
+
+.atividades-professor-mode .atividades-actions {
+  gap: 5px;
+}
+
+.atividades-professor-mode .atividades-actions button {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--prof-border, #e2e8f0);
+  border-radius: var(--prof-radius-sm, 8px);
+  background: var(--prof-surface, #fff);
+  color: var(--prof-text-secondary, #475569);
+}
+
+.atividades-professor-mode .atividades-actions button:hover {
+  border-color: var(--prof-primary-soft-strong, #dbeafe);
+  background: var(--prof-primary-soft, #eff6ff);
+  color: var(--prof-primary, #2563eb);
+}
+
+.atividades-professor-mode .atividades-empty,
+.atividades-professor-mode .atividades-loading {
+  min-height: 300px;
+  border: 0;
+  background: var(--prof-surface, #fff);
+}
+
+.atividades-professor-mode .atividades-empty-icon {
+  border-color: var(--prof-primary-soft-strong, #dbeafe);
+  background: var(--prof-primary-soft, #eff6ff);
+  color: var(--prof-primary, #2563eb);
+}
+
+@media (max-width: 900px) {
+  .atividades-professor-mode .atividades-stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .atividades-professor-mode .atividades-toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .atividades-professor-mode .atividades-header {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .atividades-professor-mode .atividades-header > .atividades-primary-button {
+    width: 100%;
+  }
+
+  .atividades-professor-mode .atividades-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .atividades-professor-mode .atividades-stat-card {
+    min-height: 68px;
+  }
+
+  .atividades-professor-mode .atividades-content {
+    border-radius: var(--prof-radius-md, 12px);
+  }
+}
+
+@media (max-width: 420px) {
+  .atividades-professor-mode .atividades-stats {
+    grid-template-columns: 1fr;
+  }
+
+  .atividades-professor-mode .atividades-title-icon {
+    width: 38px;
+    height: 38px;
+  }
+
+  .atividades-professor-mode .atividades-header h1 {
+    font-size: 21px;
+  }
+}
