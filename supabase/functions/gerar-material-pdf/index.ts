@@ -54,8 +54,8 @@ async function resolveMaterialImages(html: string, fallbackPaths: string[], admi
 
   let result = html.replace(/{{MATERIAL_IMAGE:([^}]+)}}/g, (_, rawPath) => dataUrls.get(String(rawPath).trim()) || '')
 
-  result = result.replace(/<img\\b([^>]*?)\\bsrc=(["'])((?:https?:\\/\\/|data:)[^"']*)\\2([^>]*)>/gi, (full, before, quote, src, after) => {
-    const pathMatch = full.match(/\\bdata-material-image=(["'])([^"']+)\\1/i)
+  result = result.replace(/<img\b([^>]*?)\bsrc=(["'])((?:https?:\/\/|data:)[^"']*)\2([^>]*)>/gi, (full, before, quote, src, after) => {
+    const pathMatch = full.match(/\bdata-material-image=(["'])([^"']+)\1/i)
     const path = pathMatch?.[2]?.trim()
     if (!path || !dataUrls.has(path)) return full
     return '<img' + before + 'src=' + quote + dataUrls.get(path) + quote + after + '>'
