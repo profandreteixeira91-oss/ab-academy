@@ -63,9 +63,9 @@ function isSafeUrl(value: string, kind: 'href' | 'src') {
 
 function sanitizeStyle(value: string) {
   return value
-    .replace(/url\s*\(\\s*['"]?\\s*(?:javascript:|vbscript:|data:text\/html)[^)]*\\)/gi, '')
+    .replace(/url\s*\(\s*['"]?\s*(?:javascript:|vbscript:|data:text\/html)[^)]*\)/gi, '')
     .replace(/expression\s*\(/gi, '')
-    .replace(/-moz-binding\\s*:/gi, '');
+    .replace(/-moz-binding\s*:/gi, '');
 }
 
 export function sanitizeMaterialHtml(html: string) {
