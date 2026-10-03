@@ -42,7 +42,7 @@ import {
   type EditorOperation,
   type EditorSelectionState,
 } from '../../lib/materialEditorModel'
-import { loadLocalMaterialDraft, removeLocalMaterialDraft, saveLocalMaterialDraft } from '../../lib/materialEditorDraftStore'
+import { listLocalMaterialDrafts, loadLocalMaterialDraft, removeLocalMaterialDraft, saveLocalMaterialDraft } from '../../lib/materialEditorDraftStore'
 
 type Props = { professorId: string }
 type Student = { id: string; nome_completo: string }
@@ -123,8 +123,41 @@ export default function Materiais({ professorId }: Props) {
       if (materialsResult.error) throw materialsResult.error
       if (studentsResult.error) throw studentsResult.error
 
-      setMaterials((materialsResult.data || []) as MaterialRecord[])
+      const loadedMaterials = (materialsResult.data || []) as MaterialRecord[]
+      setMaterials(loadedMaterials)
       setStudents(studentsResult.data || [])
+
+      // Se o navegador caiu antes do primeiro salvamento remoto, recuperamos
+      // automaticamente o rascunho local mais recente criado nesta sessão.
+      const localDrafts = await listLocalMaterialDrafts()
+      const orphanDraft = localDrafts.find((draft) =>
+        draft.materialId.startsWith('new-') &&
+        !loadedMaterials.some((material) => material.id === draft.materialId),
+      )
+      if (orphanDraft?.model) {
+        const recoveredHtml = editorModelToHtml(orphanDraft.model)
+        localDraftKeyRef.current = orphanDraft.materialId
+        editorVersionRef.current = orphanDraft.version
+        operationsRef.current = orphanDraft.operations || []
+        setEditor({
+          id: null,
+          titulo: orphanDraft.titulo,
+          idioma: orphanDraft.idioma,
+          conteudo_html: recoveredHtml || empty.conteudo_html,
+          imagens: [],
+          videos: [],
+          status: 'rascunho',
+        })
+        setSelected([])
+        setOpen(true)
+        setDirty(true)
+        window.setTimeout(() => {
+          if (!editorRef.current) return
+          editorRef.current.innerHTML = recoveredHtml || empty.conteudo_html
+          restoreEditorSelection(editorRef.current, orphanDraft.selection)
+        }, 0)
+        setMessage('Rascunho local recuperado automaticamente após a última sessão.')
+      }
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : 'Não foi possível carregar os materiais.')
     } finally {
