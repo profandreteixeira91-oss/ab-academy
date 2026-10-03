@@ -183,9 +183,6 @@ export default function Materiais({ professorId }: Props) {
 
     const model = domToEditorModel(editorRef.current)
     const selection = captureEditorSelection(editorRef.current)
-    const version = ++editorVersionRef.current
-    const operation = createEditorOperation('document_changed', version)
-    operationsRef.current = [...operationsRef.current, operation].slice(-200)
 
     try {
       await saveLocalMaterialDraft({
@@ -195,7 +192,7 @@ export default function Materiais({ professorId }: Props) {
         model,
         selection,
         operations: operationsRef.current,
-        version,
+        version: editorVersionRef.current,
         savedAt: new Date().toISOString(),
       })
     } catch (cause) {
@@ -389,6 +386,8 @@ export default function Materiais({ professorId }: Props) {
       const snapshot = getEditorSnapshot()
       const html = snapshot.html
       const imagePaths = snapshot.imagePaths
+      const model: EditorModelNode | null = editorRef.current ? domToEditorModel(editorRef.current) : null
+      const selection: EditorSelectionState | null = editorRef.current ? captureEditorSelection(editorRef.current) : null
 
       if (editor.id && snapshot.isEmpty && editor.conteudo_html.replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').trim()) {
         throw new Error('O conteúdo do editor não pôde ser capturado com segurança. O documento não foi alterado.')
@@ -525,6 +524,7 @@ export default function Materiais({ professorId }: Props) {
         imagens: imagePaths,
       }))
       setDirty(false)
+      if (id) await removeLocalMaterialDraft(id)
       await load(false)
 
       if (!silent) {
