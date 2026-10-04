@@ -654,7 +654,7 @@ function Aluno() {
     setSelectedExercises,
   ] = useState<Exercise[]>([])
 
-  const [_matchingOptionOrders, setMatchingOptionOrders] =
+  const [matchingOptionOrders, setMatchingOptionOrders] =
     useState<Record<string, string[]>>({})
 
   const [
@@ -4629,6 +4629,7 @@ function Aluno() {
         <ActivityModal
           activity={selectedActivity}
           exercises={selectedExercises}
+          matchingOptionOrders={matchingOptionOrders}
           answers={answers}
           loading={activityLoading}
           error={activityError}
@@ -5652,6 +5653,7 @@ function Atividades({
 type ActivityModalProps = {
   activity: Activity
   exercises: Exercise[]
+  matchingOptionOrders: Record<string, string[]>
   answers: StudentAnswer[]
   loading: boolean
   error: string
@@ -5676,6 +5678,7 @@ type ActivityModalProps = {
 function ActivityModal({
   activity,
   exercises,
+  matchingOptionOrders,
   answers,
   loading,
   error,
@@ -5838,7 +5841,7 @@ function ActivityModal({
                     ? answer.alternativaIds
                     : exercise.alternativas.map((alternative) => alternative.id)
                   const matchOptionIds =
-                    _matchingOptionOrders[exercise.id] ||
+                    matchingOptionOrders[exercise.id] ||
                     exercise.alternativas.map((alternative) => alternative.id).reverse()
                   let associationAnswers: Record<string, string> = {}
                   try {
