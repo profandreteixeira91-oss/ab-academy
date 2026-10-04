@@ -4501,3 +4501,16 @@ button.professor-stat-card:hover {
     padding-inline: 10px;
   }
 }
+
+/* EDITOR FULLSCREEN OVERRIDE */
+.professor-material-editor-page{position:fixed;inset:0;z-index:1200;width:100vw;height:100dvh;max-width:none;min-height:0;margin:0;padding:18px 24px 16px;display:flex;flex-direction:column;overflow:hidden;background:#f6f8fc}
+.professor-material-editor-header{flex:0 0 auto;min-height:0;margin-bottom:14px}
+.professor-material-editor-grid{flex:1 1 auto;min-height:0;height:auto;overflow:hidden}
+.professor-material-editor-main{min-height:0;height:100%;display:flex;flex-direction:column}
+.professor-material-editor-meta,.professor-material-toolbar{flex:0 0 auto}
+.professor-material-rich-editor{flex:1 1 auto;min-height:0;height:auto;max-height:none;margin:14px 0 0;overflow-x:auto;overflow-y:scroll;scrollbar-gutter:stable both-edges;overscroll-behavior:contain;align-items:center}
+.professor-material-editor-footer{flex:0 0 auto}
+.professor-material-editor-side{min-height:0;height:100%;overflow:hidden}
+.professor-material-side-card{position:static;height:100%;max-height:none;overflow:auto}
+@media (max-width:900px){.professor-material-editor-page{padding:14px}.professor-material-editor-grid{overflow:auto}.professor-material-editor-main{min-height:760px;height:auto}.professor-material-rich-editor{min-height:560px;height:560px;flex:0 0 560px}.professor-material-editor-side{height:auto;overflow:visible}.professor-material-side-card{height:auto}}
+@media (max-width:640px){.professor-material-editor-page{padding:10px}.professor-material-rich-editor{height:520px;flex-basis:520px}}
