@@ -4545,3 +4545,86 @@ button.professor-stat-card:hover {
   overscroll-behavior: contain;
   scrollbar-gutter: stable both-edges;
 }
+
+
+/* MATERIAIS — modo imersivo: o editor usa toda a viewport e dispensa o header do portal. */
+.professor-portal:has(.professor-material-editor-page) .professor-header {
+  display: none;
+}
+
+.professor-portal:has(.professor-material-editor-page) .professor-body {
+  min-height: 100dvh;
+  height: 100dvh;
+}
+
+.professor-material-editor-page {
+  width: 100vw;
+  max-width: none;
+}
+
+.professor-material-editor-grid {
+  position: relative;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  transition: grid-template-columns .22s ease;
+}
+
+.professor-material-editor-grid.recipients-collapsed {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.professor-material-editor-grid.recipients-collapsed .professor-material-editor-side {
+  display: none;
+}
+
+.professor-material-side-toggle,
+.professor-material-side-reopen {
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  flex: 0 0 34px;
+  padding: 0;
+  border: 1px solid #d8e2ee;
+  border-radius: 9px;
+  background: #ffffff;
+  color: #48617f;
+  cursor: pointer;
+  transition: background .16s ease, border-color .16s ease, color .16s ease, box-shadow .16s ease;
+}
+
+.professor-material-side-toggle:hover,
+.professor-material-side-reopen:hover {
+  border-color: #9fc0ee;
+  background: #edf5ff;
+  color: #1649a0;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, .10);
+}
+
+.professor-material-side-reopen {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  z-index: 8;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 48px;
+  border-radius: 10px 0 0 10px;
+  box-shadow: 0 6px 18px rgba(15, 47, 103, .12);
+}
+
+.professor-material-side-card .professor-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+@media (max-width: 900px) {
+  .professor-material-editor-grid.recipients-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .professor-material-side-reopen {
+    top: 50%;
+  }
+}
