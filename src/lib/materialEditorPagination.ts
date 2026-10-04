@@ -101,26 +101,65 @@ function createTrailingParagraph(source: HTMLParagraphElement, fragment: Documen
 
 function findCharacterBoundary(page: HTMLElement, paragraph: HTMLParagraphElement) {
   const pageBottom = page.getBoundingClientRect().bottom - 1
+  const textNodes: Text[] = []
+  const lengths: number[] = []
   const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT)
-  let node: Text | null = walker.nextNode() as Text | null
+  let node = walker.nextNode() as Text | null
+  let totalLength = 0
 
   while (node) {
-    const value = node.nodeValue || ''
-    for (let offset = 0; offset < value.length; offset += 1) {
-      const range = document.createRange()
-      range.setStart(node, offset)
-      range.setEnd(node, Math.min(offset + 1, value.length))
-      const rect = range.getBoundingClientRect()
-      range.detach()
-
-      if (rect.height > 0 && rect.bottom > pageBottom) {
-        return { node, offset }
-      }
+    const length = node.nodeValue?.length || 0
+    if (length) {
+      textNodes.push(node)
+      lengths.push(length)
+      totalLength += length
     }
     node = walker.nextNode() as Text | null
   }
 
-  return null
+  if (!totalLength) return null
+
+  const pointAt = (globalOffset: number) => {
+    let remaining = Math.max(0, globalOffset)
+    for (let index = 0; index < textNodes.length; index += 1) {
+      if (remaining <= lengths[index]) {
+        return {
+          node: textNodes[index],
+          offset: Math.min(remaining, lengths[index]),
+        }
+      }
+      remaining -= lengths[index]
+    }
+
+    const lastIndex = textNodes.length - 1
+    return {
+      node: textNodes[lastIndex],
+      offset: lengths[lastIndex],
+    }
+  }
+
+  let low = 0
+  let high = totalLength - 1
+  let firstOverflowOffset = -1
+
+  while (low <= high) {
+    const middle = Math.floor((low + high) / 2)
+    const point = pointAt(middle)
+    const range = document.createRange()
+    range.setStart(point.node, point.offset)
+    range.setEnd(point.node, Math.min(point.offset + 1, point.node.nodeValue?.length || 0))
+    const rect = range.getBoundingClientRect()
+    range.detach()
+
+    if (rect.height > 0 && rect.bottom > pageBottom) {
+      firstOverflowOffset = middle
+      high = middle - 1
+    } else {
+      low = middle + 1
+    }
+  }
+
+  return firstOverflowOffset >= 0 ? pointAt(firstOverflowOffset) : null
 }
 
 function splitParagraphToNextPage(page: HTMLElement, paragraph: HTMLParagraphElement) {
