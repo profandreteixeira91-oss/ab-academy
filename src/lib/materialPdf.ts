@@ -156,6 +156,12 @@ export function buildMaterialPdfHtml(source: HTMLElement) {
     if (path) image.setAttribute('src', `{{MATERIAL_IMAGE:${path}}}`)
   })
 
+  clone.querySelectorAll<HTMLImageElement>('.material-document-logo').forEach((image) => {
+    if (image.getAttribute('src') === '/favicon.svg') {
+      image.setAttribute('src', 'https://abacademyidiomas.com.br/favicon.svg')
+    }
+  })
+
   clone.querySelectorAll<HTMLElement>('[data-material-page-header]').forEach((header) => {
     header.removeAttribute('aria-hidden')
   })
