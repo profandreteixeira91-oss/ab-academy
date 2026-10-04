@@ -959,6 +959,7 @@ function LiveClassroom({
   livekit,
   lesson,
   onLeave,
+  onStatusChange,
 }: {
   livekit: LiveKitData
   lesson: Lesson
