@@ -1643,6 +1643,15 @@
   min-height: 42px;
 }
 
+.student-activity-progress-saved {
+  margin-right: auto;
+
+  color: var(--student-success);
+
+  font-size: 12px;
+  font-weight: 600;
+}
+
 /* =========================================================
    MODAL EMPTY / LOADING
    ========================================================= */
@@ -2248,6 +2257,10 @@
   .student-activity-modal-footer
     .student-secondary-button {
     flex: 1;
+  }
+
+  .student-activity-progress-saved {
+    flex: 0 0 100%;
   }
 }
 

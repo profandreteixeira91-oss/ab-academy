@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import { ArrowLeft, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, CircleHelp, Clock3, Loader2, Menu, RotateCcw } from 'lucide-react'
 import logo from '../assets/logo_abacademy.png'
@@ -28,6 +28,7 @@ type Content = {
 }
 type Student={id:string;nome_completo:string}
 type Result={correct:boolean;score:number;message:string}
+type ActivityDraft={answers:Record<string,unknown>;savedAt:number}
 const LANGUAGE_LABELS={ingles:'Inglês',alemao:'Alemão'}
 const EXERCISE_TYPE_LABELS:Record<ExerciseType,string>={multipla_escolha:'Múltipla escolha',multipla_resposta:'Múltiplas respostas',verdadeiro_falso:'Verdadeiro ou falso',dissertativa:'Dissertativa',resposta_curta:'Resposta curta',lacunas:'Complete as lacunas',ordenar:'Ordenar',associar:'Associar'}
 
@@ -59,6 +60,26 @@ function normalizeContent(raw: Record<string, unknown>): Content {
   }
 }
 
+function removeLocalDraftIfSaved(draftKey:string,savedAnswers:Record<string,unknown>){
+  try{
+    const rawDraft=window.localStorage.getItem(draftKey)
+    if(!rawDraft)return
+    const parsed=JSON.parse(rawDraft) as ActivityDraft|Record<string,unknown>
+    const latestAnswers='answers' in parsed&&typeof parsed.savedAt==='number'
+      ? parsed.answers
+      : parsed
+    if(JSON.stringify(latestAnswers)===JSON.stringify(savedAnswers)){
+      window.localStorage.removeItem(draftKey)
+    }
+  }catch(error){console.error('Central draft cleanup:',error)}
+}
+
+function clearLocalDraft(draftKey:string){
+  try{
+    window.localStorage.removeItem(draftKey)
+  }catch(error){console.error('Central draft cleanup:',error)}
+}
+
 function CentralAtividade(){
   const [user,setUser]=useState<User|null>(null)
   const [student,setStudent]=useState<Student|null>(null)
@@ -68,7 +89,7 @@ function CentralAtividade(){
   const [submitting,setSubmitting]=useState(false)
   const [error,setError]=useState('')
   const [result,setResult]=useState<Result|null>(null)
-  const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'>('idle')
+  const [saveState,setSaveState]=useState<'idle'|'saving'|'saved'|'error'>('idle')
   const [elapsedSeconds,setElapsedSeconds]=useState(0)
   const [startedAt,setStartedAt]=useState<number|null>(null)
   const [translation,setTranslation]=useState<Content|null>(null)
@@ -80,70 +101,226 @@ function CentralAtividade(){
   const [activityTotal,setActivityTotal]=useState<number|null>(null)
   const [studentFirstName,setStudentFirstName]=useState('Aluno')
   const answersLoadedRef=useRef(false)
+  const answersRef=useRef<Record<string,unknown>>({})
+  const submittingRef=useRef(false)
+  const saveTimerRef=useRef<number|null>(null)
+  const remoteSaveQueueRef=useRef<Promise<void>>(Promise.resolve())
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
+
+  const persistLocalDraft=useCallback((nextAnswers:Record<string,unknown>)=>{
+    if(!activityId)return
+    try{
+      const draft:ActivityDraft={answers:nextAnswers,savedAt:Date.now()}
+      window.localStorage.setItem(`ab-academy-activity-draft-${activityId}`,JSON.stringify(draft))
+    }catch(error){console.error('Central draft local save:',error)}
+  },[activityId])
+
+  const persistRemoteDraft=useCallback((nextAnswers:Record<string,unknown>):Promise<boolean>=>{
+    if(!answersLoadedRef.current||!activity||!student||!user||result||submittingRef.current)return Promise.resolve(false)
+    const currentActivity=activity
+    const currentStudent=student
+    const draftKey=`ab-academy-activity-draft-${currentActivity.id}`
+    setSaveState('saving')
+    const savePromise=remoteSaveQueueRef.current.catch(()=>undefined).then(async()=>{
+      const {error:saveError}=await supabase.from('central_respostas').upsert({
+        atividade_id:currentActivity.id,
+        aluno_id:currentStudent.id,
+        respostas:nextAnswers,
+        pontuacao:null,
+        concluida:false,
+      },{onConflict:'atividade_id,aluno_id'})
+      if(saveError){
+        console.error('Central progresso save:',saveError)
+        setSaveState('error')
+        return false
+      }
+      removeLocalDraftIfSaved(draftKey,nextAnswers)
+      setSaveState('saved')
+      return true
+    }).catch(saveError=>{
+      console.error('Central progresso save:',saveError)
+      setSaveState('error')
+      return false
+    })
+    remoteSaveQueueRef.current=savePromise.then(()=>undefined)
+    return savePromise
+  },[activity,student,user,result])
+
+  function scheduleRemoteSave(nextAnswers:Record<string,unknown>,immediate=false){
+    if(!answersLoadedRef.current||!activity||!student||!user||result||submittingRef.current)return
+    if(saveTimerRef.current!==null){
+      window.clearTimeout(saveTimerRef.current)
+      saveTimerRef.current=null
+    }
+    if(immediate){
+      void persistRemoteDraft(nextAnswers)
+      return
+    }
+    setSaveState('saving')
+    saveTimerRef.current=window.setTimeout(()=>{
+      saveTimerRef.current=null
+      void persistRemoteDraft(nextAnswers)
+    },500)
+  }
+
+  function saveProgressBeforeLeaving():Promise<boolean>{
+    if(saveTimerRef.current!==null){
+      window.clearTimeout(saveTimerRef.current)
+      saveTimerRef.current=null
+    }
+    persistLocalDraft(answersRef.current)
+    return persistRemoteDraft(answersRef.current)
+  }
+
+  function updateAnswers(nextAnswers:Record<string,unknown>|((current:Record<string,unknown>)=>Record<string,unknown>),immediate=false){
+    if(submittingRef.current)return
+    const resolved=typeof nextAnswers==='function'?nextAnswers(answersRef.current):nextAnswers
+    answersRef.current=resolved
+    setAnswers(resolved)
+    if(answersLoadedRef.current&&!result){
+      persistLocalDraft(resolved)
+      scheduleRemoteSave(resolved,immediate)
+    }
+  }
 
   useEffect(()=>{
     let mounted=true
     async function load(){
-      const {data:{session}}=await supabase.auth.getSession()
-      if(!mounted)return
-      if(!session?.user){window.location.replace('/aluno');return}
-      setUser(session.user)
-      const {data:studentData,error:studentError}=await supabase.from('alunos').select('id,nome_completo').eq('user_id',session.user.id).maybeSingle()
-      if(studentError||!studentData){setError('Não foi possível identificar o aluno.');setLoading(false);return}
-      setStudent(studentData as Student)
-      setStudentFirstName(studentData.nome_completo?.trim().split(/\s+/)[0] || 'Aluno')
-      const {data:activityData,error:activityError}=await supabase.from('central_atividades').select('id,idioma,nivel,categoria,tipo_exercicio,titulo,descricao,instrucoes,conteudo,explicacao,dificuldade,tempo_estimado').eq('id',activityId).eq('status','publicada').maybeSingle()
-      if(activityError||!activityData){setError('Atividade não encontrada ou indisponível.');setLoading(false);return}
-      const currentActivity={...(activityData as Activity),conteudo:normalizeContent((activityData as Activity).conteudo||{})}
-      setActivity(currentActivity)
-      const {data:sequence}=await supabase.from('central_atividades').select('id,titulo,created_at').eq('idioma',currentActivity.idioma).eq('nivel',currentActivity.nivel).eq('status','publicada').order('created_at',{ascending:true}).order('id',{ascending:true})
-      const {data:completedResponses}=await supabase.from('central_respostas').select('atividade_id').eq('aluno_id',studentData.id).eq('concluida',true)
-      const completedIds=new Set((completedResponses||[]).map(response=>response.atividade_id))
-      setActivityNumber(completedIds.size)
-      setActivityTotal((sequence||[]).length)
+      try{
+        const {data:{session},error:sessionError}=await supabase.auth.getSession()
+        if(sessionError)throw sessionError
+        if(!mounted)return
+        if(!session?.user){window.location.replace('/aluno');return}
+        setUser(session.user)
 
-      const availableSequence=(sequence||[]).filter(item=>!completedIds.has(item.id))
-      if(availableSequence.length){
-        const index=availableSequence.findIndex(item=>item.id===currentActivity.id)
-        if(index>=0&&availableSequence[index+1])setNextActivity({id:availableSequence[index+1].id,titulo:availableSequence[index+1].titulo})
+        const {data:studentData,error:studentError}=await supabase.from('alunos').select('id,nome_completo').eq('user_id',session.user.id).maybeSingle()
+        if(studentError)throw studentError
+        if(!studentData){setError('Não foi possível identificar o aluno.');return}
+        const currentStudent=studentData as Student
+
+        const {data:activityData,error:activityError}=await supabase.from('central_atividades').select('id,idioma,nivel,categoria,tipo_exercicio,titulo,descricao,instrucoes,conteudo,explicacao,dificuldade,tempo_estimado').eq('id',activityId).eq('status','publicada').maybeSingle()
+        if(activityError)throw activityError
+        if(!activityData){setError('Atividade não encontrada ou indisponível.');return}
+        const currentActivity={...(activityData as Activity),conteudo:normalizeContent((activityData as Activity).conteudo||{})}
+
+        const [{data:sequence,error:sequenceError},{data:completedResponses,error:completedError}]=await Promise.all([
+          supabase.from('central_atividades').select('id,titulo,created_at').eq('idioma',currentActivity.idioma).eq('nivel',currentActivity.nivel).eq('status','publicada').order('created_at',{ascending:true}).order('id',{ascending:true}),
+          supabase.from('central_respostas').select('atividade_id').eq('aluno_id',currentStudent.id).eq('concluida',true),
+        ])
+        if(sequenceError){
+          console.error('Central activity sequence load:',sequenceError)
+          setError('Não foi possível carregar a sequência completa de atividades.')
+        }
+        if(completedError){
+          console.error('Central completed activities load:',completedError)
+          setError('Não foi possível carregar seu progresso completo.')
+        }
+
+        const {data:responseData,error:responseError}=await supabase.from('central_respostas').select('respostas,pontuacao,concluida,updated_at').eq('atividade_id',activityId).eq('aluno_id',currentStudent.id).maybeSingle()
+        if(responseError)throw responseError
+        if(!mounted)return
+
+        const completedIds=new Set((completedResponses||[]).map(response=>response.atividade_id))
+        if(!completedError)setActivityNumber(completedIds.size)
+        if(!sequenceError)setActivityTotal((sequence||[]).length)
+        const availableSequence=(sequence||[]).filter(item=>!completedIds.has(item.id))
+        const sequenceIndex=availableSequence.findIndex(item=>item.id===currentActivity.id)
+        if(sequenceIndex>=0&&availableSequence[sequenceIndex+1]){
+          setNextActivity({id:availableSequence[sequenceIndex+1].id,titulo:availableSequence[sequenceIndex+1].titulo})
+        }
+
+        const draftKey=`ab-academy-activity-draft-${activityId}`
+        let localDraft:ActivityDraft|null=null
+        try{
+          const rawLocalDraft=window.localStorage.getItem(draftKey)
+          if(rawLocalDraft){
+            const parsed=JSON.parse(rawLocalDraft) as ActivityDraft|Record<string,unknown>
+            localDraft=parsed&&typeof parsed==='object'&&'answers' in parsed&&typeof parsed.savedAt==='number'
+              ? parsed as ActivityDraft
+              : {answers:parsed as Record<string,unknown>,savedAt:0}
+          }
+        }catch(storageError){
+          console.error('Central draft read:',storageError)
+        }
+
+        let start=Date.now()
+        try{
+          const storedStart=window.sessionStorage.getItem(`ab-academy-activity-start-${activityId}`)
+          const parsedStart=Number(storedStart)
+          if(storedStart&&Number.isFinite(parsedStart)&&parsedStart>0){
+            start=parsedStart
+          }else{
+            window.sessionStorage.setItem(`ab-academy-activity-start-${activityId}`,String(start))
+          }
+        }catch(storageError){
+          console.error('Central activity timer restore:',storageError)
+        }
+
+        setStudent(currentStudent)
+        setStudentFirstName(currentStudent.nome_completo?.trim().split(/\s+/)[0]||'Aluno')
+        setActivity(currentActivity)
+        setStartedAt(start)
+        setElapsedSeconds(Math.max(0,Math.floor((Date.now()-start)/1000)))
+        let restoredAnswers:Record<string,unknown>={}
+        if(responseData?.concluida){
+          clearLocalDraft(draftKey)
+          if(responseData.respostas)restoredAnswers=responseData.respostas as Record<string,unknown>
+        }else if(localDraft&&(localDraft.savedAt>=new Date(responseData?.updated_at||0).getTime())){
+          restoredAnswers=localDraft.answers
+        }else if(responseData?.respostas){
+          restoredAnswers=responseData.respostas as Record<string,unknown>
+        }else if(localDraft){
+          restoredAnswers=localDraft.answers
+        }
+        answersRef.current=restoredAnswers
+        setAnswers(restoredAnswers)
+        answersLoadedRef.current=true
+        if(responseData?.concluida){
+          const score=typeof responseData.pontuacao==='number'?responseData.pontuacao:0
+          setResult({correct:score>=100,score,message:score>=100?'Resposta correta!':'Atividade concluída. Revise a explicação.'})
+        }
+      }catch(loadError){
+        console.error('Central activity load:',loadError)
+        if(mounted)setError('Não foi possível carregar a atividade. Verifique sua conexão e tente novamente.')
+      }finally{
+        if(mounted)setLoading(false)
       }
-      const storedStart=window.sessionStorage.getItem(`ab-academy-activity-start-${activityId}`)
-      const start=storedStart ? Number(storedStart) : Date.now()
-      if(!storedStart) window.sessionStorage.setItem(`ab-academy-activity-start-${activityId}`,String(start))
-      setStartedAt(start)
-      setElapsedSeconds(Math.max(0,Math.floor((Date.now()-start)/1000)))
-      const {data:responseData}=await supabase.from('central_respostas').select('respostas,pontuacao,concluida').eq('atividade_id',activityId).eq('aluno_id',studentData.id).maybeSingle()
-      if(responseData?.respostas)setAnswers(responseData.respostas as Record<string,unknown>)
-      answersLoadedRef.current=true
-      if(responseData?.concluida&&typeof responseData.pontuacao==='number')setResult({correct:responseData.pontuacao>=100,score:responseData.pontuacao,message:responseData.pontuacao>=100?'Resposta correta!':'Atividade concluída. Revise a explicação.'})
-      setLoading(false)
     }
     void load()
     return()=>{mounted=false}
   },[activityId])
 
   useEffect(()=>{
-    if(!answersLoadedRef.current||!activity||!student||!user||result)return
-    const timer=window.setTimeout(async()=>{
-      setSaveState('saving')
-      const {error:saveError}=await supabase.from('central_respostas').upsert({
-        atividade_id:activity.id,
-        aluno_id:student.id,
-        respostas:answers,
-        pontuacao:null,
-        concluida:false,
-      },{onConflict:'atividade_id,aluno_id'})
-      if(saveError){
-        console.error(saveError)
-        setSaveState('idle')
-        return
-      }
-      setSaveState('saved')
-    },700)
-    return()=>window.clearTimeout(timer)
-  },[answers,activity,student,user,result])
+    answersRef.current=answers
+  },[answers])
 
+  useEffect(()=>{
+    if(!activity||!student||!user||result)return
+    const flushPendingRemoteSave=()=>{
+      if(saveTimerRef.current===null)return
+      window.clearTimeout(saveTimerRef.current)
+      saveTimerRef.current=null
+      void persistRemoteDraft(answersRef.current)
+    }
+    const handlePageExit=()=>{
+      persistLocalDraft(answersRef.current)
+      flushPendingRemoteSave()
+    }
+    const handleVisibilityChange=()=>{
+      if(document.visibilityState==='hidden')handlePageExit()
+    }
+    window.addEventListener('pagehide',handlePageExit)
+    window.addEventListener('beforeunload',handlePageExit)
+    window.addEventListener('blur',handlePageExit)
+    document.addEventListener('visibilitychange',handleVisibilityChange)
+    return()=>{
+      window.removeEventListener('pagehide',handlePageExit)
+      window.removeEventListener('beforeunload',handlePageExit)
+      window.removeEventListener('blur',handlePageExit)
+      document.removeEventListener('visibilitychange',handleVisibilityChange)
+      flushPendingRemoteSave()
+    }
+  },[activity,student,user,result,persistLocalDraft,persistRemoteDraft])
   useEffect(()=>{
     if(!startedAt||result)return
     const tick=window.setInterval(()=>{
@@ -161,29 +338,39 @@ function CentralAtividade(){
   function hasAnswer(){
     const a=answers.answer
     if(Array.isArray(a)) return a.some(value=>String(value||'').trim()!=='')
-    return String(a??'').trim()!==''
+    if(String(a??'').trim()!=='')return true
+    if(answers.pairs&&typeof answers.pairs==='object')return Object.values(answers.pairs as Record<string,string>).some(value=>String(value||'').trim()!=='')
+    return false
   }
 
   async function translateActivity(){
     if(!activity||!user)return
     if(translation){setTranslation(null);return}
     setTranslating(true);setTranslationError('')
-    const {data:{session}}=await supabase.auth.getSession()
-    if(!session){setTranslationError('Sua sessão expirou.');setTranslating(false);return}
-    const {data,error:translationInvokeError}=await supabase.functions.invoke('traduzir-central-atividade',{
-      body:{idioma:activity.idioma,content:activity.conteudo,target:'pt'},
-      headers:{Authorization:'Bearer '+session.access_token},
-    })
-    if(translationInvokeError||!data?.translation){
-      setTranslationError('Não foi possível traduzir agora. Tente novamente.')
-    }else{
+    try{
+      const {data:{session},error:sessionError}=await supabase.auth.getSession()
+      if(sessionError)throw sessionError
+      if(!session){
+        setTranslationError('Sua sessão expirou.')
+        return
+      }
+      const {data,error:translationInvokeError}=await supabase.functions.invoke('traduzir-central-atividade',{
+        body:{idioma:activity.idioma,content:activity.conteudo,target:'pt'},
+        headers:{Authorization:'Bearer '+session.access_token},
+      })
+      if(translationInvokeError)throw translationInvokeError
+      if(!data?.translation)throw new Error('A tradução não retornou conteúdo.')
       setTranslation(normalizeContent(data.translation as Record<string,unknown>))
+    }catch(translationError){
+      console.error('Central activity translation:',translationError)
+      setTranslationError('Não foi possível traduzir agora. Tente novamente.')
+    }finally{
+      setTranslating(false)
     }
-    setTranslating(false)
   }
-  function isCorrect(){
+  function isCorrect(answerSet=answers){
     if(!activity)return false
-    const c=activity.conteudo||{},a=answers.answer
+    const c=activity.conteudo||{},a=answerSet.answer
     switch(activity.tipo_exercicio){
       case 'multipla_escolha':return String(a||'')===String(c.correctAnswer||'')
       case 'verdadeiro_falso':{
@@ -212,12 +399,19 @@ function CentralAtividade(){
   }
 
   async function submit(){
-    if(!activity||!student||!user)return
+    if(!activity||!student||!user||submittingRef.current)return
+    submittingRef.current=true
+    const submittedAnswers=answersRef.current
     setSubmitting(true);setError('');setSaveState('saving')
     try {
+    if(saveTimerRef.current!==null){
+      window.clearTimeout(saveTimerRef.current)
+      saveTimerRef.current=null
+    }
+    await remoteSaveQueueRef.current.catch(()=>undefined)
     const auto=['multipla_escolha','multipla_resposta','verdadeiro_falso','resposta_curta','lacunas','ordenar','associar'].includes(activity.tipo_exercicio)
-    const correct=auto&&isCorrect(),score=auto?(correct?100:0):0
-    const payload={atividade_id:activity.id,aluno_id:student.id,respostas:answers,pontuacao:score,concluida:true}
+    const correct=auto&&isCorrect(submittedAnswers),score=auto?(correct?100:0):0
+    const payload={atividade_id:activity.id,aluno_id:student.id,respostas:submittedAnswers,pontuacao:score,concluida:true}
     const {data:existingResponse,error:lookupError}=await supabase
       .from('central_respostas')
       .select('id')
@@ -234,6 +428,7 @@ function CentralAtividade(){
       saveError=insertError
     }
     if(saveError){console.error('Central resposta save:',saveError);setError(`Não foi possível salvar sua resposta. ${saveError.message||''}`.trim());setSubmitting(false);return}
+    clearLocalDraft(`ab-academy-activity-draft-${activity.id}`)
     setResult({correct,score,message:auto?(correct?'Muito bem! Você acertou a atividade.':'Resposta registrada. Revise a explicação e tente novamente.'): 'Resposta registrada para análise.'})
     setSaveState('saved')
     } catch (e) {
@@ -242,22 +437,44 @@ function CentralAtividade(){
       setSaveState('idle')
     } finally {
       setSubmitting(false)
+      submittingRef.current=false
     }
   }
 
   function goNext(){window.location.href=nextActivity?`/aluno/central/atividade/${nextActivity.id}`:'/aluno/central'}
+
+  async function cancelActivity(){
+    if(submittingRef.current)return
+    setError('')
+    setSubmitting(true)
+    const savePromise=saveProgressBeforeLeaving()
+    submittingRef.current=true
+    try{
+      const saved=await savePromise
+      if(saved){
+        window.location.assign('/aluno/central')
+        return
+      }
+      setError('Não foi possível salvar suas respostas no servidor. Elas foram mantidas neste dispositivo; verifique sua conexão e tente novamente.')
+    }finally{
+      submittingRef.current=false
+      setSubmitting(false)
+    }
+  }
   function toggleMultiple(id:string){
-    const current=Array.isArray(answers.answer)?answers.answer as string[]:[]
-    setAnswers({...answers,answer:current.includes(id)?current.filter(x=>x!==id):[...current,id]})
+    updateAnswers(currentAnswers=>{
+      const current=Array.isArray(currentAnswers.answer)?currentAnswers.answer as string[]:[]
+      return {...currentAnswers,answer:current.includes(id)?current.filter(x=>x!==id):[...current,id]}
+    })
   }
 
   function moveOrder(index:number,direction:-1|1){
     if(!activity)return
-    const current=Array.isArray(answers.answer)?[...(answers.answer as string[])]:[...(activity.conteudo.sentences||[])]
+    const current=Array.isArray(answersRef.current.answer)?[...(answersRef.current.answer as string[])]:[...(activity.conteudo.sentences||[])]
     const target=index+direction
     if(target<0||target>=current.length)return
     ;[current[index],current[target]]=[current[target],current[index]]
-    setAnswers({...answers,answer:current})
+    updateAnswers(currentAnswers=>({...currentAnswers,answer:current}))
   }
 
   function renderExercise(contentOverride?:Content){
@@ -269,14 +486,14 @@ function CentralAtividade(){
       const options = activity.tipo_exercicio === 'verdadeiro_falso' && !(c.options||[]).length
         ? [{id:'true',text:'Verdadeiro'},{id:'false',text:'Falso'}]
         : (c.options||[])
-      return <div className="central-options">{options.map(o=><label key={o.id} className={answers.answer===o.id?'central-option selected':'central-option'}><input type="radio" name="answer" checked={answers.answer===o.id} onChange={()=>setAnswers({...answers,answer:o.id})}/><span>{o.text}</span></label>)}</div>
+      return <div className="central-options">{options.map(o=><label key={o.id} className={answers.answer===o.id?'central-option selected':'central-option'}><input type="radio" name="answer" checked={answers.answer===o.id} disabled={submitting} onChange={()=>updateAnswers(currentAnswers=>({...currentAnswers,answer:o.id}),true)}/><span>{o.text}</span></label>)}</div>
     }
-    if(activity.tipo_exercicio==='multipla_resposta')return <div className="central-options">{(c.options||[]).map(o=>{const selected=Array.isArray(answers.answer)&&answers.answer.includes(o.id);return <label key={o.id} className={selected?'central-option selected':'central-option'}><input type="checkbox" checked={selected} onChange={()=>toggleMultiple(o.id)}/><span>{o.text}</span></label>})}</div>
-    if(activity.tipo_exercicio==='resposta_curta')return <input className="central-answer-input" value={String(answers.answer||'')} onChange={e=>setAnswers({...answers,answer:e.target.value})} placeholder="Digite sua resposta..."/>
-    if(activity.tipo_exercicio==='dissertativa')return <textarea className="central-answer-textarea" value={String(answers.answer||'')} onChange={e=>setAnswers({...answers,answer:e.target.value})} placeholder="Escreva sua resposta..." rows={7}/>
-    if(activity.tipo_exercicio==='lacunas')return <div className="central-blanks">{(c.blanks||[]).map((b,i)=><input key={b.id} className="central-answer-input" value={Array.isArray(answers.answer)?String(answers.answer[i]||''):''} onChange={e=>{const v=Array.isArray(answers.answer)?[...(answers.answer as string[])]:[];v[i]=e.target.value;setAnswers({...answers,answer:v})}} placeholder={`Resposta ${i+1}`}/>)}</div>
-    if(activity.tipo_exercicio==='ordenar'){const items=Array.isArray(answers.answer)?answers.answer as string[]:[...(c.sentences||[])];return <div className="central-order-list">{items.map((item,i)=><div key={item+i} className="central-order-item"><span>{i+1}</span><strong>{item}</strong><div><button type="button" onClick={()=>moveOrder(i,-1)} disabled={i===0}>↑</button><button type="button" onClick={()=>moveOrder(i,1)} disabled={i===items.length-1}>↓</button></div></div>)}</div>}
-    if(activity.tipo_exercicio==='associar')return <div className="central-pairs">{(c.pairs||[]).map(p=><div key={p.id} className="central-pair"><span>{p.left}</span><select value={String((answers.pairs as Record<string,string>|undefined)?.[p.id]||'')} onChange={e=>setAnswers({...answers,pairs:{...(answers.pairs as Record<string,string>|undefined),[p.id]:e.target.value}})}><option value="">Selecione</option>{(c.pairs||[]).map(x=><option key={x.id} value={x.right}>{x.right}</option>)}</select></div>)}</div>
+    if(activity.tipo_exercicio==='multipla_resposta')return <div className="central-options">{(c.options||[]).map(o=>{const selected=Array.isArray(answers.answer)&&answers.answer.includes(o.id);return <label key={o.id} className={selected?'central-option selected':'central-option'}><input type="checkbox" checked={selected} disabled={submitting} onChange={()=>toggleMultiple(o.id)}/><span>{o.text}</span></label>})}</div>
+    if(activity.tipo_exercicio==='resposta_curta')return <input className="central-answer-input" value={String(answers.answer||'')} disabled={submitting} onChange={e=>updateAnswers(currentAnswers=>({...currentAnswers,answer:e.target.value}))} onBlur={()=>scheduleRemoteSave(answersRef.current,true)} placeholder="Digite sua resposta..."/>
+    if(activity.tipo_exercicio==='dissertativa')return <textarea className="central-answer-textarea" value={String(answers.answer||'')} disabled={submitting} onChange={e=>updateAnswers(currentAnswers=>({...currentAnswers,answer:e.target.value}))} onBlur={()=>scheduleRemoteSave(answersRef.current,true)} placeholder="Escreva sua resposta..." rows={7}/>
+    if(activity.tipo_exercicio==='lacunas')return <div className="central-blanks">{(c.blanks||[]).map((b,i)=><input key={b.id} className="central-answer-input" disabled={submitting} value={Array.isArray(answers.answer)?String(answers.answer[i]||''):''} onChange={e=>{const v=Array.isArray(answersRef.current.answer)?[...(answersRef.current.answer as string[])]:[];v[i]=e.target.value;updateAnswers(currentAnswers=>({...currentAnswers,answer:v}))}} placeholder={`Resposta ${i+1}`}/>)}</div>
+    if(activity.tipo_exercicio==='ordenar'){const items=Array.isArray(answers.answer)?answers.answer as string[]:[...(c.sentences||[])];return <div className="central-order-list">{items.map((item,i)=><div key={item+i} className="central-order-item"><span>{i+1}</span><strong>{item}</strong><div><button type="button" onClick={()=>moveOrder(i,-1)} disabled={submitting||i===0}>↑</button><button type="button" onClick={()=>moveOrder(i,1)} disabled={submitting||i===items.length-1}>↓</button></div></div>)}</div>}
+    if(activity.tipo_exercicio==='associar')return <div className="central-pairs">{(c.pairs||[]).map(p=><div key={p.id} className="central-pair"><span>{p.left}</span><select value={String((answers.pairs as Record<string,string>|undefined)?.[p.id]||'')} disabled={submitting} onChange={e=>updateAnswers(currentAnswers=>({...currentAnswers,pairs:{...(currentAnswers.pairs as Record<string,string>|undefined),[p.id]:e.target.value}}),true)}><option value="">Selecione</option>{(c.pairs||[]).map(x=><option key={x.id} value={x.right}>{x.right}</option>)}</select></div>)}</div>
     return <div className="central-unsupported"><CircleHelp size={22}/>Este tipo de atividade ainda não está disponível.</div>
   }
 
@@ -357,11 +574,11 @@ function CentralAtividade(){
             </div>
           </div>
           {error&&<div className="central-form-error">{error}</div>}
-          {!result&&<div className="central-save-status">{saveState==='saving'?<><Loader2 size={14} className="central-activity-spin"/> Salvando seu progresso...</>:saveState==='saved'?<><CheckCircle2 size={14}/> Progresso salvo</>:<span>Seu progresso será salvo automaticamente.</span>}</div>}
+          {!result&&<div className="central-save-status">{saveState==='saving'?<><Loader2 size={14} className="central-activity-spin"/> Salvando seu progresso...</>:saveState==='saved'?<><CheckCircle2 size={14}/> Progresso salvo</>:saveState==='error'?<span>Não foi possível sincronizar. Seu rascunho permanece salvo neste dispositivo.</span>:<span>Seu progresso será salvo automaticamente.</span>}</div>}
           {result?<div className={result.correct?'central-result success':'central-result'}>
 <div className="central-result-hero"><div className="central-result-icon">{result.correct?<CheckCircle2 size={25}/>:<CircleHelp size={25}/>}</div><div className="central-result-copy"><span>{result.correct?'Muito bem!':'Atividade concluída'}</span><strong>{result.message}</strong></div><div className="central-result-score"><strong>{result.score}</strong><span>/100</span></div></div>
 {activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}
-<div className="central-result-actions"><button type="button" className="central-secondary-button" onClick={()=>{setAnswers({});setResult(null);setSaveState("idle");window.sessionStorage.removeItem(`ab-academy-activity-start-${activity.id}`);const start=Date.now();window.sessionStorage.setItem(`ab-academy-activity-start-${activity.id}`,String(start));setStartedAt(start);setElapsedSeconds(0)}}><RotateCcw size={17}/>Refazer</button><div className="central-result-next">{nextActivity?<><span>PRÓXIMA NA SEQUÊNCIA</span><strong>{nextActivity.titulo}</strong></>:<span>Você chegou ao final desta sequência.</span>}</div><button type="button" className="central-primary-button" onClick={goNext}>{nextActivity?<>Próxima atividade <ArrowRight size={18}/></>:<>Voltar para a Central <ArrowRight size={18}/></>}</button></div></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
+<div className="central-result-actions"><button type="button" className="central-secondary-button" onClick={()=>{clearLocalDraft(`ab-academy-activity-draft-${activity.id}`);updateAnswers({});setResult(null);setSaveState("idle");window.sessionStorage.removeItem(`ab-academy-activity-start-${activity.id}`);const start=Date.now();window.sessionStorage.setItem(`ab-academy-activity-start-${activity.id}`,String(start));setStartedAt(start);setElapsedSeconds(0)}}><RotateCcw size={17}/>Refazer</button><div className="central-result-next">{nextActivity?<><span>PRÓXIMA NA SEQUÊNCIA</span><strong>{nextActivity.titulo}</strong></>:<span>Você chegou ao final desta sequência.</span>}</div><button type="button" className="central-primary-button" onClick={goNext}>{nextActivity?<>Próxima atividade <ArrowRight size={18}/></>:<>Voltar para a Central <ArrowRight size={18}/></>}</button></div></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>void cancelActivity()} disabled={submitting}>{submitting?<><Loader2 size={16} className="central-activity-spin"/>Salvando...</>:<><ChevronLeft size={18}/>Cancelar e salvar</>}</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
         </section>
       </div>
     </main>

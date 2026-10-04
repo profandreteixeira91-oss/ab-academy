@@ -25,6 +25,7 @@ import {
   CreditCard,
   QrCode,
   Copy,
+  Save,
   CheckCircle2 as PaymentCheck,
   AlertCircle,
   Send,
@@ -560,6 +561,12 @@ function Aluno() {
 
   const [answers, setAnswers] =
     useState<StudentAnswer[]>([])
+
+  const [savingActivityProgress, setSavingActivityProgress] =
+    useState(false)
+
+  const [activityProgressSaved, setActivityProgressSaved] =
+    useState(false)
 
   const [
     submittingActivity,
@@ -2258,6 +2265,7 @@ function Aluno() {
         activity,
       )
 
+      setActivityProgressSaved(false)
       setActivityLoading(true)
       setActivityError('')
       setSelectedExercises([])
@@ -2526,7 +2534,7 @@ function Aluno() {
   }
 
   function closeActivity() {
-    if (submittingActivity) {
+    if (submittingActivity || savingActivityProgress) {
       return
     }
 
@@ -2534,12 +2542,15 @@ function Aluno() {
     setSelectedExercises([])
     setAnswers([])
     setActivityError('')
+    setActivityProgressSaved(false)
   }
 
   function updateTextAnswer(
     exerciseId: string,
     value: string,
   ) {
+    setActivityError('')
+    setActivityProgressSaved(false)
     setAnswers((current) =>
       current.map(
         (answer) =>
@@ -2559,6 +2570,8 @@ function Aluno() {
     exercise: Exercise,
     alternativeId: string,
   ) {
+    setActivityError('')
+    setActivityProgressSaved(false)
     setAnswers((current) =>
       current.map((answer) => {
         if (
@@ -2601,6 +2614,138 @@ function Aluno() {
         }
       }),
     )
+  }
+
+  async function saveActivityProgress() {
+    if (
+      !selectedActivity ||
+      !user ||
+      submittingActivity ||
+      savingActivityProgress
+    ) {
+      return
+    }
+
+    const answerRows = selectedExercises.map((exercise) => {
+      const answer = getAnswer(exercise.id)
+      const isObjective = isObjectiveType(exercise.tipo)
+
+      return {
+        atividade_id: selectedActivity.id,
+        exercicio_id: exercise.id,
+        resposta_texto: isObjective
+          ? answer.alternativaIds.length > 0 &&
+            !isSingleChoiceType(exercise.tipo)
+            ? JSON.stringify(answer.alternativaIds)
+            : null
+          : answer.respostaTexto || null,
+        alternativa_id:
+          isObjective && isSingleChoiceType(exercise.tipo)
+            ? answer.alternativaIds[0] || null
+            : null,
+      }
+    })
+
+    const hasAnyAnswer = answerRows.some((row) =>
+      row.alternativa_id ||
+      (row.resposta_texto && row.resposta_texto.trim().length > 0),
+    )
+
+    try {
+      setSavingActivityProgress(true)
+      setActivityError('')
+      setActivityProgressSaved(false)
+
+      const studentId = await getStudentId(user.id)
+      const { data: currentAnswers, error: currentAnswersError } = await supabase
+        .from('respostas_aluno')
+        .select('id, exercicio_id')
+        .eq('atividade_id', selectedActivity.id)
+        .eq('aluno_id', studentId)
+
+      if (currentAnswersError) {
+        throw currentAnswersError
+      }
+
+      if (!hasAnyAnswer && (currentAnswers || []).length === 0) {
+        setActivityError('Responda ao menos um exercício antes de salvar o progresso.')
+        return
+      }
+
+      const existingAnswers = new Map(
+        (currentAnswers || []).map((answer) => [
+          answer.exercicio_id,
+          answer.id,
+        ]),
+      )
+      const updates: PromiseLike<{ error: { message: string } | null }>[] = []
+      const inserts: Array<{
+        atividade_id: string
+        exercicio_id: string
+        aluno_id: string
+        resposta_texto: string | null
+        alternativa_id: string | null
+        pontuacao: null
+        feedback: null
+        corrigida: false
+      }> = []
+
+      for (const row of answerRows) {
+        const existingId = existingAnswers.get(row.exercicio_id)
+        const hasAnswer =
+          Boolean(row.alternativa_id) ||
+          Boolean(row.resposta_texto?.trim())
+
+        if (existingId) {
+          updates.push(
+            supabase
+              .from('respostas_aluno')
+              .update({
+                resposta_texto: row.resposta_texto,
+                alternativa_id: row.alternativa_id,
+              })
+              .eq('id', existingId)
+              .eq('atividade_id', selectedActivity.id)
+              .eq('aluno_id', studentId),
+          )
+        } else if (hasAnswer) {
+          inserts.push({
+            ...row,
+            aluno_id: studentId,
+            pontuacao: null,
+            feedback: null,
+            corrigida: false,
+          })
+        }
+      }
+
+      const updateResults = await Promise.all(updates)
+      const failedUpdate = updateResults.find((result) => result.error)
+      if (failedUpdate?.error) {
+        throw failedUpdate.error
+      }
+
+      if (inserts.length > 0) {
+        const { error: insertError } = await supabase
+          .from('respostas_aluno')
+          .insert(inserts)
+
+        if (insertError) {
+          throw insertError
+        }
+      }
+
+      setActivityProgressSaved(true)
+    } catch (error) {
+      console.error('Erro ao salvar o progresso da atividade:', error)
+      setActivityError(
+        error instanceof Error
+          ? error.message
+          : 'Não foi possível salvar seu progresso. Tente novamente.',
+      )
+    } finally {
+      setSavingActivityProgress(false)
+    }
   }
 
   function getAnswer(
@@ -2648,7 +2793,7 @@ function Aluno() {
   }
 
   async function submitActivity() {
-    if (!selectedActivity || !user) {
+    if (!selectedActivity || !user || savingActivityProgress) {
       return
     }
 
@@ -2747,7 +2892,8 @@ function Aluno() {
                 studentId,
               resposta_texto:
                 isObjectiveType(exercise.tipo)
-                  ? answer.alternativaIds.length > 1
+                  ? answer.alternativaIds.length > 0 &&
+                    !isSingleChoiceType(exercise.tipo)
                     ? JSON.stringify(
                         answer.alternativaIds,
                       )
@@ -4308,9 +4454,12 @@ function Aluno() {
           loading={activityLoading}
           error={activityError}
           submitting={submittingActivity}
+          savingProgress={savingActivityProgress}
+          progressSaved={activityProgressSaved}
           onClose={closeActivity}
           onTextChange={updateTextAnswer}
           onAlternativeChange={toggleAlternative}
+          onSaveProgress={saveActivityProgress}
           onSubmit={submitActivity}
           onNextActivity={openNextActivity}
           hasNextActivity={
@@ -5328,6 +5477,8 @@ type ActivityModalProps = {
   loading: boolean
   error: string
   submitting: boolean
+  savingProgress: boolean
+  progressSaved: boolean
   onClose: () => void
   onTextChange: (
     exerciseId: string,
@@ -5337,6 +5488,7 @@ type ActivityModalProps = {
     exercise: Exercise,
     alternativeId: string,
   ) => void
+  onSaveProgress: () => void
   onSubmit: () => void
   onNextActivity?: () => void
   hasNextActivity?: boolean
@@ -5349,9 +5501,12 @@ function ActivityModal({
   loading,
   error,
   submitting,
+  savingProgress,
+  progressSaved,
   onClose,
   onTextChange,
   onAlternativeChange,
+  onSaveProgress,
   onSubmit,
   onNextActivity,
   hasNextActivity = false,
@@ -5365,6 +5520,7 @@ function ActivityModal({
       'em_correcao' ||
     activity.status ===
       'corrigida'
+  const activityBusy = submitting || savingProgress
 
   return (
     <div
@@ -5417,7 +5573,7 @@ function ActivityModal({
             type="button"
             className="student-modal-close"
             onClick={onClose}
-            disabled={submitting}
+            disabled={activityBusy}
           >
             <X size={20} />
           </button>
@@ -5604,7 +5760,7 @@ function ActivityModal({
                                       : ''
                                   }`}
                                   disabled={
-                                    readOnly
+                                    readOnly || activityBusy
                                   }
                                   onClick={() =>
                                     onAlternativeChange(
@@ -5645,10 +5801,10 @@ function ActivityModal({
                             answer.respostaTexto
                           }
                           disabled={
-                            readOnly
+                            readOnly || activityBusy
                           }
                           placeholder={
-                            readOnly
+                            readOnly || activityBusy
                               ? 'Resposta enviada'
                               : 'Digite sua resposta...'
                           }
@@ -5689,6 +5845,15 @@ function ActivityModal({
               exercises.length >
                 0 && (
                 <div className="student-activity-modal-footer">
+                  {progressSaved && (
+                    <span
+                      className="student-activity-progress-saved"
+                      role="status"
+                    >
+                      Progresso salvo.
+                    </span>
+                  )}
+
                   <button
                     type="button"
                     className="student-secondary-button"
@@ -5696,10 +5861,32 @@ function ActivityModal({
                       onClose
                     }
                     disabled={
-                      submitting
+                      activityBusy
                     }
                   >
                     Cancelar
+                  </button>
+
+                  <button
+                    type="button"
+                    className="student-secondary-button"
+                    onClick={onSaveProgress}
+                    disabled={activityBusy}
+                  >
+                    {savingProgress ? (
+                      <>
+                        <Loader2
+                          size={17}
+                          className="student-spin"
+                        />
+                        Salvando...
+                      </>
+                    ) : (
+                      <>
+                        <Save size={17} />
+                        Salvar progresso
+                      </>
+                    )}
                   </button>
 
                   <button
@@ -5709,7 +5896,7 @@ function ActivityModal({
                       onSubmit
                     }
                     disabled={
-                      submitting
+                      activityBusy
                     }
                   >
                     {submitting ? (
