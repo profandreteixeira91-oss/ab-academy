@@ -1,4 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react'
 import {
   Bold,
   Italic,
@@ -1255,7 +1256,16 @@ export default function Materiais({ professorId }: Props) {
               </select>
             </div>
 
-            <div className="professor-material-toolbar" onMouseDown={(event) => event.preventDefault()}>
+            <div
+              className="professor-material-toolbar"
+              onMouseDown={(event) => {
+                // Preserve a text selection when clicking formatting buttons,
+                // but never block native controls such as the format/font selects.
+                if ((event.target as HTMLElement).closest('button')) {
+                  event.preventDefault()
+                }
+              }}
+            >
               <div className="professor-material-toolbar-group">
                 <button type="button" onClick={() => exec('undo')} title="Desfazer"><Undo2 size={17} /></button>
                 <button type="button" onClick={() => exec('redo')} title="Refazer"><Redo2 size={17} /></button>
@@ -1307,6 +1317,35 @@ export default function Materiais({ professorId }: Props) {
               data-material-language={editor.idioma}
               suppressContentEditableWarning
               onInput={() => sync('input')}
+              onKeyDown={(event: ReactKeyboardEvent<HTMLDivElement>) => {
+                if (event.key !== 'Enter' || event.shiftKey) return
+
+                const selection = window.getSelection()
+                if (!selection || !selection.rangeCount || !selection.isCollapsed) return
+
+                const anchor = selection.anchorNode
+                const element = anchor instanceof Element ? anchor : anchor?.parentElement
+                const quote = element?.closest('blockquote')
+
+                if (!(quote instanceof HTMLElement) || !editorRef.current?.contains(quote)) return
+
+                // Enter inside a citation means "finish citation and continue".
+                // Shift+Enter remains available for a line break inside the citation.
+                event.preventDefault()
+
+                const paragraph = document.createElement('p')
+                paragraph.innerHTML = '<br />'
+                quote.parentNode?.insertBefore(paragraph, quote.nextSibling)
+
+                const range = document.createRange()
+                range.setStart(paragraph, 0)
+                range.collapse(true)
+                selection.removeAllRanges()
+                selection.addRange(range)
+
+                sync('quote:continue')
+                updateActiveTable()
+              }}
               onKeyUp={() => {
                 saveSelection()
                 updateActiveTable()
