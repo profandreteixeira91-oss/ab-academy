@@ -339,9 +339,10 @@ export async function generateMaterialPdf(
         },
         // Paginação vem do layout/CSS do documento; o gerador não define margens
         // nem cria a geometria das páginas.
+        // O documento já chega ao gerador com a paginação calculada pelo editor.
+        // html2pdf apenas captura o layout final; CSS continua sendo a fonte visual.
         pagebreak: {
           mode: ['css'],
-          avoid: ['img', 'tr', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'li'],
         },
       })
       .from(page)
