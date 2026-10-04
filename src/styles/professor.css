@@ -4390,8 +4390,9 @@ button.professor-stat-card:hover {
    ========================================================= */
 .professor-material-rich-editor {
   width: 100%;
-  min-height: 1179px;
-  height: min(1179px, calc(100vh - 310px));
+  min-height: min(1179px, calc(100vh - 310px));
+  max-height: calc(100vh - 310px);
+  height: auto;
   margin: 18px 0 0;
   padding: 28px 0 34px;
   border: 0;
