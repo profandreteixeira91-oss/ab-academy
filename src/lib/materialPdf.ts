@@ -202,10 +202,19 @@ async function inlineImages(container: HTMLElement) {
   )
 }
 
-// A4 = 595.28 x 841.89 pt. A largura útil é calculada a partir das margens do PDF,
-// mantendo a proporção CSS de 96 DPI usada pelo html2canvas.
-const PAGE_MARGIN_PT: [number, number, number, number] = [40, 36, 40, 36]
-const PAGE_CONTENT_WIDTH_PX = Math.round((595.28 - PAGE_MARGIN_PT[1] - PAGE_MARGIN_PT[3]) * (96 / 72))
+// A4 em CSS a 96 DPI. A página do exportador é a própria folha A4; as
+// margens ficam dentro dela, evitando a combinação de "folha A4 + margens do PDF"
+// que fazia o conteúdo disputar espaço vertical com o cabeçalho.
+const A4_WIDTH_PT = 595.28
+const A4_HEIGHT_PT = 841.89
+const PDF_MARGIN_PT = { top: 40, right: 36, bottom: 40, left: 36 }
+const PAGE_WIDTH_PX = Math.round(A4_WIDTH_PT * (96 / 72))
+const PAGE_HEIGHT_PX = Math.round(A4_HEIGHT_PT * (96 / 72))
+const PAGE_CONTENT_WIDTH_PX = Math.round((A4_WIDTH_PT - PDF_MARGIN_PT.left - PDF_MARGIN_PT.right) * (96 / 72))
+const PAGE_PADDING_TOP_PX = Math.round(PDF_MARGIN_PT.top * (96 / 72))
+const PAGE_PADDING_RIGHT_PX = Math.round(PDF_MARGIN_PT.right * (96 / 72))
+const PAGE_PADDING_BOTTOM_PX = Math.round(PDF_MARGIN_PT.bottom * (96 / 72))
+const PAGE_PADDING_LEFT_PX = Math.round(PDF_MARGIN_PT.left * (96 / 72))
 
 // Navegadores limitam o tamanho de um canvas (altura ~16-32 mil px, área ~16 milhões de px
 // no Safari/iOS). Acima disso o canvas sai em branco. A escala é reduzida para documentos longos.
@@ -213,7 +222,7 @@ const MAX_CANVAS_PIXELS = 4_000_000
 const MAX_CANVAS_SIDE = 4_096
 
 function pickScale(contentHeightPx: number) {
-  const byArea = Math.sqrt(MAX_CANVAS_PIXELS / (PAGE_CONTENT_WIDTH_PX * Math.max(contentHeightPx, 1)))
+  const byArea = Math.sqrt(MAX_CANVAS_PIXELS / (PAGE_WIDTH_PX * Math.max(contentHeightPx, 1)))
   const bySide = MAX_CANVAS_SIDE / Math.max(contentHeightPx, 1)
   return Math.max(0.25, Math.min(2, byArea, bySide))
 }
@@ -239,11 +248,13 @@ export async function generateMaterialPdf(
   stage.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none;'
 
   const page = document.createElement('article')
-  page.style.width = `${PAGE_CONTENT_WIDTH_PX}px`
+  page.style.width = `${PAGE_WIDTH_PX}px`
+  page.style.minHeight = `${PAGE_HEIGHT_PX}px`
   page.style.boxSizing = 'border-box'
-  page.style.padding = '0'
+  page.style.padding = `${PAGE_PADDING_TOP_PX}px ${PAGE_PADDING_RIGHT_PX}px ${PAGE_PADDING_BOTTOM_PX}px ${PAGE_PADDING_LEFT_PX}px`
   page.style.margin = '0'
   page.style.background = '#ffffff'
+  page.style.overflow = 'visible'
 
   if (visualDocument) {
     const documentClone = cloneWithComputedStyles(visualDocument)
@@ -332,15 +343,15 @@ export async function generateMaterialPdf(
 
     const worker = html2pdf()
       .set({
-        margin: PAGE_MARGIN_PT,
+        margin: 0,
         filename: title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() + '.pdf',
         image: { type: 'jpeg', quality: 0.96 },
         enableLinks: true,
         html2canvas: {
           scale: pickScale(contentHeight),
-          width: PAGE_CONTENT_WIDTH_PX,
-          height: contentHeight,
-          windowWidth: PAGE_CONTENT_WIDTH_PX,
+          width: PAGE_WIDTH_PX,
+          height: Math.max(contentHeight, PAGE_HEIGHT_PX),
+          windowWidth: PAGE_WIDTH_PX,
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,
