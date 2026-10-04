@@ -31,7 +31,7 @@ import {
 import { supabase } from '../../lib/supabase'
 import MaterialViewer, { type MaterialRecord } from '../../components/MaterialViewer'
 import { cacheMaterialImage, resolveMaterialImage } from '../../lib/materialImageCache'
-import { generateMaterialPdf } from '../../lib/materialPdf'
+import { buildMaterialPdfHtml, generateMaterialPdf } from '../../lib/materialPdf'
 import {
   captureEditorSelection,
   createEditorOperation,
@@ -234,12 +234,21 @@ export default function Materiais({ professorId }: Props) {
 
   // Injeta o conteúdo salvo no editor assim que ele é montado. Substitui os antigos
   // setTimeout(0), que podiam disparar antes do React montar o editor e deixar a página vazia.
-  function scheduleMaterialPagination() {
+  function scheduleMaterialPagination(selectionToRestore: EditorSelectionState | null = null) {
     if (!editorRef.current) return
     if (paginationFrameRef.current !== null) cancelAnimationFrame(paginationFrameRef.current)
     paginationFrameRef.current = requestAnimationFrame(() => {
       paginationFrameRef.current = null
-      if (editorRef.current) paginateMaterialEditor(editorRef.current)
+      if (!editorRef.current) return
+      paginateMaterialEditor(editorRef.current)
+      if (selectionToRestore) {
+        try {
+          restoreEditorSelection(editorRef.current, selectionToRestore)
+        } catch (cause) {
+          console.warn('Não foi possível restaurar o cursor após a paginação:', cause)
+        }
+      }
+      saveSelection()
     })
   }
 
@@ -248,12 +257,7 @@ export default function Materiais({ professorId }: Props) {
     const { html, selection } = pendingContentRef.current
     pendingContentRef.current = null
     editorRef.current.innerHTML = html
-    scheduleMaterialPagination()
-    try {
-      restoreEditorSelection(editorRef.current, selection)
-    } catch (cause) {
-      console.warn('Não foi possível restaurar o cursor:', cause)
-    }
+    scheduleMaterialPagination(selection)
   }, [open, loading])
 
   useEffect(() => {
@@ -1297,7 +1301,8 @@ export default function Materiais({ professorId }: Props) {
             <div
               ref={editorRef}
               className="professor-material-rich-editor"
-              contentEditable
+              contentEditable={false}
+              data-material-language={editor.idioma}
               suppressContentEditableWarning
               onInput={() => sync('input')}
               onKeyUp={() => {
