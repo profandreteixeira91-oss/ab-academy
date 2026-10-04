@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { ArrowLeft, Download, Loader2, X } from 'lucide-react'
+import { ArrowLeft, FileText, Loader2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { resolveMaterialImage } from '../lib/materialImageCache'
 import { generateMaterialPdf } from '../lib/materialPdf'
@@ -161,33 +161,6 @@ async function waitForImages(root: HTMLElement) {
 
 // Gera o PDF a partir do MESMO elemento que está sendo exibido no visualizador
 // (mesmo HTML, mesmas classes de estilo, mesmo idioma no cabeçalho) e dispara o download.
-async function downloadVisibleAsPdf(
-  element: HTMLElement,
-  header: HTMLElement | null,
-  title: string,
-  language: string,
-  visualDocument: HTMLElement | null,
-) {
-  if (document.fonts?.ready) await document.fonts.ready
-  if (header) await waitForImages(header)
-  await waitForImages(element)
-
-  const pdfBlob = await generateMaterialPdf(title, language, element, header, visualDocument)
-  if (pdfBlob.size < 1024) {
-    throw new Error('O PDF gerado está vazio ou inválido.')
-  }
-
-  const objectUrl = URL.createObjectURL(pdfBlob)
-  const link = document.createElement('a')
-  link.href = objectUrl
-  link.download = `${title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() || 'material'}.pdf`
-  link.style.display = 'none'
-  document.body.appendChild(link)
-  link.click()
-  link.remove()
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
-}
-
 export default function MaterialViewer({ material, allowDownload = true, onClose }: Props) {
   const documentRef = useRef<HTMLElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
@@ -195,8 +168,7 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
   const [loading, setLoading] = useState(true)
   const [contentHtml, setContentHtml] = useState('')
   const [contentError, setContentError] = useState('')
-  const [downloading, setDownloading] = useState(false)
-
+  
   const language = material.idioma === 'ingles'
     ? 'Inglês'
     : material.idioma === 'alemao'
@@ -281,34 +253,7 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
     }
   }, [loading, contentHtml])
 
-  async function handleDownload() {
-    const element = contentRef.current
-    if (!element) {
-      setContentError('O conteúdo ainda não está pronto para download.')
-      return
-    }
 
-    setDownloading(true)
-    setContentError('')
-
-    try {
-      await downloadVisibleAsPdf(
-        element,
-        headerRef.current,
-        material.titulo,
-        language,
-        documentRef.current,
-      )
-    } catch (error) {
-      setContentError(
-        error instanceof Error
-          ? error.message
-          : 'Não foi possível baixar o PDF.',
-      )
-    } finally {
-      setDownloading(false)
-    }
-  }
 
   return (
     <div className="material-viewer">
@@ -320,15 +265,15 @@ export default function MaterialViewer({ material, allowDownload = true, onClose
         )}
 
         <div className="material-viewer-actions">
-          {allowDownload && !loading && (
-            <button
-              type="button"
+          {allowDownload && !loading && pdfUrl && (
+            <a
               className="material-viewer-download"
-              disabled={downloading}
-              onClick={() => void handleDownload()}
+              href={pdfUrl}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <Download size={17} /> {downloading ? 'Baixando...' : 'Baixar PDF'}
-            </button>
+              <FileText size={17} /> Visualizar PDF
+            </a>
           )}
 
           {onClose && (
