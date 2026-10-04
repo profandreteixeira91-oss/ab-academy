@@ -442,6 +442,7 @@ function Aluno() {
   const [showAuthPassword, setShowAuthPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showPasswordConfirmation, setShowPasswordConfirmation] = useState(false)
+  const resetPasswordInputIntentRef = useRef(false)
 
   const [authPassword, setAuthPassword] =
     useState('')
@@ -2143,6 +2144,7 @@ function Aluno() {
           setLoading(false)
           setAuthError('')
           setAuthInfo('Crie uma nova senha para continuar.')
+          resetPasswordInputIntentRef.current = false
           setAuthPassword('')
           setAuthPasswordConfirmation('')
           setAuthStep('reset-password')
@@ -3253,7 +3255,19 @@ function Aluno() {
                   id="student-reset-password"
                   type={showNewPassword ? 'text' : 'password'}
                   value={authPassword}
+                  name="abacademy-new-password"
+                  onKeyDown={() => {
+                    resetPasswordInputIntentRef.current = true
+                  }}
+                  onPaste={() => {
+                    resetPasswordInputIntentRef.current = true
+                  }}
                   onChange={(event) => {
+                    if (!resetPasswordInputIntentRef.current) {
+                      event.currentTarget.value = ''
+                      setAuthPassword('')
+                      return
+                    }
                     setAuthPassword(event.target.value)
                     setAuthError('')
                   }}
@@ -3271,7 +3285,19 @@ function Aluno() {
                   id="student-reset-confirmation"
                   type={showPasswordConfirmation ? 'text' : 'password'}
                   value={authPasswordConfirmation}
+                  name="abacademy-new-password-confirmation"
+                  onKeyDown={() => {
+                    resetPasswordInputIntentRef.current = true
+                  }}
+                  onPaste={() => {
+                    resetPasswordInputIntentRef.current = true
+                  }}
                   onChange={(event) => {
+                    if (!resetPasswordInputIntentRef.current) {
+                      event.currentTarget.value = ''
+                      setAuthPasswordConfirmation('')
+                      return
+                    }
                     setAuthPasswordConfirmation(event.target.value)
                     setAuthError('')
                   }}
