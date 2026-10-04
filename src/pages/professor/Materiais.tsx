@@ -43,6 +43,7 @@ import {
   type EditorSelectionState,
 } from '../../lib/materialEditorModel'
 import { listLocalMaterialDrafts, loadLocalMaterialDraft, removeLocalMaterialDraft, saveLocalMaterialDraft } from '../../lib/materialEditorDraftStore'
+import { paginateMaterialEditor, stripMaterialPaginationForPersistence } from '../../lib/materialEditorPagination'
 
 type Props = { professorId: string }
 type Student = { id: string; nome_completo: string }
@@ -102,6 +103,7 @@ export default function Materiais({ professorId }: Props) {
   const operationsRef = useRef<EditorOperation[]>([])
   const localDraftKeyRef = useRef<string>('')
   const localAutosaveTimerRef = useRef<number | null>(null)
+  const paginationFrameRef = useRef<number | null>(null)
 
   // Refs que sempre refletem o estado mais recente (evitam closures velhas no autosave).
   const dirtyRef = useRef(false)
@@ -232,17 +234,43 @@ export default function Materiais({ professorId }: Props) {
 
   // Injeta o conteúdo salvo no editor assim que ele é montado. Substitui os antigos
   // setTimeout(0), que podiam disparar antes do React montar o editor e deixar a página vazia.
+  function scheduleMaterialPagination() {
+    if (!editorRef.current) return
+    if (paginationFrameRef.current !== null) cancelAnimationFrame(paginationFrameRef.current)
+    paginationFrameRef.current = requestAnimationFrame(() => {
+      paginationFrameRef.current = null
+      if (editorRef.current) paginateMaterialEditor(editorRef.current)
+    })
+  }
+
   useLayoutEffect(() => {
     if (!open || loading || !editorRef.current || !pendingContentRef.current) return
     const { html, selection } = pendingContentRef.current
     pendingContentRef.current = null
     editorRef.current.innerHTML = html
+    scheduleMaterialPagination()
     try {
       restoreEditorSelection(editorRef.current, selection)
     } catch (cause) {
       console.warn('Não foi possível restaurar o cursor:', cause)
     }
   }, [open, loading])
+
+  useEffect(() => {
+    if (!open) return
+    scheduleMaterialPagination()
+    const editor = editorRef.current
+    if (!editor) return
+    const observer = new ResizeObserver(() => scheduleMaterialPagination())
+    observer.observe(editor)
+    return () => {
+      observer.disconnect()
+      if (paginationFrameRef.current !== null) {
+        cancelAnimationFrame(paginationFrameRef.current)
+        paginationFrameRef.current = null
+      }
+    }
+  }, [open])
 
   function markChanged() {
     editorVersionRef.current += 1
@@ -291,10 +319,15 @@ export default function Materiais({ professorId }: Props) {
     }
   }
 
+  function getPersistenceEditor() {
+    return editorRef.current ? stripMaterialPaginationForPersistence(editorRef.current) : null
+  }
+
   function sync(operationType = 'document_changed') {
-    const html = editorRef.current?.innerHTML || editor.conteudo_html
-    if (editorRef.current) {
-      const model = domToEditorModel(editorRef.current)
+    const htmlSource = getPersistenceEditor()
+    const html = htmlSource?.innerHTML || editor.conteudo_html
+    if (htmlSource) {
+      const model = domToEditorModel(htmlSource)
       const selection = captureEditorSelection(editorRef.current)
       const version = ++editorVersionRef.current
       operationsRef.current = [
@@ -313,6 +346,7 @@ export default function Materiais({ professorId }: Props) {
       }).catch((cause) => console.error('Falha no autosave local do material:', cause))
     }
     setEditor((value) => ({ ...value, conteudo_html: html }))
+    scheduleMaterialPagination()
     dirtyRef.current = true
     setDirty(true)
     saveSelection()
@@ -541,7 +575,7 @@ export default function Materiais({ professorId }: Props) {
       // (com placeholders, sem URLs assinadas que expiram). Nós DOM do editor visível
       // carregam referências internas do React e nunca devem ir para o Supabase.
       let model: EditorModelNode | null = null
-      if (editorRef.current) {
+      if (html) {
         const detachedEditor = document.createElement('div')
         detachedEditor.innerHTML = html
         model = domToEditorModel(detachedEditor)
@@ -1265,12 +1299,17 @@ export default function Materiais({ professorId }: Props) {
               onKeyUp={() => {
                 saveSelection()
                 updateActiveTable()
+                scheduleMaterialPagination()
               }}
               onMouseUp={() => {
                 saveSelection()
                 updateActiveTable()
+                scheduleMaterialPagination()
               }}
-              onFocus={updateActiveTable}
+              onFocus={() => {
+                updateActiveTable()
+                scheduleMaterialPagination()
+              }}
             />
 
             <div className="professor-material-editor-footer">
