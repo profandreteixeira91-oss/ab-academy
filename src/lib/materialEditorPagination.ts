@@ -193,29 +193,10 @@ function moveOverflowingParagraph(page: HTMLElement, paragraph: HTMLParagraphEle
   return nextParagraph
 }
 
-function restoreSelection(range: Range | null) {
-  if (!range) return
-  const selection = window.getSelection()
-  if (!selection) return
-
-  try {
-    if (!range.commonAncestorContainer.isConnected) return
-    selection.removeAllRanges()
-    selection.addRange(range)
-  } catch {
-    // A seleção pode deixar de ser válida quando um bloco é dividido.
-  }
-}
-
-function focusEditorPage(page: HTMLElement, range: Range | null) {
-  if (!range) return
-  page.focus({ preventScroll: true })
-  restoreSelection(range)
-}
-
 function rebuildPages(editor: HTMLElement, nodes: Node[]) {
-  // A seleção é preservada pelo modelo do editor (Materiais.tsx). Um Range DOM
-  // capturado aqui pode apontar para um nó desconectado após a divisão do parágrafo.
+  // A paginação é uma projeção visual do fluxo lógico. Os nós continuam sendo
+  // os mesmos nós do documento e o editor raiz continua sendo o único editing host.
+  // As páginas são apenas containers de layout; nunca recebem contenteditable.
   Array.from(editor.children).filter(isPage).forEach((page) => page.remove())
 
   const pages: HTMLElement[] = []
@@ -236,16 +217,18 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
   const contentChildren = (page: HTMLElement) =>
     Array.from(page.childNodes).filter((child) => !isPageHeader(child))
 
-  const splitParagraph = (page: HTMLElement, paragraph: HTMLParagraphElement) => {
+  const splitParagraphAcrossPages = (page: HTMLElement, paragraph: HTMLParagraphElement) => {
     let pageCursor = page
     let paragraphCursor = paragraph
 
-    for (let guard = 0; !fitsPage(pageCursor) && guard < 1000; guard += 1) {
+    for (let guard = 0; guard < 1000 && !fitsPage(pageCursor); guard += 1) {
       const before = paragraphCursor.textContent?.length || 0
       const trailing = splitParagraphToNextPage(pageCursor, paragraphCursor)
       if (!trailing) break
 
       const after = paragraphCursor.textContent?.length || 0
+      // Não houve progresso: normalmente é um bloco indivisível (ex.: uma imagem
+      // ou uma palavra sem ponto de quebra). Deixamos esse bloco inteiro no fluxo.
       if (after >= before) break
 
       const nextPage = createNextPage()
@@ -257,29 +240,36 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
     return pageCursor
   }
 
-  nodes.forEach((node) => {
+  const placeNode = (node: Node) => {
     currentPage.appendChild(node)
 
     if (fitsPage(currentPage)) return
 
     const children = contentChildren(currentPage)
 
+    // Um bloco normal que não cabe junto aos anteriores começa na página seguinte.
+    // Isso evita criar uma página parcialmente vazia e reproduz o fluxo do Word.
     if (children.length > 1) {
       currentPage.removeChild(node)
       const nextPage = createNextPage()
       nextPage.appendChild(node)
 
       if (node instanceof HTMLParagraphElement && !fitsPage(nextPage)) {
-        currentPage = splitParagraph(nextPage, node)
+        currentPage = splitParagraphAcrossPages(nextPage, node)
       }
       return
     }
 
+    // Se o próprio bloco é maior que uma página, só parágrafos podem ser
+    // fragmentados. Tabelas, imagens e outros blocos permanecem íntegros.
     if (node instanceof HTMLParagraphElement) {
-      currentPage = splitParagraph(currentPage, node)
+      currentPage = splitParagraphAcrossPages(currentPage, node)
     }
-  })
+  }
 
+  nodes.forEach(placeNode)
+
+  // Nunca deixa uma folha vazia no final.
   if (pages.length > 1 && !hasVisibleContent(pages[pages.length - 1])) {
     pages[pages.length - 1].remove()
     pages.pop()
