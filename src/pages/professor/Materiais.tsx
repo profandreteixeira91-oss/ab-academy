@@ -654,8 +654,10 @@ export default function Materiais({ professorId }: Props) {
         setMessage('Gerando o PDF final da publicação...')
 
         let pdfPath = ''
+        paginateMaterialEditor(editorRef.current)
+        const renderHtml = buildMaterialPdfHtml(editorRef.current)
         const { data: serverPdf, error: serverPdfError } = await supabase.functions.invoke('gerar-material-pdf', {
-          body: { material_id: currentId },
+          body: { material_id: currentId, render_html: renderHtml },
         })
 
         if (!serverPdfError && typeof serverPdf?.pdf_path === 'string' && serverPdf.pdf_path) {
