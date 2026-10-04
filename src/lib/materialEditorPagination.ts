@@ -252,12 +252,14 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
     if (!hasPreviousContent && node instanceof HTMLParagraphElement) {
       let currentParagraph = node
       let currentPage = page
-      let guard = 0
 
-      while (!fitsPage(currentPage) && guard < 1000) {
-        guard += 1
+      while (!fitsPage(currentPage)) {
+        const previousLength = currentParagraph.textContent?.length || 0
         const trailingParagraph = splitParagraphToNextPage(currentPage, currentParagraph)
         if (!trailingParagraph) break
+
+        const currentLength = currentParagraph.textContent?.length || 0
+        if (currentLength >= previousLength) break
 
         const nextPage = createNextPage()
         nextPage.appendChild(trailingParagraph)
@@ -278,12 +280,14 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
     if (!fitsPage(nextPage) && node instanceof HTMLParagraphElement) {
       let currentParagraph = node
       let currentPage = nextPage
-      let guard = 0
 
-      while (!fitsPage(currentPage) && guard < 1000) {
-        guard += 1
+      while (!fitsPage(currentPage)) {
+        const previousLength = currentParagraph.textContent?.length || 0
         const trailingParagraph = splitParagraphToNextPage(currentPage, currentParagraph)
         if (!trailingParagraph) break
+
+        const currentLength = currentParagraph.textContent?.length || 0
+        if (currentLength >= previousLength) break
 
         const followingPage = createNextPage()
         followingPage.appendChild(trailingParagraph)
