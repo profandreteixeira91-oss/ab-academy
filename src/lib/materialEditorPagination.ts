@@ -69,8 +69,7 @@ function createPage(editor: HTMLElement, isFirstPage: boolean) {
   const page = document.createElement('section')
   page.className = 'material-html-document ' + MATERIAL_PAGE_CLASS
   page.setAttribute(PAGE_ATTR, 'true')
-  page.setAttribute('contenteditable', 'true')
-  page.setAttribute('role', 'textbox')
+  // O editor raiz permanece como único editing host para manter cursor e seleção estáveis entre páginas.
   page.setAttribute('dir', 'ltr')
   page.style.direction = 'ltr'
   page.style.unicodeBidi = 'normal'
@@ -215,9 +214,8 @@ function focusEditorPage(page: HTMLElement, range: Range | null) {
 }
 
 function rebuildPages(editor: HTMLElement, nodes: Node[]) {
-  const selection = window.getSelection()
-  const activeRange = selection?.rangeCount ? selection.getRangeAt(0).cloneRange() : null
-
+  // A seleção é preservada pelo modelo do editor (Materiais.tsx). Um Range DOM
+  // capturado aqui pode apontar para um nó desconectado após a divisão do parágrafo.
   Array.from(editor.children).filter(isPage).forEach((page) => page.remove())
 
   const pages: HTMLElement[] = []
@@ -290,8 +288,6 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
   pages.forEach((page, index) => {
     page.dataset.pageNumber = String(index + 1)
   })
-
-  requestAnimationFrame(() => restoreSelection(activeRange))
 
   return pages
 }

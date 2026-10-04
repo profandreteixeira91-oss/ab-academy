@@ -1985,8 +1985,9 @@ button.professor-stat-card:hover {
   z-index: 950;
   width: auto;
   max-width: none;
+  height: calc(100vh - 48px);
   max-height: calc(100vh - 48px);
-  overflow: auto;
+  overflow: hidden;
   padding: 30px 32px 40px;
   border: 1px solid #dbe3ec;
   border-radius: 18px;
@@ -4388,11 +4389,11 @@ button.professor-stat-card:hover {
    As páginas são elementos reais do editor. A paginação é
    apenas visual e nunca é persistida no conteúdo do material.
    ========================================================= */
-.professor-material-rich-editor {
+ .professor-material-rich-editor {
   width: 100%;
-  min-height: min(1179px, calc(100vh - 310px));
+  height: calc(100vh - 310px);
+  min-height: 420px;
   max-height: calc(100vh - 310px);
-  height: auto;
   margin: 18px 0 0;
   padding: 28px 0 34px;
   border: 0;
@@ -4400,8 +4401,9 @@ button.professor-stat-card:hover {
   outline: none;
   box-sizing: border-box;
   overflow-x: auto;
-  overflow-y: auto;
+  overflow-y: scroll;
   overscroll-behavior: contain;
+  scrollbar-gutter: stable;
   display: flex;
   flex-direction: column;
   align-items: center;
