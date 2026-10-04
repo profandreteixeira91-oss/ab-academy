@@ -454,7 +454,8 @@ export default function Materiais({ professorId }: Props) {
   }
 
   function serializeEditorHtml() {
-    const source = editorRef.current?.innerHTML ?? editor.conteudo_html
+    const persistenceEditor = getPersistenceEditor()
+    const source = persistenceEditor?.innerHTML ?? editor.conteudo_html
     const wrapper = document.createElement('div')
     wrapper.innerHTML = source
 
