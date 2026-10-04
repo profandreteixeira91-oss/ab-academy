@@ -120,6 +120,49 @@ function normalizeRoot(element: HTMLElement) {
   element.style.outline = 'none'
 }
 
+export function buildMaterialPdfHtml(source: HTMLElement) {
+  const clone = cloneWithComputedStyles(source)
+  normalizeRoot(clone)
+  clone.removeAttribute('contenteditable')
+  clone.querySelectorAll('[contenteditable]').forEach((element) => {
+    element.removeAttribute('contenteditable')
+  })
+
+  clone.style.display = 'block'
+  clone.style.width = '794px'
+  clone.style.minHeight = '0'
+  clone.style.margin = '0'
+  clone.style.padding = '0'
+  clone.style.background = '#ffffff'
+  clone.style.overflow = 'visible'
+  clone.style.gap = '0'
+
+  const pages = clone.querySelectorAll<HTMLElement>('[data-material-page]')
+  pages.forEach((page, index) => {
+    page.style.width = '794px'
+    page.style.height = '1123px'
+    page.style.minHeight = '1123px'
+    page.style.maxHeight = '1123px'
+    page.style.margin = '0'
+    page.style.boxSizing = 'border-box'
+    page.style.overflow = 'hidden'
+    page.style.breakAfter = index === pages.length - 1 ? 'auto' : 'page'
+    page.style.pageBreakAfter = index === pages.length - 1 ? 'auto' : 'always'
+    page.style.boxShadow = 'none'
+  })
+
+  clone.querySelectorAll<HTMLImageElement>('img[data-material-image]').forEach((image) => {
+    const path = image.getAttribute('data-material-image')?.trim()
+    if (path) image.setAttribute('src', `{{MATERIAL_IMAGE:${path}}}`)
+  })
+
+  clone.querySelectorAll<HTMLElement>('[data-material-page-header]').forEach((header) => {
+    header.removeAttribute('aria-hidden')
+  })
+
+  return clone.innerHTML
+}
+
 // Cabeçalho padrão (logo + título), usado quando nenhum cabeçalho é informado,
 // por exemplo na publicação gerada a partir do editor.
 function createDefaultHeader(language: string) {
@@ -295,17 +338,27 @@ export async function generateMaterialPdf(
     body.style.background = 'transparent'
     body.style.overflow = 'visible'
 
-    // O editor usa espaçadores temporários para materializar a folha seguinte.
-    // No PDF o espaçador vira apenas uma quebra de página: o espaço visual entre
-    // folhas não pode consumir altura do conteúdo capturado.
-    body.querySelectorAll<HTMLElement>('[data-material-pagination-spacer]').forEach((spacer) => {
-      const next = spacer.nextElementSibling
-      if (next instanceof HTMLElement) {
-        next.style.breakBefore = 'page'
-        next.style.pageBreakBefore = 'always'
-      }
-      spacer.remove()
-    })
+    const paginatedPages = body.querySelectorAll<HTMLElement>('[data-material-page]')
+    if (paginatedPages.length) {
+      body.style.display = 'block'
+      body.style.width = '794px'
+      body.style.padding = '0'
+      body.style.background = 'transparent'
+      body.style.gap = '0'
+
+      paginatedPages.forEach((currentPage, index) => {
+        currentPage.style.width = '794px'
+        currentPage.style.height = '1123px'
+        currentPage.style.minHeight = '1123px'
+        currentPage.style.maxHeight = '1123px'
+        currentPage.style.margin = '0'
+        currentPage.style.boxSizing = 'border-box'
+        currentPage.style.overflow = 'hidden'
+        currentPage.style.boxShadow = 'none'
+        currentPage.style.breakAfter = index === paginatedPages.length - 1 ? 'auto' : 'page'
+        currentPage.style.pageBreakAfter = index === paginatedPages.length - 1 ? 'auto' : 'always'
+      })
+    }
 
     // Compatibilidade com documentos ainda renderizados pelo mecanismo anterior.
     body.querySelectorAll<HTMLElement>('[data-material-pagination-offset]').forEach((element) => {
