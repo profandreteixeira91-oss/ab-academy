@@ -4115,6 +4115,21 @@ button.professor-stat-card:hover {
 }
 
 /* A paginação visual é derivada do DOM pelo editor; o CSS define apenas a folha A4 e seu design. */
+.professor-material-rich-editor {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      #ffffff 0,
+      #ffffff 1123px,
+      #eef2f7 1123px,
+      #eef2f7 1151px,
+      #ffffff 1151px,
+      #ffffff 2274px
+    );
+  background-size: 100% 1151px;
+  background-attachment: local;
+}
+
 .professor-material-rich-editor > p,
 .professor-material-rich-editor > h1,
 .professor-material-rich-editor > h2,
