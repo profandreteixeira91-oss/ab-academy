@@ -101,10 +101,6 @@ function createTrailingBlock(source: HTMLElement, fragment: DocumentFragment) {
   return next
 }
 
-function createTrailingParagraph(source: HTMLParagraphElement, fragment: DocumentFragment) {
-  return createTrailingBlock(source, fragment) as HTMLParagraphElement
-}
-
 function isSplittableTextBlock(node: Node): node is HTMLElement {
   return (
     node instanceof HTMLElement &&
@@ -208,10 +204,6 @@ function splitBlockToNextPage(page: HTMLElement, block: HTMLElement) {
   trailingRange.detach()
 
   return createTrailingBlock(block, fragment)
-}
-
-function splitParagraphToNextPage(page: HTMLElement, paragraph: HTMLParagraphElement) {
-  return splitBlockToNextPage(page, paragraph) as HTMLParagraphElement | null
 }
 
 function rebuildPages(editor: HTMLElement, nodes: Node[]) {
