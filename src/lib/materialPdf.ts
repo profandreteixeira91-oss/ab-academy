@@ -261,6 +261,23 @@ export async function generateMaterialPdf(
     documentClone.style.maxWidth = 'none'
     documentClone.style.overflow = 'visible'
 
+    // O editor visual é uma folha A4 para edição, portanto seus estilos de tela
+    // (min-height, padding e margem externa) não podem ser reaplicados como uma
+    // segunda página dentro do A4 do PDF. Mantemos apenas um espaçamento interno
+    // compacto para separar o conteúdo do cabeçalho sem consumir outra folha.
+    const editorClone = documentClone.querySelector<HTMLElement>('.professor-material-rich-editor')
+    if (editorClone) {
+      editorClone.style.width = '100%'
+      editorClone.style.minHeight = '0'
+      editorClone.style.height = 'auto'
+      editorClone.style.margin = '0'
+      editorClone.style.padding = '28px 36px 32px'
+      editorClone.style.border = '0'
+      editorClone.style.borderRadius = '0'
+      editorClone.style.boxShadow = 'none'
+      editorClone.style.overflow = 'visible'
+    }
+
     documentClone.querySelectorAll<HTMLElement>('img, tr').forEach((element) => {
       element.style.breakInside = 'avoid'
       element.style.pageBreakInside = 'avoid'
