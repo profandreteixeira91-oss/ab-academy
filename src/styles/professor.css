@@ -4391,6 +4391,7 @@ button.professor-stat-card:hover {
 .professor-material-rich-editor {
   width: 100%;
   min-height: 1179px;
+  height: min(1179px, calc(100vh - 310px));
   margin: 18px 0 0;
   padding: 28px 0 34px;
   border: 0;
@@ -4398,7 +4399,8 @@ button.professor-stat-card:hover {
   outline: none;
   box-sizing: border-box;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   display: flex;
   flex-direction: column;
   align-items: center;
