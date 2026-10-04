@@ -4352,3 +4352,118 @@ button.professor-stat-card:hover {
   .professor-material-rich-editor h2 { font-size: 16pt; }
   .professor-material-rich-editor h3 { font-size: 13pt; }
 }
+
+
+/* =========================================================
+   MATERIAIS — EDITOR PAGINADO A4
+   As páginas são elementos reais do editor. A paginação é
+   apenas visual e nunca é persistida no conteúdo do material.
+   ========================================================= */
+.professor-material-rich-editor {
+  width: 100%;
+  min-height: 1179px;
+  margin: 18px 0 0;
+  padding: 28px 0 34px;
+  border: 0;
+  border-radius: 12px;
+  outline: none;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: visible;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+  background: #f1f4f8;
+  box-shadow: none;
+  color: #172033;
+}
+
+.professor-material-rich-editor .material-editor-a4-page {
+  position: relative;
+  flex: 0 0 1123px;
+  width: 794px;
+  height: 1123px;
+  min-height: 1123px;
+  max-height: 1123px;
+  box-sizing: border-box;
+  overflow: hidden;
+  padding: 36px 60px 54px;
+  border: 1px solid #dbe5f0;
+  border-radius: 0;
+  outline: none;
+  background: #fff;
+  color: #172033;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.78;
+  box-shadow: 0 6px 20px rgba(15, 47, 103, .10);
+  caret-color: #1649a0;
+}
+
+.professor-material-rich-editor .material-editor-a4-page:focus {
+  border-color: #9fc0ee;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .07), 0 6px 20px rgba(15, 47, 103, .10);
+}
+
+.professor-material-rich-editor .material-editor-a4-page .material-document-header {
+  margin-bottom: 24px;
+}
+
+.professor-material-rich-editor .material-editor-a4-page > .material-document-header {
+  flex: 0 0 auto;
+}
+
+.professor-material-rich-editor .material-editor-a4-page > p:first-of-type {
+  margin-top: 0;
+}
+
+.professor-material-rich-editor .material-editor-a4-page > *:last-child:not(.material-document-header) {
+  margin-bottom: 0;
+}
+
+.professor-material-rich-editor .material-editor-a4-page > p,
+.professor-material-rich-editor .material-editor-a4-page > h1,
+.professor-material-rich-editor .material-editor-a4-page > h2,
+.professor-material-rich-editor .material-editor-a4-page > h3,
+.professor-material-rich-editor .material-editor-a4-page > h4,
+.professor-material-rich-editor .material-editor-a4-page > h5,
+.professor-material-rich-editor .material-editor-a4-page > h6,
+.professor-material-rich-editor .material-editor-a4-page > blockquote,
+.professor-material-rich-editor .material-editor-a4-page > ul,
+.professor-material-rich-editor .material-editor-a4-page > ol,
+.professor-material-rich-editor .material-editor-a4-page > img,
+.professor-material-rich-editor .material-editor-a4-page > table,
+.professor-material-rich-editor .material-editor-a4-page > pre,
+.professor-material-rich-editor .material-editor-a4-page > hr {
+  max-width: 100%;
+}
+
+.professor-material-rich-editor .material-editor-a4-page img {
+  max-width: 100%;
+  height: auto;
+}
+
+.professor-material-rich-editor .material-editor-a4-page table {
+  max-width: 100%;
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.professor-material-rich-editor .material-editor-a4-page [data-material-page-header] {
+  user-select: none;
+  cursor: default;
+}
+
+@media (max-width: 900px) {
+  .professor-material-rich-editor {
+    align-items: flex-start;
+    padding-inline: 16px;
+  }
+}
+
+@media (max-width: 640px) {
+  .professor-material-rich-editor {
+    padding-inline: 10px;
+  }
+}
