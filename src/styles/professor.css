@@ -4514,3 +4514,34 @@ button.professor-stat-card:hover {
 .professor-material-side-card{position:static;height:100%;max-height:none;overflow:auto}
 @media (max-width:900px){.professor-material-editor-page{padding:14px}.professor-material-editor-grid{overflow:auto}.professor-material-editor-main{min-height:760px;height:auto}.professor-material-rich-editor{min-height:560px;height:560px;flex:0 0 560px}.professor-material-editor-side{height:auto;overflow:visible}.professor-material-side-card{height:auto}}
 @media (max-width:640px){.professor-material-editor-page{padding:10px}.professor-material-rich-editor{height:520px;flex-basis:520px}}
+
+
+/* MATERIAIS — viewport estável: o cabeçalho do editor não participa da rolagem do documento. */
+.professor-material-editor-header {
+  position: relative;
+  z-index: 5;
+  flex: 0 0 auto;
+  min-height: 0;
+  background: #f6f8fc;
+}
+
+.professor-material-editor-grid {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.professor-material-editor-main {
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.professor-material-rich-editor {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-x: auto;
+  overflow-y: scroll;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable both-edges;
+}
