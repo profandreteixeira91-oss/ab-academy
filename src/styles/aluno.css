@@ -2390,6 +2390,12 @@
   }
 }
 
+@media (max-width: 900px) {
+  .student-header {
+    display: flex !important;
+  }
+}
+
 /* =========================================================
    SMALL MOBILE
    ========================================================= */
@@ -5335,7 +5341,6 @@ body {
   .student-brand img {
     width: 100%;
     max-width: 178px;
-    max-height: 58px;
   }
 
   .student-navigation {

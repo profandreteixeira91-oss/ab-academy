@@ -372,7 +372,7 @@ function App() {
    */
 
   if (path === '/aluno') {
-    return <><MobileSystemHeader title={pageHeaderTitle} /><Aluno /></>
+    return <Aluno />
   }
 
   /*
