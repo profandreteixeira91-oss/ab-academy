@@ -4089,6 +4089,16 @@ button.professor-stat-card:hover {
   line-height: 1.78;
   box-shadow: inset 0 0 0 1px rgba(255,255,255,.7);
   caret-color: #1649a0;
+  box-sizing: border-box;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      #ffffff 0,
+      #ffffff 1121px,
+      #dbe5f0 1121px,
+      #dbe5f0 1123px
+    );
+  background-attachment: local;
 }
 
 .professor-material-rich-editor:focus {
@@ -4104,21 +4114,7 @@ button.professor-stat-card:hover {
   margin-bottom: 0;
 }
 
-/* Paginação visual A4: a folha permanece contínua para não corromper
-   seleção/undo do contenteditable, enquanto as linhas de corte coincidem
-   exatamente com 1123px (A4 a 96dpi). */
-.professor-material-rich-editor {
-  background:
-    repeating-linear-gradient(
-      to bottom,
-      #ffffff 0,
-      #ffffff 1121px,
-      #dbe5f0 1121px,
-      #dbe5f0 1123px
-    );
-  background-attachment: local;
-}
-
+/* A paginação visual é derivada do DOM pelo editor; o CSS define apenas a folha A4 e seu design. */
 .professor-material-rich-editor > p,
 .professor-material-rich-editor > h1,
 .professor-material-rich-editor > h2,
@@ -4129,11 +4125,18 @@ button.professor-stat-card:hover {
 .professor-material-rich-editor > blockquote,
 .professor-material-rich-editor > ul,
 .professor-material-rich-editor > ol,
-.professor-material-rich-editor > img {
+.professor-material-rich-editor > img,
+.professor-material-rich-editor > table,
+.professor-material-rich-editor > pre {
   break-inside: avoid;
   page-break-inside: avoid;
   orphans: 3;
   widows: 3;
+}
+
+.professor-material-rich-editor [data-material-pagination-offset] {
+  break-before: page;
+  page-break-before: always;
 }
 
 .professor-material-rich-editor h1,
