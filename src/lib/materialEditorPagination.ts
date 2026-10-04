@@ -90,8 +90,8 @@ function fitsPage(page: HTMLElement) {
   return page.scrollHeight <= page.clientHeight + 1
 }
 
-function createTrailingParagraph(source: HTMLParagraphElement, fragment: DocumentFragment) {
-  const next = source.cloneNode(false) as HTMLParagraphElement
+function createTrailingBlock(source: HTMLElement, fragment: DocumentFragment) {
+  const next = source.cloneNode(false) as HTMLElement
   next.appendChild(fragment)
 
   if (!next.textContent?.trim() && !next.querySelector('br,img,a')) {
@@ -101,17 +101,40 @@ function createTrailingParagraph(source: HTMLParagraphElement, fragment: Documen
   return next
 }
 
+function createTrailingParagraph(source: HTMLParagraphElement, fragment: DocumentFragment) {
+  return createTrailingBlock(source, fragment) as HTMLParagraphElement
+}
+
+function isSplittableTextBlock(node: Node): node is HTMLElement {
+  return (
+    node instanceof HTMLElement &&
+    ['P', 'DIV', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6'].includes(node.tagName)
+  )
+}
+
+function normalizeLogicalNodes(nodes: Node[]) {
+  return nodes.flatMap((node) => {
+    if (node instanceof Text && node.textContent?.trim()) {
+      const paragraph = document.createElement('p')
+      paragraph.textContent = node.textContent
+      return [paragraph]
+    }
+
+    return [node]
+  })
+}
+
 function getPageContentBottom(page: HTMLElement) {
   const styles = window.getComputedStyle(page)
   const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0
   return page.getBoundingClientRect().top + page.clientHeight - paddingBottom - 1
 }
 
-function findCharacterBoundary(page: HTMLElement, paragraph: HTMLParagraphElement) {
+function findCharacterBoundary(page: HTMLElement, block: HTMLElement) {
   const pageBottom = getPageContentBottom(page)
   const textNodes: Text[] = []
   const lengths: number[] = []
-  const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT)
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT)
   let node = walker.nextNode() as Text | null
   let totalLength = 0
 
@@ -170,19 +193,25 @@ function findCharacterBoundary(page: HTMLElement, paragraph: HTMLParagraphElemen
   return firstOverflowOffset >= 0 ? pointAt(firstOverflowOffset) : null
 }
 
-function splitParagraphToNextPage(page: HTMLElement, paragraph: HTMLParagraphElement) {
-  const boundary = findCharacterBoundary(page, paragraph)
-  if (!boundary || (boundary.node === paragraph.firstChild && boundary.offset === 0)) {
-    return null
-  }
+function splitBlockToNextPage(page: HTMLElement, block: HTMLElement) {
+  const boundary = findCharacterBoundary(page, block)
+  if (!boundary) return null
+
+  const walker = document.createTreeWalker(block, NodeFilter.SHOW_TEXT)
+  const firstText = walker.nextNode()
+  if (boundary.node === firstText && boundary.offset === 0) return null
 
   const trailingRange = document.createRange()
   trailingRange.setStart(boundary.node, boundary.offset)
-  trailingRange.setEndAfter(paragraph)
+  trailingRange.setEndAfter(block)
   const fragment = trailingRange.extractContents()
   trailingRange.detach()
 
-  return createTrailingParagraph(paragraph, fragment)
+  return createTrailingBlock(block, fragment)
+}
+
+function splitParagraphToNextPage(page: HTMLElement, paragraph: HTMLParagraphElement) {
+  return splitBlockToNextPage(page, paragraph) as HTMLParagraphElement | null
 }
 
 function rebuildPages(editor: HTMLElement, nodes: Node[]) {
@@ -246,7 +275,7 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
       const nextPage = createNextPage()
       nextPage.appendChild(node)
 
-      if (node instanceof HTMLParagraphElement && !fitsPage(nextPage)) {
+      if (isSplittableTextBlock(node) && !fitsPage(nextPage)) {
         currentPage = splitParagraphAcrossPages(nextPage, node)
       }
       return
@@ -254,7 +283,7 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
 
     // Se o próprio bloco é maior que uma página, só parágrafos podem ser
     // fragmentados. Tabelas, imagens e outros blocos permanecem íntegros.
-    if (node instanceof HTMLParagraphElement) {
+    if (isSplittableTextBlock(node)) {
       currentPage = splitParagraphAcrossPages(currentPage, node)
     }
   }
@@ -275,7 +304,7 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
 }
 
 export function paginateMaterialEditor(editor: HTMLElement) {
-  const nodes = getLogicalNodes(editor)
+  const nodes = normalizeLogicalNodes(getLogicalNodes(editor))
   const pages = rebuildPages(editor, nodes)
 
   return {
