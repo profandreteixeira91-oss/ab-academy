@@ -297,7 +297,10 @@ export default function Materiais({ professorId }: Props) {
   async function saveLocalEditorState() {
     if (!editorRef.current || !dirtyRef.current) return
 
-    const model = domToEditorModel(editorRef.current)
+    const persistenceEditor = getPersistenceEditor()
+    if (!persistenceEditor) return
+
+    const model = domToEditorModel(persistenceEditor)
     const selection = captureEditorSelection(editorRef.current)
     setAutosaveStatus('saving')
 
