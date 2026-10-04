@@ -4149,9 +4149,15 @@ button.professor-stat-card:hover {
   widows: 3;
 }
 
-.professor-material-rich-editor [data-material-pagination-offset] {
-  break-before: page;
-  page-break-before: always;
+.professor-material-rich-editor [data-material-pagination-spacer] {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  pointer-events: none;
+  user-select: none;
 }
 
 .professor-material-rich-editor h1,
