@@ -210,7 +210,6 @@ const A4_HEIGHT_PT = 841.89
 const PDF_MARGIN_PT = { top: 40, right: 36, bottom: 40, left: 36 }
 const PAGE_WIDTH_PX = Math.round(A4_WIDTH_PT * (96 / 72))
 const PAGE_HEIGHT_PX = Math.round(A4_HEIGHT_PT * (96 / 72))
-const PAGE_CONTENT_WIDTH_PX = Math.round((A4_WIDTH_PT - PDF_MARGIN_PT.left - PDF_MARGIN_PT.right) * (96 / 72))
 const PAGE_PADDING_TOP_PX = Math.round(PDF_MARGIN_PT.top * (96 / 72))
 const PAGE_PADDING_RIGHT_PX = Math.round(PDF_MARGIN_PT.right * (96 / 72))
 const PAGE_PADDING_BOTTOM_PX = Math.round(PDF_MARGIN_PT.bottom * (96 / 72))
