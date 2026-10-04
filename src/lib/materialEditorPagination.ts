@@ -102,8 +102,14 @@ function createTrailingParagraph(source: HTMLParagraphElement, fragment: Documen
   return next
 }
 
+function getPageContentBottom(page: HTMLElement) {
+  const styles = window.getComputedStyle(page)
+  const paddingBottom = Number.parseFloat(styles.paddingBottom) || 0
+  return page.getBoundingClientRect().top + page.clientHeight - paddingBottom - 1
+}
+
 function findCharacterBoundary(page: HTMLElement, paragraph: HTMLParagraphElement) {
-  const pageBottom = page.getBoundingClientRect().bottom - 1
+  const pageBottom = getPageContentBottom(page)
   const textNodes: Text[] = []
   const lengths: number[] = []
   const walker = document.createTreeWalker(paragraph, NodeFilter.SHOW_TEXT)
@@ -248,7 +254,7 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
       let currentPage = page
       let guard = 0
 
-      while (!fitsPage(currentPage) && guard < 20) {
+      while (!fitsPage(currentPage) && guard < 1000) {
         guard += 1
         const trailingParagraph = splitParagraphToNextPage(currentPage, currentParagraph)
         if (!trailingParagraph) break
@@ -274,7 +280,7 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
       let currentPage = nextPage
       let guard = 0
 
-      while (!fitsPage(currentPage) && guard < 20) {
+      while (!fitsPage(currentPage) && guard < 1000) {
         guard += 1
         const trailingParagraph = splitParagraphToNextPage(currentPage, currentParagraph)
         if (!trailingParagraph) break
