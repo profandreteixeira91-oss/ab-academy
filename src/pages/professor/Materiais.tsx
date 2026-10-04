@@ -98,6 +98,13 @@ export default function Materiais({ professorId }: Props) {
   const [pendingMaterial, setPendingMaterial] = useState<MaterialRecord | null>(null)
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null)
   const [recipientsPanelOpen, setRecipientsPanelOpen] = useState(true)
+
+  useEffect(() => {
+    document.body.classList.toggle('ab-material-editor-open', open)
+    return () => {
+      document.body.classList.remove('ab-material-editor-open')
+    }
+  }, [open])
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [remoteStatus, setRemoteStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
