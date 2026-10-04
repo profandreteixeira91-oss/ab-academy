@@ -83,6 +83,7 @@ function CentralAtividade(){
   const answersLoadedRef=useRef(false)
   const answersRef=useRef<Record<string,unknown>>({})
   const saveTimerRef=useRef<number|null>(null)
+  const remoteSaveQueueRef=useRef<Promise<void>>(Promise.resolve())
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
 
   function persistLocalDraft(nextAnswers:Record<string,unknown>){
@@ -93,16 +94,16 @@ function CentralAtividade(){
     }catch(error){console.error('Central draft local save:',error)}
   }
 
-  function scheduleRemoteSave(nextAnswers:Record<string,unknown>){
+  function persistRemoteDraft(nextAnswers:Record<string,unknown>){
     if(!answersLoadedRef.current||!activity||!student||!user||result)return
-    if(saveTimerRef.current!==null)window.clearTimeout(saveTimerRef.current)
+    const currentActivity=activity
+    const currentStudent=student
+    const draftKey=`ab-academy-activity-draft-${currentActivity.id}`
     setSaveState('saving')
-    saveTimerRef.current=window.setTimeout(async()=>{
-      saveTimerRef.current=null
-      const draftKey=`ab-academy-activity-draft-${activity.id}`
+    remoteSaveQueueRef.current=remoteSaveQueueRef.current.catch(()=>undefined).then(async()=>{
       const {error:saveError}=await supabase.from('central_respostas').upsert({
-        atividade_id:activity.id,
-        aluno_id:student.id,
+        atividade_id:currentActivity.id,
+        aluno_id:currentStudent.id,
         respostas:nextAnswers,
         pontuacao:null,
         concluida:false,
@@ -114,16 +115,33 @@ function CentralAtividade(){
       }
       window.localStorage.removeItem(draftKey)
       setSaveState('saved')
-    },250)
+    })
   }
 
-  function updateAnswers(nextAnswers:Record<string,unknown>|((current:Record<string,unknown>)=>Record<string,unknown>)){
+  function scheduleRemoteSave(nextAnswers:Record<string,unknown>,immediate=false){
+    if(!answersLoadedRef.current||!activity||!student||!user||result)return
+    if(saveTimerRef.current!==null){
+      window.clearTimeout(saveTimerRef.current)
+      saveTimerRef.current=null
+    }
+    if(immediate){
+      persistRemoteDraft(nextAnswers)
+      return
+    }
+    setSaveState('saving')
+    saveTimerRef.current=window.setTimeout(()=>{
+      saveTimerRef.current=null
+      persistRemoteDraft(nextAnswers)
+    },500)
+  }
+
+  function updateAnswers(nextAnswers:Record<string,unknown>|((current:Record<string,unknown>)=>Record<string,unknown>),immediate=false){
     const resolved=typeof nextAnswers==='function'?nextAnswers(answersRef.current):nextAnswers
     answersRef.current=resolved
     setAnswers(resolved)
     if(answersLoadedRef.current&&!result){
       persistLocalDraft(resolved)
-      scheduleRemoteSave(resolved)
+      scheduleRemoteSave(resolved,immediate)
     }
   }
 
@@ -343,14 +361,14 @@ function CentralAtividade(){
       const options = activity.tipo_exercicio === 'verdadeiro_falso' && !(c.options||[]).length
         ? [{id:'true',text:'Verdadeiro'},{id:'false',text:'Falso'}]
         : (c.options||[])
-      return <div className="central-options">{options.map(o=><label key={o.id} className={answers.answer===o.id?'central-option selected':'central-option'}><input type="radio" name="answer" checked={answers.answer===o.id} onChange={()=>updateAnswers(currentAnswers=>({...currentAnswers,answer:o.id}))}/><span>{o.text}</span></label>)}</div>
+      return <div className="central-options">{options.map(o=><label key={o.id} className={answers.answer===o.id?'central-option selected':'central-option'}><input type="radio" name="answer" checked={answers.answer===o.id} onChange={()=>updateAnswers(currentAnswers=>({...currentAnswers,answer:o.id}),true)}/><span>{o.text}</span></label>)}</div>
     }
     if(activity.tipo_exercicio==='multipla_resposta')return <div className="central-options">{(c.options||[]).map(o=>{const selected=Array.isArray(answers.answer)&&answers.answer.includes(o.id);return <label key={o.id} className={selected?'central-option selected':'central-option'}><input type="checkbox" checked={selected} onChange={()=>toggleMultiple(o.id)}/><span>{o.text}</span></label>})}</div>
-    if(activity.tipo_exercicio==='resposta_curta')return <input className="central-answer-input" value={String(answers.answer||'')} onChange={e=>updateAnswers(currentAnswers=>({...currentAnswers,answer:e.target.value}))} placeholder="Digite sua resposta..."/>
-    if(activity.tipo_exercicio==='dissertativa')return <textarea className="central-answer-textarea" value={String(answers.answer||'')} onChange={e=>updateAnswers({...answers,answer:e.target.value})} placeholder="Escreva sua resposta..." rows={7}/>
+    if(activity.tipo_exercicio==='resposta_curta')return <input className="central-answer-input" value={String(answers.answer||'')} onChange={e=>updateAnswers(currentAnswers=>({...currentAnswers,answer:e.target.value}))} onBlur={()=>scheduleRemoteSave(answersRef.current,true)} placeholder="Digite sua resposta..."/>
+    if(activity.tipo_exercicio==='dissertativa')return <textarea className="central-answer-textarea" value={String(answers.answer||'')} onChange={e=>updateAnswers(currentAnswers=>({...currentAnswers,answer:e.target.value}))} onBlur={()=>scheduleRemoteSave(answersRef.current,true)} placeholder="Escreva sua resposta..." rows={7}/>
     if(activity.tipo_exercicio==='lacunas')return <div className="central-blanks">{(c.blanks||[]).map((b,i)=><input key={b.id} className="central-answer-input" value={Array.isArray(answers.answer)?String(answers.answer[i]||''):''} onChange={e=>{const v=Array.isArray(answersRef.current.answer)?[...(answersRef.current.answer as string[])]:[];v[i]=e.target.value;updateAnswers(currentAnswers=>({...currentAnswers,answer:v}))}} placeholder={`Resposta ${i+1}`}/>)}</div>
     if(activity.tipo_exercicio==='ordenar'){const items=Array.isArray(answers.answer)?answers.answer as string[]:[...(c.sentences||[])];return <div className="central-order-list">{items.map((item,i)=><div key={item+i} className="central-order-item"><span>{i+1}</span><strong>{item}</strong><div><button type="button" onClick={()=>moveOrder(i,-1)} disabled={i===0}>↑</button><button type="button" onClick={()=>moveOrder(i,1)} disabled={i===items.length-1}>↓</button></div></div>)}</div>}
-    if(activity.tipo_exercicio==='associar')return <div className="central-pairs">{(c.pairs||[]).map(p=><div key={p.id} className="central-pair"><span>{p.left}</span><select value={String((answers.pairs as Record<string,string>|undefined)?.[p.id]||'')} onChange={e=>updateAnswers(currentAnswers=>({...currentAnswers,pairs:{...(currentAnswers.pairs as Record<string,string>|undefined),[p.id]:e.target.value}}))}><option value="">Selecione</option>{(c.pairs||[]).map(x=><option key={x.id} value={x.right}>{x.right}</option>)}</select></div>)}</div>
+    if(activity.tipo_exercicio==='associar')return <div className="central-pairs">{(c.pairs||[]).map(p=><div key={p.id} className="central-pair"><span>{p.left}</span><select value={String((answers.pairs as Record<string,string>|undefined)?.[p.id]||'')} onChange={e=>updateAnswers(currentAnswers=>({...currentAnswers,pairs:{...(currentAnswers.pairs as Record<string,string>|undefined),[p.id]:e.target.value}}),true)}><option value="">Selecione</option>{(c.pairs||[]).map(x=><option key={x.id} value={x.right}>{x.right}</option>)}</select></div>)}</div>
     return <div className="central-unsupported"><CircleHelp size={22}/>Este tipo de atividade ainda não está disponível.</div>
   }
 
