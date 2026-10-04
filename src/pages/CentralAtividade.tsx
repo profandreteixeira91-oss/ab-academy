@@ -82,6 +82,7 @@ function CentralAtividade(){
   const [studentFirstName,setStudentFirstName]=useState('Aluno')
   const answersLoadedRef=useRef(false)
   const answersRef=useRef<Record<string,unknown>>({})
+  const saveTimerRef=useRef<number|null>(null)
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
 
   function persistLocalDraft(nextAnswers:Record<string,unknown>){
@@ -92,10 +93,37 @@ function CentralAtividade(){
     }catch(error){console.error('Central draft local save:',error)}
   }
 
+  function scheduleRemoteSave(nextAnswers:Record<string,unknown>){
+    if(!answersLoadedRef.current||!activity||!student||!user||result)return
+    if(saveTimerRef.current!==null)window.clearTimeout(saveTimerRef.current)
+    setSaveState('saving')
+    saveTimerRef.current=window.setTimeout(async()=>{
+      saveTimerRef.current=null
+      const draftKey=`ab-academy-activity-draft-${activity.id}`
+      const {error:saveError}=await supabase.from('central_respostas').upsert({
+        atividade_id:activity.id,
+        aluno_id:student.id,
+        respostas:nextAnswers,
+        pontuacao:null,
+        concluida:false,
+      },{onConflict:'atividade_id,aluno_id'})
+      if(saveError){
+        console.error('Central progresso save:',saveError)
+        setSaveState('idle')
+        return
+      }
+      window.localStorage.removeItem(draftKey)
+      setSaveState('saved')
+    },250)
+  }
+
   function updateAnswers(nextAnswers:Record<string,unknown>){
     answersRef.current=nextAnswers
     setAnswers(nextAnswers)
-    if(answersLoadedRef.current&&!result)persistLocalDraft(nextAnswers)
+    if(answersLoadedRef.current&&!result){
+      persistLocalDraft(nextAnswers)
+      scheduleRemoteSave(nextAnswers)
+    }
   }
 
   useEffect(()=>{
@@ -166,35 +194,24 @@ function CentralAtividade(){
   },[answers])
 
   useEffect(()=>{
-    if(!answersLoadedRef.current||!activity||!student||!user||result)return
-    const draftKey=`ab-academy-activity-draft-${activity.id}`
+    if(!activity||!student||!user||result)return
     const handlePageExit=()=>persistLocalDraft(answersRef.current)
+    const handleVisibilityChange=()=>{
+      if(document.visibilityState==='hidden')persistLocalDraft(answersRef.current)
+    }
     window.addEventListener('pagehide',handlePageExit)
     window.addEventListener('beforeunload',handlePageExit)
-    const timer=window.setTimeout(async()=>{
-      setSaveState('saving')
-      const {error:saveError}=await supabase.from('central_respostas').upsert({
-        atividade_id:activity.id,
-        aluno_id:student.id,
-        respostas:answersRef.current,
-        pontuacao:null,
-        concluida:false,
-      },{onConflict:'atividade_id,aluno_id'})
-      if(saveError){
-        console.error('Central progresso save:',saveError)
-        setSaveState('idle')
-        return
-      }
-      window.localStorage.removeItem(draftKey)
-      setSaveState('saved')
-    },300)
+    document.addEventListener('visibilitychange',handleVisibilityChange)
     return()=>{
-      window.clearTimeout(timer)
       window.removeEventListener('pagehide',handlePageExit)
       window.removeEventListener('beforeunload',handlePageExit)
+      document.removeEventListener('visibilitychange',handleVisibilityChange)
+      if(saveTimerRef.current!==null){
+        window.clearTimeout(saveTimerRef.current)
+        saveTimerRef.current=null
+      }
     }
-  },[answers,activity,student,user,result])
-
+  },[activity,student,user,result])
   useEffect(()=>{
     if(!startedAt||result)return
     const tick=window.setInterval(()=>{
