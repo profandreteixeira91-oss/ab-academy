@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, FileText, Loader2, X } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { resolveMaterialImage } from '../lib/materialImageCache'
-import { generateMaterialPdf } from '../lib/materialPdf'
 import { sanitizeMaterialHtml } from '../lib/sanitizeMaterialHtml'
 import '../styles/material-pdf-minimal.css'
 
@@ -22,9 +21,10 @@ export type MaterialRecord = {
 }
 
 type Props = {
-  /** Mantido apenas por compatibilidade. O download não depende mais dele. */
+  material: MaterialRecord
+  /** URL assinada do PDF já publicado no Storage. */
   pdfUrl?: string
-  /** Exibe o botão "Baixar PDF". Por padrão, sempre que o material estiver carregado. */
+  /** Exibe o botão "Visualizar PDF". */
   allowDownload?: boolean
   onClose?: () => void
 }
@@ -161,7 +161,7 @@ async function waitForImages(root: HTMLElement) {
 
 // Gera o PDF a partir do MESMO elemento que está sendo exibido no visualizador
 // (mesmo HTML, mesmas classes de estilo, mesmo idioma no cabeçalho) e dispara o download.
-export default function MaterialViewer({ material, allowDownload = true, onClose }: Props) {
+export default function MaterialViewer({ material, pdfUrl = '', allowDownload = true, onClose }: Props) {
   const documentRef = useRef<HTMLElement>(null)
   const contentRef = useRef<HTMLDivElement>(null)
   const headerRef = useRef<HTMLElement>(null)
