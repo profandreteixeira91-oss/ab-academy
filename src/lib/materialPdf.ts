@@ -295,8 +295,19 @@ export async function generateMaterialPdf(
     body.style.background = 'transparent'
     body.style.overflow = 'visible'
 
-    // A paginação já foi calculada pelo editor. Os offsets visuais não entram no PDF:
-    // o mesmo ponto de quebra vira uma instrução CSS explícita para o html2pdf.
+    // O editor usa espaçadores temporários para materializar a folha seguinte.
+    // No PDF o espaçador vira apenas uma quebra de página: o espaço visual entre
+    // folhas não pode consumir altura do conteúdo capturado.
+    body.querySelectorAll<HTMLElement>('[data-material-pagination-spacer]').forEach((spacer) => {
+      const next = spacer.nextElementSibling
+      if (next instanceof HTMLElement) {
+        next.style.breakBefore = 'page'
+        next.style.pageBreakBefore = 'always'
+      }
+      spacer.remove()
+    })
+
+    // Compatibilidade com documentos ainda renderizados pelo mecanismo anterior.
     body.querySelectorAll<HTMLElement>('[data-material-pagination-offset]').forEach((element) => {
       const originalMargin = element.getAttribute('data-material-pagination-margin-top') || ''
       element.style.marginTop = originalMargin
