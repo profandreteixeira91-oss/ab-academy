@@ -1611,16 +1611,19 @@ export default function SalaAula() {
     scheduledEndAt: endAt,
   } = data
 
+  const scheduledStart = new Date(startAt)
+  const scheduledEnd = new Date(endAt)
+
   const available =
     isLessonAvailable(
-      startAt,
-      endAt,
+      scheduledStart,
+      scheduledEnd,
     )
 
   const lessonMessage =
     getLessonMessage(
-      startAt,
-      endAt,
+      scheduledStart,
+      scheduledEnd,
     )
 
   /* =========================================================
