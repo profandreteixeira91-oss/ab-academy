@@ -1768,14 +1768,13 @@ function Aluno() {
         throw new Error('Este material não está mais disponível.')
       }
 
-      // O professor considera o PDF válido somente enquanto ele representa
-      // a última versão salva/publicada. O portal do aluno aplica a mesma regra.
-      const pdfIsCurrent =
-        Boolean(current.pdf_publicado_path && current.pdf_publicado_em) &&
-        new Date(current.updated_at).getTime() <= new Date(current.pdf_publicado_em).getTime()
-
-      if (!pdfIsCurrent || !current.pdf_publicado_path) {
-        throw new Error('Este material possui alterações pendentes de publicação.')
+      // O PDF armazenado em pdf_publicado_path é a versão oficialmente publicada
+      // para o aluno. O material pode continuar recebendo autosaves depois da
+      // publicação (updated_at muda nesses salvamentos), mas isso não invalida
+      // o PDF já publicado. Alterações posteriores só passam a ser entregues
+      // quando o professor publicar uma nova versão e substituir estes campos.
+      if (!current.pdf_publicado_path || !current.pdf_publicado_em) {
+        throw new Error('Este material ainda não possui um PDF publicado disponível.')
       }
 
       const { data: pdf, error: pdfError } = await supabase.storage
