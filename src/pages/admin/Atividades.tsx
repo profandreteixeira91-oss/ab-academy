@@ -82,6 +82,7 @@ type ConteudoForm = {
 
 type ExercicioForm = {
   id: string
+  material_id: string | null
   tipo: TipoExercicio
   titulo: string
   enunciado: string
@@ -228,6 +229,7 @@ function createEmptyConteudo(
 function createEmptyExercicio(ordem = 0): ExercicioForm {
   return {
     id: createId(),
+    material_id: null,
     tipo: 'multipla_escolha',
     titulo: '',
     enunciado: '',
@@ -409,6 +411,7 @@ type ActivityEditContent = {
 
 type ActivityEditExercise = {
   id: string
+  material_id: string | null
   tipo: TipoExercicio
   titulo: string | null
   enunciado: string
@@ -420,6 +423,7 @@ type ActivityEditExercise = {
 
 type ActivityEditQueryResult = {
   id: string
+  material_id: string | null
   tipo: TipoExercicio
   titulo: string | null
   enunciado: string
@@ -427,6 +431,12 @@ type ActivityEditQueryResult = {
   pontuacao: number
   alternativas: ActivityEditAlternative[] | null
   conteudos: ActivityEditContent[] | null
+}
+
+type LinkableMaterial = {
+  id: string
+  titulo_publicado: string | null
+  idioma_publicado: Idioma | null
 }
 
 async function fetchActivityEditData(id: string) {
@@ -463,6 +473,7 @@ async function fetchActivityEditData(id: string) {
     .from('atividade_exercicios')
     .select(`
       id,
+      material_id,
       tipo,
       titulo,
       enunciado,
@@ -503,6 +514,7 @@ function mapActivityEditExercises(
 ): ExercicioForm[] {
   return exercicios.map((exercicio) => ({
     id: exercicio.id,
+    material_id: exercicio.material_id || null,
     tipo: exercicio.tipo,
     titulo: exercicio.titulo || '',
     enunciado: exercicio.enunciado || '',
@@ -696,6 +708,10 @@ export default function Atividades({
     createEmptyForm(),
   )
 
+  const [linkableMaterials, setLinkableMaterials] = useState<LinkableMaterial[]>([])
+  const [linkableMaterialsLoading, setLinkableMaterialsLoading] = useState(false)
+  const [linkableMaterialsError, setLinkableMaterialsError] = useState('')
+
   const [expandedExercises, setExpandedExercises] = useState<string[]>([])
 
   const [error, setError] = useState('')
@@ -733,6 +749,74 @@ export default function Atividades({
   useEffect(() => {
     loadData()
   }, [])
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function loadLinkableMaterials() {
+      if (!form.aluno_id) {
+        setLinkableMaterials([])
+        setLinkableMaterialsError('')
+        setLinkableMaterialsLoading(false)
+        return
+      }
+
+      try {
+        setLinkableMaterialsLoading(true)
+        setLinkableMaterialsError('')
+        setLinkableMaterials([])
+
+        const professorContext = await loadProfessorContext()
+        if (!professorContext?.professorId) {
+          if (!cancelled) setLinkableMaterials([])
+          return
+        }
+
+        const { data: recipients, error: recipientsError } = await supabase
+          .from('material_alunos')
+          .select('material_id')
+          .eq('aluno_id', form.aluno_id)
+
+        if (recipientsError) throw recipientsError
+
+        const materialIds = (recipients || []).map((recipient) => recipient.material_id)
+        if (!materialIds.length) {
+          if (!cancelled) setLinkableMaterials([])
+          return
+        }
+
+        const { data, error: materialsError } = await supabase
+          .from('materiais')
+          .select('id,titulo_publicado,idioma_publicado')
+          .in('id', materialIds)
+          .eq('professor_id', professorContext.professorId)
+          .eq('status', 'publicado')
+          .not('pdf_publicado_path', 'is', null)
+          .order('titulo_publicado', { ascending: true })
+
+        if (materialsError) throw materialsError
+        if (!cancelled) setLinkableMaterials((data || []) as LinkableMaterial[])
+      } catch (error) {
+        console.error('Erro ao carregar materiais vinculáveis:', error)
+        if (!cancelled) {
+          setLinkableMaterials([])
+          setLinkableMaterialsError(
+            error instanceof Error
+              ? error.message
+              : 'Não foi possível carregar os materiais disponíveis.',
+          )
+        }
+      } finally {
+        if (!cancelled) setLinkableMaterialsLoading(false)
+      }
+    }
+
+    void loadLinkableMaterials()
+
+    return () => {
+      cancelled = true
+    }
+  }, [form.aluno_id])
 
   async function loadData() {
     const results = await Promise.allSettled([
@@ -1072,6 +1156,18 @@ export default function Atividades({
     setForm((current) => ({
       ...current,
       [field]: value,
+    }))
+  }
+
+  function changeActivityStudent(alunoId: string) {
+    setLinkableMaterialsError('')
+    setForm((current) => ({
+      ...current,
+      aluno_id: alunoId,
+      exercicios: current.exercicios.map((exercise) => ({
+        ...exercise,
+        material_id: null,
+      })),
     }))
   }
 
@@ -1825,6 +1921,24 @@ export default function Atividades({
       const exercise =
         form.exercicios[index]
 
+      if (exercise.material_id && linkableMaterialsLoading) {
+        setError('Aguarde o carregamento dos materiais disponíveis para validar os vínculos.')
+        return false
+      }
+
+      if (
+        exercise.material_id &&
+        !(isAdmin && exercise.isNew !== true) &&
+        !linkableMaterials.some(
+          (material) => material.id === exercise.material_id,
+        )
+      ) {
+        setError(
+          `Selecione um material publicado e atribuído ao aluno no exercício ${index + 1}, ou remova o vínculo.`,
+        )
+        return false
+      }
+
       if (!exercise.enunciado.trim()) {
         setError(
           `Informe o enunciado do exercício ${
@@ -2332,6 +2446,7 @@ export default function Atividades({
               ordem: index,
               pontuacao:
                 exercise.pontuacao,
+              material_id: exercise.material_id,
               updated_at:
                 new Date().toISOString(),
             })
@@ -2377,6 +2492,7 @@ export default function Atividades({
               ordem: index,
               pontuacao:
                 exercise.pontuacao,
+              material_id: exercise.material_id,
             })
             .select('id')
             .single()
@@ -2505,6 +2621,7 @@ export default function Atividades({
           enunciado,
           ordem,
           pontuacao,
+          material_id,
           alternativas:exercicio_alternativas (
             texto,
             correta,
@@ -2554,6 +2671,8 @@ export default function Atividades({
               exercise.ordem,
             pontuacao:
               exercise.pontuacao,
+            material_id:
+              exercise.material_id,
           })
           .select('id')
           .single()
@@ -2638,6 +2757,41 @@ export default function Atividades({
       setError(
         err?.message ||
           'Não foi possível duplicar a atividade.',
+      )
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function deleteActivity(activity: AtividadeLista) {
+    const confirmed = window.confirm(
+      `Excluir a atividade "${activity.titulo}"?\n\nA atividade será removida dos portais do professor e do aluno, junto com os exercícios e todas as respostas registradas. Esta ação não pode ser desfeita.`,
+    )
+
+    if (!confirmed) return
+
+    try {
+      setSaving(true)
+      setError('')
+      setSuccess('')
+
+      const { error: deleteError } = await supabase.rpc(
+        'excluir_atividade_professor',
+        { p_atividade_id: activity.id },
+      )
+
+      if (deleteError) throw deleteError
+
+      setAtividades((current) =>
+        current.filter((item) => item.id !== activity.id),
+      )
+      setSuccess('Atividade e respostas excluídas com sucesso.')
+    } catch (err) {
+      console.error('Erro ao excluir atividade:', err)
+      setError(
+        err instanceof Error
+          ? `Não foi possível excluir a atividade: ${err.message}`
+          : 'Não foi possível excluir a atividade.',
       )
     } finally {
       setSaving(false)
@@ -4036,6 +4190,19 @@ export default function Atividades({
                               size={17}
                             />
                           </button>
+
+                          {professorMode && (
+                            <button
+                              type="button"
+                              className="danger"
+                              title="Excluir atividade e respostas"
+                              aria-label={`Excluir atividade ${atividade.titulo}`}
+                              onClick={() => void deleteActivity(atividade)}
+                              disabled={saving}
+                            >
+                              <Trash2 size={17} />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -4274,14 +4441,7 @@ export default function Atividades({
                         }
                         onChange={(
                           event,
-                        ) =>
-                          updateForm(
-                            'aluno_id',
-                            event
-                              .target
-                              .value,
-                          )
-                        }
+                        ) => changeActivityStudent(event.target.value)}
                         disabled={
                           loadingAlunos
                         }
@@ -4466,6 +4626,7 @@ export default function Atividades({
                       }
                     />
                   </label>
+
                 </div>
               </section>
 
@@ -4804,6 +4965,63 @@ export default function Atividades({
                                       </span>
                                     </div>
                                   )}
+                                </label>
+
+                                <label className="atividades-field atividades-field-full">
+                                  <span>Material de apoio (opcional)</span>
+                                  <select
+                                    value={exercise.material_id || ''}
+                                    onChange={(event) =>
+                                      updateExercise(
+                                        exercise.id,
+                                        'material_id',
+                                        event.target.value || null,
+                                      )
+                                    }
+                                    disabled={
+                                      !form.aluno_id ||
+                                      linkableMaterialsLoading ||
+                                      saving
+                                    }
+                                  >
+                                    <option value="">
+                                      {!form.aluno_id
+                                        ? 'Selecione um aluno primeiro'
+                                        : linkableMaterialsLoading
+                                          ? 'Carregando materiais...'
+                                          : linkableMaterials.length
+                                            ? 'Sem material de apoio'
+                                            : 'Nenhum material publicado disponível'}
+                                    </option>
+                                    {exercise.material_id &&
+                                      !linkableMaterials.some(
+                                        (material) => material.id === exercise.material_id,
+                                      ) && (
+                                        <option value={exercise.material_id}>
+                                          {isAdmin
+                                            ? 'Material atualmente vinculado'
+                                            : 'Material vinculado indisponível — selecione outro'}
+                                        </option>
+                                      )}
+                                    {linkableMaterials.map((material) => (
+                                      <option key={material.id} value={material.id}>
+                                        {material.titulo_publicado || 'Material sem título'}
+                                        {material.idioma_publicado
+                                          ? ` — ${material.idioma_publicado === 'ingles' ? 'Inglês' : 'Alemão'}`
+                                          : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                  <small
+                                    className="atividades-material-hint"
+                                    role={linkableMaterialsError ? 'alert' : undefined}
+                                  >
+                                    {linkableMaterialsError
+                                      ? `Não foi possível carregar os materiais: ${linkableMaterialsError}`
+                                      : isAdmin && !linkableMaterials.length
+                                        ? 'Administradores podem preservar vínculos existentes; novos materiais devem ser vinculados pelo professor responsável.'
+                                      : 'Disponíveis materiais do professor já publicados em PDF e atribuídos ao aluno selecionado.'}
+                                  </small>
                                 </label>
                               </div>
 
@@ -5639,6 +5857,18 @@ export default function Atividades({
                               )}
                           </div>
                         ),
+                      )}
+
+                      {exercise.material_id && (
+                        <div className="atividades-preview-linked-material">
+                          <FileText size={17} />
+                          <span>
+                            <strong>Material de apoio</strong>
+                            {linkableMaterials.find(
+                              (material) => material.id === exercise.material_id,
+                            )?.titulo_publicado || 'Material vinculado'}
+                          </span>
+                        </div>
                       )}
 
                       {isObjectiveType(

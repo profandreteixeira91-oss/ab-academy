@@ -139,6 +139,7 @@ type ExerciseContent = {
 type Exercise = {
   id: string
   atividade_id: string
+  material_id: string | null
   titulo: string | null
   enunciado: string
   tipo: ExerciseType
@@ -1857,7 +1858,9 @@ function Aluno() {
     }
   }
 
-  async function openStudentMaterial(material: MaterialRecord) {
+  async function openStudentMaterial(
+    material: Pick<MaterialRecord, 'id'>,
+  ): Promise<string | null> {
     // Abre uma janela nativa imediatamente para preservar a ação iniciada pelo
     // clique. Depois que o Supabase devolver a URL assinada, o navegador carrega
     // o PDF diretamente no visualizador nativo, exatamente como "Visualizar PDF".
@@ -1922,9 +1925,14 @@ function Aluno() {
             )
           }
         })
+      return null
     } catch (error) {
       pdfWindow?.close()
-      setMaterialsError(error instanceof Error ? error.message : 'Não foi possível abrir o material.')
+      const message = error instanceof Error
+        ? error.message
+        : 'Não foi possível abrir o material.'
+      setMaterialsError(message)
+      return message
     }
   }
 
@@ -2390,6 +2398,7 @@ function Aluno() {
           `
             id,
             atividade_id,
+            material_id,
             titulo,
             enunciado,
             tipo,
@@ -2430,6 +2439,8 @@ function Aluno() {
             id: exercise.id,
             atividade_id:
               exercise.atividade_id,
+            material_id:
+              exercise.material_id || null,
             titulo:
               exercise.titulo,
             enunciado:
@@ -4660,6 +4671,9 @@ function Aluno() {
           savingProgress={savingActivityProgress}
           progressSaved={activityProgressSaved}
           onClose={closeActivity}
+          onOpenMaterial={(materialId) =>
+            openStudentMaterial({ id: materialId })
+          }
           onTextChange={updateTextAnswer}
           onAlternativeChange={toggleAlternative}
           onMoveOrderedAnswer={moveOrderedAnswer}
@@ -5685,6 +5699,7 @@ type ActivityModalProps = {
   savingProgress: boolean
   progressSaved: boolean
   onClose: () => void
+  onOpenMaterial: (materialId: string) => Promise<string | null>
   onTextChange: (
     exerciseId: string,
     value: string,
@@ -5722,8 +5737,14 @@ function ActivityModal({
   onSubmit,
   onNextActivity,
   hasNextActivity = false,
+  onOpenMaterial,
 }: ActivityModalProps) {
   const [showDescription, setShowDescription] = useState(false)
+  const [materialOpenError, setMaterialOpenError] = useState<{
+    exerciseId: string
+    message: string
+  } | null>(null)
+  const [openingMaterialExerciseId, setOpeningMaterialExerciseId] = useState<string | null>(null)
 
   const readOnly =
     activity.status ===
@@ -5947,6 +5968,48 @@ function ActivityModal({
                             ),
                           )}
                         </div>
+                      )}
+
+                      {exercise.material_id && (
+                        <>
+                          <button
+                            type="button"
+                            className="student-exercise-material-link"
+                            disabled={openingMaterialExerciseId === exercise.id}
+                            onClick={async () => {
+                              if (!exercise.material_id) return
+                              setMaterialOpenError(null)
+                              setOpeningMaterialExerciseId(exercise.id)
+                              try {
+                                const errorMessage = await onOpenMaterial(exercise.material_id)
+                                if (errorMessage) {
+                                  setMaterialOpenError({
+                                    exerciseId: exercise.id,
+                                    message: errorMessage,
+                                  })
+                                }
+                              } finally {
+                                setOpeningMaterialExerciseId(null)
+                              }
+                            }}
+                          >
+                            <FileText size={18} />
+                            <span>
+                              <strong>Material de apoio</strong>
+                              <small>
+                                {openingMaterialExerciseId === exercise.id
+                                  ? 'Abrindo material...'
+                                  : 'Abrir o material vinculado a este exercício'}
+                              </small>
+                            </span>
+                            <ChevronRight size={18} />
+                          </button>
+                          {materialOpenError?.exerciseId === exercise.id && (
+                            <p className="student-exercise-material-error" role="alert">
+                              {materialOpenError.message}
+                            </p>
+                          )}
+                        </>
                       )}
 
                       <div className="student-exercise-question">
