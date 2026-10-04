@@ -202,22 +202,14 @@ async function inlineImages(container: HTMLElement) {
   )
 }
 
-// A4 em CSS a 96 DPI. As margens são aplicadas pelo próprio html2pdf em
-// cada página, garantindo 2 cm reais em todos os lados e evitando que o conteúdo
-// seja cortado na borda inferior quando ocorre uma quebra de página.
-const A4_WIDTH_PT = 595.28
-const A4_HEIGHT_PT = 841.89
-const PDF_MARGIN_PT = { top: 56.69, right: 56.69, bottom: 56.69, left: 56.69 }
-const PAGE_WIDTH_PX = Math.round(A4_WIDTH_PT * (96 / 72))
-const PAGE_HEIGHT_PX = Math.round(A4_HEIGHT_PT * (96 / 72))
-
-// Navegadores limitam o tamanho de um canvas (altura ~16-32 mil px, área ~16 milhões de px
-// no Safari/iOS). Acima disso o canvas sai em branco. A escala é reduzida para documentos longos.
+// O PDF deve partir da mesma geometria do documento visualizado no portal.
+// Não adicionamos uma segunda margem ou uma folha A4 artificial: o html2pdf
+// recebe o tamanho real do elemento visual e apenas pagina esse conteúdo.
 const MAX_CANVAS_PIXELS = 4_000_000
 const MAX_CANVAS_SIDE = 4_096
 
-function pickScale(contentHeightPx: number) {
-  const byArea = Math.sqrt(MAX_CANVAS_PIXELS / (PAGE_WIDTH_PX * Math.max(contentHeightPx, 1)))
+function pickScale(contentWidthPx: number, contentHeightPx: number) {
+  const byArea = Math.sqrt(MAX_CANVAS_PIXELS / (Math.max(contentWidthPx, 1) * Math.max(contentHeightPx, 1)))
   const bySide = MAX_CANVAS_SIDE / Math.max(contentHeightPx, 1)
   return Math.max(0.25, Math.min(2, byArea, bySide))
 }
@@ -242,9 +234,13 @@ export async function generateMaterialPdf(
   stage.setAttribute('aria-hidden', 'true')
   stage.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;overflow:hidden;pointer-events:none;'
 
+  const visualSource = visualDocument || source
+  const visualRect = visualSource.getBoundingClientRect()
+  const visualWidth = Math.max(1, Math.round(visualRect.width))
+
   const page = document.createElement('article')
-  page.style.width = `${PAGE_WIDTH_PX}px`
-  page.style.minHeight = `${PAGE_HEIGHT_PX}px`
+  page.style.width = `${visualWidth}px`
+  page.style.minHeight = '0'
   page.style.boxSizing = 'border-box'
   page.style.margin = '0'
   page.style.background = '#ffffff'
@@ -265,23 +261,6 @@ export async function generateMaterialPdf(
     documentClone.style.margin = '0'
     documentClone.style.maxWidth = 'none'
     documentClone.style.overflow = 'visible'
-
-    // O editor visual é uma folha A4 para edição, portanto seus estilos de tela
-    // (min-height, padding e margem externa) não podem ser reaplicados como uma
-    // segunda página dentro do A4 do PDF. Mantemos apenas um espaçamento interno
-    // compacto para separar o conteúdo do cabeçalho sem consumir outra folha.
-    const editorClone = documentClone.querySelector<HTMLElement>('.professor-material-rich-editor')
-    if (editorClone) {
-      editorClone.style.width = '100%'
-      editorClone.style.minHeight = '0'
-      editorClone.style.height = 'auto'
-      editorClone.style.margin = '0'
-      editorClone.style.padding = '28px 0 32px'
-      editorClone.style.border = '0'
-      editorClone.style.borderRadius = '0'
-      editorClone.style.boxShadow = 'none'
-      editorClone.style.overflow = 'visible'
-    }
 
     documentClone.querySelectorAll<HTMLElement>('img, tr').forEach((element) => {
       element.style.breakInside = 'avoid'
@@ -337,15 +316,15 @@ export async function generateMaterialPdf(
 
     const worker = html2pdf()
       .set({
-        margin: [PDF_MARGIN_PT.top, PDF_MARGIN_PT.right, PDF_MARGIN_PT.bottom, PDF_MARGIN_PT.left],
+        margin: 0,
         filename: title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() + '.pdf',
         image: { type: 'jpeg', quality: 0.96 },
         enableLinks: true,
         html2canvas: {
-          scale: pickScale(contentHeight),
-          width: PAGE_WIDTH_PX,
-          height: Math.max(contentHeight, PAGE_HEIGHT_PX),
-          windowWidth: PAGE_WIDTH_PX,
+          scale: pickScale(visualWidth, contentHeight),
+          width: visualWidth,
+          height: contentHeight,
+          windowWidth: visualWidth,
           useCORS: true,
           backgroundColor: '#ffffff',
           logging: false,
