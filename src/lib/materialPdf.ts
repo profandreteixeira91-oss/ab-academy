@@ -202,18 +202,14 @@ async function inlineImages(container: HTMLElement) {
   )
 }
 
-// A4 em CSS a 96 DPI. A página do exportador é a própria folha A4; as
-// margens ficam dentro dela, evitando a combinação de "folha A4 + margens do PDF"
-// que fazia o conteúdo disputar espaço vertical com o cabeçalho.
+// A4 em CSS a 96 DPI. As margens são aplicadas pelo próprio html2pdf em
+// cada página, garantindo 2 cm reais em todos os lados e evitando que o conteúdo
+// seja cortado na borda inferior quando ocorre uma quebra de página.
 const A4_WIDTH_PT = 595.28
 const A4_HEIGHT_PT = 841.89
-const PDF_MARGIN_PT = { top: 40, right: 36, bottom: 40, left: 36 }
+const PDF_MARGIN_PT = { top: 56.69, right: 56.69, bottom: 56.69, left: 56.69 }
 const PAGE_WIDTH_PX = Math.round(A4_WIDTH_PT * (96 / 72))
 const PAGE_HEIGHT_PX = Math.round(A4_HEIGHT_PT * (96 / 72))
-const PAGE_PADDING_TOP_PX = Math.round(PDF_MARGIN_PT.top * (96 / 72))
-const PAGE_PADDING_RIGHT_PX = Math.round(PDF_MARGIN_PT.right * (96 / 72))
-const PAGE_PADDING_BOTTOM_PX = Math.round(PDF_MARGIN_PT.bottom * (96 / 72))
-const PAGE_PADDING_LEFT_PX = Math.round(PDF_MARGIN_PT.left * (96 / 72))
 
 // Navegadores limitam o tamanho de um canvas (altura ~16-32 mil px, área ~16 milhões de px
 // no Safari/iOS). Acima disso o canvas sai em branco. A escala é reduzida para documentos longos.
@@ -250,7 +246,6 @@ export async function generateMaterialPdf(
   page.style.width = `${PAGE_WIDTH_PX}px`
   page.style.minHeight = `${PAGE_HEIGHT_PX}px`
   page.style.boxSizing = 'border-box'
-  page.style.padding = `${PAGE_PADDING_TOP_PX}px ${PAGE_PADDING_RIGHT_PX}px ${PAGE_PADDING_BOTTOM_PX}px ${PAGE_PADDING_LEFT_PX}px`
   page.style.margin = '0'
   page.style.background = '#ffffff'
   page.style.overflow = 'visible'
@@ -281,7 +276,7 @@ export async function generateMaterialPdf(
       editorClone.style.minHeight = '0'
       editorClone.style.height = 'auto'
       editorClone.style.margin = '0'
-      editorClone.style.padding = '28px 36px 32px'
+      editorClone.style.padding = '28px 0 32px'
       editorClone.style.border = '0'
       editorClone.style.borderRadius = '0'
       editorClone.style.boxShadow = 'none'
@@ -312,7 +307,7 @@ export async function generateMaterialPdf(
     })
     normalizeRoot(body)
 
-    // O espaçamento externo vem das margens da página do PDF.
+    // As margens são aplicadas pelo html2pdf em cada página.
     body.style.width = '100%'
     body.style.boxSizing = 'border-box'
     body.style.margin = '0'
@@ -342,7 +337,7 @@ export async function generateMaterialPdf(
 
     const worker = html2pdf()
       .set({
-        margin: 0,
+        margin: [PDF_MARGIN_PT.top, PDF_MARGIN_PT.right, PDF_MARGIN_PT.bottom, PDF_MARGIN_PT.left],
         filename: title.replace(/[^a-z0-9]+/gi, '-').replace(/^-|-$/g, '').toLowerCase() + '.pdf',
         image: { type: 'jpeg', quality: 0.96 },
         enableLinks: true,
