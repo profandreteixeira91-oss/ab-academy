@@ -88,6 +88,12 @@
 }
 
 .material-html-document .material-document-cover strong {
+  display: block;
+  width: max-content;
+  max-width: none;
+  min-width: max-content;
+  white-space: nowrap;
+  overflow: visible;
   color: #1649a0;
   font-size: 21px;
   line-height: 1.1;
