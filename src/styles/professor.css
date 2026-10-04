@@ -4547,7 +4547,11 @@ button.professor-stat-card:hover {
 }
 
 
-/* MATERIAIS — modo imersivo: o editor usa toda a viewport e dispensa o header do portal. */
+/* MATERIAIS — modo imersivo: o editor ocupa a viewport inteira e dispensa o header do portal. */
+body:has(.professor-material-editor-page) {
+  overflow: hidden;
+}
+
 .professor-portal:has(.professor-material-editor-page) .professor-header {
   display: none;
 }
@@ -4558,8 +4562,15 @@ button.professor-stat-card:hover {
 }
 
 .professor-material-editor-page {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
   width: 100vw;
+  height: 100dvh;
   max-width: none;
+  min-height: 0;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 .professor-material-editor-grid {
