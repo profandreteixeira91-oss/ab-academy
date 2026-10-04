@@ -220,82 +220,65 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
 
   Array.from(editor.children).filter(isPage).forEach((page) => page.remove())
 
-  const fragment = document.createDocumentFragment()
-  nodes.forEach((node) => fragment.appendChild(node))
-
   const pages: HTMLElement[] = []
-  let page = createPage(editor, true)
-  page.dataset.pageNumber = '1'
-  editor.appendChild(page)
-  pages.push(page)
+  let currentPage = createPage(editor, true)
+  currentPage.dataset.pageNumber = '1'
+  editor.appendChild(currentPage)
+  pages.push(currentPage)
 
   const createNextPage = () => {
     const nextPage = createPage(editor, false)
     nextPage.dataset.pageNumber = String(pages.length + 1)
     editor.appendChild(nextPage)
     pages.push(nextPage)
-    page = nextPage
+    currentPage = nextPage
     return nextPage
   }
 
-  const contentChildren = () =>
+  const contentChildren = (page: HTMLElement) =>
     Array.from(page.childNodes).filter((child) => !isPageHeader(child))
 
-  Array.from(fragment.childNodes).forEach((node) => {
-    page.appendChild(node)
+  const splitParagraph = (page: HTMLElement, paragraph: HTMLParagraphElement) => {
+    let pageCursor = page
+    let paragraphCursor = paragraph
 
-    if (fitsPage(page)) return
+    for (let guard = 0; !fitsPage(pageCursor) && guard < 1000; guard += 1) {
+      const before = paragraphCursor.textContent?.length || 0
+      const trailing = splitParagraphToNextPage(pageCursor, paragraphCursor)
+      if (!trailing) break
 
-    const children = contentChildren()
-    const hasPreviousContent = children.length > 1
+      const after = paragraphCursor.textContent?.length || 0
+      if (after >= before) break
 
-    if (!hasPreviousContent && node instanceof HTMLParagraphElement) {
-      let currentParagraph = node
-      let currentPage = page
+      const nextPage = createNextPage()
+      nextPage.appendChild(trailing)
+      pageCursor = nextPage
+      paragraphCursor = trailing
+    }
 
-      while (!fitsPage(currentPage)) {
-        const previousLength = currentParagraph.textContent?.length || 0
-        const trailingParagraph = splitParagraphToNextPage(currentPage, currentParagraph)
-        if (!trailingParagraph) break
+    return pageCursor
+  }
 
-        const currentLength = currentParagraph.textContent?.length || 0
-        if (currentLength >= previousLength) break
+  nodes.forEach((node) => {
+    currentPage.appendChild(node)
 
-        const nextPage = createNextPage()
-        nextPage.appendChild(trailingParagraph)
-        currentParagraph = trailingParagraph
-        currentPage = nextPage
+    if (fitsPage(currentPage)) return
+
+    const children = contentChildren(currentPage)
+
+    if (children.length > 1) {
+      currentPage.removeChild(node)
+      const nextPage = createNextPage()
+      nextPage.appendChild(node)
+
+      if (node instanceof HTMLParagraphElement && !fitsPage(nextPage)) {
+        currentPage = splitParagraph(nextPage, node)
       }
-
-      page = currentPage
       return
     }
 
-    page.removeChild(node)
-    const nextPage = createNextPage()
-    nextPage.appendChild(node)
-
-    // Um bloco que sozinho excede uma folha permanece inteiro para que a edição
-    // continue semanticamente íntegra. Parágrafos são fragmentados acima.
-    if (!fitsPage(nextPage) && node instanceof HTMLParagraphElement) {
-      let currentParagraph = node
-      let currentPage = nextPage
-
-      while (!fitsPage(currentPage)) {
-        const previousLength = currentParagraph.textContent?.length || 0
-        const trailingParagraph = splitParagraphToNextPage(currentPage, currentParagraph)
-        if (!trailingParagraph) break
-
-        const currentLength = currentParagraph.textContent?.length || 0
-        if (currentLength >= previousLength) break
-
-        const followingPage = createNextPage()
-        followingPage.appendChild(trailingParagraph)
-        currentParagraph = trailingParagraph
-        currentPage = followingPage
-      }
-
-      page = currentPage
+    if (node instanceof HTMLParagraphElement) {
+      currentPage = splitParagraph(currentPage, node)
     }
   })
 
@@ -304,8 +287,8 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
     pages.pop()
   }
 
-  pages.forEach((currentPage, index) => {
-    currentPage.dataset.pageNumber = String(index + 1)
+  pages.forEach((page, index) => {
+    page.dataset.pageNumber = String(index + 1)
   })
 
   requestAnimationFrame(() => restoreSelection(activeRange))
