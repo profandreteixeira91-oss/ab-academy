@@ -2764,7 +2764,7 @@ function Aluno() {
         const alternativeIds = [...answer.alternativaIds]
         const [moved] = alternativeIds.splice(index, 1)
         alternativeIds.splice(targetIndex, 0, moved)
-        return { ...answer, alternativaIds }
+        return { ...answer, alternativaIds: alternativeIds }
       }),
     )
   }
