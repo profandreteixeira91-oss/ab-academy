@@ -31,7 +31,7 @@ If you are developing a production application, we recommend enabling type-aware
 
 See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
 
-Deploy de produção configurado via Cloudflare Workers.
+Deploy de produção configurado via Cloudflare Workers, servindo os arquivos estáticos gerados em `dist/`.
 
 
 ## Configuração da matrícula
