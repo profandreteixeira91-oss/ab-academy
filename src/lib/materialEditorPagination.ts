@@ -71,6 +71,9 @@ function createPage(editor: HTMLElement, isFirstPage: boolean) {
   page.setAttribute(PAGE_ATTR, 'true')
   page.setAttribute('contenteditable', 'true')
   page.setAttribute('role', 'textbox')
+  page.setAttribute('dir', 'ltr')
+  page.style.direction = 'ltr'
+  page.style.unicodeBidi = 'normal'
   page.dataset.pageNumber = '1'
 
   if (isFirstPage) {
