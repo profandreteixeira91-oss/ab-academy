@@ -2090,8 +2090,37 @@ function Aluno() {
         }
       }
 
+    const enterPasswordRecoveryMode = () => {
+      passwordRecoveryRef.current = true
+      authUserIdRef.current = null
+      studentIdRef.current = null
+      authLoadFinishedRef.current = false
+      setUser(null)
+      setLoading(false)
+      setAuthError('')
+      setAuthInfo('Crie uma nova senha para continuar.')
+      resetPasswordInputIntentRef.current = false
+      setAuthPassword('')
+      setAuthPasswordConfirmation('')
+      setAuthStep('reset-password')
+    }
+
+    const isPasswordRecoveryCallback = () => {
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+      const searchParams = new URLSearchParams(window.location.search)
+
+      return (
+        hashParams.get('type') === 'recovery' ||
+        searchParams.get('type') === 'recovery'
+      )
+    }
+
     const loadUser = async () => {
       try {
+        if (isPasswordRecoveryCallback()) {
+          enterPasswordRecoveryMode()
+        }
+
         const {
           data: { session },
           error,
@@ -2099,6 +2128,15 @@ function Aluno() {
 
         if (error) throw error
         if (!mounted) return
+
+        /*
+         * O link de recuperação pode criar uma sessão temporária antes
+         * de o evento PASSWORD_RECOVERY chegar ao listener. Essa sessão
+         * nunca deve liberar o portal: a prioridade é a tela de nova senha.
+         */
+        if (passwordRecoveryRef.current) {
+          return
+        }
 
         if (!session?.user) {
           authUserIdRef.current = null
@@ -2127,8 +2165,6 @@ function Aluno() {
       }
     }
 
-    void loadUser()
-
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
@@ -2136,18 +2172,7 @@ function Aluno() {
         if (!mounted) return
 
         if (event === 'PASSWORD_RECOVERY') {
-          passwordRecoveryRef.current = true
-          authUserIdRef.current = null
-          studentIdRef.current = null
-          authLoadFinishedRef.current = false
-          setUser(null)
-          setLoading(false)
-          setAuthError('')
-          setAuthInfo('Crie uma nova senha para continuar.')
-          resetPasswordInputIntentRef.current = false
-          setAuthPassword('')
-          setAuthPasswordConfirmation('')
-          setAuthStep('reset-password')
+          enterPasswordRecoveryMode()
           return
         }
 
@@ -2197,6 +2222,8 @@ function Aluno() {
         }
       },
     )
+
+    void loadUser()
 
     return () => {
       mounted = false
