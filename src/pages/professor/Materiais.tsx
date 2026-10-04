@@ -1303,7 +1303,7 @@ export default function Materiais({ professorId }: Props) {
             <div
               ref={editorRef}
               className="professor-material-rich-editor"
-              contentEditable={false}
+              contentEditable
               data-material-language={editor.idioma}
               suppressContentEditableWarning
               onInput={() => sync('input')}
