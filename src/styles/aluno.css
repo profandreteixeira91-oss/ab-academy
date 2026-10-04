@@ -270,6 +270,27 @@
   backdrop-filter: blur(12px);
 }
 
+.student-mobile-header-brand,
+.student-mobile-header-title,
+.student-mobile-header-menu {
+  display: none;
+}
+
+.student-mobile-header-brand img {
+  display: block;
+  width: auto;
+  height: 46px;
+  max-width: 145px;
+  object-fit: contain;
+}
+
+.student-mobile-header-brand {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
 .student-header-left {
   display: flex;
   align-items: center;
@@ -2182,13 +2203,61 @@
   }
 
   .student-header {
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
+    gap: 8px;
     min-height: 72px;
+    padding: 6px 12px;
+  }
 
-    padding: 13px 17px;
+  .student-mobile-header-brand {
+    display: flex;
+    align-items: center;
+    justify-self: start;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .student-mobile-header-brand img {
+    max-width: 100%;
+  }
+
+  .student-mobile-header-title {
+    display: block;
+    min-width: 0;
+    padding: 0 8px;
+    overflow: hidden;
+    color: var(--student-text);
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .student-mobile-header-menu {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    justify-self: end;
+    width: 42px;
+    height: 42px;
+    min-width: 42px;
+    border: 1px solid var(--student-border);
+    border-radius: 10px;
+    background: #fff;
+    color: var(--student-primary);
+    cursor: pointer;
+  }
+
+  .student-header-left,
+  .student-user {
+    display: none;
   }
 
   .student-mobile-menu {
-    display: flex;
+    display: none;
   }
 
   .student-header h1 {
@@ -2402,7 +2471,16 @@
 
 @media (max-width: 480px) {
   .student-header {
-    padding: 12px 14px;
+    padding: 6px 8px;
+  }
+
+  .student-mobile-header-brand img {
+    height: 42px;
+    max-width: 125px;
+  }
+
+  .student-mobile-header-title {
+    font-size: 13px;
   }
 
   .student-content {

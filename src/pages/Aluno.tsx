@@ -4365,6 +4365,29 @@ function Aluno() {
 
       <main className="student-main">
         <header className="student-header">
+          <button
+            type="button"
+            className="student-mobile-header-brand"
+            onClick={() => navigateTo('inicio')}
+            aria-label="AB Academy - Área do aluno"
+          >
+            <img src={logo} alt="AB Academy" />
+          </button>
+
+          <div className="student-mobile-header-title" aria-live="polite">
+            {section === 'inicio' ? 'Área do aluno' : sectionTitles[section]}
+          </div>
+
+          <button
+            type="button"
+            className="student-mobile-header-menu"
+            onClick={() => setMobileMenuOpen((open) => !open)}
+            aria-label={mobileMenuOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
+          </button>
+
           <div className="student-header-left">
             <button
               type="button"
