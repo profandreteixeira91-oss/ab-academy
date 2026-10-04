@@ -275,7 +275,7 @@ function App() {
       return <><MobileSystemHeader title="Matrícula" /><QueroAprenderRedirect /></>
     }
 
-    return <><MobileSystemHeader title={pageHeaderTitle} /><LeadCapture /></>
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<LeadCapture />)}</>
   }
 
   if (path === '/horarios') {
