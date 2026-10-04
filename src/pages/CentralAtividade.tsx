@@ -28,6 +28,7 @@ type Content = {
 }
 type Student={id:string;nome_completo:string}
 type Result={correct:boolean;score:number;message:string}
+type ActivityDraft={answers:Record<string,unknown>;savedAt:number}
 const LANGUAGE_LABELS={ingles:'Inglês',alemao:'Alemão'}
 const EXERCISE_TYPE_LABELS:Record<ExerciseType,string>={multipla_escolha:'Múltipla escolha',multipla_resposta:'Múltiplas respostas',verdadeiro_falso:'Verdadeiro ou falso',dissertativa:'Dissertativa',resposta_curta:'Resposta curta',lacunas:'Complete as lacunas',ordenar:'Ordenar',associar:'Associar'}
 
@@ -80,6 +81,7 @@ function CentralAtividade(){
   const [activityTotal,setActivityTotal]=useState<number|null>(null)
   const [studentFirstName,setStudentFirstName]=useState('Aluno')
   const answersLoadedRef=useRef(false)
+  const answersRef=useRef<Record<string,unknown>>({})
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
 
   useEffect(()=>{
@@ -113,16 +115,29 @@ function CentralAtividade(){
       if(!storedStart) window.sessionStorage.setItem(`ab-academy-activity-start-${activityId}`,String(start))
       setStartedAt(start)
       setElapsedSeconds(Math.max(0,Math.floor((Date.now()-start)/1000)))
-      const {data:responseData}=await supabase.from('central_respostas').select('respostas,pontuacao,concluida').eq('atividade_id',activityId).eq('aluno_id',studentData.id).maybeSingle()
+      const {data:responseData}=await supabase.from('central_respostas').select('respostas,pontuacao,concluida,updated_at').eq('atividade_id',activityId).eq('aluno_id',studentData.id).maybeSingle()
       const draftKey=`ab-academy-activity-draft-${activityId}`
-      if(responseData?.respostas){
-        setAnswers(responseData.respostas as Record<string,unknown>)
-        if(responseData.concluida) window.localStorage.removeItem(draftKey)
-      }else{
-        const localDraft=window.localStorage.getItem(draftKey)
-        if(localDraft){
-          try{setAnswers(JSON.parse(localDraft) as Record<string,unknown>)}catch{window.localStorage.removeItem(draftKey)}
+      const rawLocalDraft=window.localStorage.getItem(draftKey)
+      let localDraft:ActivityDraft|null=null
+      if(rawLocalDraft){
+        try{
+          const parsed=JSON.parse(rawLocalDraft) as ActivityDraft|Record<string,unknown>
+          localDraft='answers' in parsed && typeof parsed.savedAt==='number'
+            ? parsed as ActivityDraft
+            : {answers:parsed as Record<string,unknown>,savedAt:0}
+        }catch{
+          window.localStorage.removeItem(draftKey)
         }
+      }
+      if(responseData?.concluida){
+        window.localStorage.removeItem(draftKey)
+        if(responseData.respostas)setAnswers(responseData.respostas as Record<string,unknown>)
+      }else if(localDraft&&(localDraft.savedAt>=new Date(responseData?.updated_at||0).getTime())){
+        setAnswers(localDraft.answers)
+      }else if(responseData?.respostas){
+        setAnswers(responseData.respostas as Record<string,unknown>)
+      }else if(localDraft){
+        setAnswers(localDraft.answers)
       }
       answersLoadedRef.current=true
       if(responseData?.concluida&&typeof responseData.pontuacao==='number')setResult({correct:responseData.pontuacao>=100,score:responseData.pontuacao,message:responseData.pontuacao>=100?'Resposta correta!':'Atividade concluída. Revise a explicação.'})
@@ -133,9 +148,22 @@ function CentralAtividade(){
   },[activityId])
 
   useEffect(()=>{
+    answersRef.current=answers
+  },[answers])
+
+  useEffect(()=>{
     if(!answersLoadedRef.current||!activity||!student||!user||result)return
     const draftKey=`ab-academy-activity-draft-${activity.id}`
-    try{window.localStorage.setItem(draftKey,JSON.stringify(answers))}catch(error){console.error('Central draft local save:',error)}
+    const persistLocalDraft=()=>{
+      try{
+        const draft:ActivityDraft={answers:answersRef.current,savedAt:Date.now()}
+        window.localStorage.setItem(draftKey,JSON.stringify(draft))
+      }catch(error){console.error('Central draft local save:',error)}
+    }
+    persistLocalDraft()
+    const handlePageExit=()=>persistLocalDraft()
+    window.addEventListener('pagehide',handlePageExit)
+    window.addEventListener('beforeunload',handlePageExit)
     const timer=window.setTimeout(async()=>{
       setSaveState('saving')
       const {error:saveError}=await supabase.from('central_respostas').upsert({
@@ -152,8 +180,12 @@ function CentralAtividade(){
       }
       window.localStorage.removeItem(draftKey)
       setSaveState('saved')
-    },500)
-    return()=>window.clearTimeout(timer)
+    },300)
+    return()=>{
+      window.clearTimeout(timer)
+      window.removeEventListener('pagehide',handlePageExit)
+      window.removeEventListener('beforeunload',handlePageExit)
+    }
   },[answers,activity,student,user,result])
 
   useEffect(()=>{
