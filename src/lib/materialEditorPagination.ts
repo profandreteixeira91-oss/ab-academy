@@ -49,6 +49,8 @@ export function paginateMaterialEditor(editor: HTMLElement) {
   const paddingTop = getNumericStyle(computed.paddingTop)
   const paddingBottom = getNumericStyle(computed.paddingBottom)
   const pageHeight = 1123
+  const pageGap = 28
+  const pageStep = pageHeight + pageGap
   const contentOrigin = editor.getBoundingClientRect().top + borderTop
   const pageContentHeight = Math.max(1, pageHeight - borderTop - borderBottom - paddingTop - paddingBottom)
 
@@ -71,11 +73,11 @@ export function paginateMaterialEditor(editor: HTMLElement) {
 
       if (bottom <= 0 || rect.height <= 0) continue
 
-      const pageIndex = Math.max(0, Math.floor(top / pageHeight))
-      const pageBottom = pageIndex * pageHeight + paddingTop + pageContentHeight
+      const pageIndex = Math.max(0, Math.floor(top / pageStep))
+      const pageBottom = pageIndex * pageStep + paddingTop + pageContentHeight
 
       if (top < pageBottom && bottom > pageBottom && rect.height <= pageContentHeight) {
-        const nextPageTop = (pageIndex + 1) * pageHeight + paddingTop
+        const nextPageTop = (pageIndex + 1) * pageStep + paddingTop
         const offset = Math.max(0, nextPageTop - top)
 
         if (offset > 0.5) {
@@ -95,7 +97,7 @@ export function paginateMaterialEditor(editor: HTMLElement) {
   return {
     pageHeight,
     pageContentHeight,
-    pageCount: Math.max(1, Math.ceil(editor.scrollHeight / pageHeight)),
+    pageCount: Math.max(1, Math.ceil(editor.scrollHeight / pageStep)),
   }
 }
 
