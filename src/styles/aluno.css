@@ -2459,12 +2459,6 @@
   }
 }
 
-@media (max-width: 900px) {
-  .student-header {
-    display: flex !important;
-  }
-}
-
 /* =========================================================
    SMALL MOBILE
    ========================================================= */
@@ -5844,5 +5838,411 @@ body {
   .student-portal textarea:focus-visible {
     outline: 3px solid rgba(22, 73, 160, 0.22);
     outline-offset: 3px;
+  }
+}
+
+@media (max-width: 760px) {
+  .student-portal,
+  .student-main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .student-header {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr) minmax(0, 1fr);
+    min-height: 68px;
+    padding:
+      6px max(12px, env(safe-area-inset-right))
+      6px max(12px, env(safe-area-inset-left));
+    box-shadow: 0 4px 16px rgba(24, 49, 87, 0.045);
+  }
+
+  .student-mobile-header-brand {
+    width: 100%;
+  }
+
+  .student-mobile-header-title {
+    padding-inline: 4px;
+    font-size: 14px;
+  }
+
+  .student-mobile-header-menu {
+    width: 44px;
+    height: 44px;
+    border-color: #e4eaf2;
+    box-shadow: 0 2px 6px rgba(24, 49, 87, 0.05);
+  }
+
+  .student-sidebar {
+    width: min(320px, 88vw);
+    height: 100vh;
+    height: 100dvh;
+    padding:
+      max(18px, env(safe-area-inset-top))
+      16px
+      max(18px, env(safe-area-inset-bottom));
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  .student-brand {
+    flex: 0 0 54px;
+    margin: 0 0 20px;
+  }
+
+  .student-brand img {
+    max-width: min(170px, calc(100% - 48px));
+  }
+
+  .student-navigation {
+    gap: 6px;
+  }
+
+  .student-nav-item {
+    min-height: 48px;
+    gap: 12px;
+    padding-inline: 13px;
+    font-size: 14px;
+  }
+
+  .student-logout {
+    min-height: 48px;
+  }
+
+  .student-content {
+    width: 100%;
+    min-height: calc(100dvh - 68px);
+    padding:
+      20px max(16px, env(safe-area-inset-right))
+      max(28px, env(safe-area-inset-bottom))
+      max(16px, env(safe-area-inset-left));
+    gap: 0;
+  }
+
+  .student-welcome-card {
+    min-height: 0;
+    padding: 28px 24px;
+    border-radius: 18px;
+    box-shadow: 0 12px 26px rgba(22, 73, 160, 0.15);
+  }
+
+  .student-card-label {
+    margin-bottom: 9px;
+    font-size: 9px;
+  }
+
+  .student-welcome-card h2 {
+    max-width: 18ch;
+    font-size: clamp(22px, 6vw, 28px);
+    line-height: 1.18;
+    overflow-wrap: anywhere;
+  }
+
+  .student-welcome-card p {
+    max-width: 34ch;
+    margin-top: 10px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+
+  .student-section-title {
+    align-items: center;
+    justify-content: center;
+    margin: 30px 0 14px;
+    text-align: center;
+  }
+
+  .student-section-title > div {
+    width: 100%;
+  }
+
+  .student-section-title span {
+    margin-bottom: 5px;
+    font-size: 9px;
+    letter-spacing: 0.13em;
+  }
+
+  .student-section-title h2 {
+    font-size: clamp(19px, 5vw, 22px);
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+  }
+
+  .student-section-title p {
+    margin-top: 6px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .student-next-lesson {
+    align-items: stretch;
+    gap: 18px;
+    padding: 18px;
+    border-radius: 15px;
+  }
+
+  .student-next-lesson-info {
+    align-items: flex-start;
+    gap: 12px;
+    min-width: 0;
+  }
+
+  .student-lesson-icon {
+    width: 44px;
+    height: 44px;
+    flex: 0 0 44px;
+    border-radius: 12px;
+  }
+
+  .student-next-lesson-info > div:last-child {
+    min-width: 0;
+  }
+
+  .student-next-lesson h3 {
+    font-size: 15px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .student-next-lesson p {
+    line-height: 1.45;
+  }
+
+  .student-next-lesson .student-primary-button {
+    min-height: 46px;
+    border-radius: 11px;
+  }
+
+  .student-dashboard-grid {
+    gap: 10px;
+  }
+
+  .student-dashboard-card {
+    min-height: 0;
+    padding: 18px 52px 18px 18px;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px rgba(24, 49, 87, 0.04);
+  }
+
+  .student-dashboard-card > span {
+    margin-bottom: 7px;
+    font-size: 9px;
+  }
+
+  .student-dashboard-card strong {
+    font-size: 16px;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  .student-dashboard-card p {
+    max-width: 32ch;
+    margin-top: 5px;
+    font-size: 12px;
+    line-height: 1.45;
+  }
+
+  .student-dashboard-card > svg {
+    right: 17px;
+    bottom: 50%;
+    transform: translateY(50%);
+  }
+
+  .student-dashboard-card:hover > svg {
+    transform: translate(3px, 50%);
+  }
+
+  .student-lessons-list,
+  .student-materials-list,
+  .student-activities-list {
+    gap: 10px;
+  }
+
+  .student-lesson-card,
+  .student-material-card,
+  .student-activity-card,
+  .student-history-card {
+    min-width: 0;
+    padding: 16px;
+    gap: 12px;
+    border-radius: 14px;
+    box-shadow: 0 3px 12px rgba(24, 49, 87, 0.035);
+  }
+
+  .student-lesson-date {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 6px 9px;
+    min-height: 0;
+    padding: 0 0 11px;
+    border: 0;
+    border-bottom: 1px solid var(--student-border-light);
+  }
+
+  .student-lesson-date strong {
+    font-size: 13px;
+  }
+
+  .student-lesson-date span {
+    font-size: 12px;
+  }
+
+  .student-lesson-details,
+  .student-material-card > div:nth-child(2),
+  .student-activity-card > div:first-child {
+    min-width: 0;
+  }
+
+  .student-lesson-details h3,
+  .student-material-card h3,
+  .student-activity-card h3 {
+    font-size: 15px;
+    line-height: 1.35;
+    overflow-wrap: anywhere;
+  }
+
+  .student-lesson-details p,
+  .student-material-card p,
+  .student-activity-card p {
+    font-size: 12px;
+    line-height: 1.45;
+    overflow-wrap: anywhere;
+  }
+
+  .student-lesson-status {
+    justify-self: start;
+    padding: 6px 9px;
+  }
+
+  .student-material-card {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    align-items: start;
+    gap: 12px;
+    padding: 16px;
+    border-color: #e3eaf3;
+    border-radius: 15px;
+    background: linear-gradient(145deg, #fff 0%, #fbfdff 100%);
+    box-shadow: 0 4px 14px rgba(24, 49, 87, 0.045);
+  }
+
+  .student-material-icon {
+    width: 44px;
+    height: 44px;
+    border: 1px solid #dce8f8;
+    border-radius: 13px;
+    background: linear-gradient(145deg, #e8f1ff, #f5f9ff);
+  }
+
+  .student-material-card > div:nth-child(2) {
+    align-self: center;
+    padding: 1px 0;
+  }
+
+  .student-material-card > div:nth-child(2) > span {
+    display: inline-block;
+    margin-bottom: 3px;
+    color: #5677a6;
+    font-size: 10px;
+    font-weight: 750;
+    letter-spacing: 0.04em;
+  }
+
+  .student-material-card h3 {
+    margin: 0;
+    color: #1c2d46;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.4;
+  }
+
+  .student-material-card p {
+    margin-top: 5px;
+    color: #7b899d;
+    font-size: 11px;
+    line-height: 1.45;
+  }
+
+  .student-material-card .student-secondary-button {
+    grid-column: 1 / -1;
+    width: 100%;
+    min-height: 44px;
+    margin-top: 2px;
+    border-color: #dce6f3;
+    border-radius: 11px;
+    background: #f8fbff;
+    color: var(--student-primary);
+    font-weight: 700;
+    transition:
+      background 0.16s ease,
+      border-color 0.16s ease,
+      color 0.16s ease;
+  }
+
+  .student-material-card .student-secondary-button:active {
+    border-color: #c4d7f2;
+    background: #edf4ff;
+  }
+
+  .student-material-card .student-secondary-button,
+  .student-activity-right .student-primary-button,
+  .student-activity-right .student-secondary-button,
+  .student-lesson-card .student-primary-button {
+    width: 100%;
+    min-height: 44px;
+    border-radius: 10px;
+  }
+
+  .student-activity-right {
+    min-width: 0;
+    gap: 8px;
+  }
+
+  .student-empty-state {
+    min-height: 180px;
+    padding: 24px 18px;
+    border-radius: 14px;
+  }
+
+  .student-site-footer {
+    margin-top: 34px;
+    padding-top: 18px;
+  }
+
+  .student-site-footer-bottom {
+    display: grid;
+    justify-items: center;
+    gap: 8px;
+    padding: 14px 0 max(4px, env(safe-area-inset-bottom));
+    text-align: center;
+    line-height: 1.5;
+  }
+}
+
+@media (max-width: 380px) {
+  .student-content {
+    padding-right: max(13px, env(safe-area-inset-right));
+    padding-left: max(13px, env(safe-area-inset-left));
+  }
+
+  .student-welcome-card {
+    padding: 24px 19px;
+  }
+
+  .student-next-lesson {
+    padding: 15px;
+  }
+
+  .student-dashboard-card {
+    padding-right: 46px;
+    padding-left: 15px;
+  }
+
+  .student-lesson-card,
+  .student-material-card,
+  .student-activity-card,
+  .student-history-card {
+    padding: 14px;
   }
 }
