@@ -4076,7 +4076,9 @@ button.professor-stat-card:hover {
 }
 
 .professor-material-rich-editor {
-  min-height: 760px;
+  width: min(794px, calc(100% - 48px));
+  min-height: 1123px;
+  margin: 28px auto 12px;
   padding: 58px 64px 72px;
   border-color: #dbe5f0;
   border-radius: 0 0 12px 12px;
@@ -4100,6 +4102,38 @@ button.professor-stat-card:hover {
 
 .professor-material-rich-editor > *:last-child {
   margin-bottom: 0;
+}
+
+/* Paginação visual A4: a folha permanece contínua para não corromper
+   seleção/undo do contenteditable, enquanto as linhas de corte coincidem
+   exatamente com 1123px (A4 a 96dpi). */
+.professor-material-rich-editor {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      #ffffff 0,
+      #ffffff 1121px,
+      #dbe5f0 1121px,
+      #dbe5f0 1123px
+    );
+  background-attachment: local;
+}
+
+.professor-material-rich-editor > p,
+.professor-material-rich-editor > h1,
+.professor-material-rich-editor > h2,
+.professor-material-rich-editor > h3,
+.professor-material-rich-editor > h4,
+.professor-material-rich-editor > h5,
+.professor-material-rich-editor > h6,
+.professor-material-rich-editor > blockquote,
+.professor-material-rich-editor > ul,
+.professor-material-rich-editor > ol,
+.professor-material-rich-editor > img {
+  break-inside: avoid;
+  page-break-inside: avoid;
+  orphans: 3;
+  widows: 3;
 }
 
 .professor-material-rich-editor h1,
