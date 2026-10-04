@@ -185,14 +185,6 @@ function splitParagraphToNextPage(page: HTMLElement, paragraph: HTMLParagraphEle
   return createTrailingParagraph(paragraph, fragment)
 }
 
-function moveOverflowingParagraph(page: HTMLElement, paragraph: HTMLParagraphElement) {
-  const nextParagraph = splitParagraphToNextPage(page, paragraph)
-  if (!nextParagraph) return null
-
-  paragraph.insertAdjacentElement('afterend', nextParagraph)
-  return nextParagraph
-}
-
 function rebuildPages(editor: HTMLElement, nodes: Node[]) {
   // A paginação é uma projeção visual do fluxo lógico. Os nós continuam sendo
   // os mesmos nós do documento e o editor raiz continua sendo o único editing host.
