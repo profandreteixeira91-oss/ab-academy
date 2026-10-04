@@ -84,6 +84,20 @@ function CentralAtividade(){
   const answersRef=useRef<Record<string,unknown>>({})
   const activityId=useMemo(()=>window.location.pathname.split('/').filter(Boolean).pop()||'',[])
 
+  function persistLocalDraft(nextAnswers:Record<string,unknown>){
+    if(!activityId)return
+    try{
+      const draft:ActivityDraft={answers:nextAnswers,savedAt:Date.now()}
+      window.localStorage.setItem(`ab-academy-activity-draft-${activityId}`,JSON.stringify(draft))
+    }catch(error){console.error('Central draft local save:',error)}
+  }
+
+  function updateAnswers(nextAnswers:Record<string,unknown>){
+    answersRef.current=nextAnswers
+    setAnswers(nextAnswers)
+    if(answersLoadedRef.current&&!result)persistLocalDraft(nextAnswers)
+  }
+
   useEffect(()=>{
     let mounted=true
     async function load(){
@@ -154,14 +168,7 @@ function CentralAtividade(){
   useEffect(()=>{
     if(!answersLoadedRef.current||!activity||!student||!user||result)return
     const draftKey=`ab-academy-activity-draft-${activity.id}`
-    const persistLocalDraft=()=>{
-      try{
-        const draft:ActivityDraft={answers:answersRef.current,savedAt:Date.now()}
-        window.localStorage.setItem(draftKey,JSON.stringify(draft))
-      }catch(error){console.error('Central draft local save:',error)}
-    }
-    persistLocalDraft()
-    const handlePageExit=()=>persistLocalDraft()
+    const handlePageExit=()=>persistLocalDraft(answersRef.current)
     window.addEventListener('pagehide',handlePageExit)
     window.addEventListener('beforeunload',handlePageExit)
     const timer=window.setTimeout(async()=>{
@@ -169,7 +176,7 @@ function CentralAtividade(){
       const {error:saveError}=await supabase.from('central_respostas').upsert({
         atividade_id:activity.id,
         aluno_id:student.id,
-        respostas:answers,
+        respostas:answersRef.current,
         pontuacao:null,
         concluida:false,
       },{onConflict:'atividade_id,aluno_id'})
@@ -205,7 +212,9 @@ function CentralAtividade(){
   function hasAnswer(){
     const a=answers.answer
     if(Array.isArray(a)) return a.some(value=>String(value||'').trim()!=='')
-    return String(a??'').trim()!==''
+    if(String(a??'').trim()!=='')return true
+    if(answers.pairs&&typeof answers.pairs==='object')return Object.values(answers.pairs as Record<string,string>).some(value=>String(value||'').trim()!=='')
+    return false
   }
 
   async function translateActivity(){
@@ -293,7 +302,7 @@ function CentralAtividade(){
   function goNext(){window.location.href=nextActivity?`/aluno/central/atividade/${nextActivity.id}`:'/aluno/central'}
   function toggleMultiple(id:string){
     const current=Array.isArray(answers.answer)?answers.answer as string[]:[]
-    setAnswers({...answers,answer:current.includes(id)?current.filter(x=>x!==id):[...current,id]})
+    updateAnswers({...answers,answer:current.includes(id)?current.filter(x=>x!==id):[...current,id]})
   }
 
   function moveOrder(index:number,direction:-1|1){
@@ -302,7 +311,7 @@ function CentralAtividade(){
     const target=index+direction
     if(target<0||target>=current.length)return
     ;[current[index],current[target]]=[current[target],current[index]]
-    setAnswers({...answers,answer:current})
+    updateAnswers({...answers,answer:current})
   }
 
   function renderExercise(contentOverride?:Content){
@@ -314,14 +323,14 @@ function CentralAtividade(){
       const options = activity.tipo_exercicio === 'verdadeiro_falso' && !(c.options||[]).length
         ? [{id:'true',text:'Verdadeiro'},{id:'false',text:'Falso'}]
         : (c.options||[])
-      return <div className="central-options">{options.map(o=><label key={o.id} className={answers.answer===o.id?'central-option selected':'central-option'}><input type="radio" name="answer" checked={answers.answer===o.id} onChange={()=>setAnswers({...answers,answer:o.id})}/><span>{o.text}</span></label>)}</div>
+      return <div className="central-options">{options.map(o=><label key={o.id} className={answers.answer===o.id?'central-option selected':'central-option'}><input type="radio" name="answer" checked={answers.answer===o.id} onChange={()=>updateAnswers({...answers,answer:o.id})}/><span>{o.text}</span></label>)}</div>
     }
     if(activity.tipo_exercicio==='multipla_resposta')return <div className="central-options">{(c.options||[]).map(o=>{const selected=Array.isArray(answers.answer)&&answers.answer.includes(o.id);return <label key={o.id} className={selected?'central-option selected':'central-option'}><input type="checkbox" checked={selected} onChange={()=>toggleMultiple(o.id)}/><span>{o.text}</span></label>})}</div>
-    if(activity.tipo_exercicio==='resposta_curta')return <input className="central-answer-input" value={String(answers.answer||'')} onChange={e=>setAnswers({...answers,answer:e.target.value})} placeholder="Digite sua resposta..."/>
-    if(activity.tipo_exercicio==='dissertativa')return <textarea className="central-answer-textarea" value={String(answers.answer||'')} onChange={e=>setAnswers({...answers,answer:e.target.value})} placeholder="Escreva sua resposta..." rows={7}/>
-    if(activity.tipo_exercicio==='lacunas')return <div className="central-blanks">{(c.blanks||[]).map((b,i)=><input key={b.id} className="central-answer-input" value={Array.isArray(answers.answer)?String(answers.answer[i]||''):''} onChange={e=>{const v=Array.isArray(answers.answer)?[...(answers.answer as string[])]:[];v[i]=e.target.value;setAnswers({...answers,answer:v})}} placeholder={`Resposta ${i+1}`}/>)}</div>
+    if(activity.tipo_exercicio==='resposta_curta')return <input className="central-answer-input" value={String(answers.answer||'')} onChange={e=>updateAnswers({...answers,answer:e.target.value})} placeholder="Digite sua resposta..."/>
+    if(activity.tipo_exercicio==='dissertativa')return <textarea className="central-answer-textarea" value={String(answers.answer||'')} onChange={e=>updateAnswers({...answers,answer:e.target.value})} placeholder="Escreva sua resposta..." rows={7}/>
+    if(activity.tipo_exercicio==='lacunas')return <div className="central-blanks">{(c.blanks||[]).map((b,i)=><input key={b.id} className="central-answer-input" value={Array.isArray(answers.answer)?String(answers.answer[i]||''):''} onChange={e=>{const v=Array.isArray(answers.answer)?[...(answers.answer as string[])]:[];v[i]=e.target.value;updateAnswers({...answers,answer:v})}} placeholder={`Resposta ${i+1}`}/>)}</div>
     if(activity.tipo_exercicio==='ordenar'){const items=Array.isArray(answers.answer)?answers.answer as string[]:[...(c.sentences||[])];return <div className="central-order-list">{items.map((item,i)=><div key={item+i} className="central-order-item"><span>{i+1}</span><strong>{item}</strong><div><button type="button" onClick={()=>moveOrder(i,-1)} disabled={i===0}>↑</button><button type="button" onClick={()=>moveOrder(i,1)} disabled={i===items.length-1}>↓</button></div></div>)}</div>}
-    if(activity.tipo_exercicio==='associar')return <div className="central-pairs">{(c.pairs||[]).map(p=><div key={p.id} className="central-pair"><span>{p.left}</span><select value={String((answers.pairs as Record<string,string>|undefined)?.[p.id]||'')} onChange={e=>setAnswers({...answers,pairs:{...(answers.pairs as Record<string,string>|undefined),[p.id]:e.target.value}})}><option value="">Selecione</option>{(c.pairs||[]).map(x=><option key={x.id} value={x.right}>{x.right}</option>)}</select></div>)}</div>
+    if(activity.tipo_exercicio==='associar')return <div className="central-pairs">{(c.pairs||[]).map(p=><div key={p.id} className="central-pair"><span>{p.left}</span><select value={String((answers.pairs as Record<string,string>|undefined)?.[p.id]||'')} onChange={e=>updateAnswers({...answers,pairs:{...(answers.pairs as Record<string,string>|undefined),[p.id]:e.target.value}})}><option value="">Selecione</option>{(c.pairs||[]).map(x=><option key={x.id} value={x.right}>{x.right}</option>)}</select></div>)}</div>
     return <div className="central-unsupported"><CircleHelp size={22}/>Este tipo de atividade ainda não está disponível.</div>
   }
 
