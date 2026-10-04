@@ -115,13 +115,13 @@ function CentralAtividade(){
     }catch(error){console.error('Central draft local save:',error)}
   },[activityId])
 
-  const persistRemoteDraft=useCallback((nextAnswers:Record<string,unknown>)=>{
-    if(!answersLoadedRef.current||!activity||!student||!user||result||submittingRef.current)return
+  const persistRemoteDraft=useCallback((nextAnswers:Record<string,unknown>):Promise<boolean>=>{
+    if(!answersLoadedRef.current||!activity||!student||!user||result||submittingRef.current)return Promise.resolve(false)
     const currentActivity=activity
     const currentStudent=student
     const draftKey=`ab-academy-activity-draft-${currentActivity.id}`
     setSaveState('saving')
-    remoteSaveQueueRef.current=remoteSaveQueueRef.current.catch(()=>undefined).then(async()=>{
+    const savePromise=remoteSaveQueueRef.current.catch(()=>undefined).then(async()=>{
       const {error:saveError}=await supabase.from('central_respostas').upsert({
         atividade_id:currentActivity.id,
         aluno_id:currentStudent.id,
@@ -132,14 +132,18 @@ function CentralAtividade(){
       if(saveError){
         console.error('Central progresso save:',saveError)
         setSaveState('error')
-        return
+        return false
       }
       removeLocalDraftIfSaved(draftKey,nextAnswers)
       setSaveState('saved')
+      return true
     }).catch(saveError=>{
       console.error('Central progresso save:',saveError)
       setSaveState('error')
+      return false
     })
+    remoteSaveQueueRef.current=savePromise.then(()=>undefined)
+    return savePromise
   },[activity,student,user,result])
 
   function scheduleRemoteSave(nextAnswers:Record<string,unknown>,immediate=false){
@@ -149,14 +153,23 @@ function CentralAtividade(){
       saveTimerRef.current=null
     }
     if(immediate){
-      persistRemoteDraft(nextAnswers)
+      void persistRemoteDraft(nextAnswers)
       return
     }
     setSaveState('saving')
     saveTimerRef.current=window.setTimeout(()=>{
       saveTimerRef.current=null
-      persistRemoteDraft(nextAnswers)
+      void persistRemoteDraft(nextAnswers)
     },500)
+  }
+
+  function saveProgressBeforeLeaving():Promise<boolean>{
+    if(saveTimerRef.current!==null){
+      window.clearTimeout(saveTimerRef.current)
+      saveTimerRef.current=null
+    }
+    persistLocalDraft(answersRef.current)
+    return persistRemoteDraft(answersRef.current)
   }
 
   function updateAnswers(nextAnswers:Record<string,unknown>|((current:Record<string,unknown>)=>Record<string,unknown>),immediate=false){
@@ -248,16 +261,19 @@ function CentralAtividade(){
         setActivity(currentActivity)
         setStartedAt(start)
         setElapsedSeconds(Math.max(0,Math.floor((Date.now()-start)/1000)))
+        let restoredAnswers:Record<string,unknown>={}
         if(responseData?.concluida){
           clearLocalDraft(draftKey)
-          if(responseData.respostas)setAnswers(responseData.respostas as Record<string,unknown>)
+          if(responseData.respostas)restoredAnswers=responseData.respostas as Record<string,unknown>
         }else if(localDraft&&(localDraft.savedAt>=new Date(responseData?.updated_at||0).getTime())){
-          setAnswers(localDraft.answers)
+          restoredAnswers=localDraft.answers
         }else if(responseData?.respostas){
-          setAnswers(responseData.respostas as Record<string,unknown>)
+          restoredAnswers=responseData.respostas as Record<string,unknown>
         }else if(localDraft){
-          setAnswers(localDraft.answers)
+          restoredAnswers=localDraft.answers
         }
+        answersRef.current=restoredAnswers
+        setAnswers(restoredAnswers)
         answersLoadedRef.current=true
         if(responseData?.concluida){
           const score=typeof responseData.pontuacao==='number'?responseData.pontuacao:0
@@ -284,7 +300,7 @@ function CentralAtividade(){
       if(saveTimerRef.current===null)return
       window.clearTimeout(saveTimerRef.current)
       saveTimerRef.current=null
-      persistRemoteDraft(answersRef.current)
+      void persistRemoteDraft(answersRef.current)
     }
     const handlePageExit=()=>{
       persistLocalDraft(answersRef.current)
@@ -295,10 +311,12 @@ function CentralAtividade(){
     }
     window.addEventListener('pagehide',handlePageExit)
     window.addEventListener('beforeunload',handlePageExit)
+    window.addEventListener('blur',handlePageExit)
     document.addEventListener('visibilitychange',handleVisibilityChange)
     return()=>{
       window.removeEventListener('pagehide',handlePageExit)
       window.removeEventListener('beforeunload',handlePageExit)
+      window.removeEventListener('blur',handlePageExit)
       document.removeEventListener('visibilitychange',handleVisibilityChange)
       flushPendingRemoteSave()
     }
@@ -424,6 +442,25 @@ function CentralAtividade(){
   }
 
   function goNext(){window.location.href=nextActivity?`/aluno/central/atividade/${nextActivity.id}`:'/aluno/central'}
+
+  async function cancelActivity(){
+    if(submittingRef.current)return
+    setError('')
+    setSubmitting(true)
+    const savePromise=saveProgressBeforeLeaving()
+    submittingRef.current=true
+    try{
+      const saved=await savePromise
+      if(saved){
+        window.location.assign('/aluno/central')
+        return
+      }
+      setError('Não foi possível salvar suas respostas no servidor. Elas foram mantidas neste dispositivo; verifique sua conexão e tente novamente.')
+    }finally{
+      submittingRef.current=false
+      setSubmitting(false)
+    }
+  }
   function toggleMultiple(id:string){
     updateAnswers(currentAnswers=>{
       const current=Array.isArray(currentAnswers.answer)?currentAnswers.answer as string[]:[]
@@ -541,7 +578,7 @@ function CentralAtividade(){
           {result?<div className={result.correct?'central-result success':'central-result'}>
 <div className="central-result-hero"><div className="central-result-icon">{result.correct?<CheckCircle2 size={25}/>:<CircleHelp size={25}/>}</div><div className="central-result-copy"><span>{result.correct?'Muito bem!':'Atividade concluída'}</span><strong>{result.message}</strong></div><div className="central-result-score"><strong>{result.score}</strong><span>/100</span></div></div>
 {activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}
-<div className="central-result-actions"><button type="button" className="central-secondary-button" onClick={()=>{window.localStorage.removeItem(`ab-academy-activity-draft-${activity.id}`);updateAnswers({});setResult(null);setSaveState("idle");window.sessionStorage.removeItem(`ab-academy-activity-start-${activity.id}`);const start=Date.now();window.sessionStorage.setItem(`ab-academy-activity-start-${activity.id}`,String(start));setStartedAt(start);setElapsedSeconds(0)}}><RotateCcw size={17}/>Refazer</button><div className="central-result-next">{nextActivity?<><span>PRÓXIMA NA SEQUÊNCIA</span><strong>{nextActivity.titulo}</strong></>:<span>Você chegou ao final desta sequência.</span>}</div><button type="button" className="central-primary-button" onClick={goNext}>{nextActivity?<>Próxima atividade <ArrowRight size={18}/></>:<>Voltar para a Central <ArrowRight size={18}/></>}</button></div></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
+<div className="central-result-actions"><button type="button" className="central-secondary-button" onClick={()=>{clearLocalDraft(`ab-academy-activity-draft-${activity.id}`);updateAnswers({});setResult(null);setSaveState("idle");window.sessionStorage.removeItem(`ab-academy-activity-start-${activity.id}`);const start=Date.now();window.sessionStorage.setItem(`ab-academy-activity-start-${activity.id}`,String(start));setStartedAt(start);setElapsedSeconds(0)}}><RotateCcw size={17}/>Refazer</button><div className="central-result-next">{nextActivity?<><span>PRÓXIMA NA SEQUÊNCIA</span><strong>{nextActivity.titulo}</strong></>:<span>Você chegou ao final desta sequência.</span>}</div><button type="button" className="central-primary-button" onClick={goNext}>{nextActivity?<>Próxima atividade <ArrowRight size={18}/></>:<>Voltar para a Central <ArrowRight size={18}/></>}</button></div></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>void cancelActivity()} disabled={submitting}>{submitting?<><Loader2 size={16} className="central-activity-spin"/>Salvando...</>:<><ChevronLeft size={18}/>Cancelar e salvar</>}</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
         </section>
       </div>
     </main>
