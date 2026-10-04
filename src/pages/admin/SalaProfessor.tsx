@@ -909,6 +909,12 @@ function TeacherLiveRoom({
         }}
       >
 
+        <TeacherLiveKitConnectionMonitor
+          onStatusChange={onStatusChange}
+          onConnected={() => setConnected(true)}
+          onDisconnected={() => setConnected(false)}
+        />
+
         <RoomAudioRenderer />
 
         <TeacherMediaBootstrap
