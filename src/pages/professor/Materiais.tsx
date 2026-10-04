@@ -235,8 +235,60 @@ export default function Materiais({ professorId }: Props) {
 
   // Injeta o conteúdo salvo no editor assim que ele é montado. Substitui os antigos
   // setTimeout(0), que podiam disparar antes do React montar o editor e deixar a página vazia.
+  function getEditorViewportState() {
+    const editorElement = editorRef.current
+    if (!editorElement) return null
+
+    const selection = window.getSelection()
+    let caretTop: number | null = null
+
+    if (selection?.rangeCount && selection.isCollapsed && editorElement.contains(selection.anchorNode)) {
+      const range = selection.getRangeAt(0).cloneRange()
+      const rect = range.getBoundingClientRect()
+      caretTop = rect.height > 0 ? rect.top : null
+    }
+
+    return {
+      scrollTop: editorElement.scrollTop,
+      scrollLeft: editorElement.scrollLeft,
+      caretTop,
+    }
+  }
+
+  function restoreEditorViewport(state: ReturnType<typeof getEditorViewportState>) {
+    const editorElement = editorRef.current
+    if (!editorElement || !state) return
+
+    const selection = window.getSelection()
+    let caretRect: DOMRect | null = null
+
+    if (selection?.rangeCount && selection.isCollapsed && editorElement.contains(selection.anchorNode)) {
+      const range = selection.getRangeAt(0).cloneRange()
+      const rect = range.getBoundingClientRect()
+      if (rect.height > 0) caretRect = rect
+    }
+
+    const viewportRect = editorElement.getBoundingClientRect()
+    const topPadding = 28
+    const bottomPadding = 32
+
+    let nextScrollTop = state.scrollTop
+
+    if (caretRect) {
+      if (caretRect.top < viewportRect.top + topPadding) {
+        nextScrollTop += caretRect.top - (viewportRect.top + topPadding)
+      } else if (caretRect.bottom > viewportRect.bottom - bottomPadding) {
+        nextScrollTop += caretRect.bottom - (viewportRect.bottom - bottomPadding)
+      }
+    }
+
+    editorElement.scrollTop = Math.max(0, nextScrollTop)
+    editorElement.scrollLeft = state.scrollLeft
+  }
+
   function scheduleMaterialPagination(selectionToRestore: EditorSelectionState | null = null) {
     if (!editorRef.current) return
+    const viewportState = getEditorViewportState()
     if (paginationFrameRef.current !== null) cancelAnimationFrame(paginationFrameRef.current)
     paginationFrameRef.current = requestAnimationFrame(() => {
       paginationFrameRef.current = null
@@ -249,6 +301,7 @@ export default function Materiais({ professorId }: Props) {
           console.warn('Não foi possível restaurar o cursor após a paginação:', cause)
         }
       }
+      restoreEditorViewport(viewportState)
       saveSelection()
     })
   }
