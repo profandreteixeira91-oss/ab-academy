@@ -353,7 +353,7 @@ export default function Materiais({ professorId }: Props) {
       }).catch((cause) => console.error('Falha no autosave local do material:', cause))
     }
     setEditor((value) => ({ ...value, conteudo_html: html }))
-    scheduleMaterialPagination()
+    scheduleMaterialPagination(selection)
     dirtyRef.current = true
     setDirty(true)
     saveSelection()
@@ -1310,16 +1310,13 @@ export default function Materiais({ professorId }: Props) {
               onKeyUp={() => {
                 saveSelection()
                 updateActiveTable()
-                scheduleMaterialPagination()
               }}
               onMouseUp={() => {
                 saveSelection()
                 updateActiveTable()
-                scheduleMaterialPagination()
               }}
               onFocus={() => {
                 updateActiveTable()
-                scheduleMaterialPagination()
               }}
             />
 
