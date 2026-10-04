@@ -2744,7 +2744,7 @@ function Aluno() {
     )
   }
 
-  function _moveOrderedAnswer(
+  function moveOrderedAnswer(
     exerciseId: string,
     alternativeId: string,
     direction: 'up' | 'down',
@@ -4639,6 +4639,7 @@ function Aluno() {
           onClose={closeActivity}
           onTextChange={updateTextAnswer}
           onAlternativeChange={toggleAlternative}
+          onMoveOrderedAnswer={moveOrderedAnswer}
           onSaveProgress={saveActivityProgress}
           onSubmit={submitActivity}
           onNextActivity={openNextActivity}
@@ -5669,6 +5670,11 @@ type ActivityModalProps = {
     exercise: Exercise,
     alternativeId: string,
   ) => void
+  onMoveOrderedAnswer: (
+    exerciseId: string,
+    alternativeId: string,
+    direction: 'up' | 'down',
+  ) => void
   onSaveProgress: () => void
   onSubmit: () => void
   onNextActivity?: () => void
@@ -5688,6 +5694,7 @@ function ActivityModal({
   onClose,
   onTextChange,
   onAlternativeChange,
+  onMoveOrderedAnswer,
   onSaveProgress,
   onSubmit,
   onNextActivity,
@@ -6037,7 +6044,7 @@ function ActivityModal({
                                     <button
                                       type="button"
                                       aria-label={`Mover item ${itemIndex + 1} para cima`}
-                                      onClick={_moveOrderedAnswer.bind(
+                                      onClick={onMoveOrderedAnswer.bind(
                                         null,
                                         exercise.id,
                                         alternative.id,
@@ -6050,7 +6057,7 @@ function ActivityModal({
                                     <button
                                       type="button"
                                       aria-label={`Mover item ${itemIndex + 1} para baixo`}
-                                      onClick={_moveOrderedAnswer.bind(
+                                      onClick={onMoveOrderedAnswer.bind(
                                         null,
                                         exercise.id,
                                         alternative.id,
