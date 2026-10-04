@@ -255,7 +255,7 @@ function App() {
   }
 
   if (path === '/trabalhe-conosco') {
-    return <><MobileSystemHeader title={pageHeaderTitle} /><TrabalheConosco /></>
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<TrabalheConosco />)}</>
   }
 
   if (path === '/planos') {
@@ -275,7 +275,7 @@ function App() {
       return <><MobileSystemHeader title="Matrícula" /><QueroAprenderRedirect /></>
     }
 
-    return <><MobileSystemHeader title={pageHeaderTitle} /><LeadCapture /></>
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<LeadCapture />)}</>
   }
 
   if (path === '/horarios') {
