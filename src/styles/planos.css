@@ -1137,7 +1137,7 @@
 
 /* Seleção de modalidade */
 .planos-modality-switch{grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:18px}
-.planos-modality-switch .planos-language-switch-button{min-height:96px;padding:18px 16px;align-items:flex-start;justify-content:center;text-align:center}
+.planos-modality-switch .planos-language-switch-button{min-height:96px;padding:18px 16px;align-items:center;justify-content:center;text-align:center}
 .planos-modality-switch .planos-language-switch-button h2{margin:0;font-size:18px;text-align:center}
 .planos-modality-switch .planos-language-switch-button span{display:block;margin-top:5px;color:#71809a;font-size:11px;font-weight:600}
 .planos-modality-switch .planos-language-switch-button.active span{color:#3567c8}
