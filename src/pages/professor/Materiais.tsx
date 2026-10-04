@@ -25,6 +25,8 @@ import {
   X,
   Minus,
   Columns3,
+  ChevronRight,
+  ChevronLeft,
   CheckSquare,
   Square,
 } from 'lucide-react'
