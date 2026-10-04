@@ -238,13 +238,13 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
   const contentChildren = (page: HTMLElement) =>
     Array.from(page.childNodes).filter((child) => !isPageHeader(child))
 
-  const splitParagraphAcrossPages = (page: HTMLElement, paragraph: HTMLParagraphElement) => {
+  const splitParagraphAcrossPages = (page: HTMLElement, paragraph: HTMLElement) => {
     let pageCursor = page
     let paragraphCursor = paragraph
 
     for (let guard = 0; guard < 1000 && !fitsPage(pageCursor); guard += 1) {
       const before = paragraphCursor.textContent?.length || 0
-      const trailing = splitParagraphToNextPage(pageCursor, paragraphCursor)
+      const trailing = splitBlockToNextPage(pageCursor, paragraphCursor)
       if (!trailing) break
 
       const after = paragraphCursor.textContent?.length || 0
