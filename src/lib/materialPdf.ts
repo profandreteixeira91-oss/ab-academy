@@ -337,9 +337,11 @@ export async function generateMaterialPdf(
           format: 'a4',
           orientation: 'portrait',
         },
+        // Paginação vem do layout/CSS do documento; o gerador não define margens
+        // nem cria a geometria das páginas.
         pagebreak: {
           mode: ['css'],
-          avoid: ['img', 'tr'],
+          avoid: ['img', 'tr', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote', 'li'],
         },
       })
       .from(page)
