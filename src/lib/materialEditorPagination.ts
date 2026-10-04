@@ -181,65 +181,82 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
   editor.appendChild(page)
   pages.push(page)
 
-  Array.from(fragment.childNodes).forEach((node) => {
-    page.appendChild(node)
-
-    if (fitsPage(page)) return
-
-    const onlyNode = !hasVisibleContent(page) || (
-      Array.from(page.childNodes).filter((child) => !isPageHeader(child)).length === 1
-    )
-
-    if (onlyNode && node instanceof HTMLParagraphElement) {
-      const nextParagraph = moveOverflowingParagraph(page, node)
-      if (nextParagraph) {
-        page.removeChild(nextParagraph)
-      }
-    }
-
-    if (fitsPage(page)) return
-
-    page.removeChild(node)
-
+  const createNextPage = () => {
     const nextPage = createPage(editor, false)
     nextPage.dataset.pageNumber = String(pages.length + 1)
     editor.appendChild(nextPage)
     pages.push(nextPage)
     page = nextPage
+    return nextPage
+  }
+
+  const contentChildren = () =>
+    Array.from(page.childNodes).filter((child) => !isPageHeader(child))
+
+  Array.from(fragment.childNodes).forEach((node) => {
     page.appendChild(node)
 
-    if (!fitsPage(page) && node instanceof HTMLParagraphElement) {
+    if (fitsPage(page)) return
+
+    const children = contentChildren()
+    const hasPreviousContent = children.length > 1
+
+    if (!hasPreviousContent && node instanceof HTMLParagraphElement) {
       let currentParagraph = node
+      let currentPage = page
       let guard = 0
 
-      while (!fitsPage(page) && guard < 20) {
+      while (!fitsPage(currentPage) && guard < 20) {
         guard += 1
-        const trailingParagraph = moveOverflowingParagraph(page, currentParagraph)
+        const trailingParagraph = splitParagraphToNextPage(currentPage, currentParagraph)
         if (!trailingParagraph) break
 
-        const followingPage = createPage(editor, false)
-        followingPage.dataset.pageNumber = String(pages.length + 1)
-        editor.appendChild(followingPage)
-        pages.push(followingPage)
-        followingPage.appendChild(trailingParagraph)
-        page = followingPage
+        const nextPage = createNextPage()
+        nextPage.appendChild(trailingParagraph)
         currentParagraph = trailingParagraph
+        currentPage = nextPage
       }
+
+      page = currentPage
+      return
+    }
+
+    page.removeChild(node)
+    const nextPage = createNextPage()
+    nextPage.appendChild(node)
+
+    // Um bloco que sozinho excede uma folha permanece inteiro para que a edição
+    // continue semanticamente íntegra. Parágrafos são fragmentados acima.
+    if (!fitsPage(nextPage) && node instanceof HTMLParagraphElement) {
+      let currentParagraph = node
+      let currentPage = nextPage
+      let guard = 0
+
+      while (!fitsPage(currentPage) && guard < 20) {
+        guard += 1
+        const trailingParagraph = splitParagraphToNextPage(currentPage, currentParagraph)
+        if (!trailingParagraph) break
+
+        const followingPage = createNextPage()
+        followingPage.appendChild(trailingParagraph)
+        currentParagraph = trailingParagraph
+        currentPage = followingPage
+      }
+
+      page = currentPage
     }
   })
 
-  if (!hasVisibleContent(page) && pages.length > 1) {
+  if (pages.length > 1 && !hasVisibleContent(pages[pages.length - 1])) {
+    pages[pages.length - 1].remove()
     pages.pop()
-    page.remove()
   }
 
   pages.forEach((currentPage, index) => {
     currentPage.dataset.pageNumber = String(index + 1)
   })
 
-  requestAnimationFrame(() => {
-    focusEditorPage(pages[Math.max(0, pages.length - 1)] || editor, activeRange)
-  })
+  requestAnimationFrame(() => restoreSelection(activeRange))
 
   return pages
 }
