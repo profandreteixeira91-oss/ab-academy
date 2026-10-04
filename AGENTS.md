@@ -169,3 +169,29 @@ Audit first.
 Change the minimum necessary.
 Validate immediately.
 Re-audit before declaring success.
+
+## Production baseline protection
+
+The current `main` branch is a production baseline and must be treated as protected working code.
+
+Before any new change:
+- Identify the exact files and behavior that are in scope.
+- Do not modify unrelated working code, even if it appears improvable.
+- Do not perform opportunistic refactors, dependency upgrades, formatting rewrites or architectural changes outside the request.
+- Compare the affected implementation with the current baseline before editing when the area has recent fixes.
+- Prefer a minimal, isolated commit for each logical correction.
+
+Recovery:
+- Stable states must be preserved by a dedicated Git reference before risky work.
+- If a change introduces regression, prefer reverting the isolated change or restoring the last known-good baseline rather than layering compensating complexity.
+- Never rewrite history or force-update a stable reference unless explicitly authorized.
+
+Change boundary:
+- A task must not alter another module merely because it shares a component, stylesheet or utility, unless the dependency is proven to be the direct cause of the requested issue.
+- If a requested correction requires touching shared code, audit all known consumers before modifying it and re-audit them afterward.
+- Preserve existing business rules, authentication, authorization, payments, enrollment, scheduling and classroom behavior unless the task explicitly changes them.
+
+Validation:
+- After every production-impacting change, run `npm run build` and `npm run lint` when the environment permits.
+- If validation cannot be executed, do not claim it passed; record the limitation and perform the strongest available static re-audit.
+
