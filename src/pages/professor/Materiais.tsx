@@ -334,9 +334,9 @@ export default function Materiais({ professorId }: Props) {
   function sync(operationType = 'document_changed') {
     const htmlSource = getPersistenceEditor()
     const html = htmlSource?.innerHTML || editor.conteudo_html
+    const selection = captureEditorSelection(editorRef.current)
     if (htmlSource) {
       const model = domToEditorModel(htmlSource)
-      const selection = captureEditorSelection(editorRef.current)
       const version = ++editorVersionRef.current
       operationsRef.current = [
         ...operationsRef.current,
