@@ -1752,8 +1752,8 @@ function Aluno() {
       setMaterialsError('')
 
       // Reconsulta a publicação antes de abrir para garantir que o aluno receba
-      // exatamente a mesma versão que o professor visualiza. Isso evita abrir
-      // um PDF antigo quando o material foi editado depois da última publicação.
+      // exatamente a versão oficialmente publicada que está registrada no material.
+      // Autosaves posteriores não invalidam o PDF publicado.
       const { data: current, error: materialError } = await supabase
         .from('materiais')
         .select(
