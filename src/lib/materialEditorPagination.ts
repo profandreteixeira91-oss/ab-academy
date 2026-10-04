@@ -109,8 +109,9 @@ function isSplittableTextBlock(node: Node): node is HTMLElement {
 }
 
 function normalizeLogicalNodes(nodes: Node[]) {
-  return nodes.flatMap((node) => {
-    if (node instanceof Text && node.textContent?.trim()) {
+  const normalized = nodes.flatMap((node) => {
+    if (node instanceof Text) {
+      if (!node.textContent?.trim()) return []
       const paragraph = document.createElement('p')
       paragraph.textContent = node.textContent
       return [paragraph]
@@ -118,6 +119,16 @@ function normalizeLogicalNodes(nodes: Node[]) {
 
     return [node]
   })
+
+  // O editor nunca pode ficar sem uma folha editável. Navegadores podem remover
+  // o último <p> ao pressionar Delete/Backspace em um documento vazio.
+  if (!normalized.length) {
+    const paragraph = document.createElement('p')
+    paragraph.innerHTML = '<br />'
+    return [paragraph]
+  }
+
+  return normalized
 }
 
 function getPageContentBottom(page: HTMLElement) {
@@ -282,10 +293,17 @@ function rebuildPages(editor: HTMLElement, nodes: Node[]) {
 
   nodes.forEach(placeNode)
 
-  // Nunca deixa uma folha vazia no final.
+  // Nunca deixa uma folha vazia no final. A primeira folha é preservada sempre,
+  // mesmo quando o usuário apagou todo o conteúdo do documento.
   if (pages.length > 1 && !hasVisibleContent(pages[pages.length - 1])) {
     pages[pages.length - 1].remove()
     pages.pop()
+  }
+
+  if (!hasVisibleContent(pages[0])) {
+    const paragraph = document.createElement('p')
+    paragraph.innerHTML = '<br />'
+    pages[0].appendChild(paragraph)
   }
 
   pages.forEach((page, index) => {
