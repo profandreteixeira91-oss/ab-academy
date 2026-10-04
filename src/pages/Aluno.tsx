@@ -1793,7 +1793,21 @@ function Aluno() {
         window.location.href = pdf.signedUrl
       }
 
-      await supabase.rpc('registrar_material_visualizacao', { p_material_id: material.id })
+      // O carregamento do PDF não pode depender do registro de visualização.
+      // Se o RPC falhar depois que a nova guia já recebeu a URL, não devemos
+      // fechar a guia nem substituir o visualizador nativo do navegador.
+      void supabase
+        .rpc('registrar_material_visualizacao', {
+          p_material_id: material.id,
+        })
+        .then(({ error: trackingError }) => {
+          if (trackingError) {
+            console.error(
+              'Não foi possível registrar a visualização do material:',
+              trackingError,
+            )
+          }
+        })
     } catch (error) {
       pdfWindow?.close()
       setMaterialsError(error instanceof Error ? error.message : 'Não foi possível abrir o material.')
