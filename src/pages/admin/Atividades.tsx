@@ -1299,7 +1299,7 @@ export default function Atividades({
           )
         }
 
-        return { ...exercise, enunciado, alternativas }
+        return { ...exercise, enunciado, alternativas: alternatives }
       }),
     }))
   }
