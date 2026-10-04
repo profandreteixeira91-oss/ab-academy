@@ -343,8 +343,7 @@ img {
     display: none;
   }
 
-  /* Cabeçalhos dos portais não competem com o cabeçalho global. */
-  .student-header,
+  /* Cabeçalhos dos portais de professor e administração não competem com o cabeçalho global. */
   .professor-header,
   .admin-header {
     display: none !important;
