@@ -114,7 +114,16 @@ function CentralAtividade(){
       setStartedAt(start)
       setElapsedSeconds(Math.max(0,Math.floor((Date.now()-start)/1000)))
       const {data:responseData}=await supabase.from('central_respostas').select('respostas,pontuacao,concluida').eq('atividade_id',activityId).eq('aluno_id',studentData.id).maybeSingle()
-      if(responseData?.respostas)setAnswers(responseData.respostas as Record<string,unknown>)
+      const draftKey=`ab-academy-activity-draft-${activityId}`
+      if(responseData?.respostas){
+        setAnswers(responseData.respostas as Record<string,unknown>)
+        if(responseData.concluida) window.localStorage.removeItem(draftKey)
+      }else{
+        const localDraft=window.localStorage.getItem(draftKey)
+        if(localDraft){
+          try{setAnswers(JSON.parse(localDraft) as Record<string,unknown>)}catch{window.localStorage.removeItem(draftKey)}
+        }
+      }
       answersLoadedRef.current=true
       if(responseData?.concluida&&typeof responseData.pontuacao==='number')setResult({correct:responseData.pontuacao>=100,score:responseData.pontuacao,message:responseData.pontuacao>=100?'Resposta correta!':'Atividade concluída. Revise a explicação.'})
       setLoading(false)
@@ -125,6 +134,8 @@ function CentralAtividade(){
 
   useEffect(()=>{
     if(!answersLoadedRef.current||!activity||!student||!user||result)return
+    const draftKey=`ab-academy-activity-draft-${activity.id}`
+    try{window.localStorage.setItem(draftKey,JSON.stringify(answers))}catch(error){console.error('Central draft local save:',error)}
     const timer=window.setTimeout(async()=>{
       setSaveState('saving')
       const {error:saveError}=await supabase.from('central_respostas').upsert({
@@ -139,6 +150,7 @@ function CentralAtividade(){
         setSaveState('idle')
         return
       }
+      window.localStorage.removeItem(draftKey)
       setSaveState('saved')
     },500)
     return()=>window.clearTimeout(timer)
@@ -234,6 +246,7 @@ function CentralAtividade(){
       saveError=insertError
     }
     if(saveError){console.error('Central resposta save:',saveError);setError(`Não foi possível salvar sua resposta. ${saveError.message||''}`.trim());setSubmitting(false);return}
+    window.localStorage.removeItem(`ab-academy-activity-draft-${activity.id}`)
     setResult({correct,score,message:auto?(correct?'Muito bem! Você acertou a atividade.':'Resposta registrada. Revise a explicação e tente novamente.'): 'Resposta registrada para análise.'})
     setSaveState('saved')
     } catch (e) {
@@ -361,7 +374,7 @@ function CentralAtividade(){
           {result?<div className={result.correct?'central-result success':'central-result'}>
 <div className="central-result-hero"><div className="central-result-icon">{result.correct?<CheckCircle2 size={25}/>:<CircleHelp size={25}/>}</div><div className="central-result-copy"><span>{result.correct?'Muito bem!':'Atividade concluída'}</span><strong>{result.message}</strong></div><div className="central-result-score"><strong>{result.score}</strong><span>/100</span></div></div>
 {activity.explicacao&&<div className="central-result-explanation"><strong>Explicação</strong><p>{activity.explicacao}</p></div>}
-<div className="central-result-actions"><button type="button" className="central-secondary-button" onClick={()=>{setAnswers({});setResult(null);setSaveState("idle");window.sessionStorage.removeItem(`ab-academy-activity-start-${activity.id}`);const start=Date.now();window.sessionStorage.setItem(`ab-academy-activity-start-${activity.id}`,String(start));setStartedAt(start);setElapsedSeconds(0)}}><RotateCcw size={17}/>Refazer</button><div className="central-result-next">{nextActivity?<><span>PRÓXIMA NA SEQUÊNCIA</span><strong>{nextActivity.titulo}</strong></>:<span>Você chegou ao final desta sequência.</span>}</div><button type="button" className="central-primary-button" onClick={goNext}>{nextActivity?<>Próxima atividade <ArrowRight size={18}/></>:<>Voltar para a Central <ArrowRight size={18}/></>}</button></div></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
+<div className="central-result-actions"><button type="button" className="central-secondary-button" onClick={()=>{window.localStorage.removeItem(`ab-academy-activity-draft-${activity.id}`);setAnswers({});setResult(null);setSaveState("idle");window.sessionStorage.removeItem(`ab-academy-activity-start-${activity.id}`);const start=Date.now();window.sessionStorage.setItem(`ab-academy-activity-start-${activity.id}`,String(start));setStartedAt(start);setElapsedSeconds(0)}}><RotateCcw size={17}/>Refazer</button><div className="central-result-next">{nextActivity?<><span>PRÓXIMA NA SEQUÊNCIA</span><strong>{nextActivity.titulo}</strong></>:<span>Você chegou ao final desta sequência.</span>}</div><button type="button" className="central-primary-button" onClick={goNext}>{nextActivity?<>Próxima atividade <ArrowRight size={18}/></>:<>Voltar para a Central <ArrowRight size={18}/></>}</button></div></div>:<div className="central-activity-actions"><button type="button" className="central-secondary-button" onClick={()=>window.location.href='/aluno/central'}><ChevronLeft size={18}/>Voltar</button><button type="button" className="central-primary-button" onClick={()=>void submit()} disabled={submitting||!hasAnswer()}>{submitting?<><Loader2 size={18} className="central-activity-spin"/>Salvando...</>:<>Concluir atividade <ChevronRight size={18}/></>}</button></div>}
         </section>
       </div>
     </main>
