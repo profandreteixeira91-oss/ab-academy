@@ -286,7 +286,7 @@ export async function generateMaterialPdf(
     })
     normalizeRoot(body)
 
-    // As margens são aplicadas pelo html2pdf em cada página.
+    // O PDF não adiciona margem própria; preserva o espaçamento do elemento visual.
     body.style.width = '100%'
     body.style.boxSizing = 'border-box'
     body.style.margin = '0'
