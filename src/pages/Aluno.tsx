@@ -37,7 +37,7 @@ import {
 import logo from '../assets/logo_abacademy.png'
 import { supabase } from '../lib/supabase'
 import '../styles/aluno.css'
-import MaterialViewer, { type MaterialRecord } from '../components/MaterialViewer'
+import type { MaterialRecord } from '../components/MaterialViewer'
 
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
@@ -523,8 +523,6 @@ function Aluno() {
   const [materials, setMaterials] = useState<MaterialRecord[]>([])
   const [materialsLoading, setMaterialsLoading] = useState(false)
   const [materialsError, setMaterialsError] = useState('')
-  const [selectedMaterial, setSelectedMaterial] = useState<MaterialRecord | null>(null)
-  const [selectedMaterialPdfUrl, setSelectedMaterialPdfUrl] = useState('')
 
   const [activities, setActivities] =
     useState<Activity[]>([])
@@ -1744,6 +1742,11 @@ function Aluno() {
   }
 
   async function openStudentMaterial(material: MaterialRecord) {
+    // Abre uma janela nativa imediatamente para preservar a ação iniciada pelo
+    // clique. Depois que o Supabase devolver a URL assinada, o navegador carrega
+    // o PDF diretamente no visualizador nativo, exatamente como "Visualizar PDF".
+    const pdfWindow = window.open('about:blank', '_blank')
+
     try {
       setMaterialsError('')
 
@@ -1782,25 +1785,16 @@ function Aluno() {
         throw pdfError || new Error('Não foi possível gerar o acesso temporário ao PDF.')
       }
 
-      const currentMaterial: MaterialRecord = {
-        id: current.id,
-        titulo: current.titulo_publicado || '',
-        idioma: current.idioma_publicado || null,
-        conteudo_html: current.conteudo_publicado_html || '',
-        imagens: current.imagens_publicadas || [],
-        videos: current.videos_publicados || [],
-        status: current.status,
-        created_at: current.created_at,
-        updated_at: current.updated_at,
-        publicado_em: current.publicado_em,
-        pdf_publicado_path: current.pdf_publicado_path,
-        pdf_publicado_em: current.pdf_publicado_em,
+      if (pdfWindow) {
+        pdfWindow.location.href = pdf.signedUrl
+      } else {
+        // Fallback para navegadores que bloquearem a nova janela.
+        window.location.href = pdf.signedUrl
       }
 
-      setSelectedMaterialPdfUrl(pdf.signedUrl)
-      setSelectedMaterial(currentMaterial)
       await supabase.rpc('registrar_material_visualizacao', { p_material_id: material.id })
     } catch (error) {
+      pdfWindow?.close()
       setMaterialsError(error instanceof Error ? error.message : 'Não foi possível abrir o material.')
     }
   }
@@ -4238,18 +4232,7 @@ function Aluno() {
         </section>
       </main>
 
-      {selectedMaterial && (
-        <div className="student-material-viewer-modal">
-          <MaterialViewer
-            material={selectedMaterial}
-            pdfUrl={selectedMaterialPdfUrl}
-            onClose={() => {
-              setSelectedMaterial(null)
-              setSelectedMaterialPdfUrl('')
-            }}
-          />
-        </div>
-      )}
+
 
       {selectedActivity && (
         <ActivityModal
