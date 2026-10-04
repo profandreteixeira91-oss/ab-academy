@@ -96,6 +96,7 @@ export default function Materiais({ professorId }: Props) {
   const [actionDialog, setActionDialog] = useState<'rascunho' | 'publicado' | 'excluir' | null>(null)
   const [pendingMaterial, setPendingMaterial] = useState<MaterialRecord | null>(null)
   const [activeTable, setActiveTable] = useState<HTMLTableElement | null>(null)
+  const [recipientsPanelOpen, setRecipientsPanelOpen] = useState(true)
   const [autosaveStatus, setAutosaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [remoteStatus, setRemoteStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle')
   const [lastSavedAt, setLastSavedAt] = useState<Date | null>(null)
@@ -1284,7 +1285,7 @@ export default function Materiais({ professorId }: Props) {
           </button>
         </div>
 
-        <div className="professor-material-editor-grid">
+        <div className={"professor-material-editor-grid" + (recipientsPanelOpen ? "" : " recipients-collapsed")}>
           <main className="professor-material-editor-main">
             <div className="professor-material-editor-meta">
               <input
@@ -1442,7 +1443,15 @@ export default function Materiais({ professorId }: Props) {
                   <span className="professor-eyebrow">Direcionamento</span>
                   <h2>Alunos</h2>
                 </div>
-                <Users size={19} />
+                <button
+                  type="button"
+                  className="professor-material-side-toggle"
+                  onClick={() => setRecipientsPanelOpen(false)}
+                  aria-label="Ocultar painel de alunos"
+                  title="Ocultar painel de alunos"
+                >
+                  <ChevronRight size={18} />
+                </button>
               </div>
 
               <div className="professor-material-recipient-summary">
@@ -1501,6 +1510,18 @@ export default function Materiais({ professorId }: Props) {
               <small>Os destinatários ficam salvos também no rascunho e podem ser alterados antes da publicação.</small>
             </div>
           </aside>
+
+          {!recipientsPanelOpen && (
+            <button
+              type="button"
+              className="professor-material-side-reopen"
+              onClick={() => setRecipientsPanelOpen(true)}
+              aria-label="Mostrar painel de alunos"
+              title="Mostrar painel de alunos"
+            >
+              <ChevronLeft size={18} />
+            </button>
+          )}
         </div>
 
         {error && <div className="professor-material-error professor-material-editor-alert">{error}</div>}
