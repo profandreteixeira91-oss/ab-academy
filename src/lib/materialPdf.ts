@@ -279,7 +279,14 @@ export async function generateMaterialPdf(
 
   const visualSource = visualDocument || source
   const visualRect = visualSource.getBoundingClientRect()
-  const visualWidth = Math.max(1, Math.round(visualRect.width))
+  const firstPaginatedPage = !visualDocument
+    ? visualSource.querySelector<HTMLElement>('[data-material-page]')
+    : null
+  const pageRect = firstPaginatedPage?.getBoundingClientRect()
+  const visualWidth = Math.max(
+    1,
+    Math.round(pageRect?.width || visualRect.width),
+  )
 
   const page = document.createElement('article')
   page.style.width = `${visualWidth}px`
