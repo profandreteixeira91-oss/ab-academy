@@ -754,6 +754,60 @@ function ClassroomControls({
   )
 }
 
+function TeacherLiveKitConnectionMonitor({
+  onStatusChange,
+  onConnected,
+  onDisconnected,
+}: {
+  onStatusChange: (status: ClassroomStatus) => void
+  onConnected: () => void
+  onDisconnected: () => void
+}) {
+  const room = useRoomContext()
+
+  useEffect(() => {
+    const handleConnected = () => {
+      onConnected()
+      onStatusChange('connected')
+      console.info('[Classroom] Teacher connected to LiveKit room')
+    }
+    const handleReconnecting = () => {
+      onDisconnected()
+      onStatusChange('reconnecting')
+      console.warn('[Classroom] Teacher LiveKit reconnecting')
+    }
+    const handleReconnected = () => {
+      onConnected()
+      onStatusChange('connected')
+      console.info('[Classroom] Teacher LiveKit reconnected')
+    }
+    const handleDisconnected = () => {
+      onDisconnected()
+      onStatusChange('disconnected')
+      console.warn('[Classroom] Teacher LiveKit disconnected')
+    }
+    const handleConnectionStateChanged = (state: string) => {
+      if (state === 'reconnecting') handleReconnecting()
+    }
+
+    room.on(RoomEvent.Connected, handleConnected)
+    room.on(RoomEvent.Reconnecting, handleReconnecting)
+    room.on(RoomEvent.Reconnected, handleReconnected)
+    room.on(RoomEvent.Disconnected, handleDisconnected)
+    room.on(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged)
+
+    return () => {
+      room.off(RoomEvent.Connected, handleConnected)
+      room.off(RoomEvent.Reconnecting, handleReconnecting)
+      room.off(RoomEvent.Reconnected, handleReconnected)
+      room.off(RoomEvent.Disconnected, handleDisconnected)
+      room.off(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged)
+    }
+  }, [room, onStatusChange, onConnected, onDisconnected])
+
+  return null
+}
+
 /*
  * =========================================================
  * SALA LIVEKIT DO PROFESSOR
@@ -813,34 +867,6 @@ function TeacherLiveRoom({
 
   const [mediaWarning, setMediaWarning] = useState('')
 
-  const room = useRoomContext()
-
-  useEffect(() => {
-    const handleReconnecting = () => {
-      setConnected(false)
-      onStatusChange('reconnecting')
-      console.warn('[Classroom] Teacher LiveKit reconnecting')
-    }
-    const handleReconnected = () => {
-      setConnected(true)
-      onStatusChange('connected')
-      console.info('[Classroom] Teacher LiveKit reconnected')
-    }
-    const handleConnectionStateChanged = (state: string) => {
-      if (state === 'reconnecting') handleReconnecting()
-    }
-
-    room.on(RoomEvent.Reconnecting, handleReconnecting)
-    room.on(RoomEvent.Reconnected, handleReconnected)
-    room.on(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged)
-
-    return () => {
-      room.off(RoomEvent.Reconnecting, handleReconnecting)
-      room.off(RoomEvent.Reconnected, handleReconnected)
-      room.off(RoomEvent.ConnectionStateChanged, handleConnectionStateChanged)
-    }
-  }, [room, onStatusChange])
-
   useEffect(() => {
     const handleDeviceChange = () => {
       const microphone = navigator.mediaDevices?.getUserMedia
@@ -869,14 +895,6 @@ function TeacherLiveRoom({
         connect={true}
         audio={false}
         video={false}
-        onConnected={() => {
-          setConnected(true)
-          onStatusChange('connected')
-        }}
-        onDisconnected={() => {
-          setConnected(false)
-          onStatusChange('disconnected')
-        }}
         onMediaDeviceFailure={(failure, kind) => {
           onStatusChange('permission-error')
           console.error('[Classroom] Teacher media device failure', { failure, kind })
