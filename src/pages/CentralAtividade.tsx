@@ -135,12 +135,12 @@ function CentralAtividade(){
         concluida:false,
       },{onConflict:'atividade_id,aluno_id'})
       if(saveError){
-        console.error(saveError)
+        console.error('Central progresso save:',saveError)
         setSaveState('idle')
         return
       }
       setSaveState('saved')
-    },700)
+    },500)
     return()=>window.clearTimeout(timer)
   },[answers,activity,student,user,result])
 
