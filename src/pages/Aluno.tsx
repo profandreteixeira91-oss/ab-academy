@@ -1,6 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import type { User } from '@supabase/supabase-js'
 import {
+  ArrowDown,
+  ArrowUp,
   BookOpen,
   CalendarDays,
   Check,
@@ -359,6 +361,109 @@ function createEmptyAnswer(
   }
 }
 
+const GAP_MARKER = '{{lacuna}}'
+
+type AssociationPair = {
+  left: string
+  right: string
+}
+
+function parseGapAnswers(value: string) {
+  try {
+    const parsed: unknown = JSON.parse(value)
+    return Array.isArray(parsed)
+      ? parsed.map((item) => (typeof item === 'string' ? item : ''))
+      : []
+  } catch {
+    return []
+  }
+}
+
+function parseAssociationPair(value: string): AssociationPair {
+  try {
+    const parsed = JSON.parse(value) as Partial<AssociationPair>
+    if (typeof parsed.left === 'string' && typeof parsed.right === 'string') {
+      return { left: parsed.left, right: parsed.right }
+    }
+  } catch {
+    // Keep older plain-text alternatives readable.
+  }
+
+  return { left: value, right: '' }
+}
+
+function shuffleIds(ids: string[]) {
+  const shuffled = [...ids]
+  for (let index = shuffled.length - 1; index > 0; index--) {
+    const target = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]]
+  }
+  if (shuffled.length > 1 && shuffled.every((id, index) => id === ids[index])) {
+    const first = shuffled[0]
+    shuffled.splice(0, 1)
+    shuffled.push(first)
+  }
+  return shuffled
+}
+
+function serializeAnswer(exercise: Exercise, answer: StudentAnswer) {
+  if (isObjectiveType(exercise.tipo)) {
+    return {
+      resposta_texto:
+        answer.alternativaIds.length > 0 &&
+        !isSingleChoiceType(exercise.tipo)
+          ? JSON.stringify(answer.alternativaIds)
+          : null,
+      alternativa_id:
+        isSingleChoiceType(exercise.tipo)
+          ? answer.alternativaIds[0] || null
+          : null,
+    }
+  }
+
+  if (exercise.tipo === 'ordenar') {
+    return {
+      resposta_texto: answer.alternativaIds.length
+        ? JSON.stringify(answer.alternativaIds)
+        : null,
+      alternativa_id: null,
+    }
+  }
+
+  return {
+    resposta_texto: answer.respostaTexto || null,
+    alternativa_id: null,
+  }
+}
+
+function hasStudentAnswer(exercise: Exercise, answer: StudentAnswer) {
+  if (isObjectiveType(exercise.tipo) || exercise.tipo === 'ordenar') {
+    return answer.alternativaIds.length > 0
+  }
+
+  if (exercise.tipo === 'lacunas') {
+    return parseGapAnswers(answer.respostaTexto).some((value) => value.trim() !== '')
+  }
+
+  if (exercise.tipo === 'associar') {
+    try {
+      const parsed: unknown = JSON.parse(answer.respostaTexto)
+      return Boolean(
+        parsed &&
+          typeof parsed === 'object' &&
+          !Array.isArray(parsed) &&
+          Object.values(parsed).some(
+            (value) => typeof value === 'string' && value !== '',
+          ),
+      )
+    } catch {
+      return false
+    }
+  }
+
+  return answer.respostaTexto.trim() !== ''
+}
+
 function getInitials(name: string) {
   const parts = name
     .trim()
@@ -548,6 +653,9 @@ function Aluno() {
     selectedExercises,
     setSelectedExercises,
   ] = useState<Exercise[]>([])
+
+  const [_matchingOptionOrders, setMatchingOptionOrders] =
+    useState<Record<string, string[]>>({})
 
   const [
     activityLoading,
@@ -2362,14 +2470,32 @@ function Aluno() {
       setSelectedExercises(
         exercises,
       )
+      setMatchingOptionOrders(
+        Object.fromEntries(
+          exercises
+            .filter((exercise) => exercise.tipo === 'associar')
+            .map((exercise) => [
+              exercise.id,
+              shuffleIds(
+                exercise.alternativas.map((alternative) => alternative.id),
+              ),
+            ]),
+        ),
+      )
 
       const initialAnswers =
-        exercises.map(
-          (exercise) =>
-            createEmptyAnswer(
-              exercise.id,
-            ),
-        )
+        exercises.map((exercise) => {
+          const answer = createEmptyAnswer(exercise.id)
+          if (exercise.tipo === 'lacunas') {
+            answer.respostaTexto = JSON.stringify([])
+          }
+          if (exercise.tipo === 'ordenar') {
+            answer.alternativaIds = shuffleIds(
+              exercise.alternativas.map((alternative) => alternative.id),
+            )
+          }
+          return answer
+        })
 
       // Carrega as respostas existentes tanto para atividades já
       // enviadas quanto para atividades em andamento. Assim, abrir
@@ -2444,31 +2570,33 @@ function Aluno() {
             target.alternativaIds = [
               answer.alternativa_id,
             ]
-          } else if (
-            answer.resposta_texto &&
-            isObjectiveType(
-              exercises.find(
-                (exercise) =>
-                  exercise.id ===
-                  answer.exercicio_id,
-              )?.tipo as ExerciseType,
+          } else if (answer.resposta_texto) {
+            const targetExercise = exercises.find(
+              (exercise) => exercise.id === answer.exercicio_id,
             )
-          ) {
             try {
               const parsed = JSON.parse(
                 answer.resposta_texto,
               )
 
               if (Array.isArray(parsed)) {
-                target.alternativaIds =
-                  parsed.filter(
-                    (id): id is string =>
-                      typeof id === 'string',
+                if (targetExercise && isObjectiveType(targetExercise.tipo)) {
+                  target.alternativaIds = parsed.filter(
+                    (id): id is string => typeof id === 'string',
                   )
-                target.respostaTexto = ''
+                  target.respostaTexto = ''
+                } else if (targetExercise?.tipo === 'ordenar') {
+                  const validIds = new Set(
+                    targetExercise.alternativas.map((alternative) => alternative.id),
+                  )
+                  target.alternativaIds = parsed.filter(
+                    (id): id is string =>
+                      typeof id === 'string' && validIds.has(id),
+                  )
+                }
               }
             } catch {
-              // Resposta objetiva não-JSON permanece intacta.
+              // Text responses are intentionally kept as entered.
             }
           }
         }
@@ -2616,6 +2744,31 @@ function Aluno() {
     )
   }
 
+  function _moveOrderedAnswer(
+    exerciseId: string,
+    alternativeId: string,
+    direction: 'up' | 'down',
+  ) {
+    setActivityError('')
+    setActivityProgressSaved(false)
+    setAnswers((current) =>
+      current.map((answer) => {
+        if (answer.exerciseId !== exerciseId) return answer
+
+        const index = answer.alternativaIds.indexOf(alternativeId)
+        const targetIndex = direction === 'up' ? index - 1 : index + 1
+        if (index < 0 || targetIndex < 0 || targetIndex >= answer.alternativaIds.length) {
+          return answer
+        }
+
+        const alternativeIds = [...answer.alternativaIds]
+        const [moved] = alternativeIds.splice(index, 1)
+        alternativeIds.splice(targetIndex, 0, moved)
+        return { ...answer, alternativaIds }
+      }),
+    )
+  }
+
   async function saveActivityProgress() {
     if (
       !selectedActivity ||
@@ -2628,27 +2781,16 @@ function Aluno() {
 
     const answerRows = selectedExercises.map((exercise) => {
       const answer = getAnswer(exercise.id)
-      const isObjective = isObjectiveType(exercise.tipo)
 
       return {
         atividade_id: selectedActivity.id,
         exercicio_id: exercise.id,
-        resposta_texto: isObjective
-          ? answer.alternativaIds.length > 0 &&
-            !isSingleChoiceType(exercise.tipo)
-            ? JSON.stringify(answer.alternativaIds)
-            : null
-          : answer.respostaTexto || null,
-        alternativa_id:
-          isObjective && isSingleChoiceType(exercise.tipo)
-            ? answer.alternativaIds[0] || null
-            : null,
+        ...serializeAnswer(exercise, answer),
       }
     })
 
-    const hasAnyAnswer = answerRows.some((row) =>
-      row.alternativa_id ||
-      (row.resposta_texto && row.resposta_texto.trim().length > 0),
+    const hasAnyAnswer = selectedExercises.some((exercise) =>
+      hasStudentAnswer(exercise, getAnswer(exercise.id)),
     )
 
     try {
@@ -2692,9 +2834,12 @@ function Aluno() {
 
       for (const row of answerRows) {
         const existingId = existingAnswers.get(row.exercicio_id)
-        const hasAnswer =
-          Boolean(row.alternativa_id) ||
-          Boolean(row.resposta_texto?.trim())
+        const exercise = selectedExercises.find(
+          (item) => item.id === row.exercicio_id,
+        )
+        const hasAnswer = exercise
+          ? hasStudentAnswer(exercise, getAnswer(exercise.id))
+          : false
 
         if (existingId) {
           updates.push(
@@ -2768,6 +2913,54 @@ function Aluno() {
       selectedExercises) {
       const answer =
         getAnswer(exercise.id)
+
+      if (exercise.tipo === 'lacunas') {
+        const values = parseGapAnswers(answer.respostaTexto)
+        const gapCount = exercise.enunciado.split(GAP_MARKER).length - 1
+        if (gapCount === 0 || values.length !== gapCount || values.some((value) => !value.trim())) {
+          return `Preencha todas as lacunas do exercício ${exercise.ordem + 1}.`
+        }
+        continue
+      }
+
+      if (exercise.tipo === 'ordenar') {
+        const validIds = new Set(
+          exercise.alternativas.map((alternative) => alternative.id),
+        )
+        if (
+          exercise.alternativas.length < 2 ||
+          answer.alternativaIds.length !== exercise.alternativas.length ||
+          answer.alternativaIds.some((id) => !validIds.has(id)) ||
+          new Set(answer.alternativaIds).size !== exercise.alternativas.length
+        ) {
+          return `Organize todos os itens do exercício ${exercise.ordem + 1}.`
+        }
+        continue
+      }
+
+      if (exercise.tipo === 'associar') {
+        const pairs = exercise.alternativas.map((alternative) => ({
+          id: alternative.id,
+          ...parseAssociationPair(alternative.texto),
+        }))
+        let responses: Record<string, string> = {}
+        try {
+          const parsed: unknown = JSON.parse(answer.respostaTexto)
+          if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+            responses = parsed as Record<string, string>
+          }
+        } catch {
+          // Empty or incomplete association answers are reported below.
+        }
+        if (
+          pairs.length < 2 ||
+          pairs.some((pair) => !responses[pair.id]) ||
+          new Set(Object.values(responses)).size !== pairs.length
+        ) {
+          return `Associe todos os itens do exercício ${exercise.ordem + 1}.`
+        }
+        continue
+      }
 
       if (
         isObjectiveType(
@@ -2890,21 +3083,7 @@ function Aluno() {
                 exercise.id,
               aluno_id:
                 studentId,
-              resposta_texto:
-                isObjectiveType(exercise.tipo)
-                  ? answer.alternativaIds.length > 0 &&
-                    !isSingleChoiceType(exercise.tipo)
-                    ? JSON.stringify(
-                        answer.alternativaIds,
-                      )
-                    : null
-                  : answer.respostaTexto || null,
-              alternativa_id:
-                isObjectiveType(exercise.tipo) &&
-                isSingleChoiceType(exercise.tipo)
-                  ? answer.alternativaIds[0] ||
-                    null
-                  : null,
+              ...serializeAnswer(exercise, answer),
               pontuacao: null,
               feedback: null,
               corrigida: false,
@@ -5654,6 +5833,22 @@ function ActivityModal({
                     createEmptyAnswer(
                       exercise.id,
                     )
+                  const gapAnswers = parseGapAnswers(answer.respostaTexto)
+                  const orderedIds = answer.alternativaIds.length
+                    ? answer.alternativaIds
+                    : exercise.alternativas.map((alternative) => alternative.id)
+                  const matchOptionIds =
+                    _matchingOptionOrders[exercise.id] ||
+                    exercise.alternativas.map((alternative) => alternative.id).reverse()
+                  let associationAnswers: Record<string, string> = {}
+                  try {
+                    const parsed = JSON.parse(answer.respostaTexto)
+                    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                      associationAnswers = parsed as Record<string, string>
+                    }
+                  } catch {
+                    // Incomplete associations start with no selected matches.
+                  }
 
                   return (
                     <div
@@ -5723,9 +5918,34 @@ function ActivityModal({
 
                       <div className="student-exercise-question">
                         <p>
-                          {renderTextWithLinks(
-                            exercise.enunciado,
-                          )}
+                          {exercise.tipo === 'lacunas'
+                            ? exercise.enunciado
+                                .split(GAP_MARKER)
+                                .map((part, gapIndex, parts) => (
+                                  <Fragment key={`${exercise.id}-gap-${gapIndex}`}>
+                                    {part && (
+                                      <span>{renderTextWithLinks(part)}</span>
+                                    )}
+                                    {gapIndex < parts.length - 1 && (
+                                      <input
+                                        className="student-gap-answer"
+                                        type="text"
+                                        aria-label={`Resposta da lacuna ${gapIndex + 1}`}
+                                        value={gapAnswers[gapIndex] || ''}
+                                        disabled={readOnly || activityBusy}
+                                        onChange={(event) => {
+                                          const values = [...gapAnswers]
+                                          values[gapIndex] = event.target.value
+                                          onTextChange(
+                                            exercise.id,
+                                            JSON.stringify(values),
+                                          )
+                                        }}
+                                      />
+                                    )}
+                                  </Fragment>
+                                ))
+                            : renderTextWithLinks(exercise.enunciado)}
                         </p>
                       </div>
 
@@ -5793,6 +6013,117 @@ function ActivityModal({
                               )
                             },
                           )}
+                        </div>
+                      ) : exercise.tipo === 'ordenar' ? (
+                        <div className="student-order-items">
+                          {orderedIds.map((alternativeId, itemIndex) => {
+                            const alternative = exercise.alternativas.find(
+                              (item) => item.id === alternativeId,
+                            )
+                            if (!alternative) return null
+
+                            return (
+                              <div
+                                className="student-order-item"
+                                key={alternative.id}
+                              >
+                                <span>{itemIndex + 1}</span>
+                                <strong>{alternative.texto}</strong>
+                                {!readOnly && (
+                                  <div>
+                                    <button
+                                      type="button"
+                                      aria-label={`Mover item ${itemIndex + 1} para cima`}
+                                      onClick={_moveOrderedAnswer.bind(
+                                        null,
+                                        exercise.id,
+                                        alternative.id,
+                                        'up',
+                                      )}
+                                      disabled={activityBusy || itemIndex === 0}
+                                    >
+                                      <ArrowUp size={16} />
+                                    </button>
+                                    <button
+                                      type="button"
+                                      aria-label={`Mover item ${itemIndex + 1} para baixo`}
+                                      onClick={_moveOrderedAnswer.bind(
+                                        null,
+                                        exercise.id,
+                                        alternative.id,
+                                        'down',
+                                      )}
+                                      disabled={
+                                        activityBusy ||
+                                        itemIndex === orderedIds.length - 1
+                                      }
+                                    >
+                                      <ArrowDown size={16} />
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      ) : exercise.tipo === 'associar' ? (
+                        <div className="student-match-items">
+                          {exercise.alternativas.map((alternative, pairIndex) => {
+                            const pair = parseAssociationPair(alternative.texto)
+                            return (
+                              <label
+                                className="student-match-item"
+                                key={alternative.id}
+                              >
+                                <span>{pair.left}</span>
+                                <select
+                                  aria-label={`Correspondência para ${pair.left || `item ${pairIndex + 1}`}`}
+                                  value={associationAnswers[alternative.id] || ''}
+                                  disabled={readOnly || activityBusy}
+                                  onChange={(event) => {
+                                    const next = { ...associationAnswers }
+                                    if (event.target.value) {
+                                      next[alternative.id] = event.target.value
+                                    } else {
+                                      delete next[alternative.id]
+                                    }
+                                    onTextChange(
+                                      exercise.id,
+                                      JSON.stringify(next),
+                                    )
+                                  }}
+                                >
+                                  <option value="">Selecione uma correspondência</option>
+                                  {matchOptionIds.map((optionId) => {
+                                    const option = exercise.alternativas.find(
+                                      (item) => item.id === optionId,
+                                    )
+                                    if (!option) return null
+                                    const match = parseAssociationPair(option.texto)
+                                    return (
+                                      <option
+                                        key={option.id}
+                                        value={option.id}
+                                        disabled={Object.entries(
+                                          associationAnswers,
+                                        ).some(
+                                          ([otherPairId, selectedId]) =>
+                                            otherPairId !== alternative.id &&
+                                            selectedId === option.id,
+                                        )}
+                                      >
+                                        {match.right}
+                                      </option>
+                                    )
+                                  })}
+                                </select>
+                              </label>
+                            )
+                          })}
+                        </div>
+                      ) : exercise.tipo === 'lacunas' ? (
+                        <div className="student-gap-answer-count">
+                          {exercise.alternativas.length} lacuna(s) para completar
                         </div>
                       ) : (
                         <textarea

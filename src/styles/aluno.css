@@ -1464,6 +1464,110 @@
   white-space: pre-wrap;
 }
 
+.student-gap-answer {
+  width: min(180px, 38vw);
+  min-height: 34px;
+  margin: 0 5px 4px;
+  padding: 4px 9px;
+  border: 1px solid var(--student-border);
+  border-radius: 7px;
+  outline: 0;
+  background: #fff;
+  color: var(--student-text);
+  font: inherit;
+  vertical-align: baseline;
+}
+
+.student-gap-answer:focus,
+.student-match-item select:focus {
+  border-color: var(--student-primary);
+  box-shadow: 0 0 0 3px rgba(22, 73, 160, 0.09);
+}
+
+.student-order-items,
+.student-match-items {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 0 20px 20px;
+}
+
+.student-order-item,
+.student-match-item {
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 11px;
+  border: 1px solid var(--student-border);
+  border-radius: 9px;
+  background: #fff;
+}
+
+.student-order-item > span {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  background: var(--student-primary-light);
+  color: var(--student-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.student-order-item > strong,
+.student-match-item > span {
+  flex: 1;
+  color: var(--student-text);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.student-order-item > div {
+  display: flex;
+  gap: 5px;
+}
+
+.student-order-item button {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--student-border);
+  border-radius: 7px;
+  background: #fff;
+  color: var(--student-text-secondary);
+  cursor: pointer;
+}
+
+.student-order-item button:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.student-match-item select {
+  min-height: 38px;
+  flex: 1;
+  min-width: 0;
+  padding: 0 10px;
+  border: 1px solid var(--student-border);
+  border-radius: 7px;
+  outline: 0;
+  background: #fff;
+  color: var(--student-text);
+  font: inherit;
+}
+
+.student-gap-answer-count {
+  padding: 0 20px 18px;
+  color: var(--student-text-secondary);
+  font-size: 12px;
+}
+
 /* =========================================================
    ALTERNATIVES
    ========================================================= */
@@ -2234,6 +2338,16 @@
 
   .student-exercise-question {
     padding: 16px 15px 12px;
+  }
+
+  .student-order-items,
+  .student-match-items {
+    padding: 0 15px 15px;
+  }
+
+  .student-match-item {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .student-alternatives {

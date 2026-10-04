@@ -244,6 +244,44 @@ function createEmptyExercicio(ordem = 0): ExercicioForm {
   }
 }
 
+const GAP_MARKER = '{{lacuna}}'
+
+type AssociationPair = {
+  left: string
+  right: string
+}
+
+function parseAssociationPair(value: string): AssociationPair {
+  try {
+    const parsed = JSON.parse(value) as Partial<AssociationPair>
+    if (typeof parsed.left === 'string' && typeof parsed.right === 'string') {
+      return { left: parsed.left, right: parsed.right }
+    }
+  } catch {
+    // Older exercises may contain plain text alternatives.
+  }
+
+  return { left: value, right: '' }
+}
+
+function encodeAssociationPair(pair: AssociationPair) {
+  return JSON.stringify(pair)
+}
+
+function createStructuredAlternative(
+  tipo: TipoExercicio,
+  ordem: number,
+): AlternativaForm {
+  return {
+    ...createEmptyAlternativa(ordem),
+    correta: tipo === 'lacunas',
+    texto:
+      tipo === 'associar'
+        ? encodeAssociationPair({ left: '', right: '' })
+        : '',
+  }
+}
+
 function createEmptyForm(): AtividadeForm {
   return {
     aluno_id: '',
@@ -1243,6 +1281,132 @@ export default function Atividades({
     }))
   }
 
+  function updateGapQuestion(
+    exerciseId: string,
+    enunciado: string,
+  ) {
+    const gapCount = enunciado.split(GAP_MARKER).length - 1
+
+    setForm((current) => ({
+      ...current,
+      exercicios: current.exercicios.map((exercise) => {
+        if (exercise.id !== exerciseId) return exercise
+
+        const alternatives = exercise.alternativas.slice(0, gapCount)
+        while (alternatives.length < gapCount) {
+          alternatives.push(
+            createStructuredAlternative('lacunas', alternatives.length),
+          )
+        }
+
+        return { ...exercise, enunciado, alternativas }
+      }),
+    }))
+  }
+
+  function addGap(exerciseId: string) {
+    const exercise = form.exercicios.find((item) => item.id === exerciseId)
+    if (!exercise) return
+
+    const prefix = exercise.enunciado.trimEnd()
+    updateGapQuestion(
+      exerciseId,
+      `${prefix}${prefix ? ' ' : ''}${GAP_MARKER}`,
+    )
+  }
+
+  function addStructuredItem(exerciseId: string) {
+    setForm((current) => ({
+      ...current,
+      exercicios: current.exercicios.map((exercise) =>
+        exercise.id === exerciseId
+          ? {
+              ...exercise,
+              alternativas: [
+                ...exercise.alternativas,
+                createStructuredAlternative(
+                  exercise.tipo,
+                  exercise.alternativas.length,
+                ),
+              ],
+            }
+          : exercise,
+      ),
+    }))
+  }
+
+  function removeStructuredItem(
+    exerciseId: string,
+    alternativeId: string,
+  ) {
+    setForm((current) => ({
+      ...current,
+      exercicios: current.exercicios.map((exercise) =>
+        exercise.id === exerciseId
+          ? {
+              ...exercise,
+              alternativas: exercise.alternativas
+                .filter((alternative) => alternative.id !== alternativeId)
+                .map((alternative, index) => ({ ...alternative, ordem: index })),
+            }
+          : exercise,
+      ),
+    }))
+  }
+
+  function moveStructuredItem(
+    exerciseId: string,
+    alternativeId: string,
+    direction: 'up' | 'down',
+  ) {
+    setForm((current) => ({
+      ...current,
+      exercicios: current.exercicios.map((exercise) => {
+        if (exercise.id !== exerciseId) return exercise
+
+        const index = exercise.alternativas.findIndex(
+          (alternative) => alternative.id === alternativeId,
+        )
+        const targetIndex = direction === 'up' ? index - 1 : index + 1
+        if (index < 0 || targetIndex < 0 || targetIndex >= exercise.alternativas.length) {
+          return exercise
+        }
+
+        const alternatives = [...exercise.alternativas]
+        const [moved] = alternatives.splice(index, 1)
+        alternatives.splice(targetIndex, 0, moved)
+        return {
+          ...exercise,
+          alternativas: alternatives.map((alternative, order) => ({
+            ...alternative,
+            ordem: order,
+          })),
+        }
+      }),
+    }))
+  }
+
+  function updateAssociationPair(
+    exerciseId: string,
+    alternativeId: string,
+    field: keyof AssociationPair,
+    value: string,
+  ) {
+    const exercise = form.exercicios.find((item) => item.id === exerciseId)
+    const alternative = exercise?.alternativas.find(
+      (item) => item.id === alternativeId,
+    )
+    if (!alternative) return
+
+    const pair = parseAssociationPair(alternative.texto)
+    updateAlternative(
+      exerciseId,
+      alternativeId,
+      'texto',
+      encodeAssociationPair({ ...pair, [field]: value }),
+    )
+  }
+
   function changeExerciseType(
     exerciseId: string,
     tipo: TipoExercicio,
@@ -1257,6 +1421,10 @@ export default function Atividades({
               exercise.id !==
               exerciseId
             ) {
+              return exercise
+            }
+
+            if (exercise.tipo === tipo) {
               return exercise
             }
 
@@ -1314,6 +1482,20 @@ export default function Atividades({
                 ...exercise,
                 tipo,
                 alternativas: alternatives,
+              }
+            }
+
+            if (
+              tipo === 'ordenar' ||
+              tipo === 'associar'
+            ) {
+              return {
+                ...exercise,
+                tipo,
+                alternativas: [
+                  createStructuredAlternative(tipo, 0),
+                  createStructuredAlternative(tipo, 1),
+                ],
               }
             }
 
@@ -1725,6 +1907,86 @@ export default function Atividades({
             } deve ter apenas uma resposta correta.`,
           )
 
+          return false
+        }
+      }
+
+      if (exercise.tipo === 'lacunas') {
+        const gapCount = exercise.enunciado.split(GAP_MARKER).length - 1
+        if (gapCount === 0) {
+          setError(
+            `Adicione pelo menos uma lacuna ao enunciado do exercício ${index + 1}.`,
+          )
+          return false
+        }
+
+        if (
+          exercise.alternativas.length !== gapCount ||
+          exercise.alternativas.some((alternative) => !alternative.texto.trim())
+        ) {
+          setError(
+            `Informe a resposta correta para cada lacuna do exercício ${index + 1}.`,
+          )
+          return false
+        }
+      }
+
+      if (exercise.tipo === 'ordenar') {
+        if (exercise.alternativas.length < 2) {
+          setError(
+            `Adicione pelo menos dois itens para ordenar no exercício ${index + 1}.`,
+          )
+          return false
+        }
+
+        if (exercise.alternativas.some((alternative) => !alternative.texto.trim())) {
+          setError(
+            `Preencha todos os itens do exercício ${index + 1}.`,
+          )
+          return false
+        }
+
+        if (
+          new Set(
+            exercise.alternativas.map((alternative) =>
+              alternative.texto.trim().toLocaleLowerCase(),
+            ),
+          ).size !== exercise.alternativas.length
+        ) {
+          setError(
+            `Os itens do exercício ${index + 1} devem ter textos diferentes.`,
+          )
+          return false
+        }
+      }
+
+      if (exercise.tipo === 'associar') {
+        const pairs = exercise.alternativas.map((alternative) =>
+          parseAssociationPair(alternative.texto),
+        )
+        if (pairs.length < 2) {
+          setError(
+            `Adicione pelo menos dois pares para associar no exercício ${index + 1}.`,
+          )
+          return false
+        }
+
+        if (pairs.some((pair) => !pair.left.trim() || !pair.right.trim())) {
+          setError(
+            `Preencha os dois lados de todos os pares do exercício ${index + 1}.`,
+          )
+          return false
+        }
+
+        if (
+          new Set(pairs.map((pair) => pair.left.trim().toLocaleLowerCase())).size !==
+            pairs.length ||
+          new Set(pairs.map((pair) => pair.right.trim().toLocaleLowerCase())).size !==
+          pairs.length
+        ) {
+          setError(
+            `Os itens e as correspondências devem ser únicos no exercício ${index + 1}.`,
+          )
           return false
         }
       }
@@ -2445,6 +2707,59 @@ export default function Atividades({
         }
       } catch {
         // Valor não-JSON: mantém a resposta original.
+      }
+    }
+
+    if (exercise.tipo === 'lacunas') {
+      try {
+        const parsed: unknown = JSON.parse(answer.resposta_texto)
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((value, index) => `Lacuna ${index + 1}: ${String(value || '(sem resposta)')}`)
+            .join('\n')
+        }
+      } catch {
+        // Older textual answers remain visible as entered.
+      }
+    }
+
+    if (exercise.tipo === 'ordenar') {
+      try {
+        const parsed: unknown = JSON.parse(answer.resposta_texto)
+        if (Array.isArray(parsed)) {
+          return parsed
+            .map((id) =>
+              exercise.alternativas.find((alternative) => alternative.id === id)?.texto,
+            )
+            .filter((value): value is string => Boolean(value))
+            .map((value, index) => `${index + 1}. ${value}`)
+            .join('\n')
+        }
+      } catch {
+        // Older textual answers remain visible as entered.
+      }
+    }
+
+    if (exercise.tipo === 'associar') {
+      try {
+        const parsed: unknown = JSON.parse(answer.resposta_texto)
+        if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+          const matches = parsed as Record<string, unknown>
+          return exercise.alternativas
+            .map((alternative) => {
+              const pair = parseAssociationPair(alternative.texto)
+              const selectedId = matches[alternative.id]
+              const selected = exercise.alternativas.find(
+                (option) => option.id === selectedId,
+              )
+              return selected
+                ? `${pair.left} → ${parseAssociationPair(selected.texto).right}`
+                : `${pair.left} → (sem resposta)`
+            })
+            .join('\n')
+        }
+      } catch {
+        // Older textual answers remain visible as entered.
       }
     }
 
@@ -4442,31 +4757,265 @@ export default function Atividades({
 
                                 <label className="atividades-field atividades-field-full">
                                   <span>
-                                    Enunciado *
+                                    {exercise.tipo === 'lacunas'
+                                      ? 'Frase com lacunas *'
+                                      : 'Enunciado / instruções *'}
                                   </span>
 
                                   <textarea
                                     rows={
                                       4
                                     }
-                                    placeholder="Digite o enunciado da questão..."
-                                    value={renderTextWithLinks(
-                                    exercise.enunciado,
-                                  )}
+                                    placeholder={
+                                      exercise.tipo === 'lacunas'
+                                        ? 'Ex.: She {{lacuna}} coffee every morning.'
+                                        : 'Explique ao aluno o que ele deve fazer...'
+                                    }
+                                    value={exercise.enunciado}
                                     onChange={(
                                       event,
                                     ) =>
-                                      updateExercise(
-                                        exercise.id,
-                                        'enunciado',
-                                        event
-                                          .target
-                                          .value,
-                                      )
+                                      exercise.tipo === 'lacunas'
+                                        ? updateGapQuestion(
+                                            exercise.id,
+                                            event.target.value,
+                                          )
+                                        : updateExercise(
+                                            exercise.id,
+                                            'enunciado',
+                                            event.target.value,
+                                          )
                                     }
                                   />
+
+                                  {exercise.tipo === 'lacunas' && (
+                                    <div className="atividades-gap-helper">
+                                      <button
+                                        type="button"
+                                        className="atividades-subsection-add"
+                                        onClick={() => addGap(exercise.id)}
+                                      >
+                                        <Plus size={16} />
+                                        Adicionar lacuna ao final
+                                      </button>
+                                      <span>
+                                        O marcador {'{{lacuna}}'} identifica o espaço que o aluno vai completar.
+                                        Você pode movê-lo ou copiá-lo no texto.
+                                      </span>
+                                    </div>
+                                  )}
                                 </label>
                               </div>
+
+                              {exercise.tipo === 'lacunas' && (
+                                <div className="atividades-subsection">
+                                  <div className="atividades-subsection-header">
+                                    <div>
+                                      <h4>Gabarito das lacunas</h4>
+                                      <span>
+                                        Informe uma resposta correta para cada marcador, na ordem em que aparece.
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <div className="atividades-structured-list">
+                                    {exercise.alternativas.map((alternative, gapIndex) => (
+                                      <label
+                                        className="atividades-field"
+                                        key={alternative.id}
+                                      >
+                                        <span>Lacuna {gapIndex + 1}</span>
+                                        <input
+                                          type="text"
+                                          value={alternative.texto}
+                                          placeholder={`Resposta correta da lacuna ${gapIndex + 1}`}
+                                          onChange={(event) =>
+                                            updateAlternative(
+                                              exercise.id,
+                                              alternative.id,
+                                              'texto',
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                      </label>
+                                    ))}
+                                    {exercise.alternativas.length === 0 && (
+                                      <p className="atividades-structured-empty">
+                                        Adicione um marcador à frase para configurar o gabarito.
+                                      </p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+
+                              {exercise.tipo === 'ordenar' && (
+                                <div className="atividades-subsection">
+                                  <div className="atividades-subsection-header">
+                                    <div>
+                                      <h4>Itens na ordem correta</h4>
+                                      <span>
+                                        Escreva os itens já na sequência esperada. O aluno receberá os itens embaralhados.
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="atividades-subsection-add"
+                                      onClick={() => addStructuredItem(exercise.id)}
+                                    >
+                                      <Plus size={16} />
+                                      Adicionar item
+                                    </button>
+                                  </div>
+                                  <div className="atividades-structured-list">
+                                    {exercise.alternativas.map((alternative, itemIndex) => (
+                                      <div
+                                        className="atividades-structured-row"
+                                        key={alternative.id}
+                                      >
+                                        <span className="atividades-structured-number">
+                                          {itemIndex + 1}
+                                        </span>
+                                        <input
+                                          type="text"
+                                          value={alternative.texto}
+                                          placeholder={`Item ${itemIndex + 1} na ordem correta`}
+                                          onChange={(event) =>
+                                            updateAlternative(
+                                              exercise.id,
+                                              alternative.id,
+                                              'texto',
+                                              event.target.value,
+                                            )
+                                          }
+                                        />
+                                        <div className="atividades-exercise-actions">
+                                          <button
+                                            type="button"
+                                            title="Mover item para cima"
+                                            onClick={() =>
+                                              moveStructuredItem(
+                                                exercise.id,
+                                                alternative.id,
+                                                'up',
+                                              )
+                                            }
+                                            disabled={itemIndex === 0}
+                                          >
+                                            <ArrowUp size={16} />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            title="Mover item para baixo"
+                                            onClick={() =>
+                                              moveStructuredItem(
+                                                exercise.id,
+                                                alternative.id,
+                                                'down',
+                                              )
+                                            }
+                                            disabled={itemIndex === exercise.alternativas.length - 1}
+                                          >
+                                            <ArrowDown size={16} />
+                                          </button>
+                                          <button
+                                            type="button"
+                                            className="danger"
+                                            title="Remover item"
+                                            onClick={() =>
+                                              removeStructuredItem(
+                                                exercise.id,
+                                                alternative.id,
+                                              )
+                                            }
+                                          >
+                                            <Trash2 size={16} />
+                                          </button>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {exercise.tipo === 'associar' && (
+                                <div className="atividades-subsection">
+                                  <div className="atividades-subsection-header">
+                                    <div>
+                                      <h4>Pares corretos</h4>
+                                      <span>
+                                        Preencha os dois lados de cada par. O aluno escolherá a correspondência.
+                                      </span>
+                                    </div>
+                                    <button
+                                      type="button"
+                                      className="atividades-subsection-add"
+                                      onClick={() => addStructuredItem(exercise.id)}
+                                    >
+                                      <Plus size={16} />
+                                      Adicionar par
+                                    </button>
+                                  </div>
+                                  <div className="atividades-structured-list">
+                                    {exercise.alternativas.map((alternative, pairIndex) => {
+                                      const pair = parseAssociationPair(alternative.texto)
+                                      return (
+                                        <div
+                                          className="atividades-association-row"
+                                          key={alternative.id}
+                                        >
+                                          <span className="atividades-structured-number">
+                                            {pairIndex + 1}
+                                          </span>
+                                          <input
+                                            type="text"
+                                            value={pair.left}
+                                            placeholder={`Item ${pairIndex + 1}`}
+                                            aria-label={`Item ${pairIndex + 1} do par`}
+                                            onChange={(event) =>
+                                              updateAssociationPair(
+                                                exercise.id,
+                                                alternative.id,
+                                                'left',
+                                                event.target.value,
+                                              )
+                                            }
+                                          />
+                                          <span className="atividades-association-arrow">
+                                            corresponde a
+                                          </span>
+                                          <input
+                                            type="text"
+                                            value={pair.right}
+                                            placeholder={`Correspondência ${pairIndex + 1}`}
+                                            aria-label={`Correspondência ${pairIndex + 1} do par`}
+                                            onChange={(event) =>
+                                              updateAssociationPair(
+                                                exercise.id,
+                                                alternative.id,
+                                                'right',
+                                                event.target.value,
+                                              )
+                                            }
+                                          />
+                                          <button
+                                            type="button"
+                                            className="atividades-delete-small"
+                                            aria-label={`Remover par ${pairIndex + 1}`}
+                                            onClick={() =>
+                                              removeStructuredItem(
+                                                exercise.id,
+                                                alternative.id,
+                                              )
+                                            }
+                                          >
+                                            <Trash2 size={16} />
+                                          </button>
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
+                                </div>
+                              )}
 
                               {isObjectiveType(
                                 exercise.tipo,
@@ -5029,9 +5578,20 @@ export default function Atividades({
                       )}
 
                       <p className="atividades-preview-enunciado">
-                        {
-                          exercise.enunciado
-                        }
+                        {exercise.tipo === 'lacunas'
+                          ? exercise.enunciado
+                              .split(GAP_MARKER)
+                              .map((part, gapIndex, parts) => (
+                                <span key={`${exercise.id}-preview-gap-${gapIndex}`}>
+                                  {part}
+                                  {gapIndex < parts.length - 1 && (
+                                    <span className="atividades-preview-gap">
+                                      Lacuna {gapIndex + 1}
+                                    </span>
+                                  )}
+                                </span>
+                              ))
+                          : exercise.enunciado}
                       </p>
 
                       {exercise.conteudos.map(
@@ -5112,9 +5672,35 @@ export default function Atividades({
                         </div>
                       )}
 
-                      {!isObjectiveType(
-                        exercise.tipo,
-                      ) && (
+                      {exercise.tipo === 'ordenar' && (
+                        <div className="atividades-preview-structured">
+                          <span>Itens apresentados embaralhados:</span>
+                          {exercise.alternativas.map((alternative) => (
+                            <div key={alternative.id}>
+                              <i />
+                              {alternative.texto || 'Item sem texto'}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {exercise.tipo === 'associar' && (
+                        <div className="atividades-preview-structured">
+                          <span>O aluno seleciona uma correspondência para cada item:</span>
+                          {exercise.alternativas.map((alternative) => (
+                            <div key={alternative.id}>
+                              <i />
+                              {parseAssociationPair(alternative.texto).left || 'Item'}
+                              <span className="atividades-preview-match-placeholder">
+                                Selecione uma correspondência
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {!isObjectiveType(exercise.tipo) &&
+                        !['lacunas', 'ordenar', 'associar'].includes(exercise.tipo) && (
                         <div className="atividades-preview-answer">
                           Área de resposta do aluno
                         </div>
