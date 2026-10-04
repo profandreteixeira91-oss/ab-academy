@@ -5305,3 +5305,461 @@ body {
     box-shadow: none;
   }
 }
+
+/* =========================================================
+   PORTAL DO ALUNO — DESKTOP PREMIUM
+   ========================================================= */
+
+@media (min-width: 1051px) {
+  .student-portal {
+    background:
+      radial-gradient(ellipse at 88% 0%, rgba(22, 73, 160, 0.055), transparent 34%),
+      #f5f8fc;
+  }
+
+  .student-sidebar {
+    width: 272px;
+    padding: 26px 18px 20px;
+    border-right-color: #e7edf5;
+    background: rgba(255, 255, 255, 0.96);
+    box-shadow: 8px 0 32px rgba(24, 49, 87, 0.035);
+  }
+
+  .student-brand {
+    height: 68px;
+    margin: 2px 5px 34px;
+    justify-content: flex-start;
+    padding: 0 12px;
+  }
+
+  .student-brand img {
+    width: 100%;
+    max-width: 178px;
+    max-height: 58px;
+  }
+
+  .student-navigation {
+    gap: 7px;
+  }
+
+  .student-nav-item {
+    min-height: 48px;
+    gap: 13px;
+    padding: 0 14px;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    color: #596b83;
+    font-size: 13px;
+    font-weight: 550;
+    transition:
+      background 0.18s ease,
+      border-color 0.18s ease,
+      color 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .student-nav-item svg {
+    width: 18px;
+    height: 18px;
+    color: #8292a8;
+    transition: color 0.18s ease;
+  }
+
+  .student-nav-item:hover {
+    transform: translateX(2px);
+    border-color: #e5edf8;
+    background: #f7faff;
+    color: var(--student-primary);
+  }
+
+  .student-nav-item:hover svg,
+  .student-nav-item.active svg {
+    color: var(--student-primary);
+  }
+
+  .student-nav-item.active {
+    border-color: #dce8f8;
+    background: linear-gradient(105deg, #edf4ff, #f7faff);
+    color: var(--student-primary);
+    font-weight: 700;
+    box-shadow: inset 3px 0 0 var(--student-primary);
+  }
+
+  .student-nav-install {
+    margin-top: 12px;
+  }
+
+  .student-logout {
+    min-height: 46px;
+    margin: auto 4px 0;
+    border-top: 1px solid #edf1f6;
+    border-radius: 0;
+    color: #718096;
+    font-size: 13px;
+  }
+
+  .student-logout:hover {
+    border-radius: 10px;
+  }
+
+  .student-main {
+    margin-left: 272px;
+  }
+
+  .student-header {
+    min-height: 88px;
+    padding: 16px clamp(32px, 4vw, 64px);
+    border-bottom-color: rgba(225, 232, 241, 0.9);
+    background: rgba(255, 255, 255, 0.88);
+    box-shadow: 0 4px 20px rgba(24, 49, 87, 0.025);
+    backdrop-filter: blur(18px);
+  }
+
+  .student-header-label {
+    margin-bottom: 5px;
+    color: #7186a2;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+  }
+
+  .student-header h1 {
+    font-size: 22px;
+    letter-spacing: -0.025em;
+  }
+
+  .student-header p {
+    margin-top: 4px;
+    color: #75859a;
+    font-size: 12px;
+  }
+
+  .student-user {
+    gap: 12px;
+    padding: 7px 12px 7px 8px;
+    border: 1px solid #e8edf4;
+    border-radius: 14px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(24, 49, 87, 0.035);
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .student-user:hover {
+    transform: translateY(-1px);
+    border-color: #d4e1f2;
+    box-shadow: 0 7px 18px rgba(24, 49, 87, 0.08);
+  }
+
+  .student-user img,
+  .student-user .student-avatar-placeholder {
+    width: 42px;
+    height: 42px;
+    flex-basis: 42px;
+    border: 2px solid #eef4fc;
+  }
+
+  .student-user .student-avatar-placeholder {
+    border-radius: 12px;
+    background: linear-gradient(145deg, #e5efff, #f2f7ff);
+  }
+
+  .student-user strong {
+    font-size: 12px;
+  }
+
+  .student-content {
+    width: min(100%, 1500px);
+    max-width: 1500px;
+    min-height: calc(100dvh - 88px);
+    padding: 40px clamp(32px, 4vw, 64px) 28px;
+  }
+
+  .student-welcome-card {
+    min-height: 232px;
+    padding: 42px 48px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 22px;
+    background:
+      radial-gradient(circle at 83% 10%, rgba(255, 255, 255, 0.12) 0 1px, transparent 2px) 0 0 / 24px 24px,
+      linear-gradient(118deg, #123e89 0%, #1649a0 48%, #2868c3 100%);
+    box-shadow:
+      0 22px 48px rgba(22, 73, 160, 0.16),
+      inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+
+  .student-welcome-card::before {
+    content: '';
+    position: absolute;
+    width: 370px;
+    height: 370px;
+    right: 7%;
+    top: -210px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    box-shadow:
+      0 0 0 35px rgba(255, 255, 255, 0.035),
+      0 0 0 70px rgba(255, 255, 255, 0.025);
+    pointer-events: none;
+  }
+
+  .student-welcome-card::after {
+    width: 270px;
+    height: 270px;
+    right: -90px;
+    top: auto;
+    bottom: -185px;
+    background: rgba(255, 255, 255, 0.09);
+  }
+
+  .student-card-label {
+    margin-bottom: 12px;
+    color: rgba(255, 255, 255, 0.72);
+    letter-spacing: 0.18em;
+  }
+
+  .student-welcome-card h2 {
+    font-size: clamp(30px, 3vw, 38px);
+    letter-spacing: -0.035em;
+  }
+
+  .student-welcome-card p {
+    max-width: 520px;
+    margin-top: 12px;
+    font-size: 14px;
+  }
+
+  .student-section-title {
+    margin: 42px 0 20px;
+  }
+
+  .student-section-title span {
+    margin-bottom: 7px;
+    color: #5677a6;
+    font-size: 9px;
+    letter-spacing: 0.16em;
+  }
+
+  .student-section-title h2 {
+    font-size: 24px;
+    letter-spacing: -0.03em;
+  }
+
+  .student-section-title p {
+    margin: 7px 0 0;
+    color: var(--student-text-secondary);
+    font-size: 13px;
+  }
+
+  .student-dashboard-grid {
+    gap: 18px;
+  }
+
+  .student-dashboard-card {
+    min-height: 184px;
+    padding: 25px 26px;
+    overflow: hidden;
+    border-color: #e3eaf3;
+    border-radius: 17px;
+    box-shadow: 0 5px 18px rgba(24, 49, 87, 0.035);
+  }
+
+  .student-dashboard-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, #1649a0, #7ea9e5);
+    opacity: 0.72;
+  }
+
+  .student-dashboard-card:hover {
+    transform: translateY(-4px);
+    border-color: #cbdcf2;
+    box-shadow: 0 16px 32px rgba(24, 49, 87, 0.09);
+  }
+
+  .student-dashboard-card > span {
+    margin-bottom: 12px;
+    color: #5477a7;
+    font-size: 9px;
+    letter-spacing: 0.15em;
+  }
+
+  .student-dashboard-card strong {
+    font-size: 20px;
+    letter-spacing: -0.025em;
+  }
+
+  .student-dashboard-card p {
+    max-width: 260px;
+    margin-top: 9px;
+    font-size: 12px;
+  }
+
+  .student-dashboard-card > svg {
+    right: 22px;
+    bottom: 22px;
+    width: 20px;
+    height: 20px;
+    color: #8298b6;
+    transition:
+      transform 0.18s ease,
+      color 0.18s ease;
+  }
+
+  .student-dashboard-card:hover > svg {
+    transform: translateX(3px);
+    color: var(--student-primary);
+  }
+
+  .student-next-lesson {
+    min-height: 116px;
+    padding: 23px 25px;
+    border-color: #d9e5f5;
+    border-radius: 16px;
+    background:
+      linear-gradient(105deg, #fff 0%, #f8fbff 100%);
+    box-shadow: 0 7px 24px rgba(24, 49, 87, 0.045);
+  }
+
+  .student-lesson-icon {
+    width: 54px;
+    height: 54px;
+    border: 1px solid #d9e7f9;
+    border-radius: 15px;
+    background: linear-gradient(145deg, #e8f1ff, #f5f9ff);
+  }
+
+  .student-next-lesson h3 {
+    font-size: 17px;
+    letter-spacing: -0.015em;
+  }
+
+  .student-next-lesson-info > div:last-child > small {
+    display: inline-block;
+    margin-top: 7px;
+    color: #8290a3;
+    font-size: 11px;
+  }
+
+  .student-next-lesson .student-primary-button {
+    min-height: 46px;
+    padding: 0 19px;
+    border-radius: 11px;
+    box-shadow: 0 7px 16px rgba(22, 73, 160, 0.18);
+  }
+
+  .student-lesson-card,
+  .student-material-card,
+  .student-activity-card,
+  .student-history-card {
+    border-color: #e3eaf3;
+    border-radius: 15px;
+    box-shadow: 0 4px 16px rgba(24, 49, 87, 0.035);
+    transition:
+      border-color 0.18s ease,
+      box-shadow 0.18s ease,
+      transform 0.18s ease;
+  }
+
+  .student-lesson-card:hover,
+  .student-material-card:hover,
+  .student-activity-card:hover,
+  .student-history-card:hover {
+    transform: translateY(-2px);
+    border-color: #d3e1f2;
+    box-shadow: 0 12px 28px rgba(24, 49, 87, 0.075);
+  }
+
+  .student-lesson-card {
+    grid-template-columns: 132px minmax(0, 1fr) auto auto;
+    gap: 24px;
+    padding: 21px 24px;
+  }
+
+  .student-lesson-date {
+    min-height: 62px;
+    justify-content: center;
+    padding-left: 16px;
+    border-left: 3px solid #aac4e8;
+  }
+
+  .student-material-card,
+  .student-activity-card {
+    padding: 22px 24px;
+  }
+
+  .student-material-icon {
+    width: 50px;
+    height: 50px;
+    flex-basis: 50px;
+    border: 1px solid #dce8f8;
+    border-radius: 14px;
+  }
+
+  .student-material-card h3,
+  .student-activity-card h3 {
+    font-size: 16px;
+    letter-spacing: -0.015em;
+  }
+
+  .student-material-card p,
+  .student-activity-card p {
+    font-size: 12px;
+  }
+
+  .student-activity-right {
+    min-width: 165px;
+    gap: 9px;
+  }
+
+  .student-activity-right .student-primary-button,
+  .student-activity-right .student-secondary-button,
+  .student-material-card .student-secondary-button {
+    min-height: 42px;
+    border-radius: 10px;
+  }
+
+  .student-empty-state {
+    min-height: 250px;
+    border-color: #d7e2ef;
+    border-radius: 17px;
+    background:
+      linear-gradient(145deg, #fff, #fbfdff);
+  }
+
+  .student-progress-summary-card,
+  .student-profile-card,
+  .student-finance-card,
+  .student-finance-history,
+  .student-request-list,
+  .student-request-thread {
+    border-color: #e3eaf3;
+    border-radius: 16px;
+    box-shadow: 0 6px 22px rgba(24, 49, 87, 0.04);
+  }
+
+  .student-site-footer {
+    margin-top: 56px;
+    padding-top: 22px;
+  }
+
+  .student-site-footer-bottom {
+    padding: 17px 2px 0;
+    color: #8997aa;
+    font-size: 10px;
+  }
+
+  .student-portal button:focus-visible,
+  .student-portal a:focus-visible,
+  .student-portal input:focus-visible,
+  .student-portal select:focus-visible,
+  .student-portal textarea:focus-visible {
+    outline: 3px solid rgba(22, 73, 160, 0.22);
+    outline-offset: 3px;
+  }
+}
