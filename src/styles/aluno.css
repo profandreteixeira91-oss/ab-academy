@@ -1434,6 +1434,65 @@
   white-space: pre-wrap;
 }
 
+.student-exercise-material-link {
+  width: calc(100% - 40px);
+  min-height: 58px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 16px 20px 0;
+  padding: 10px 13px;
+  border: 1px solid #dce8f8;
+  border-radius: 11px;
+  background: linear-gradient(105deg, #f5f9ff, #fff);
+  color: var(--student-primary);
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    background 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.student-exercise-material-link:hover {
+  border-color: #bfd2ee;
+  background: #f0f6ff;
+  box-shadow: 0 4px 12px rgba(22, 73, 160, 0.07);
+}
+
+.student-exercise-material-link:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+.student-exercise-material-link > svg:first-child {
+  flex: 0 0 auto;
+}
+
+.student-exercise-material-link > span {
+  min-width: 0;
+  display: grid;
+  flex: 1;
+  gap: 3px;
+}
+
+.student-exercise-material-link strong {
+  font-size: 12px;
+}
+
+.student-exercise-material-link small {
+  color: var(--student-text-secondary);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.student-exercise-material-error {
+  margin: 8px 20px 0;
+  color: var(--student-danger);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .student-video-wrapper {
   position: relative;
 
@@ -2387,6 +2446,16 @@
 
   .student-exercise-header {
     padding: 15px;
+  }
+
+  .student-exercise-material-link {
+    width: calc(100% - 30px);
+    margin: 12px 15px 0;
+  }
+
+  .student-exercise-material-error {
+    margin-right: 15px;
+    margin-left: 15px;
   }
 
   .student-exercise-header {

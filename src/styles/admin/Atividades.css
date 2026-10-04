@@ -480,6 +480,16 @@
   color: #4f46e5;
 }
 
+.atividades-actions button.danger {
+  color: #b42318;
+}
+
+.atividades-actions button.danger:hover {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b42318;
+}
+
 .atividades-actions button:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -2868,6 +2878,30 @@
   white-space: pre-wrap;
 }
 
+.atividades-preview-linked-material {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 15px;
+  padding: 11px 13px;
+  border: 1px solid #dce8f8;
+  border-radius: 9px;
+  background: #f5f9ff;
+  color: #1649a0;
+  font-size: 12px;
+}
+
+.atividades-preview-linked-material > span {
+  display: grid;
+  gap: 2px;
+  color: #52647e;
+}
+
+.atividades-preview-linked-material strong {
+  color: #1649a0;
+  font-size: 11px;
+}
+
 .atividades-preview-gap {
   display: inline-flex;
   min-height: 25px;
@@ -3943,6 +3977,13 @@
   color: var(--prof-primary, #2563eb);
 }
 
+.atividades-professor-mode .atividades-actions button.danger,
+.atividades-professor-mode .atividades-actions button.danger:hover {
+  border-color: #fecaca;
+  background: #fef2f2;
+  color: #b42318;
+}
+
 .atividades-professor-mode .atividades-empty,
 .atividades-professor-mode .atividades-loading {
   min-height: 300px;
@@ -4002,4 +4043,16 @@
   .atividades-professor-mode .atividades-header h1 {
     font-size: 21px;
   }
+}
+
+.atividades-material-hint {
+  display: block;
+  margin-top: 6px;
+  color: #748196;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.atividades-material-hint[role='alert'] {
+  color: #b42318;
 }
