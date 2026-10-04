@@ -255,7 +255,7 @@ function App() {
   }
 
   if (path === '/trabalhe-conosco') {
-    return <><MobileSystemHeader title={pageHeaderTitle} /><TrabalheConosco /></>
+    return <><MobileSystemHeader title={pageHeaderTitle} />{withFooter(<TrabalheConosco />)}</>
   }
 
   if (path === '/planos') {
