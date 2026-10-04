@@ -116,18 +116,29 @@ Deno.serve(async (req) => {
     if (userError || !user) return json({ error:'Sessão inválida.' }, 401)
     const body = await req.json()
     const materialId = typeof body?.material_id === 'string' ? body.material_id : ''
+    const renderHtml = typeof body?.render_html === 'string' ? body.render_html : ''
     if (!materialId) return json({ error:'material_id é obrigatório.' }, 400)
     const { data: professor, error: professorError } = await admin.from('professores').select('id,ativo').eq('user_id', user.id).maybeSingle()
     if (professorError || !professor?.id || professor.ativo === false) return json({ error:'Acesso restrito ao professor autorizado.' }, 403)
     const { data: material, error: materialError } = await admin.from('materiais').select('id,professor_id,titulo,idioma,conteudo_html,imagens').eq('id', materialId).eq('professor_id', professor.id).maybeSingle()
     if (materialError) return json({ error:materialError.message }, 500)
     if (!material) return json({ error:'Material não encontrado ou sem permissão.' }, 404)
-    const rawHtml = sanitizeHtml(material.conteudo_html || '')
+    const rawHtml = sanitizeHtml(renderHtml || material.conteudo_html || '')
     const imagePaths = Array.isArray(material.imagens) ? material.imagens.filter((value): value is string => typeof value === 'string') : []
     const contentHtml = await resolveMaterialImages(rawHtml, imagePaths, admin)
     const language = material.idioma === 'ingles' ? 'Inglês' : material.idioma === 'alemao' ? 'Alemão' : 'Material de apoio'
     const title = String(material.titulo || 'Material de apoio')
-    const documentHtml = '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + escapeHtml(title) + '</title><style>' + buildStyles() + '</style></head><body><article class="material-document"><header class="material-document-header"><div class="material-document-brand"><img class="material-document-logo" src="https://abacademyidiomas.com.br/favicon.svg" alt="AB Academy Idiomas"></div><div class="material-document-cover"><span>AB ACADEMY IDIOMAS</span><strong>' + escapeHtml(language.toUpperCase()) + '</strong></div></header><main class="material-viewer-content professor-material-rich-editor">' + contentHtml + '</main></article></body></html>'
+    const pageStyles = `
+      @page { size: A4 portrait; margin: 0; }
+      html, body { margin: 0 !important; padding: 0 !important; background: #fff !important; }
+      [data-material-page] { width: 794px !important; height: 1123px !important; min-height: 1123px !important; max-height: 1123px !important; margin: 0 !important; box-sizing: border-box !important; overflow: hidden !important; page-break-after: always !important; break-after: page !important; }
+      [data-material-page]:last-child { page-break-after: auto !important; break-after: auto !important; }
+      [data-material-page-header] { page-break-inside: avoid; break-inside: avoid; }
+      .material-pdf-pages { width: 794px; margin: 0; padding: 0; }
+    `
+    const documentHtml = renderHtml
+      ? '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + escapeHtml(title) + '</title><style>' + buildStyles() + pageStyles + '</style></head><body><div class="material-pdf-pages">' + contentHtml + '</div></body></html>'
+      : '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8"><title>' + escapeHtml(title) + '</title><style>' + buildStyles() + '</style></head><body><article class="material-document"><header class="material-document-header"><div class="material-document-brand"><img class="material-document-logo" src="https://abacademyidiomas.com.br/favicon.svg" alt="AB Academy Idiomas"></div><div class="material-document-cover"><span>AB ACADEMY IDIOMAS</span><strong>' + escapeHtml(language.toUpperCase()) + '</strong></div></header><main class="material-viewer-content professor-material-rich-editor">' + contentHtml + '</main></article></body></html>'
     const endpoint = 'https://production-sfo.browserless.io/pdf?token=' + encodeURIComponent(browserlessToken)
     const rendererResponse = await fetch(endpoint, { method:'POST', headers:{'Cache-Control':'no-cache','Content-Type':'application/json','Accept':'application/pdf'}, body:JSON.stringify({ html:documentHtml, options:{format:'A4',printBackground:true,displayHeaderFooter:false,preferCSSPageSize:true,tagged:true,margin:{top:'0mm',right:'0mm',bottom:'0mm',left:'0mm'},waitForFonts:true} }) })
     if (!rendererResponse.ok) return json({ error:'O renderizador PDF recusou a geração.', code:'PDF_RENDERER_ERROR', status:rendererResponse.status, details:(await rendererResponse.text()).slice(0,2000) }, 502)
