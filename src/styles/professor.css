@@ -4728,3 +4728,15 @@ body.ab-material-editor-open .professor-material-editor-main {
     padding: 8px !important;
   }
 }
+
+
+/* MATERIAIS — editor imersivo sem cabeçalho interno. */
+body.ab-material-editor-open .professor-material-editor-header {
+  display: none !important;
+}
+
+body.ab-material-editor-open .professor-material-editor-grid {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
