@@ -856,6 +856,7 @@ function TeacherLiveRoom({
   livekit,
   lesson,
   onLeave,
+  onStatusChange,
 }: {
   livekit: LiveKitData
   lesson: Lesson
